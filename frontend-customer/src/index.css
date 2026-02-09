@@ -1,0 +1,224 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Toast Animation */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Page Transition Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Button Ripple Animation */
+@keyframes ripple {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(4);
+    opacity: 0;
+  }
+}
+
+/* Heart Particle Animation */
+@keyframes heartParticle {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.5);
+  }
+}
+
+/* Smooth Scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Page Transition Wrapper */
+.page-transition-wrapper {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+  
+  body.modal-open {
+    overflow: hidden;
+  }
+}
+
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors;
+  }
+  
+  .btn-secondary {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+    background-color: #ffcc80; /* nude-200 - vibrant orange */
+    color: #111827; /* gray-900 */
+  }
+  .btn-secondary:hover {
+    background-color: #ffb84d; /* nude-300 - vibrant orange */
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-md border border-gray-200 p-6;
+  }
+  
+  .input {
+    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .btn-shop-all {
+    background-color: #ff6b35 !important;
+    color: white !important;
+  }
+  .btn-shop-all:hover {
+    background-color: #ff5500 !important;
+  }
+}
+
+/* Vibrant orange colors - Skip the Dishes style */
+:root {
+  --nude-50: #fff4e6;
+  --nude-100: #ffe0b3;
+  --nude-200: #ffcc80;
+  --nude-300: #ffb84d;
+  --nude-400: #ffa31a;
+  --nude-500: #ff8c00; /* Skip the Dishes style orange */
+  --nude-600: #ff6b35; /* Vibrant orange */
+  --nude-700: #ff5500; /* Deeper orange */
+  --nude-800: #e64a00; /* Darker orange */
+  --nude-900: #cc3d00; /* Darkest orange */
+}
+
+/* Force orange colors - override any cached brown/tan colors */
+@layer utilities {
+  .bg-nude-50 { background-color: #fff4e6 !important; }
+  .bg-nude-100 { background-color: #ffe0b3 !important; }
+  .bg-nude-200 { background-color: #ffcc80 !important; }
+  .bg-nude-300 { background-color: #ffb84d !important; }
+  .bg-nude-400 { background-color: #ffa31a !important; }
+  .bg-nude-500 { background-color: #ff8c00 !important; }
+  .bg-nude-600 { background-color: #ff6b35 !important; }
+  .bg-nude-700 { background-color: #ff5500 !important; }
+  .bg-nude-800 { background-color: #e64a00 !important; }
+  .bg-nude-900 { background-color: #cc3d00 !important; }
+  
+  .text-nude-50 { color: #fff4e6 !important; }
+  .text-nude-100 { color: #ffe0b3 !important; }
+  .text-nude-200 { color: #ffcc80 !important; }
+  .text-nude-300 { color: #ffb84d !important; }
+  .text-nude-400 { color: #ffa31a !important; }
+  .text-nude-500 { color: #ff8c00 !important; }
+  .text-nude-600 { color: #ff6b35 !important; }
+  .text-nude-700 { color: #ff5500 !important; }
+  .text-nude-800 { color: #e64a00 !important; }
+  .text-nude-900 { color: #cc3d00 !important; }
+  
+  .border-nude-50 { border-color: #fff4e6 !important; }
+  .border-nude-100 { border-color: #ffe0b3 !important; }
+  .border-nude-200 { border-color: #ffcc80 !important; }
+  .border-nude-300 { border-color: #ffb84d !important; }
+  .border-nude-400 { border-color: #ffa31a !important; }
+  .border-nude-500 { border-color: #ff8c00 !important; }
+  .border-nude-600 { border-color: #ff6b35 !important; }
+  .border-nude-700 { border-color: #ff5500 !important; }
+  .border-nude-800 { border-color: #e64a00 !important; }
+  .border-nude-900 { border-color: #cc3d00 !important; }
+  
+  .from-nude-50 { --tw-gradient-from: #fff4e6 !important; }
+  .from-nude-100 { --tw-gradient-from: #ffe0b3 !important; }
+  .from-nude-200 { --tw-gradient-from: #ffcc80 !important; }
+  .from-nude-300 { --tw-gradient-from: #ffb84d !important; }
+  .from-nude-400 { --tw-gradient-from: #ffa31a !important; }
+  .from-nude-500 { --tw-gradient-from: #ff8c00 !important; }
+  .from-nude-600 { --tw-gradient-from: #ff6b35 !important; }
+  .from-nude-700 { --tw-gradient-from: #ff5500 !important; }
+  .from-nude-800 { --tw-gradient-from: #e64a00 !important; }
+  .from-nude-900 { --tw-gradient-from: #cc3d00 !important; }
+  
+  .to-nude-50 { --tw-gradient-to: #fff4e6 !important; }
+  .to-nude-100 { --tw-gradient-to: #ffe0b3 !important; }
+  .to-nude-200 { --tw-gradient-to: #ffcc80 !important; }
+  .to-nude-300 { --tw-gradient-to: #ffb84d !important; }
+  .to-nude-400 { --tw-gradient-to: #ffa31a !important; }
+  .to-nude-500 { --tw-gradient-to: #ff8c00 !important; }
+  .to-nude-600 { --tw-gradient-to: #ff6b35 !important; }
+  .to-nude-700 { --tw-gradient-to: #ff5500 !important; }
+  .to-nude-800 { --tw-gradient-to: #e64a00 !important; }
+  .to-nude-900 { --tw-gradient-to: #cc3d00 !important; }
+  
+  .ring-nude-50 { --tw-ring-color: #fff4e6 !important; }
+  .ring-nude-100 { --tw-ring-color: #ffe0b3 !important; }
+  .ring-nude-200 { --tw-ring-color: #ffcc80 !important; }
+  .ring-nude-300 { --tw-ring-color: #ffb84d !important; }
+  .ring-nude-400 { --tw-ring-color: #ffa31a !important; }
+  .ring-nude-500 { --tw-ring-color: #ff8c00 !important; }
+  .ring-nude-600 { --tw-ring-color: #ff6b35 !important; }
+  .ring-nude-700 { --tw-ring-color: #ff5500 !important; }
+  .ring-nude-800 { --tw-ring-color: #e64a00 !important; }
+  .ring-nude-900 { --tw-ring-color: #cc3d00 !important; }
+  
+  /* Animation utilities */
+  .animate-ripple {
+    animation: ripple 0.6s ease-out;
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  .animate-slideIn {
+    animation: slideIn 0.3s ease-out;
+  }
+}

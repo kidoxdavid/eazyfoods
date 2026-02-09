@@ -1,0 +1,125 @@
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { LogIn, Eye, EyeOff } from 'lucide-react'
+
+const Login = () => {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const { login } = useAuth()
+  const navigate = useNavigate()
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      const result = await login(email, password)
+      console.log('Login successful:', result)
+      // Small delay to ensure state is updated
+      setTimeout(() => {
+        navigate('/')
+      }, 100)
+    } catch (err) {
+      console.error('Login error:', err)
+      setError(err.response?.data?.detail || err.message || 'Login failed. Please check your credentials.')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-3 sm:px-4 py-6 sm:py-8">
+      <div className="max-w-md w-full space-y-6 sm:space-y-8 bg-white p-6 sm:p-8 rounded-xl shadow-lg">
+        <div className="text-center">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">eazyfoods</h1>
+          <h2 className="text-lg sm:text-xl text-gray-600">Vendor Portal</h2>
+        </div>
+
+        <form className="mt-6 sm:mt-8 space-y-4 sm:space-y-6" onSubmit={handleSubmit}>
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm sm:text-base">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-3 sm:space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="vendor@example.com"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3 sm:px-4 py-2 pr-9 sm:pr-10 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none p-1"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" />
+                  ) : (
+                    <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex items-center justify-center px-4 py-2.5 sm:py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm sm:text-base"
+          >
+            {loading ? (
+              <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white"></div>
+            ) : (
+              <>
+                <LogIn className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+                Sign In
+              </>
+            )}
+          </button>
+
+          <div className="text-center">
+            <p className="text-xs sm:text-sm text-gray-600">
+              Don't have an account?{' '}
+              <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-medium">
+                Sign up
+              </Link>
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+export default Login
+
