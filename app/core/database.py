@@ -7,9 +7,12 @@ from sqlalchemy.orm import sessionmaker
 from urllib.parse import quote_plus
 from app.core.config import settings
 
-# Create database URL (URL-encode password to handle special characters like @)
-encoded_password = quote_plus(settings.DB_PASSWORD)
-DATABASE_URL = f"postgresql://{settings.DB_USER}:{encoded_password}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
+# Use DATABASE_URL if set (e.g. Render, Railway), otherwise build from DB_* vars
+if getattr(settings, "DATABASE_URL", None):
+    DATABASE_URL = settings.DATABASE_URL
+else:
+    encoded_password = quote_plus(settings.DB_PASSWORD)
+    DATABASE_URL = f"postgresql://{settings.DB_USER}:{encoded_password}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
 
 # Create engine
 engine = create_engine(

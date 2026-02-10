@@ -2,13 +2,15 @@
 Application configuration settings
 """
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from typing import Optional
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
     
-    # Database
+    # Database (set either DATABASE_URL or DB_* vars; DATABASE_URL takes precedence for deployment)
+    DATABASE_URL: Optional[str] = None
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
     DB_NAME: str = "easyfoods"
@@ -20,20 +22,16 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
-    # CORS
-    # Add ngrok URLs here when sharing for testing (e.g., "https://abc123.ngrok.io")
-    # Temporarily allowing all origins for debugging - change back to specific origins for production
-    CORS_ORIGINS: list[str] = ["*"]  # Allow all origins for debugging
-    # Original restricted list (uncomment for production):
-    # CORS_ORIGINS: list[str] = [
-    #     "http://localhost:3000", 
-    #     "http://localhost:3002", 
-    #     "http://localhost:3003", 
-    #     "http://localhost:8000",
-    #     "http://192.168.4.21:3000",  # Vendor portal via local network
-    #     "http://192.168.4.21:3003",  # Customer portal via local network
-    #     "https://gabbroid-quinn-competently.ngrok-free.dev",  # ngrok URLs
-    # ]
+    # CORS: in production set env CORS_ORIGINS to comma-separated URLs, e.g.:
+    #   CORS_ORIGINS=https://your-app.vercel.app,https://vendor.vercel.app
+    CORS_ORIGINS: list[str] = ["*"]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):  # noqa: N805
+        if isinstance(v, str):
+            return [x.strip() for x in v.split(",") if x.strip()]
+        return v
     
     # File uploads
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
