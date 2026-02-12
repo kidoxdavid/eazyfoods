@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import api from '../services/api'
+import api, { resolveUploadUrl } from '../services/api'
 import { ArrowLeft, Upload, X } from 'lucide-react'
 
 const ProductForm = () => {
@@ -174,11 +174,8 @@ const ProductForm = () => {
         },
       })
 
-      // Construct full URL - response.data.url already includes /api/v1/uploads/products/...
-      const imageUrl = response.data.url.startsWith('http') 
-        ? response.data.url 
-        : `${window.location.origin}${response.data.url}`
-      
+      // Use backend origin so image URL points to API (Render), not frontend (Vercel)
+      const imageUrl = resolveUploadUrl(response.data.url)
       setFormData(prev => ({
         ...prev,
         image_url: imageUrl
@@ -220,11 +217,7 @@ const ProductForm = () => {
         },
       })
 
-      // Construct full URL - response.data.url already includes /api/v1/uploads/products/...
-      const imageUrl = response.data.url.startsWith('http') 
-        ? response.data.url 
-        : `${window.location.origin}${response.data.url}`
-      
+      const imageUrl = resolveUploadUrl(response.data.url)
       const newImages = [...additionalImages]
       newImages[index] = imageUrl
       setAdditionalImages(newImages)
@@ -522,7 +515,7 @@ const ProductForm = () => {
               {formData.image_url && (
                 <div className="mt-2 relative inline-block">
                   <img
-                    src={formData.image_url}
+                    src={resolveUploadUrl(formData.image_url)}
                     alt="Product preview"
                     className="h-24 w-24 sm:h-32 sm:w-32 object-cover rounded-lg border border-gray-300"
                     onError={(e) => {
@@ -582,7 +575,7 @@ const ProductForm = () => {
                 {url && (
                   <div className="relative flex-shrink-0">
                     <img
-                      src={url}
+                      src={resolveUploadUrl(url)}
                       alt={`Additional ${index + 1}`}
                       className="h-12 w-12 sm:h-16 sm:w-16 object-cover rounded-lg border border-gray-300"
                       onError={(e) => {

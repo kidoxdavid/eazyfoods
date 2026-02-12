@@ -16,13 +16,30 @@ const getApiBaseURL = () => {
   return '/api/v1'
 }
 
+const apiBaseURL = getApiBaseURL()
 const api = axios.create({
-  baseURL: getApiBaseURL(),
+  baseURL: apiBaseURL,
   timeout: 10000, // 10 second timeout
   headers: {
     'Content-Type': 'application/json',
   },
 })
+
+/** Backend origin for building full image URLs (so uploads point to API host, not frontend). */
+export function getApiOrigin() {
+  if (apiBaseURL && (apiBaseURL.startsWith('http://') || apiBaseURL.startsWith('https://'))) {
+    return apiBaseURL.replace(/\/api\/v1\/?$/, '')
+  }
+  return typeof window !== 'undefined' ? window.location.origin : ''
+}
+
+/** Resolve upload path to full URL (for product/upload images). */
+export function resolveUploadUrl(url) {
+  if (!url || typeof url !== 'string') return url
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  const origin = getApiOrigin()
+  return origin ? `${origin}${url.startsWith('/') ? url : `/${url}`}` : url
+}
 
 // Add token to requests if available
 const token = localStorage.getItem('token')

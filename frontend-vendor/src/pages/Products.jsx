@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import api from '../services/api'
+import api, { resolveUploadUrl } from '../services/api'
 import { Plus, Edit, Trash2, Package, Search, X, Camera, Barcode } from 'lucide-react'
 import { formatCurrency } from '../utils/format'
 import Pagination from '../components/Pagination'
@@ -279,7 +279,7 @@ const Products = () => {
                         <div className="flex items-center">
                           {product.image_url ? (
                             <img
-                              src={product.image_url}
+                              src={resolveUploadUrl(product.image_url)}
                               alt={product.name}
                               className="h-10 w-10 rounded object-cover mr-3"
                             />
@@ -381,7 +381,7 @@ const Products = () => {
                   <div className="flex items-start gap-3">
                     {product.image_url ? (
                       <img
-                        src={product.image_url}
+                        src={resolveUploadUrl(product.image_url)}
                         alt={product.name}
                         className="h-16 w-16 rounded-lg object-cover flex-shrink-0"
                       />
