@@ -3,19 +3,24 @@ Authentication endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from app.core.database import get_db
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.config import settings
+from app.core.google_auth import verify_google_id_token
 from app.schemas.auth import Token, VendorLogin, VendorSignup
 from app.models.vendor import Vendor, VendorUser
 from app.models.store import Store
-from app.core.config import settings
 from decimal import Decimal
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+
+class GoogleTokenBody(BaseModel):
+    id_token: str
 
 
 @router.post("/signup", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -126,6 +131,11 @@ async def vendor_login(
                 detail="Incorrect email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        if not vendor.password_hash:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This account uses Google sign-in. Please use Sign in with Google.",
+            )
         if not verify_password(form_data.password, vendor.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -136,6 +146,11 @@ async def vendor_login(
         user_id = None
         role = "store_owner"
     else:
+        if not vendor_user.password_hash:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This account uses Google sign-in. Please use Sign in with Google.",
+            )
         if not verify_password(form_data.password, vendor_user.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -166,6 +181,61 @@ async def vendor_login(
         expires_delta=access_token_expires
     )
     
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "vendor_id": str(vendor_id),
+        "role": role
+    }
+
+
+@router.post("/google", response_model=Token)
+async def vendor_google(
+    body: GoogleTokenBody,
+    db: Session = Depends(get_db)
+):
+    """Sign in with Google. Account must already exist (sign up with email first)."""
+    payload = await verify_google_id_token(body.id_token)
+    if not payload or not payload.get("email"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Google token")
+    email = payload["email"]
+    google_id = payload["sub"]
+
+    vendor_user = db.query(VendorUser).filter(
+        (VendorUser.email == email) | (VendorUser.google_id == google_id)
+    ).first()
+    if vendor_user:
+        vendor_id = vendor_user.vendor_id
+        user_id = str(vendor_user.id)
+        role = vendor_user.role
+        if not vendor_user.google_id:
+            vendor_user.google_id = google_id
+            db.commit()
+    else:
+        vendor = db.query(Vendor).filter(
+            (Vendor.email == email) | (Vendor.google_id == google_id)
+        ).first()
+        if not vendor:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="No vendor account found for this email. Please sign up with email first.",
+            )
+        if not vendor.google_id:
+            vendor.google_id = google_id
+            db.commit()
+        vendor_id = vendor.id
+        user_id = None
+        role = "store_owner"
+
+    vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
+    if vendor.status not in ("active", "onboarding"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Vendor account is not active")
+
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": email, "vendor_id": str(vendor_id), "user_id": user_id, "role": role},
+        expires_delta=access_token_expires
+    )
     return {
         "access_token": access_token,
         "token_type": "bearer",

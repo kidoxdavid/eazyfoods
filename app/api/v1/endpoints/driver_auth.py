@@ -3,15 +3,21 @@ Driver authentication endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from app.core.database import get_db
 from app.models.driver import Driver
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.config import settings
+from app.core.google_auth import verify_google_id_token
 from app.schemas.driver import DriverSignup
 
 router = APIRouter()
+
+
+class GoogleTokenBody(BaseModel):
+    id_token: str
 
 
 @router.post("/signup", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -142,7 +148,11 @@ async def driver_login(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Verify password
+    if not driver.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This account uses Google sign-in. Please use Sign in with Google.",
+        )
     if not verify_password(form_data.password, driver.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -164,6 +174,47 @@ async def driver_login(
         expires_delta=access_token_expires
     )
     
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "driver_id": str(driver.id)
+    }
+
+
+@router.post("/google", response_model=dict)
+async def driver_google(
+    body: GoogleTokenBody,
+    db: Session = Depends(get_db)
+):
+    """Sign in with Google. Account must already exist."""
+    payload = await verify_google_id_token(body.id_token)
+    if not payload or not payload.get("email"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Google token")
+    email = payload["email"]
+    google_id = payload["sub"]
+
+    driver = db.query(Driver).filter(
+        (Driver.email == email) | (Driver.google_id == google_id)
+    ).first()
+    if not driver:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No driver account found for this email. Please sign up with email first.",
+        )
+    if not driver.google_id:
+        driver.google_id = google_id
+        db.commit()
+        db.refresh(driver)
+    if not driver.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your driver account is not active. Please contact support.",
+        )
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": driver.email, "driver_id": str(driver.id)},
+        expires_delta=access_token_expires
+    )
     return {
         "access_token": access_token,
         "token_type": "bearer",

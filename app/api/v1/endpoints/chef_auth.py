@@ -13,8 +13,13 @@ from app.core.security import verify_password, get_password_hash, create_access_
 from app.core.config import settings
 from app.schemas.chef import ChefResponse
 from app.api.v1.dependencies import get_current_chef
+from app.core.google_auth import verify_google_id_token
 
 router = APIRouter()
+
+
+class GoogleTokenBody(BaseModel):
+    id_token: str
 
 
 class ChefSignup(BaseModel):
@@ -103,8 +108,18 @@ async def chef_login(
     """Chef login"""
     try:
         chef = db.query(Chef).filter(Chef.email == form_data.username).first()
-        
-        if not chef or not verify_password(form_data.password, chef.password_hash):
+        if not chef:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if not chef.password_hash:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This account uses Google sign-in. Please use Sign in with Google.",
+            )
+        if not verify_password(form_data.password, chef.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password",
@@ -145,6 +160,53 @@ async def chef_login(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error during login: {str(e)}"
         )
+
+
+@router.post("/google", response_model=dict)
+async def chef_google(
+    body: GoogleTokenBody,
+    db: Session = Depends(get_db)
+):
+    """Sign in with Google. Account must already exist."""
+    payload = await verify_google_id_token(body.id_token)
+    if not payload or not payload.get("email"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Google token")
+    email = payload["email"]
+    google_id = payload["sub"]
+
+    chef = db.query(Chef).filter(
+        (Chef.email == email) | (Chef.google_id == google_id)
+    ).first()
+    if not chef:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No chef account found for this email. Please sign up with email first.",
+        )
+    if not chef.google_id:
+        chef.google_id = google_id
+        db.commit()
+        db.refresh(chef)
+    if not chef.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chef account is not active. Please wait for admin verification.",
+        )
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": chef.email, "role": "chef", "chef_id": str(chef.id)},
+        expires_delta=access_token_expires
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "chef": {
+            "id": str(chef.id),
+            "email": chef.email,
+            "chef_name": chef.chef_name,
+            "verification_status": chef.verification_status,
+            "is_available": chef.is_available
+        }
+    }
 
 
 @router.get("/me", response_model=ChefResponse)

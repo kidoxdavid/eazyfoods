@@ -59,6 +59,17 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const loginWithGoogle = async (idToken) => {
+    const response = await api.post('/driver/auth/google', { id_token: idToken })
+    const { access_token, driver_id } = response.data
+    setToken(access_token)
+    localStorage.setItem('driver_token', access_token)
+    localStorage.setItem('driver_id', driver_id)
+    api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
+    await fetchDriver()
+    return response.data
+  }
+
   const login = async (email, password) => {
     const params = new URLSearchParams()
     params.append('username', email)
@@ -98,6 +109,7 @@ export const AuthProvider = ({ children }) => {
     driver,
     token,
     login,
+    loginWithGoogle,
     logout,
     loading,
     refreshDriver,

@@ -56,6 +56,17 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const loginWithGoogle = async (idToken) => {
+    const response = await api.post('/chef/auth/google', { id_token: idToken })
+    const { access_token, chef } = response.data
+    setToken(access_token)
+    localStorage.setItem('token', access_token)
+    if (chef?.id) localStorage.setItem('chef_id', chef.id)
+    api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
+    await fetchUser()
+    return response.data
+  }
+
   const login = async (email, password) => {
     try {
       const params = new URLSearchParams()
@@ -109,6 +120,7 @@ export const AuthProvider = ({ children }) => {
     user,
     token,
     login,
+    loginWithGoogle,
     signup,
     logout,
     loading,

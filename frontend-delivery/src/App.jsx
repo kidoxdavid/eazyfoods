@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -61,14 +62,17 @@ function AppRoutes() {
   )
 }
 
+const googleClientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || ''
+
 function App() {
-  return (
+  const app = (
     <AuthProvider>
       <Router>
         <AppRoutes />
       </Router>
     </AuthProvider>
   )
+  return googleClientId ? <GoogleOAuthProvider clientId={googleClientId}>{app}</GoogleOAuthProvider> : app
 }
 
 export default App

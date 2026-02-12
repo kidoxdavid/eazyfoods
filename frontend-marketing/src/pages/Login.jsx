@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react'
 
@@ -97,10 +97,7 @@ const Login = () => {
 
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-medium">
-              Sign Up
-            </Link>
+            Need access? Contact your administrator.
           </p>
         </div>
       </div>

@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-oauth/google": "^0.13.4",
     "axios": "^1.6.2",
     "date-fns": "^2.30.0",
     "lucide-react": "^0.294.0",
@@ -26,4 +27,3 @@
     "vite": "^5.0.8"
   }
 }
-

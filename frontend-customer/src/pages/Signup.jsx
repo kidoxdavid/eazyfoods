@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../contexts/AuthContext'
 import { UserPlus, Eye, EyeOff } from 'lucide-react'
 
@@ -14,8 +15,9 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { signup } = useAuth()
+  const { signup, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
+  const googleClientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || ''
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -26,7 +28,13 @@ const Signup = () => {
       await signup(formData)
       navigate('/login')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Signup failed. Please try again.')
+      const status = err.response?.status
+      const detail = err.response?.data?.detail || err.message || 'Signup failed. Please try again.'
+      if (status === 404 || (typeof detail === 'string' && detail.toLowerCase().includes('not found'))) {
+        setError('API not reachable. If this is the live site, set VITE_API_BASE_URL to your backend (e.g. https://eazyfoods-api.onrender.com/api/v1) and redeploy.')
+      } else {
+        setError(detail)
+      }
     } finally {
       setLoading(false)
     }
@@ -133,6 +141,41 @@ const Signup = () => {
               </>
             )}
           </button>
+
+          {googleClientId && (
+            <>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                </div>
+              </div>
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={async (credentialResponse) => {
+                    setError('')
+                    setLoading(true)
+                    try {
+                      await loginWithGoogle(credentialResponse.credential)
+                      navigate('/')
+                    } catch (err) {
+                      setError(err.response?.data?.detail || 'Google sign-in failed.')
+                    } finally {
+                      setLoading(false)
+                    }
+                  }}
+                  onError={() => {
+                    setError('Google sign-in was cancelled or failed.')
+                  }}
+                  theme="outline"
+                  size="large"
+                  text="signup_with"
+                />
+              </div>
+            </>
+          )}
 
           <div className="text-center">
             <p className="text-sm text-gray-600">

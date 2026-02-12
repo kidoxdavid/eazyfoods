@@ -17,7 +17,8 @@ class Customer(Base):
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     phone = Column(String(20))
-    password_hash = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=True)  # null for Google-only accounts
+    google_id = Column(String(255), unique=True, nullable=True)
     is_email_verified = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

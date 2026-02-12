@@ -68,6 +68,17 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const loginWithGoogle = async (idToken) => {
+    const response = await api.post('/customer/auth/google', { id_token: idToken })
+    const { access_token, customer_id } = response.data
+    setToken(access_token)
+    localStorage.setItem('token', access_token)
+    localStorage.setItem('customer_id', customer_id)
+    api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
+    await fetchUser()
+    return response.data
+  }
+
   const login = async (email, password) => {
     // Use URLSearchParams for proper form-urlencoded format
     const params = new URLSearchParams()
@@ -108,6 +119,7 @@ export const AuthProvider = ({ children }) => {
     user,
     token,
     login,
+    loginWithGoogle,
     signup,
     logout,
     loading,

@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider } from './contexts/AuthContext'
 import PrivateRoute from './components/PrivateRoute'
 import Login from './pages/Login'
@@ -21,8 +22,10 @@ import Payouts from './pages/Payouts'
 import Settings from './pages/Settings'
 import Layout from './components/Layout'
 
+const googleClientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || ''
+
 function App() {
-  return (
+  const app = (
     <AuthProvider>
       <Router>
         <Routes>
@@ -61,6 +64,7 @@ function App() {
       </Router>
     </AuthProvider>
   )
+  return googleClientId ? <GoogleOAuthProvider clientId={googleClientId}>{app}</GoogleOAuthProvider> : app
 }
 
 export default App

@@ -49,10 +49,15 @@ class Settings(BaseSettings):
     
     # Google Maps API
     GOOGLE_MAPS_API_KEY: Optional[str] = None
+    # Google OAuth (for Sign in with Google on customer/vendor/chef/driver)
+    GOOGLE_OAUTH_CLIENT_ID: Optional[str] = None
     
     # Debug
     DEBUG: bool = False
-    
+
+    # Admin/Marketing: set to True only to create first admin (e.g. local or one-time); keep False in production
+    ADMIN_SIGNUP_ENABLED: bool = False
+
     class Config:
         env_file = ".env"
         case_sensitive = True

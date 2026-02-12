@@ -3,16 +3,21 @@ Customer authentication endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from app.core.database import get_db
 from app.models.customer import Customer
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.config import settings
+from app.core.google_auth import verify_google_id_token
 from app.schemas.customer import CustomerSignup, CustomerResponse
-from app.schemas.customer import CustomerResponse
 
 router = APIRouter()
+
+
+class GoogleTokenBody(BaseModel):
+    id_token: str
 
 
 @router.post("/signup", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -64,7 +69,11 @@ async def customer_login(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Verify password
+    if not customer.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This account uses Google sign-in. Please use Sign in with Google.",
+        )
     if not verify_password(form_data.password, customer.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -79,6 +88,53 @@ async def customer_login(
         expires_delta=access_token_expires
     )
     
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "customer_id": str(customer.id)
+    }
+
+
+@router.post("/google", response_model=dict)
+async def customer_google(
+    body: GoogleTokenBody,
+    db: Session = Depends(get_db)
+):
+    """Sign in or sign up with Google. Creates customer if not exists."""
+    payload = await verify_google_id_token(body.id_token)
+    if not payload or not payload.get("email"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Google token")
+    email = payload["email"]
+    google_id = payload["sub"]
+    first_name = payload.get("given_name") or (payload.get("name") or " ").split()[0] or "User"
+    last_name = payload.get("family_name") or (payload.get("name") or " ").split()[-1] if (payload.get("name") or " ").count(" ") else ""
+
+    customer = db.query(Customer).filter(
+        (Customer.email == email) | (Customer.google_id == google_id)
+    ).first()
+    if not customer:
+        customer = Customer(
+            email=email,
+            first_name=first_name,
+            last_name=last_name or first_name,
+            password_hash=None,
+            google_id=google_id,
+            is_email_verified=True,
+        )
+        db.add(customer)
+        db.commit()
+        db.refresh(customer)
+    else:
+        if not customer.google_id:
+            customer.google_id = google_id
+            db.commit()
+            db.refresh(customer)
+
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": customer.email, "customer_id": str(customer.id)},
+        expires_delta=access_token_expires
+    )
     return {
         "access_token": access_token,
         "token_type": "bearer",
