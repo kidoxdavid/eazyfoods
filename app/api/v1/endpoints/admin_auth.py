@@ -102,8 +102,8 @@ async def admin_signup(
     user_data: AdminUserCreate,
     db: Session = Depends(get_db)
 ):
-    """Create admin/marketing user. Disabled by default; set ADMIN_SIGNUP_ENABLED=true to allow (e.g. first admin)."""
-    if not getattr(settings, "ADMIN_SIGNUP_ENABLED", False):
+    """Create admin/marketing user. Set ADMIN_SIGNUP_ENABLED=false to disable (invite-only)."""
+    if not getattr(settings, "ADMIN_SIGNUP_ENABLED", True):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Signup is disabled. Contact an administrator for access.",

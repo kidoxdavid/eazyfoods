@@ -55,8 +55,8 @@ class Settings(BaseSettings):
     # Debug
     DEBUG: bool = False
 
-    # Admin/Marketing: set to True only to create first admin (e.g. local or one-time); keep False in production
-    ADMIN_SIGNUP_ENABLED: bool = False
+    # Admin/Marketing: set to False to disable public signup (invite-only)
+    ADMIN_SIGNUP_ENABLED: bool = True
 
     class Config:
         env_file = ".env"

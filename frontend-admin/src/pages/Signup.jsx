@@ -21,7 +21,7 @@ const Signup = () => {
     setLoading(true)
 
     try {
-      await api.post('/admin/auth/signup', { ...formData, role: 'marketing' })
+      await api.post('/admin/auth/signup', { ...formData, role: 'admin' })
       alert('Account created successfully! You can now login.')
       navigate('/login')
     } catch (err) {
@@ -36,7 +36,7 @@ const Signup = () => {
       <div className="max-w-md w-full bg-white rounded-xl shadow-2xl p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">eazyfoods</h1>
-          <p className="text-gray-600">Marketing Portal – Sign Up</p>
+          <p className="text-gray-600">Admin Portal – Sign Up</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -96,7 +96,7 @@ const Signup = () => {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="marketing@eazyfoods.com"
+                placeholder="admin@eazyfoods.com"
               />
             </div>
           </div>
