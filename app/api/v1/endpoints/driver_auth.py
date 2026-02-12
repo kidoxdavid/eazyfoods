@@ -186,25 +186,44 @@ async def driver_google(
     body: GoogleTokenBody,
     db: Session = Depends(get_db)
 ):
-    """Sign in with Google. Account must already exist."""
+    """Sign in or sign up with Google. Creates driver account if not exists."""
     payload = await verify_google_id_token(body.id_token)
     if not payload or not payload.get("email"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Google token")
     email = payload["email"]
     google_id = payload["sub"]
+    given_name = payload.get("given_name") or (payload.get("name") or " ").split()[0] or "Driver"
+    family_name = payload.get("family_name") or (payload.get("name") or " ").split()[-1] if (payload.get("name") or " ").strip() and (payload.get("name") or " ").count(" ") else ""
 
     driver = db.query(Driver).filter(
         (Driver.email == email) | (Driver.google_id == google_id)
     ).first()
     if not driver:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No driver account found for this email. Please sign up with email first.",
+        # Create driver on first Google login (sign-up)
+        driver = Driver(
+            email=email,
+            password_hash=None,
+            google_id=google_id,
+            phone="",
+            first_name=given_name,
+            last_name=family_name or given_name,
+            street_address="",
+            city="",
+            state=None,
+            postal_code="",
+            country="Canada",
+            verification_status="pending",
+            is_active=False,
+            is_available=False,
         )
-    if not driver.google_id:
-        driver.google_id = google_id
+        db.add(driver)
         db.commit()
         db.refresh(driver)
+    else:
+        if not driver.google_id:
+            driver.google_id = google_id
+            db.commit()
+            db.refresh(driver)
     if not driver.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

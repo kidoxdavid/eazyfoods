@@ -194,12 +194,15 @@ async def vendor_google(
     body: GoogleTokenBody,
     db: Session = Depends(get_db)
 ):
-    """Sign in with Google. Account must already exist (sign up with email first)."""
+    """Sign in or sign up with Google. Creates vendor account if not exists."""
     payload = await verify_google_id_token(body.id_token)
     if not payload or not payload.get("email"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Google token")
     email = payload["email"]
     google_id = payload["sub"]
+    given_name = payload.get("given_name") or (payload.get("name") or " ").split()[0] or "Vendor"
+    family_name = payload.get("family_name") or (payload.get("name") or " ").split()[-1] if (payload.get("name") or " ").strip() and (payload.get("name") or " ").count(" ") else ""
+    full_name = f"{given_name} {family_name}".strip() or given_name
 
     vendor_user = db.query(VendorUser).filter(
         (VendorUser.email == email) | (VendorUser.google_id == google_id)
@@ -216,16 +219,65 @@ async def vendor_google(
             (Vendor.email == email) | (Vendor.google_id == google_id)
         ).first()
         if not vendor:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="No vendor account found for this email. Please sign up with email first.",
+            # Create vendor + store owner + primary store (Google sign-up)
+            vendor = Vendor(
+                business_name=full_name or email,
+                business_type="other",
+                email=email,
+                phone="",
+                street_address="",
+                city="",
+                state=None,
+                postal_code="",
+                country="Canada",
+                password_hash=None,
+                google_id=google_id,
+                status="onboarding",
             )
-        if not vendor.google_id:
-            vendor.google_id = google_id
+            db.add(vendor)
+            db.flush()
+            owner_user = VendorUser(
+                vendor_id=vendor.id,
+                email=email,
+                password_hash=None,
+                first_name=given_name,
+                last_name=family_name or given_name,
+                phone="",
+                role="store_owner",
+                google_id=google_id,
+            )
+            db.add(owner_user)
+            db.flush()
+            primary_store = Store(
+                vendor_id=vendor.id,
+                name=f"{vendor.business_name} - Main",
+                street_address="",
+                city="",
+                state=None,
+                postal_code="",
+                country="Canada",
+                phone="",
+                email=email,
+                is_primary=True,
+                is_active=True,
+                status="active",
+                delivery_radius_km=Decimal("5.0"),
+                delivery_fee=Decimal("0.00"),
+                minimum_order_amount=Decimal("0.00"),
+                estimated_prep_time_minutes=30,
+            )
+            db.add(primary_store)
             db.commit()
+            db.refresh(vendor)
+            user_id = str(owner_user.id)
+            role = "store_owner"
+        else:
+            if not vendor.google_id:
+                vendor.google_id = google_id
+                db.commit()
+            user_id = None
+            role = "store_owner"
         vendor_id = vendor.id
-        user_id = None
-        role = "store_owner"
 
     vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
     if vendor.status not in ("active", "onboarding"):

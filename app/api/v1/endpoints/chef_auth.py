@@ -167,25 +167,47 @@ async def chef_google(
     body: GoogleTokenBody,
     db: Session = Depends(get_db)
 ):
-    """Sign in with Google. Account must already exist."""
+    """Sign in or sign up with Google. Creates chef account if not exists."""
     payload = await verify_google_id_token(body.id_token)
     if not payload or not payload.get("email"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Google token")
     email = payload["email"]
     google_id = payload["sub"]
+    given_name = payload.get("given_name") or (payload.get("name") or " ").split()[0] or "Chef"
+    family_name = payload.get("family_name") or (payload.get("name") or " ").split()[-1] if (payload.get("name") or " ").strip() and (payload.get("name") or " ").count(" ") else ""
+    full_name = f"{given_name} {family_name}".strip() or given_name
 
     chef = db.query(Chef).filter(
         (Chef.email == email) | (Chef.google_id == google_id)
     ).first()
     if not chef:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="No chef account found for this email. Please sign up with email first.",
+        # Create chef on first Google login (sign-up)
+        chef = Chef(
+            email=email,
+            password_hash=None,
+            google_id=google_id,
+            phone="",
+            first_name=given_name,
+            last_name=family_name or given_name,
+            chef_name=full_name or email,
+            street_address="",
+            city="",
+            state=None,
+            postal_code="",
+            country="Canada",
+            cuisines=[],
+            verification_status="pending",
+            is_active=False,
+            is_available=False,
         )
-    if not chef.google_id:
-        chef.google_id = google_id
+        db.add(chef)
         db.commit()
         db.refresh(chef)
+    else:
+        if not chef.google_id:
+            chef.google_id = google_id
+            db.commit()
+            db.refresh(chef)
     if not chef.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

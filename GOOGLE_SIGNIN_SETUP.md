@@ -57,7 +57,11 @@ Use the **same** Client ID as the backend. Each app will only show the “Contin
 
 ## 5. Behavior
 
-- **Customer:** Sign in or sign up with Google. If the email is new, a customer account is created automatically.
-- **Vendor, Chef, Delivery:** Sign in with Google only. The user must already have an account (created with email/password); then they can link Google and use “Sign in with Google” next time.
+All four portals support **sign in or sign up** with Google:
+
+- **Customer:** If the email is new, a customer account is created automatically.
+- **Vendor:** If the email is new, a vendor account is created (Vendor + Store Owner + primary Store) with status `onboarding`; they can complete profile and store details later.
+- **Chef:** If the email is new, a chef account is created with `verification_status=pending` and `is_active=false`; they can complete profile and wait for admin verification.
+- **Driver:** If the email is new, a driver account is created with `verification_status=pending` and `is_active=false`; they can complete profile and wait for admin approval.
 
 After setup, the login and signup pages will show an “Or continue with” / “Or sign in with Google” section and the Google button when `VITE_GOOGLE_OAUTH_CLIENT_ID` is set.
