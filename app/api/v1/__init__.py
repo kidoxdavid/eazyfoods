@@ -9,7 +9,8 @@ from app.api.v1.endpoints import (
     driver_auth, driver_portal, delivery_tracking,
     chef_auth, chef_portal, chef_marketing, chef_support, chef_chat, chef_cuisines, chef_orders, chef_promotions,
     admin_auth, admin_vendors, admin_customers, admin_products, admin_orders, admin_dashboard,
-    admin_analytics, admin_reviews, admin_support, admin_activity, admin_users, admin_promotions, admin_export, admin_drivers, admin_deliveries, admin_settings, admin_barcode, admin_chefs, marketing, marketing_extended, marketing_admin, marketing_recipes, marketing_coupons,
+    admin_analytics, admin_reviews, admin_support, admin_activity, admin_users, admin_promotions, admin_export, admin_drivers, admin_deliveries, admin_settings, admin_barcode, admin_chefs,
+    restore_backup, marketing, marketing_extended, marketing_admin, marketing_recipes, marketing_coupons,
     customer_coupons, barcode, payments_helcim,
     customer_chat_messages, vendor_chat, driver_chat, admin_chat
 )
@@ -90,6 +91,7 @@ api_router.include_router(admin_deliveries.router, prefix="/admin/deliveries", t
 api_router.include_router(admin_settings.router, prefix="/admin", tags=["Admin Settings"])
 api_router.include_router(admin_barcode.router, prefix="/admin/barcode", tags=["Admin Barcode"])
 api_router.include_router(admin_chefs.router, prefix="/admin/chefs", tags=["Admin Chefs"])
+api_router.include_router(restore_backup.router, prefix="/admin", tags=["Admin Restore"])
 api_router.include_router(marketing.router, prefix="/admin/marketing", tags=["Admin Marketing"])
 api_router.include_router(marketing_extended.router, prefix="/admin/marketing", tags=["Admin Marketing Extended"])
 api_router.include_router(marketing_admin.router, prefix="/admin/marketing/admin", tags=["Marketing Admin Control"])
