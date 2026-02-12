@@ -18,58 +18,36 @@ router = APIRouter()
 async def get_categories(
     db: Session = Depends(get_db)
 ):
-    """Get all categories"""
+    """Get all categories (uses app DB so Render DATABASE_URL works)."""
+    from sqlalchemy import text
     try:
-        # Use raw SQL with direct connection to avoid SQLAlchemy relationship initialization issues
-        from app.core.database import engine
-        import psycopg2
-        from app.core.config import settings
-        from urllib.parse import quote_plus
-        
-        # Get connection string
-        encoded_password = quote_plus(settings.DB_PASSWORD)
-        conn_str = f"postgresql://{settings.DB_USER}:{encoded_password}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
-        
-        # Use direct psycopg2 connection to bypass SQLAlchemy
-        conn = psycopg2.connect(conn_str)
-        cur = conn.cursor()
-        
-        cur.execute("""
+        result = db.execute(text("""
             SELECT id, name, slug, description, image_url
             FROM categories
             WHERE is_active = true
             ORDER BY name
-        """)
-        
-        rows = cur.fetchall()
+        """))
+        rows = result.fetchall()
         categories_list = []
         for row in rows:
             try:
                 cat_id = str(row[0]) if row[0] else None
                 categories_list.append({
                     "id": cat_id,
-                    "category_id": cat_id,  # Alias for compatibility
+                    "category_id": cat_id,
                     "name": row[1] if row[1] else "",
-                    "category_name": row[1] if row[1] else "",  # Alias for compatibility
+                    "category_name": row[1] if row[1] else "",
                     "slug": row[2] if row[2] else "",
                     "description": row[3] if row[3] else "",
                     "image_url": row[4] if row[4] else None
                 })
-            except Exception as e:
-                # Skip categories with invalid data
+            except Exception:
                 continue
-        
-        cur.close()
-        conn.close()
-        
         return categories_list
     except Exception as e:
         import traceback
-        error_msg = f"Error fetching categories: {str(e)}"
-        error_trace = traceback.format_exc()
-        print(f"ERROR: {error_msg}")
-        print(f"TRACEBACK: {error_trace}")
-        raise HTTPException(status_code=500, detail=error_msg)
+        print(f"ERROR fetching categories: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error fetching categories: {str(e)}")
 
 
 @router.get("/products", response_model=dict)
