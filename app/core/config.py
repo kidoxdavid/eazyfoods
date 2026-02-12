@@ -22,8 +22,9 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
-    # CORS: in production set env CORS_ORIGINS to comma-separated URLs, e.g.:
-    #   CORS_ORIGINS=https://your-app.vercel.app,https://vendor.vercel.app
+    # CORS: in production set env CORS_ORIGINS to comma-separated frontend URLs, e.g.:
+    #   CORS_ORIGINS=https://vendor.eazyfoods.ca,https://eazyfoods.ca,https://admin.eazyfoods.ca
+    # Include every frontend origin that calls the API (vendor, customer, admin, marketing, chef, delivery).
     CORS_ORIGINS: list[str] = ["*"]
 
     @field_validator("CORS_ORIGINS", mode="before")

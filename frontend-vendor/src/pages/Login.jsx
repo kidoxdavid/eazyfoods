@@ -28,7 +28,11 @@ const Login = () => {
       }, 100)
     } catch (err) {
       console.error('Login error:', err)
-      setError(err.response?.data?.detail || err.message || 'Login failed. Please check your credentials.')
+      const isNetwork = err.code === 'ERR_NETWORK' || err.message === 'Network Error' || !err.response
+      const message = isNetwork
+        ? 'Cannot reach server. Ensure the vendor app has VITE_API_BASE_URL set to your backend (e.g. https://eazyfoods-api.onrender.com/api/v1) and redeploy.'
+        : (err.response?.data?.detail || err.message || 'Login failed. Please check your credentials.')
+      setError(message)
       setLoading(false)
     }
   }
