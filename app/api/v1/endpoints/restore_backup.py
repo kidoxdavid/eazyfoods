@@ -61,12 +61,27 @@ def _run_sql_with_psycopg2(database_url: str, sql_content: str) -> None:
         return f"AS $BODY${len(bodies)-1:05d}$BODY$;"
     protected = re.sub(r"AS\s+\$\$(.*?)\$\$;", save_body, sql_content, flags=re.DOTALL)
 
+    # Protect COPY ... FROM stdin; ... \. blocks (data rows must not be split and executed as SQL)
+    copy_blocks: list[str] = []
+    def save_copy(m: re.Match) -> str:
+        copy_blocks.append(m.group(0))
+        return f"$COPY${len(copy_blocks)-1:05d}$COPY$;"
+    protected = re.sub(
+        r"COPY\s+[^;]+FROM\s+stdin;\s*\n.*?\n\\.\s*(?:\n|$)",
+        save_copy,
+        protected,
+        flags=re.DOTALL,
+    )
+
     raw = re.split(r";\s*\n", protected)
     statements = []
     for chunk in raw:
         stmt = chunk.strip()
         if not stmt or stmt.startswith("--"):
             continue
+        # Restore protected COPY blocks
+        for i in range(len(copy_blocks)):
+            stmt = stmt.replace(f"$COPY${i:05d}$COPY$", copy_blocks[i])
         # Restore protected function bodies
         for i, body in enumerate(bodies):
             stmt = stmt.replace(f"AS $BODY${i:05d}$BODY$", f"AS $${body}$$")
