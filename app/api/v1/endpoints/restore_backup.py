@@ -68,9 +68,9 @@ def _run_sql_with_psycopg2(database_url: str, sql_content: str) -> None:
         )
         if is_continuation:
             if statements:
-                # Semicolon needed to terminate PL/pgSQL block (e.g. END IF;)
+                # Append without semicolon so server runs one statement (not "stmt1;" then "END IF;")
                 end = ";" if not stmt.rstrip().endswith(";") else ""
-                statements[-1] = statements[-1] + ";\n" + stmt + end
+                statements[-1] = statements[-1] + "\n" + stmt + end
             continue
         statements.append(stmt)
     for stmt in statements:
