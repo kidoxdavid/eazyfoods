@@ -17,7 +17,6 @@ class Chef(Base):
     phone = Column(String(20), nullable=False)
     phone_verified = Column(Boolean, default=False)
     password_hash = Column(String(255), nullable=True)
-    google_id = Column(String(255), unique=True, nullable=True)
     
     # Personal Info
     first_name = Column(String(100), nullable=False)

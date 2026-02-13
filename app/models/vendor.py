@@ -18,8 +18,7 @@ class Vendor(Base):
     email = Column(String(255), unique=True, nullable=False)
     phone = Column(String(20), nullable=False)
     phone_verified = Column(Boolean, default=False)
-    password_hash = Column(String(255), nullable=True)  # null for Google-linked
-    google_id = Column(String(255), unique=True, nullable=True)
+    password_hash = Column(String(255), nullable=True)
     
     # Address
     street_address = Column(String(255), nullable=False)
@@ -97,7 +96,6 @@ class VendorUser(Base):
     vendor_id = Column(UUID(as_uuid=True), ForeignKey("vendors.id"), nullable=False)
     email = Column(String(255), nullable=False)
     password_hash = Column(String(255), nullable=True)
-    google_id = Column(String(255), unique=True, nullable=True)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     phone = Column(String(20))

@@ -4,7 +4,6 @@ Chef authentication endpoints
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from datetime import timedelta
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
@@ -14,7 +13,6 @@ from app.core.security import verify_password, get_password_hash, create_access_
 from app.core.config import settings
 from app.schemas.chef import ChefResponse
 from app.api.v1.dependencies import get_current_chef
-from app.core.google_auth import verify_google_id_token
 
 router = APIRouter()
 
@@ -164,93 +162,12 @@ async def chef_login(
 
 
 @router.post("/google", response_model=dict)
-async def chef_google(
-    body: GoogleTokenBody,
-    db: Session = Depends(get_db)
-):
-    """Sign in or sign up with Google. Creates chef account if not exists."""
-    payload = await verify_google_id_token(body.id_token)
-    if not payload or not payload.get("email"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid Google token")
-    email = payload["email"]
-    google_id = payload["sub"]
-    given_name = payload.get("given_name") or (payload.get("name") or " ").split()[0] or "Chef"
-    family_name = payload.get("family_name") or (payload.get("name") or " ").split()[-1] if (payload.get("name") or " ").strip() and (payload.get("name") or " ").count(" ") else ""
-    full_name = f"{given_name} {family_name}".strip() or given_name
-
-    try:
-        chef = db.query(Chef).filter(
-            (Chef.email == email) | (Chef.google_id == google_id)
-        ).first()
-        if not chef:
-            # Create chef on first Google login (sign-up)
-            chef = Chef(
-                email=email,
-                password_hash=None,
-                google_id=google_id,
-                phone="",
-                first_name=given_name,
-                last_name=family_name or given_name,
-                chef_name=full_name or email,
-                street_address="",
-                city="",
-                state=None,
-                postal_code="",
-                country="Canada",
-                cuisines=[],
-                verification_status="pending",
-                is_active=False,
-                is_available=False,
-            )
-            db.add(chef)
-            db.commit()
-            db.refresh(chef)
-        else:
-            if not chef.google_id:
-                chef.google_id = google_id
-                db.commit()
-                db.refresh(chef)
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="An account with this email already exists. Try signing in with email/password or use a different Google account.",
-        )
-    except OperationalError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database temporarily unavailable. Please try again.",
-        )
-    except SQLAlchemyError as e:
-        db.rollback()
-        import logging
-        logging.getLogger(__name__).exception("Chef Google sign-in database error: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Sign-in failed. Please try again or use email/password.",
-        )
-    if not chef.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Chef account is not active. Please wait for admin verification.",
-        )
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": chef.email, "role": "chef", "chef_id": str(chef.id)},
-        expires_delta=access_token_expires
+async def chef_google(body: GoogleTokenBody):
+    """Google sign-in disabled temporarily."""
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="Google sign-in is temporarily disabled. Please use email and password.",
     )
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "chef": {
-            "id": str(chef.id),
-            "email": chef.email,
-            "chef_name": chef.chef_name,
-            "verification_status": chef.verification_status,
-            "is_available": chef.is_available
-        }
-    }
 
 
 @router.get("/me", response_model=ChefResponse)
