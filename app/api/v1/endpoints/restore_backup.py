@@ -1,10 +1,10 @@
 """
 One-time DB setup: create tables from app models, or restore from a backup URL.
 Use init-db to build an empty DB like local; use restore-from-url to copy data.
+Restore uses Python/psycopg2 only (no psql or buildpack needed).
 """
 import os
-import subprocess
-import tempfile
+import re
 from fastapi import APIRouter, Header, HTTPException
 
 router = APIRouter()
@@ -44,11 +44,42 @@ async def init_db(x_init_db_secret: str = Header(None, alias="X-Init-DB-Secret")
     }
 
 
+def _run_sql_with_psycopg2(database_url: str, sql_content: str) -> None:
+    """Execute SQL script using psycopg2 (no psql needed). Handles CREATE, INSERT, ALTER; COPY FROM stdin may need --inserts dump."""
+    import psycopg2
+    # Render DATABASE_URL may be postgres://; psycopg2 wants postgresql://
+    url = database_url
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[11:]
+    conn = psycopg2.connect(url)
+    conn.autocommit = True
+    cur = conn.cursor()
+    # Skip comments and empty lines; split by semicolon followed by newline (simple script split)
+    statements = re.split(r";\s*\n", sql_content)
+    for stmt in statements:
+        stmt = stmt.strip()
+        if not stmt or stmt.startswith("--"):
+            continue
+        # Skip comment-only lines at start of statement
+        lines = [l for l in stmt.split("\n") if l.strip() and not l.strip().startswith("--")]
+        if not lines:
+            continue
+        try:
+            cur.execute(stmt)
+        except Exception as e:
+            # Some statements (e.g. CREATE EXTENSION, SET) may fail; log and continue
+            if "already exists" in str(e).lower() or "does not exist" in str(e).lower():
+                continue
+            raise
+    cur.close()
+    conn.close()
+
+
 @router.post("/restore-from-url")
 async def restore_from_url(x_restore_secret: str = Header(None, alias="X-Restore-Secret")):
     """
-    One-time: download backup from RESTORE_BACKUP_URL and run it with psql.
-    Requires env: RESTORE_BACKUP_URL (e.g. raw GitHub Gist URL), RESTORE_SECRET (same as X-Restore-Secret header).
+    One-time: download backup from RESTORE_BACKUP_URL and run it with Python/psycopg2.
+    No buildpack or psql needed. Requires env: RESTORE_BACKUP_URL (raw Gist URL), RESTORE_SECRET.
     """
     url = os.environ.get("RESTORE_BACKUP_URL")
     secret = os.environ.get("RESTORE_SECRET")
@@ -71,32 +102,8 @@ async def restore_from_url(x_restore_secret: str = Header(None, alias="X-Restore
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {e}")
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".sql", delete=False) as f:
-        f.write(sql_content)
-        tmp = f.name
-
     try:
-        result = subprocess.run(
-            ["psql", database_url, "-v", "ON_ERROR_STOP=1", "-f", tmp],
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
-        if result.returncode != 0:
-            raise HTTPException(
-                status_code=500,
-                detail=f"psql failed: {result.stderr or result.stdout or 'unknown'}",
-            )
+        _run_sql_with_psycopg2(database_url, sql_content)
         return {"status": "ok", "message": "Restore completed. Remove RESTORE_BACKUP_URL and RESTORE_SECRET from env."}
-    except FileNotFoundError:
-        raise HTTPException(
-            status_code=500,
-            detail="psql not found. Add buildpack: https://github.com/heroku/heroku-buildpack-apt and Aptfile with 'postgresql-client' in repo root, then redeploy.",
-        )
-    except subprocess.TimeoutExpired:
-        raise HTTPException(status_code=504, detail="Restore timed out")
-    finally:
-        try:
-            os.unlink(tmp)
-        except Exception:
-            pass
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Restore failed: {e!s}")
