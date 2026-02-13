@@ -45,29 +45,41 @@ async def init_db(x_init_db_secret: str = Header(None, alias="X-Init-DB-Secret")
 
 
 def _run_sql_with_psycopg2(database_url: str, sql_content: str) -> None:
-    """Execute SQL script using psycopg2 (no psql needed). Handles CREATE, INSERT, ALTER; COPY FROM stdin may need --inserts dump."""
+    """Execute SQL script using psycopg2. Merges PL/pgSQL fragments (END IF, ELSE, etc.) so they run in one block."""
     import psycopg2
-    # Render DATABASE_URL may be postgres://; psycopg2 wants postgresql://
     url = database_url
     if url.startswith("postgres://"):
         url = "postgresql://" + url[11:]
     conn = psycopg2.connect(url)
     conn.autocommit = True
     cur = conn.cursor()
-    # Skip comments and empty lines; split by semicolon followed by newline (simple script split)
-    statements = re.split(r";\s*\n", sql_content)
-    for stmt in statements:
-        stmt = stmt.strip()
+    # Split by semicolon + newline; then merge PL/pgSQL continuations (END IF, ELSE, END, etc.) into previous statement
+    raw = re.split(r";\s*\n", sql_content)
+    # PL/pgSQL fragments that must run with the previous statement (not alone)
+    continuation_tokens = ("END", "ELSE", "END IF", "ELSIF", "END LOOP", "END CASE")
+    statements = []
+    for chunk in raw:
+        stmt = chunk.strip()
         if not stmt or stmt.startswith("--"):
             continue
-        # Skip comment-only lines at start of statement
+        stmt_upper = stmt.upper().strip()
+        is_continuation = stmt_upper in continuation_tokens or (
+            stmt_upper.startswith("END ") and len(stmt_upper) < 20
+        )
+        if is_continuation:
+            if statements:
+                # Semicolon needed to terminate PL/pgSQL block (e.g. END IF;)
+                end = ";" if not stmt.rstrip().endswith(";") else ""
+                statements[-1] = statements[-1] + ";\n" + stmt + end
+            continue
+        statements.append(stmt)
+    for stmt in statements:
         lines = [l for l in stmt.split("\n") if l.strip() and not l.strip().startswith("--")]
         if not lines:
             continue
         try:
             cur.execute(stmt)
         except Exception as e:
-            # Some statements (e.g. CREATE EXTENSION, SET) may fail; log and continue
             if "already exists" in str(e).lower() or "does not exist" in str(e).lower():
                 continue
             raise
