@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from datetime import timedelta
 from app.core.database import get_db
 from app.models.driver import Driver
@@ -195,35 +196,56 @@ async def driver_google(
     given_name = payload.get("given_name") or (payload.get("name") or " ").split()[0] or "Driver"
     family_name = payload.get("family_name") or (payload.get("name") or " ").split()[-1] if (payload.get("name") or " ").strip() and (payload.get("name") or " ").count(" ") else ""
 
-    driver = db.query(Driver).filter(
-        (Driver.email == email) | (Driver.google_id == google_id)
-    ).first()
-    if not driver:
-        # Create driver on first Google login (sign-up)
-        driver = Driver(
-            email=email,
-            password_hash=None,
-            google_id=google_id,
-            phone="",
-            first_name=given_name,
-            last_name=family_name or given_name,
-            street_address="",
-            city="",
-            state=None,
-            postal_code="",
-            country="Canada",
-            verification_status="pending",
-            is_active=False,
-            is_available=False,
-        )
-        db.add(driver)
-        db.commit()
-        db.refresh(driver)
-    else:
-        if not driver.google_id:
-            driver.google_id = google_id
+    try:
+        driver = db.query(Driver).filter(
+            (Driver.email == email) | (Driver.google_id == google_id)
+        ).first()
+        if not driver:
+            # Create driver on first Google login (sign-up)
+            driver = Driver(
+                email=email,
+                password_hash=None,
+                google_id=google_id,
+                phone="",
+                first_name=given_name,
+                last_name=family_name or given_name,
+                street_address="",
+                city="",
+                state=None,
+                postal_code="",
+                country="Canada",
+                verification_status="pending",
+                is_active=False,
+                is_available=False,
+            )
+            db.add(driver)
             db.commit()
             db.refresh(driver)
+        else:
+            if not driver.google_id:
+                driver.google_id = google_id
+                db.commit()
+                db.refresh(driver)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with this email already exists. Try signing in with email/password or use a different Google account.",
+        )
+    except OperationalError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database temporarily unavailable. Please try again.",
+        )
+    except SQLAlchemyError as e:
+        db.rollback()
+        import logging
+        logging.getLogger(__name__).exception("Driver Google sign-in database error: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Sign-in failed. Please try again or use email/password.",
+        )
     if not driver.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

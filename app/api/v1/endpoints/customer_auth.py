@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from datetime import timedelta
 from app.core.database import get_db
 from app.models.customer import Customer
@@ -109,26 +110,47 @@ async def customer_google(
     first_name = payload.get("given_name") or (payload.get("name") or " ").split()[0] or "User"
     last_name = payload.get("family_name") or (payload.get("name") or " ").split()[-1] if (payload.get("name") or " ").count(" ") else ""
 
-    customer = db.query(Customer).filter(
-        (Customer.email == email) | (Customer.google_id == google_id)
-    ).first()
-    if not customer:
-        customer = Customer(
-            email=email,
-            first_name=first_name,
-            last_name=last_name or first_name,
-            password_hash=None,
-            google_id=google_id,
-            is_email_verified=True,
-        )
-        db.add(customer)
-        db.commit()
-        db.refresh(customer)
-    else:
-        if not customer.google_id:
-            customer.google_id = google_id
+    try:
+        customer = db.query(Customer).filter(
+            (Customer.email == email) | (Customer.google_id == google_id)
+        ).first()
+        if not customer:
+            customer = Customer(
+                email=email,
+                first_name=first_name,
+                last_name=last_name or first_name,
+                password_hash=None,
+                google_id=google_id,
+                is_email_verified=True,
+            )
+            db.add(customer)
             db.commit()
             db.refresh(customer)
+        else:
+            if not customer.google_id:
+                customer.google_id = google_id
+                db.commit()
+                db.refresh(customer)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with this email already exists. Try signing in with email/password or use a different Google account.",
+        )
+    except OperationalError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database temporarily unavailable. Please try again.",
+        )
+    except SQLAlchemyError as e:
+        db.rollback()
+        import logging
+        logging.getLogger(__name__).exception("Google sign-in database error: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Sign-in failed. Please try again or use email/password.",
+        )
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(

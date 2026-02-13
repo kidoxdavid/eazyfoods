@@ -32,14 +32,19 @@ The backend uses this to verify the Google ID token when users sign in with Goog
 
 ## 3. Database migration
 
-Run once (local and production) to add Google OAuth columns and allow nullable passwords:
+Run once (local and production) to add Google OAuth columns and allow nullable passwords. **If you see "column X.google_id does not exist" on Render, the production DB has not had this migration run.**
 
-```bash
-# From project root, using your DB connection
-psql $DATABASE_URL -f migrations/add_google_oauth_columns.sql
-```
+**From your machine (using Render’s external DB URL):**
 
-Or run the SQL in `migrations/add_google_oauth_columns.sql` manually in your DB tool.
+1. In **Render Dashboard** → your **PostgreSQL** service → **Info** → copy **External Database URL** (starts with `postgres://`).
+2. From your project root, with that URL set:
+   ```bash
+   export DATABASE_URL="postgres://user:password@host/dbname?sslmode=require"
+   psql "$DATABASE_URL" -f migrations/add_google_oauth_columns.sql
+   ```
+   (Use the actual URL; `?sslmode=require` is often needed for Render.)
+
+**Or run the SQL manually:** Render → Postgres → **Connect** (or use a client like psql, TablePlus, etc.), then paste and run the contents of `migrations/add_google_oauth_columns.sql`.
 
 ---
 

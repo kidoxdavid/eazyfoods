@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from datetime import timedelta
 from app.core.database import get_db
 from app.core.security import verify_password, get_password_hash, create_access_token
@@ -204,73 +205,74 @@ async def vendor_google(
     family_name = payload.get("family_name") or (payload.get("name") or " ").split()[-1] if (payload.get("name") or " ").strip() and (payload.get("name") or " ").count(" ") else ""
     full_name = f"{given_name} {family_name}".strip() or given_name
 
-    vendor_user = db.query(VendorUser).filter(
-        (VendorUser.email == email) | (VendorUser.google_id == google_id)
-    ).first()
-    if vendor_user:
-        vendor_id = vendor_user.vendor_id
-        user_id = str(vendor_user.id)
-        role = vendor_user.role
-        if not vendor_user.google_id:
-            vendor_user.google_id = google_id
-            db.commit()
-    else:
-        vendor = db.query(Vendor).filter(
-            (Vendor.email == email) | (Vendor.google_id == google_id)
+    try:
+        vendor_user = db.query(VendorUser).filter(
+            (VendorUser.email == email) | (VendorUser.google_id == google_id)
         ).first()
-        if not vendor:
-            # Create vendor + store owner + primary store (Google sign-up)
-            vendor = Vendor(
-                business_name=full_name or email,
-                business_type="other",
-                email=email,
-                phone="",
-                street_address="",
-                city="",
-                state=None,
-                postal_code="",
-                country="Canada",
-                password_hash=None,
-                google_id=google_id,
-                status="onboarding",
-            )
-            db.add(vendor)
-            db.flush()
-            owner_user = VendorUser(
-                vendor_id=vendor.id,
-                email=email,
-                password_hash=None,
-                first_name=given_name,
-                last_name=family_name or given_name,
-                phone="",
-                role="store_owner",
-                google_id=google_id,
-            )
-            db.add(owner_user)
-            db.flush()
-            primary_store = Store(
-                vendor_id=vendor.id,
-                name=f"{vendor.business_name} - Main",
-                street_address="",
-                city="",
-                state=None,
-                postal_code="",
-                country="Canada",
-                phone="",
-                email=email,
-                is_primary=True,
-                is_active=True,
-                status="active",
-                delivery_radius_km=Decimal("5.0"),
-                delivery_fee=Decimal("0.00"),
-                minimum_order_amount=Decimal("0.00"),
-                estimated_prep_time_minutes=30,
-            )
-            db.add(primary_store)
-            db.commit()
-            db.refresh(vendor)
-            user_id = str(owner_user.id)
-            role = "store_owner"
+        if vendor_user:
+            vendor_id = vendor_user.vendor_id
+            user_id = str(vendor_user.id)
+            role = vendor_user.role
+            if not vendor_user.google_id:
+                vendor_user.google_id = google_id
+                db.commit()
+        else:
+            vendor = db.query(Vendor).filter(
+                (Vendor.email == email) | (Vendor.google_id == google_id)
+            ).first()
+            if not vendor:
+                # Create vendor + store owner + primary store (Google sign-up)
+                vendor = Vendor(
+                    business_name=full_name or email,
+                    business_type="other",
+                    email=email,
+                    phone="",
+                    street_address="",
+                    city="",
+                    state=None,
+                    postal_code="",
+                    country="Canada",
+                    password_hash=None,
+                    google_id=google_id,
+                    status="onboarding",
+                )
+                db.add(vendor)
+                db.flush()
+                owner_user = VendorUser(
+                    vendor_id=vendor.id,
+                    email=email,
+                    password_hash=None,
+                    first_name=given_name,
+                    last_name=family_name or given_name,
+                    phone="",
+                    role="store_owner",
+                    google_id=google_id,
+                )
+                db.add(owner_user)
+                db.flush()
+                primary_store = Store(
+                    vendor_id=vendor.id,
+                    name=f"{vendor.business_name} - Main",
+                    street_address="",
+                    city="",
+                    state=None,
+                    postal_code="",
+                    country="Canada",
+                    phone="",
+                    email=email,
+                    is_primary=True,
+                    is_active=True,
+                    status="active",
+                    delivery_radius_km=Decimal("5.0"),
+                    delivery_fee=Decimal("0.00"),
+                    minimum_order_amount=Decimal("0.00"),
+                    estimated_prep_time_minutes=30,
+                )
+                db.add(primary_store)
+                db.commit()
+                db.refresh(vendor)
+                user_id = str(owner_user.id)
+                role = "store_owner"
         else:
             if not vendor.google_id:
                 vendor.google_id = google_id
@@ -278,6 +280,27 @@ async def vendor_google(
             user_id = None
             role = "store_owner"
         vendor_id = vendor.id
+
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with this email already exists. Try signing in with email/password or use a different Google account.",
+        )
+    except OperationalError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database temporarily unavailable. Please try again.",
+        )
+    except SQLAlchemyError as e:
+        db.rollback()
+        import logging
+        logging.getLogger(__name__).exception("Vendor Google sign-in database error: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Sign-in failed. Please try again or use email/password.",
+        )
 
     vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
     if vendor.status not in ("active", "onboarding"):

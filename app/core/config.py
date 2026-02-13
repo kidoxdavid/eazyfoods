@@ -2,7 +2,6 @@
 Application configuration settings
 """
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
 from typing import Optional
 
 
@@ -24,15 +23,15 @@ class Settings(BaseSettings):
     
     # CORS: in production set env CORS_ORIGINS to comma-separated frontend URLs, e.g.:
     #   CORS_ORIGINS=https://vendor.eazyfoods.ca,https://eazyfoods.ca,https://admin.eazyfoods.ca
-    # Include every frontend origin that calls the API (vendor, customer, admin, marketing, chef, delivery).
-    CORS_ORIGINS: list[str] = ["*"]
+    # Stored as str so Render/env never triggers JSON parse; use cors_origins_list in app.
+    CORS_ORIGINS: str = "*"
 
-    @field_validator("CORS_ORIGINS", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v):  # noqa: N805
-        if isinstance(v, str):
-            return [x.strip() for x in v.split(",") if x.strip()]
-        return v
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parsed CORS origins for middleware (comma-separated string -> list)."""
+        if not self.CORS_ORIGINS or self.CORS_ORIGINS.strip() == "":
+            return ["*"]
+        return [x.strip() for x in self.CORS_ORIGINS.split(",") if x.strip()] or ["*"]
     
     # File uploads
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB

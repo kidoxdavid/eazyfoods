@@ -4,6 +4,7 @@ Chef authentication endpoints
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 from datetime import timedelta
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
@@ -177,37 +178,58 @@ async def chef_google(
     family_name = payload.get("family_name") or (payload.get("name") or " ").split()[-1] if (payload.get("name") or " ").strip() and (payload.get("name") or " ").count(" ") else ""
     full_name = f"{given_name} {family_name}".strip() or given_name
 
-    chef = db.query(Chef).filter(
-        (Chef.email == email) | (Chef.google_id == google_id)
-    ).first()
-    if not chef:
-        # Create chef on first Google login (sign-up)
-        chef = Chef(
-            email=email,
-            password_hash=None,
-            google_id=google_id,
-            phone="",
-            first_name=given_name,
-            last_name=family_name or given_name,
-            chef_name=full_name or email,
-            street_address="",
-            city="",
-            state=None,
-            postal_code="",
-            country="Canada",
-            cuisines=[],
-            verification_status="pending",
-            is_active=False,
-            is_available=False,
-        )
-        db.add(chef)
-        db.commit()
-        db.refresh(chef)
-    else:
-        if not chef.google_id:
-            chef.google_id = google_id
+    try:
+        chef = db.query(Chef).filter(
+            (Chef.email == email) | (Chef.google_id == google_id)
+        ).first()
+        if not chef:
+            # Create chef on first Google login (sign-up)
+            chef = Chef(
+                email=email,
+                password_hash=None,
+                google_id=google_id,
+                phone="",
+                first_name=given_name,
+                last_name=family_name or given_name,
+                chef_name=full_name or email,
+                street_address="",
+                city="",
+                state=None,
+                postal_code="",
+                country="Canada",
+                cuisines=[],
+                verification_status="pending",
+                is_active=False,
+                is_available=False,
+            )
+            db.add(chef)
             db.commit()
             db.refresh(chef)
+        else:
+            if not chef.google_id:
+                chef.google_id = google_id
+                db.commit()
+                db.refresh(chef)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with this email already exists. Try signing in with email/password or use a different Google account.",
+        )
+    except OperationalError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database temporarily unavailable. Please try again.",
+        )
+    except SQLAlchemyError as e:
+        db.rollback()
+        import logging
+        logging.getLogger(__name__).exception("Chef Google sign-in database error: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Sign-in failed. Please try again or use email/password.",
+        )
     if not chef.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
