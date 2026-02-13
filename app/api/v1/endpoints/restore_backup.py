@@ -45,7 +45,7 @@ async def init_db(x_init_db_secret: str = Header(None, alias="X-Init-DB-Secret")
 
 
 def _run_sql_with_psycopg2(database_url: str, sql_content: str) -> None:
-    """Execute SQL script using psycopg2. Merges PL/pgSQL fragments (END IF, ELSE, etc.) so they run in one block."""
+    """Execute SQL script using psycopg2. Keeps function bodies ($$...$$) intact so PL/pgSQL is not split."""
     import psycopg2
     url = database_url
     if url.startswith("postgres://"):
@@ -53,25 +53,23 @@ def _run_sql_with_psycopg2(database_url: str, sql_content: str) -> None:
     conn = psycopg2.connect(url)
     conn.autocommit = True
     cur = conn.cursor()
-    # Split by semicolon + newline; then merge PL/pgSQL continuations (END IF, ELSE, END, etc.) into previous statement
-    raw = re.split(r";\s*\n", sql_content)
-    # PL/pgSQL fragments that must run with the previous statement (not alone)
-    continuation_tokens = ("END", "ELSE", "END IF", "ELSIF", "END LOOP", "END CASE")
+
+    # Protect function/trigger bodies: replace AS $$ ... $$ with a placeholder so we don't split inside them
+    bodies: list[str] = []
+    def save_body(m: re.Match) -> str:
+        bodies.append(m.group(1))
+        return f"AS $BODY${len(bodies)-1:05d}$BODY$;"
+    protected = re.sub(r"AS\s+\$\$(.*?)\$\$;", save_body, sql_content, flags=re.DOTALL)
+
+    raw = re.split(r";\s*\n", protected)
     statements = []
     for chunk in raw:
         stmt = chunk.strip()
         if not stmt or stmt.startswith("--"):
             continue
-        stmt_upper = stmt.upper().strip()
-        is_continuation = stmt_upper in continuation_tokens or (
-            stmt_upper.startswith("END ") and len(stmt_upper) < 20
-        )
-        if is_continuation:
-            if statements:
-                # Append without semicolon so server runs one statement (not "stmt1;" then "END IF;")
-                end = ";" if not stmt.rstrip().endswith(";") else ""
-                statements[-1] = statements[-1] + "\n" + stmt + end
-            continue
+        # Restore protected function bodies
+        for i, body in enumerate(bodies):
+            stmt = stmt.replace(f"AS $BODY${i:05d}$BODY$", f"AS $${body}$$")
         statements.append(stmt)
     for stmt in statements:
         lines = [l for l in stmt.split("\n") if l.strip() and not l.strip().startswith("--")]
