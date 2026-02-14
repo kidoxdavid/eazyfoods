@@ -18,14 +18,14 @@ const defaultPorts = {
   marketing: 3005,
 }
 
-// Live portal URLs when deployed (e.g. portals.eazyfoods.ca). Override via VITE_PORTAL_*_URL in Vercel.
+// Live portal URLs (eazyfoods.ca subdomains). Override via VITE_PORTAL_*_URL if needed.
 const defaultProductionUrls = {
-  customer: 'https://eazyfoods.vercel.app',
-  vendor: 'https://eazyfoods-vendor.vercel.app',
-  chef: 'https://eazyfoods-chef.vercel.app',
-  admin: 'https://eazyfoods-admin.vercel.app',
-  delivery: 'https://eazyfoods-delivery.vercel.app',
-  marketing: 'https://eazyfoods-marketing.vercel.app',
+  customer: 'https://eazyfoods.ca',
+  vendor: 'https://vendor.eazyfoods.ca',
+  chef: 'https://chef.eazyfoods.ca',
+  admin: 'https://admin.eazyfoods.ca',
+  delivery: 'https://delivery.eazyfoods.ca',
+  marketing: 'https://marketing.eazyfoods.ca',
 }
 
 function getPortalUrl(key) {
