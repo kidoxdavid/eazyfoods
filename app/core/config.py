@@ -36,6 +36,8 @@ class Settings(BaseSettings):
     # File uploads
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
     UPLOAD_DIR: str = "uploads"
+    # Return absolute image URLs when set (e.g. https://eazyfoods-api.onrender.com on Render)
+    API_PUBLIC_URL: Optional[str] = None
     
     # Payment Gateway Configuration: "stripe" or "helcim"
     PAYMENT_GATEWAY: str = "stripe"

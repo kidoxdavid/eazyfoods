@@ -84,3 +84,17 @@ The **Render Shell** is on Render’s servers. It can run commands that use `DAT
   (adds columns; useful when you re-enable Google sign-in later).
 
 For the actual migration of your local DB to Render, use **Option 1** (backup URL + restore) or **Option 2** (run `copy_local_db_to_render.py` on your Mac).
+
+---
+
+## After restore: vendor login and products
+
+Products are filtered by the logged-in vendor’s ID. To see products from the restored backup:
+
+1. **Use the same vendor account** as in your local DB — the same email and password.
+2. Do **not** log in with a new vendor account created after deploy; it has a different ID and won’t see the restored products.
+
+Set these on the Render backend for production:
+
+- `API_PUBLIC_URL` = `https://eazyfoods-api.onrender.com` — so image uploads return absolute URLs that load correctly on the frontend.
+- `CORS_ORIGINS` = `https://eazyfoods.vercel.app,https://vendor.eazyfoods.vercel.app,...` (comma-separated frontend origins).

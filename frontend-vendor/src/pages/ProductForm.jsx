@@ -46,7 +46,7 @@ const ProductForm = () => {
 
   const fetchStores = async () => {
     try {
-      const response = await api.get('/vendor/stores')
+      const response = await api.get('/stores/')
       const storesData = response.data || []
       setStores(storesData)
       

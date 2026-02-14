@@ -147,6 +147,40 @@ async def create_product(
     }
 
 
+@router.get("/categories/list")
+async def get_categories(
+    db: Session = Depends(get_db)
+):
+    """Get all categories for vendor product form (no auth required)."""
+    from sqlalchemy import text
+    try:
+        result = db.execute(text("""
+            SELECT id, name, slug, description, image_url
+            FROM categories
+            WHERE is_active = true
+            ORDER BY name
+        """))
+        rows = result.fetchall()
+        categories_list = []
+        for row in rows:
+            try:
+                cat_id = str(row[0]) if row[0] else None
+                categories_list.append({
+                    "id": cat_id,
+                    "name": row[1] if row[1] else "",
+                    "slug": row[2] if row[2] else "",
+                    "description": row[3] if row[3] else "",
+                    "image_url": row[4] if row[4] else None
+                })
+            except Exception:
+                continue
+        return categories_list
+    except Exception as e:
+        import traceback
+        print(f"ERROR fetching categories: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error fetching categories: {str(e)}")
+
+
 @router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(
     product_id: str,
@@ -326,40 +360,6 @@ async def delete_product(
     
     db.delete(product)
     db.commit()
-
-
-@router.get("/categories/list")
-async def get_categories(
-    db: Session = Depends(get_db)
-):
-    """Get all categories for vendor product form (uses app DB so Render DATABASE_URL works)."""
-    from sqlalchemy import text
-    try:
-        result = db.execute(text("""
-            SELECT id, name, slug, description, image_url
-            FROM categories
-            WHERE is_active = true
-            ORDER BY name
-        """))
-        rows = result.fetchall()
-        categories_list = []
-        for row in rows:
-            try:
-                cat_id = str(row[0]) if row[0] else None
-                categories_list.append({
-                    "id": cat_id,
-                    "name": row[1] if row[1] else "",
-                    "slug": row[2] if row[2] else "",
-                    "description": row[3] if row[3] else "",
-                    "image_url": row[4] if row[4] else None
-                })
-            except Exception:
-                continue
-        return categories_list
-    except Exception as e:
-        import traceback
-        print(f"ERROR fetching categories: {e}\n{traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Error fetching categories: {str(e)}")
 
 
 @router.get("/expiring-soon/list", response_model=List[ProductResponse])

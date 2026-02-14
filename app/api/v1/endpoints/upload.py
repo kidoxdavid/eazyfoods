@@ -14,6 +14,13 @@ from typing import List
 
 router = APIRouter()
 
+
+def _upload_url(path: str) -> str:
+    """Return absolute URL when API_PUBLIC_URL set, else relative path."""
+    base = (settings.API_PUBLIC_URL or "").rstrip("/")
+    return f"{base}{path}" if base else path
+
+
 # Create upload directories if they don't exist
 UPLOAD_BASE_DIR = Path(settings.UPLOAD_DIR)
 PRODUCT_UPLOAD_DIR = UPLOAD_BASE_DIR / "products"
@@ -62,9 +69,7 @@ async def upload_product_image(
             detail=f"Failed to save file: {str(e)}"
         )
     
-    # Return URL path (relative to API base)
-    file_url = f"/api/v1/uploads/products/{unique_filename}"
-    
+    file_url = _upload_url(f"/api/v1/uploads/products/{unique_filename}")
     return {
         "url": file_url,
         "filename": unique_filename,
@@ -110,7 +115,7 @@ async def upload_multiple_product_images(
             with open(file_path, "wb") as f:
                 f.write(file_content)
             
-            file_url = f"/api/v1/uploads/products/{unique_filename}"
+            file_url = _upload_url(f"/api/v1/uploads/products/{unique_filename}")
             uploaded_files.append({
                 "url": file_url,
                 "filename": unique_filename,
@@ -186,9 +191,7 @@ async def upload_ad_media(
             detail=f"Failed to save file: {str(e)}"
         )
     
-    # Return URL path (relative to API base)
-    file_url = f"/api/v1/uploads/ads/{unique_filename}"
-    
+    file_url = _upload_url(f"/api/v1/uploads/ads/{unique_filename}")
     return {
         "url": file_url,
         "filename": unique_filename,
@@ -259,7 +262,7 @@ async def upload_recipe_image(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to save file: {str(e)}"
         )
-    file_url = f"/api/v1/uploads/recipes/{unique_filename}"
+    file_url = _upload_url(f"/api/v1/uploads/recipes/{unique_filename}")
     return {
         "url": file_url,
         "image_url": file_url,
@@ -321,9 +324,7 @@ async def upload_image(
             detail=f"Failed to save file: {str(e)}"
         )
     
-    # Return URL path (relative to API base)
-    file_url = f"/api/v1/uploads/chefs/{unique_filename}"
-    
+    file_url = _upload_url(f"/api/v1/uploads/chefs/{unique_filename}")
     return {
         "url": file_url,
         "image_url": file_url,  # Alternative key for compatibility
