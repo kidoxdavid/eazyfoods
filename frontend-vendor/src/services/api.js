@@ -30,7 +30,20 @@ export function getApiOrigin() {
   if (apiBaseURL && (apiBaseURL.startsWith('http://') || apiBaseURL.startsWith('https://'))) {
     return apiBaseURL.replace(/\/api\/v1\/?$/, '')
   }
-  return typeof window !== 'undefined' ? window.location.origin : ''
+  // Production fallback: when deployed (e.g. vendor.eazyfoods.ca) without VITE_API_BASE_URL, images must point to the API host
+  if (typeof window !== 'undefined') {
+    const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    const envOrigin = import.meta.env.VITE_API_ORIGIN || import.meta.env.VITE_API_BASE_URL
+    if (envOrigin && typeof envOrigin === 'string') {
+      const base = envOrigin.trim().replace(/\/api\/v1\/?$/, '')
+      if (base.startsWith('http')) return base
+    }
+    if (isProd) {
+      return (import.meta.env.VITE_API_ORIGIN || 'https://eazyfoods-api.onrender.com').trim().replace(/\/api\/v1\/?$/, '')
+    }
+    return window.location.origin
+  }
+  return ''
 }
 
 /** Resolve upload path to full URL (for product/upload images). */
