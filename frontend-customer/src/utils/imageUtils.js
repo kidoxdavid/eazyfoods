@@ -1,6 +1,22 @@
 /**
- * Utility function to resolve image URLs for mobile compatibility
- * Uses relative URLs so Vite proxy works correctly on mobile devices
+ * Get API origin when VITE_API_BASE_URL is an absolute URL (production).
+ * E.g. https://eazyfoods-api.onrender.com/api/v1 -> https://eazyfoods-api.onrender.com
+ */
+const getApiOrigin = () => {
+  const base = import.meta.env.VITE_API_BASE_URL
+  if (!base || typeof base !== 'string') return ''
+  if (!base.startsWith('http://') && !base.startsWith('https://')) return ''
+  try {
+    const u = new URL(base)
+    return u.origin
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * Utility function to resolve image URLs for mobile compatibility.
+ * In production (VITE_API_BASE_URL set to Render API), prepends API origin so images load from the API host.
  * @param {string|object} url - Image URL (string or {url: "..."})
  * @param {string} [type] - Optional: 'recipe' | 'product' | 'chef' | 'ad' - use for plain filenames
  */
@@ -10,35 +26,11 @@ export const resolveImageUrl = (url, type) => {
   const urlStr = typeof url === 'string' ? url : (url?.url ?? '')
   if (!urlStr) return ''
 
-  // If it's already an absolute URL, convert to relative for proxy
+  const apiOrigin = getApiOrigin()
+
+  // If it's already an absolute URL, return as-is (backend may return full URLs when API_PUBLIC_URL set)
   if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) {
-    // Extract the path from absolute URLs
-    try {
-      const urlObj = new URL(urlStr)
-      // Use relative path so Vite proxy can handle it
-      // This works on both desktop and mobile
-      let path = urlObj.pathname + urlObj.search
-      
-      // Ensure it starts with /api/v1 for proxy to work
-      if (!path.startsWith('/api/v1') && path.startsWith('/')) {
-        // If path doesn't have /api/v1, check if it needs it
-        if (path.startsWith('/uploads/')) {
-          path = `/api/v1${path}`
-        } else if (!path.startsWith('/api/')) {
-          path = `/api/v1${path}`
-        }
-      }
-      
-      return path
-    } catch (e) {
-      console.error('[ImageUtils] Error parsing URL:', urlStr, e)
-      // Fallback: try to extract path manually
-      const match = urlStr.match(/\/api\/v1\/.*$/)
-      if (match) {
-        return match[0]
-      }
-      return urlStr
-    }
+    return urlStr
   }
   
   // For relative paths, ensure they're properly formatted for proxy
@@ -78,7 +70,10 @@ export const resolveImageUrl = (url, type) => {
     }
   }
   
-  // Return relative URL - Vite proxy will handle it correctly on mobile
+  // In production with VITE_API_BASE_URL, prepend API origin so images load from Render (not Vercel)
+  if (apiOrigin) {
+    return `${apiOrigin}${path.startsWith('/') ? path : `/${path}`}`
+  }
   return path
 }
 

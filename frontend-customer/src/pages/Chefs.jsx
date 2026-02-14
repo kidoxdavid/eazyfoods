@@ -6,6 +6,7 @@ import StarRating from '../components/StarRating'
 import { ChefHat, MapPin, Clock, DollarSign, Sparkles, TrendingUp, Users } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import { ChefCardSkeleton } from '../components/SkeletonLoader'
+import { resolveImageUrl } from '../utils/imageUtils'
 
 const Chefs = () => {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -183,7 +184,7 @@ const Chefs = () => {
                 <div className="relative aspect-[4/3] bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
                   {chef.profile_image_url ? (
                     <img
-                      src={chef.profile_image_url}
+                      src={resolveImageUrl(chef.profile_image_url)}
                       alt={chef.chef_name}
                       loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"

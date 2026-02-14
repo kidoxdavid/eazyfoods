@@ -499,7 +499,7 @@ const Home = () => {
                           >
                             {category.image_url ? (
                               <img
-                                src={category.image_url}
+                                src={resolveImageUrl(category.image_url)}
                                 alt={category.name}
                                 className="w-full h-full object-cover rounded-lg"
                                 loading="lazy"
@@ -800,7 +800,7 @@ const Home = () => {
                       <div className="relative z-10 flex items-center gap-3 w-full">
                         <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden bg-amber-100 flex items-center justify-center">
                           {chef.profile_image_url ? (
-                            <img src={chef.profile_image_url} alt={chef.chef_name} className="w-full h-full object-cover" />
+                            <img src={resolveImageUrl(chef.profile_image_url)} alt={chef.chef_name} className="w-full h-full object-cover" />
                           ) : (
                             <ChefHat className="h-6 w-6 text-amber-600" />
                           )}
