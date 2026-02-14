@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from typing import Optional, List
 from app.core.database import get_db
+from app.core.config import resolve_upload_url, resolve_upload_urls
 # Import Vendor FIRST to ensure it's available when Product relationships are initialized
 from app.models.vendor import Vendor
 from app.models.product import Product, Category
@@ -365,8 +366,8 @@ async def get_products(
                 "description": p.description,
                 "price": float(p.price),
                 "compare_at_price": float(p.compare_at_price) if p.compare_at_price else None,
-                "image_url": p.image_url,
-                "images": p.images or [],
+                "image_url": resolve_upload_url(p.image_url),
+                "images": resolve_upload_urls(p.images) or [],
                 "category_id": str(p.category_id) if p.category_id else None,
                 "vendor_id": str(p.vendor_id),
                 "store_id": str(p.store_id) if p.store_id else None,
@@ -483,8 +484,8 @@ async def get_product(
         "price": float(product.price),
         "compare_at_price": float(product.compare_at_price) if product.compare_at_price else None,
         "promotions": product_promotions,
-        "image_url": product.image_url,
-        "images": product.images or [],
+        "image_url": resolve_upload_url(product.image_url),
+        "images": resolve_upload_urls(product.images) or [],
         "category_id": str(product.category_id) if product.category_id else None,
         "vendor_id": str(product.vendor_id),
         "store_id": str(product.store_id) if product.store_id else None,

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from datetime import date, timedelta
 from app.core.database import get_db
+from app.core.config import resolve_upload_url, resolve_upload_urls
 from app.models.product import Product, Category
 from app.schemas.product import ProductResponse, ProductCreate, ProductUpdate
 from app.api.v1.dependencies import get_current_vendor
@@ -44,8 +45,8 @@ async def get_products(
                     "category_id": str(p.category_id) if p.category_id else None,
                     "sku": p.sku,
                     "barcode": p.barcode,
-                    "image_url": p.image_url,
-                    "images": p.images or [],
+                    "image_url": resolve_upload_url(p.image_url),
+                    "images": resolve_upload_urls(p.images) or [],
                     "unit": p.unit,
                     "stock_quantity": p.stock_quantity or 0,
                     "low_stock_threshold": p.low_stock_threshold or 10,
@@ -133,8 +134,8 @@ async def create_product(
         "category_id": str(product.category_id) if product.category_id else None,
         "sku": product.sku,
         "barcode": product.barcode,
-        "image_url": product.image_url,
-        "images": product.images,
+        "image_url": resolve_upload_url(product.image_url),
+        "images": resolve_upload_urls(product.images) or [],
         "unit": product.unit,
         "stock_quantity": product.stock_quantity,
         "low_stock_threshold": product.low_stock_threshold,
@@ -210,8 +211,8 @@ async def get_product(
         "category_id": str(product.category_id) if product.category_id else None,
         "sku": product.sku,
         "barcode": product.barcode,
-        "image_url": product.image_url,
-        "images": product.images,
+        "image_url": resolve_upload_url(product.image_url),
+        "images": resolve_upload_urls(product.images) or [],
         "unit": product.unit,
         "stock_quantity": product.stock_quantity,
         "low_stock_threshold": product.low_stock_threshold,
@@ -325,8 +326,8 @@ async def update_product(
         "category_id": str(product.category_id) if product.category_id else None,
         "sku": product.sku,
         "barcode": product.barcode,
-        "image_url": product.image_url,
-        "images": product.images,
+        "image_url": resolve_upload_url(product.image_url),
+        "images": resolve_upload_urls(product.images) or [],
         "unit": product.unit,
         "stock_quantity": product.stock_quantity,
         "low_stock_threshold": product.low_stock_threshold,
@@ -398,8 +399,8 @@ async def get_expiring_products(
                 "category_id": str(p.category_id) if p.category_id else None,
                 "sku": p.sku,
                 "barcode": p.barcode,
-                "image_url": p.image_url,
-                "images": p.images or [],
+                "image_url": resolve_upload_url(p.image_url),
+                "images": resolve_upload_urls(p.images) or [],
                 "unit": p.unit,
                 "stock_quantity": p.stock_quantity or 0,
                 "low_stock_threshold": p.low_stock_threshold or 10,

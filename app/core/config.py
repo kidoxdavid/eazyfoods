@@ -68,3 +68,20 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
+
+def resolve_upload_url(url: Optional[str]) -> Optional[str]:
+    """If API_PUBLIC_URL is set, return absolute URL for upload paths so frontends get working image URLs."""
+    if not url or not settings.API_PUBLIC_URL:
+        return url
+    base = settings.API_PUBLIC_URL.rstrip("/")
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    return f"{base}{url}" if url.startswith("/") else f"{base}/{url}"
+
+
+def resolve_upload_urls(urls: Optional[list]) -> Optional[list]:
+    """Resolve a list of upload paths to absolute URLs."""
+    if not urls:
+        return urls
+    return [resolve_upload_url(u) if isinstance(u, str) else u for u in urls]
+
