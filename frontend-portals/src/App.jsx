@@ -18,11 +18,25 @@ const defaultPorts = {
   marketing: 3005,
 }
 
+// Live portal URLs when deployed (e.g. portals.eazyfoods.ca). Override via VITE_PORTAL_*_URL in Vercel.
+const defaultProductionUrls = {
+  customer: 'https://eazyfoods.vercel.app',
+  vendor: 'https://eazyfoods-vendor.vercel.app',
+  chef: 'https://eazyfoods-chef.vercel.app',
+  admin: 'https://eazyfoods-admin.vercel.app',
+  delivery: 'https://eazyfoods-delivery.vercel.app',
+  marketing: 'https://eazyfoods-marketing.vercel.app',
+}
+
 function getPortalUrl(key) {
   const base = import.meta.env[`VITE_PORTAL_${key.toUpperCase()}_URL`]
   if (base && typeof base === 'string' && base.trim()) return base.trim()
-  const port = defaultPorts[key]
-  return port ? `http://localhost:${port}` : '#'
+  const isDev = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  if (isDev) {
+    const port = defaultPorts[key]
+    return port ? `http://localhost:${port}` : '#'
+  }
+  return defaultProductionUrls[key] || '#'
 }
 
 const portals = [
