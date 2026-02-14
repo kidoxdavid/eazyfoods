@@ -8,7 +8,7 @@ from app.api.v1.endpoints import (
     customer_auth, customer_products, customer_orders, customer_stores, customer_cart, customer_profile, customer_recipes, customer_reviews, customer_promotions, customer_chat, customer_deliveries, customer_support, customer_marketing, customer_chefs,
     driver_auth, driver_portal, delivery_tracking,
     chef_auth, chef_portal, chef_marketing, chef_support, chef_chat, chef_cuisines, chef_orders, chef_promotions,
-    admin_auth, admin_vendors, admin_customers, admin_products, admin_orders, admin_dashboard,
+    admin_auth, admin_vendors, admin_categories, admin_customers, admin_products, admin_orders, admin_dashboard,
     admin_analytics, admin_reviews, admin_support, admin_activity, admin_users, admin_promotions, admin_export, admin_drivers, admin_deliveries, admin_settings, admin_barcode, admin_chefs,
     restore_backup, marketing, marketing_extended, marketing_admin, marketing_recipes, marketing_coupons,
     customer_coupons, barcode, payments_helcim,
@@ -75,6 +75,7 @@ api_router.include_router(customer_chefs.router, prefix="/customer", tags=["Cust
 api_router.include_router(admin_auth.router, prefix="/admin/auth", tags=["Admin Auth"])
 api_router.include_router(admin_dashboard.router, prefix="/admin/dashboard", tags=["Admin Dashboard"])
 api_router.include_router(admin_vendors.router, prefix="/admin/vendors", tags=["Admin Vendors"])
+api_router.include_router(admin_categories.router, prefix="/admin/vendors/categories", tags=["Admin Categories"])
 api_router.include_router(admin_customers.router, prefix="/admin/customers", tags=["Admin Customers"])
 api_router.include_router(admin_products.router, prefix="/admin/products", tags=["Admin Products"])
 api_router.include_router(admin_orders.router, prefix="/admin/orders", tags=["Admin Orders"])

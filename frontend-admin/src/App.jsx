@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
 import Vendors from './pages/Vendors'
+import Categories from './pages/Categories'
 import Customers from './pages/Customers'
 import Products from './pages/Products'
 import Orders from './pages/Orders'
@@ -63,6 +64,7 @@ function AppRoutes() {
       >
         <Route index element={<Dashboard />} />
         <Route path="vendors" element={<Vendors />} />
+        <Route path="vendors/categories" element={<Categories />} />
         <Route path="vendors/:id" element={<VendorDetail />} />
         <Route path="chefs" element={<Chefs />} />
         <Route path="chefs/:id" element={<ChefDetail />} />
