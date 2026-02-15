@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.api.v1.dependencies import get_current_vendor, get_current_chef, get_current_admin
 from app.core.config import settings
+from app.core.s3 import is_s3_configured, upload_to_s3
 import os
 import uuid
 from pathlib import Path
@@ -19,6 +20,25 @@ def _upload_url(path: str) -> str:
     """Return absolute URL when API_PUBLIC_URL set, else relative path."""
     base = (settings.API_PUBLIC_URL or "").rstrip("/")
     return f"{base}{path}" if base else path
+
+
+def _save_file(
+    content: bytes,
+    folder: str,
+    unique_filename: str,
+    content_type: str = "application/octet-stream",
+) -> str:
+    """Save to S3 if configured, else local disk. Returns the URL to use."""
+    if is_s3_configured():
+        key = f"{folder}/{unique_filename}"
+        return upload_to_s3(content, key, content_type)
+    # Local disk
+    base = UPLOAD_BASE_DIR / folder
+    base.mkdir(parents=True, exist_ok=True)
+    path = base / unique_filename
+    with open(path, "wb") as f:
+        f.write(content)
+    return _upload_url(f"/api/v1/uploads/{folder}/{unique_filename}")
 
 
 # Create upload directories if they don't exist
@@ -57,19 +77,14 @@ async def upload_product_image(
     # Generate unique filename
     file_ext = Path(file.filename).suffix or ".jpg"
     unique_filename = f"{uuid.uuid4()}{file_ext}"
-    file_path = PRODUCT_UPLOAD_DIR / unique_filename
-    
-    # Save file
+
     try:
-        with open(file_path, "wb") as f:
-            f.write(file_content)
+        file_url = _save_file(file_content, "products", unique_filename, file.content_type)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to save file: {str(e)}"
         )
-    
-    file_url = _upload_url(f"/api/v1/uploads/products/{unique_filename}")
     return {
         "url": file_url,
         "filename": unique_filename,
@@ -108,14 +123,9 @@ async def upload_multiple_product_images(
         # Generate unique filename
         file_ext = Path(file.filename).suffix or ".jpg"
         unique_filename = f"{uuid.uuid4()}{file_ext}"
-        file_path = PRODUCT_UPLOAD_DIR / unique_filename
-        
-        # Save file
+
         try:
-            with open(file_path, "wb") as f:
-                f.write(file_content)
-            
-            file_url = _upload_url(f"/api/v1/uploads/products/{unique_filename}")
+            file_url = _save_file(file_content, "products", unique_filename, file.content_type)
             uploaded_files.append({
                 "url": file_url,
                 "filename": unique_filename,
@@ -179,19 +189,14 @@ async def upload_ad_media(
     # Generate unique filename
     file_ext = Path(file.filename).suffix or (".mp4" if file.content_type in allowed_video_types else ".jpg")
     unique_filename = f"{uuid.uuid4()}{file_ext}"
-    file_path = ADS_UPLOAD_DIR / unique_filename
-    
-    # Save file
+
     try:
-        with open(file_path, "wb") as f:
-            f.write(file_content)
+        file_url = _save_file(file_content, "ads", unique_filename, file.content_type)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to save file: {str(e)}"
         )
-    
-    file_url = _upload_url(f"/api/v1/uploads/ads/{unique_filename}")
     return {
         "url": file_url,
         "filename": unique_filename,
@@ -253,16 +258,13 @@ async def upload_recipe_image(
         )
     file_ext = Path(file.filename).suffix or ".jpg"
     unique_filename = f"{uuid.uuid4()}{file_ext}"
-    file_path = RECIPES_UPLOAD_DIR / unique_filename
     try:
-        with open(file_path, "wb") as f:
-            f.write(file_content)
+        file_url = _save_file(file_content, "recipes", unique_filename, file.content_type)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to save file: {str(e)}"
         )
-    file_url = _upload_url(f"/api/v1/uploads/recipes/{unique_filename}")
     return {
         "url": file_url,
         "image_url": file_url,
@@ -312,19 +314,14 @@ async def upload_image(
     # Generate unique filename
     file_ext = Path(file.filename).suffix or ".jpg"
     unique_filename = f"{uuid.uuid4()}{file_ext}"
-    file_path = CHEF_UPLOAD_DIR / unique_filename
-    
-    # Save file
+
     try:
-        with open(file_path, "wb") as f:
-            f.write(file_content)
+        file_url = _save_file(file_content, "chefs", unique_filename, file.content_type)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to save file: {str(e)}"
         )
-    
-    file_url = _upload_url(f"/api/v1/uploads/chefs/{unique_filename}")
     return {
         "url": file_url,
         "image_url": file_url,  # Alternative key for compatibility

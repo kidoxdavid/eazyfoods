@@ -38,6 +38,14 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "uploads"
     # Return absolute image URLs when set (e.g. https://eazyfoods-api.onrender.com on Render)
     API_PUBLIC_URL: Optional[str] = None
+
+    # S3 (optional - when set, uploads go to S3 instead of local disk)
+    AWS_ACCESS_KEY_ID: Optional[str] = None
+    AWS_SECRET_ACCESS_KEY: Optional[str] = None
+    AWS_REGION: str = "us-east-1"
+    S3_BUCKET_NAME: Optional[str] = None
+    # Custom domain/CDN URL for S3 (optional). If not set, uses bucket URL.
+    S3_PUBLIC_URL: Optional[str] = None
     
     # Payment Gateway Configuration: "stripe" or "helcim"
     PAYMENT_GATEWAY: str = "stripe"
