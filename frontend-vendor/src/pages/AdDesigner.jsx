@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import api from '../services/api'
+import api, { resolveUploadUrl } from '../services/api'
 import { ArrowLeft, Save, Eye, Palette, Upload, X, Video, Image as ImageIcon } from 'lucide-react'
 
 const AdDesigner = () => {
@@ -88,39 +88,6 @@ const AdDesigner = () => {
     } finally {
       setLoading(false)
     }
-  }
-
-  // Helper function to resolve image/video URLs for display
-  const resolveMediaUrl = (url) => {
-    if (!url) return ''
-    
-    // If it's already a full URL, return as is
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url
-    }
-    
-    // If it starts with /api/v1, use it as is (works with Vite proxy in dev)
-    if (url.startsWith('/api/v1')) {
-      return url
-    }
-    
-    // If it starts with /uploads, prepend /api/v1
-    if (url.startsWith('/uploads')) {
-      return `/api/v1${url}`
-    }
-    
-    // If it's a relative path without leading slash, construct full path
-    // This handles cases where the API returns just the path
-    const baseURL = api.defaults.baseURL || '/api/v1'
-    if (baseURL.startsWith('http')) {
-      // Full URL base - construct absolute URL
-      return url.startsWith('/') 
-        ? `${baseURL}${url}` 
-        : `${baseURL}/${url}`
-    }
-    
-    // Relative base URL - ensure proper path
-    return url.startsWith('/') ? url : `/api/v1/uploads/ads/${url}`
   }
 
   const handleImageUpload = async (e) => {
@@ -428,7 +395,7 @@ const AdDesigner = () => {
                 {formData.image_url && (
                   <div className="mt-3">
                     <img
-                      src={resolveMediaUrl(formData.image_url)}
+                      src={resolveUploadUrl(formData.image_url)}
                       alt="Preview"
                       className="max-w-full h-32 object-cover rounded-lg border border-gray-200"
                       onError={(e) => {
@@ -514,7 +481,7 @@ const AdDesigner = () => {
                 {formData.video_url && (
                   <div className="mt-3">
                     <video
-                      src={resolveMediaUrl(formData.video_url)}
+                      src={resolveUploadUrl(formData.video_url)}
                       controls
                       className="max-w-full h-48 object-cover rounded-lg border border-gray-200"
                       onError={(e) => {
@@ -645,7 +612,7 @@ const AdDesigner = () => {
             >
               {formData.video_url && (
                 <video
-                  src={resolveMediaUrl(formData.video_url)}
+                  src={resolveUploadUrl(formData.video_url)}
                   controls
                   className="w-full h-32 object-cover rounded mb-4"
                   onError={(e) => {
@@ -657,7 +624,7 @@ const AdDesigner = () => {
               )}
               {!formData.video_url && formData.image_url && (
                 <img
-                  src={resolveMediaUrl(formData.image_url)}
+                  src={resolveUploadUrl(formData.image_url)}
                   alt="Ad preview"
                   className="w-full h-32 object-cover rounded mb-4"
                   onError={(e) => {

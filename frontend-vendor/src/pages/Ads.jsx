@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import api from '../services/api'
+import api, { resolveUploadUrl } from '../services/api'
 import { Image, Plus, Eye, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react'
 import { formatDateTime } from '../utils/format'
 
@@ -88,7 +88,7 @@ const Ads = () => {
           <div key={ad.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             {ad.image_url && (
               <div className="aspect-[16/9] max-h-24 sm:max-h-28 bg-gray-100 overflow-hidden">
-                <img src={ad.image_url} alt={ad.name} className="w-full h-full object-cover" />
+                <img src={resolveUploadUrl(ad.image_url)} alt={ad.name} className="w-full h-full object-cover" />
               </div>
             )}
             <div className="p-3 sm:p-3">
