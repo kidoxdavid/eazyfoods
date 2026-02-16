@@ -37,14 +37,26 @@ const Categories = () => {
     }
     setSaving(true)
     try {
-      await api.post('/admin/vendors/categories', {
+      const { data: created } = await api.post('/admin/vendors/categories', {
         name: formData.name.trim(),
         description: formData.description?.trim() || null,
         image_url: formData.image_url?.trim() || null,
       })
       setFormData({ name: '', description: '', image_url: '' })
       setShowAddForm(false)
-      fetchCategories()
+      // Add new category to list immediately so table updates even if refetch fails
+      if (created && created.id) {
+        setCategories((prev) => {
+          const next = [...prev, created]
+          next.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+          return next
+        })
+      }
+      // Refetch in background to stay in sync (don't set loading so list stays visible)
+      const res = await api.get('/admin/vendors/categories')
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setCategories(res.data)
+      }
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to add category')
     } finally {
