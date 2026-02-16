@@ -43,8 +43,11 @@ class Driver(Base):
     # Documents
     driver_license_number = Column(String(100))
     driver_license_url = Column(String(255))
+    driver_license_validity = Column(DateTime)  # Expiry date
     vehicle_registration_url = Column(String(255))
+    vehicle_registration_validity = Column(DateTime)
     insurance_document_url = Column(String(255))
+    insurance_validity = Column(DateTime)
     profile_image_url = Column(String(255))
     
     # Verification

@@ -83,10 +83,11 @@ const Promotions = () => {
       return
     }
     
-    const headers = ['Name', 'Vendor', 'Discount Type', 'Discount Value', 'Status', 'Start Date', 'End Date']
+    const headers = ['Name', 'Source', 'Source Name', 'Discount Type', 'Discount Value', 'Status', 'Start Date', 'End Date']
     const rows = promotions.map(promo => [
       promo.name || 'N/A',
-      promo.vendor_name || 'N/A',
+      promo.source || 'vendor',
+      promo.source_name || promo.vendor_name || promo.chef_name || 'N/A',
       promo.discount_type || 'percentage',
       promo.discount_value || 0,
       promo.status || 'active',
@@ -154,7 +155,8 @@ const Promotions = () => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Promotion</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source Name</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Discount</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
@@ -172,7 +174,12 @@ const Promotions = () => {
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">{promo.vendor_name || 'N/A'}</div>
+                  <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded capitalize">
+                    {promo.source || 'vendor'}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-500">{promo.source_name || promo.vendor_name || promo.chef_name || 'N/A'}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">

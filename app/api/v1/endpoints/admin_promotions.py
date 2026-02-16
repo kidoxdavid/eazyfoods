@@ -10,6 +10,7 @@ from datetime import datetime
 from app.core.database import get_db
 from app.models.promotion import Promotion
 from app.models.vendor import Vendor
+from app.models.chef import Chef
 from app.api.v1.dependencies import get_current_admin
 
 router = APIRouter()
@@ -59,7 +60,10 @@ async def get_all_promotions(
     now = datetime.utcnow()
     
     for promo in promotions:
-        vendor = db.query(Vendor).filter(Vendor.id == promo.vendor_id).first()
+        vendor = db.query(Vendor).filter(Vendor.id == promo.vendor_id).first() if promo.vendor_id else None
+        chef = db.query(Chef).filter(Chef.id == promo.chef_id).first() if promo.chef_id else None
+        source = "vendor" if promo.vendor_id else "chef"
+        source_name = (vendor.business_name if vendor else None) or (chef.chef_name or f"{chef.first_name} {chef.last_name}" if chef else "N/A")
         
         # Check if promotion has expired based on end_date
         is_expired = promo.end_date < now if promo.end_date else False
@@ -71,8 +75,12 @@ async def get_all_promotions(
             "promotion_type": promo.promotion_type,
             "discount_type": promo.discount_type,
             "discount_value": float(promo.discount_value) if promo.discount_value else None,
-            "vendor_id": str(promo.vendor_id),
+            "source": source,
+            "source_name": source_name,
+            "vendor_id": str(promo.vendor_id) if promo.vendor_id else None,
             "vendor_name": vendor.business_name if vendor else None,
+            "chef_id": str(promo.chef_id) if promo.chef_id else None,
+            "chef_name": (chef.chef_name or f"{chef.first_name} {chef.last_name}") if chef else None,
             "start_date": promo.start_date,
             "end_date": promo.end_date,
             "is_active": promo.is_active and not is_expired,  # Mark as inactive if expired

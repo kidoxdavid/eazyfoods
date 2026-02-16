@@ -6,15 +6,40 @@ const MarketingAds = () => {
   const [ads, setAds] = useState([])
   const [loading, setLoading] = useState(true)
   const [approvalFilter, setApprovalFilter] = useState('pending')
+  const [sourceFilter, setSourceFilter] = useState('')
+  const [vendorFilter, setVendorFilter] = useState('')
+  const [chefFilter, setChefFilter] = useState('')
+  const [vendors, setVendors] = useState([])
+  const [chefs, setChefs] = useState([])
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const [vRes, cRes] = await Promise.all([
+          api.get('/admin/vendors', { params: { limit: 500 } }),
+          api.get('/admin/chefs', { params: { limit: 500 } })
+        ])
+        setVendors(Array.isArray(vRes.data) ? vRes.data : [])
+        setChefs(Array.isArray(cRes.data) ? cRes.data : [])
+      } catch (e) {
+        console.error('Failed to load vendors/chefs:', e)
+      }
+    }
+    loadOptions()
+  }, [])
 
   useEffect(() => {
     fetchAds()
-  }, [approvalFilter])
+  }, [approvalFilter, sourceFilter, vendorFilter, chefFilter])
 
   const fetchAds = async () => {
     try {
-      const params = { limit: 1000, pending_vendor_ads: true }
-      if (approvalFilter !== 'all') params.approval_status = approvalFilter
+      const params = { limit: 1000 }
+      if (approvalFilter === 'pending') params.pending_vendor_ads = true
+      else if (approvalFilter !== 'all') params.approval_status = approvalFilter
+      if (sourceFilter) params.source_filter = sourceFilter
+      if (vendorFilter) params.vendor_id = vendorFilter
+      if (chefFilter) params.chef_id = chefFilter
       const response = await api.get('/admin/marketing/ads', { params })
       setAds(response.data || [])
     } catch (error) {
@@ -58,7 +83,7 @@ const MarketingAds = () => {
     )
   }
 
-  const pendingAds = ads.filter(ad => ad.approval_status === 'pending' && ad.vendor_id)
+  const pendingAds = ads.filter(ad => ad.approval_status === 'pending' && (ad.vendor_id || ad.chef_id))
 
   return (
     <div className="space-y-6">
@@ -67,7 +92,7 @@ const MarketingAds = () => {
           <h1 className="text-2xl font-bold text-gray-900">Marketing Ads Control</h1>
           <p className="text-sm text-gray-600 mt-1">Approve and manage vendor-created ads</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           {['pending', 'approved', 'rejected', 'all'].map((status) => (
             <button
               key={status}
@@ -81,6 +106,37 @@ const MarketingAds = () => {
               {status.charAt(0).toUpperCase() + status.slice(1)}
             </button>
           ))}
+          <select
+            value={sourceFilter}
+            onChange={(e) => { setSourceFilter(e.target.value); setVendorFilter(''); setChefFilter('') }}
+            className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 bg-white"
+          >
+            <option value="">All sources</option>
+            <option value="vendor">Vendor only</option>
+            <option value="chef">Chef only</option>
+          </select>
+          <select
+            value={vendorFilter}
+            onChange={(e) => setVendorFilter(e.target.value)}
+            className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 bg-white"
+            disabled={sourceFilter === 'chef'}
+          >
+            <option value="">All vendors</option>
+            {vendors.map((v) => (
+              <option key={v.id} value={v.id}>{v.business_name || v.name || v.email || v.id}</option>
+            ))}
+          </select>
+          <select
+            value={chefFilter}
+            onChange={(e) => setChefFilter(e.target.value)}
+            className="px-3 py-1.5 rounded-lg text-sm border border-gray-300 bg-white"
+            disabled={sourceFilter === 'vendor'}
+          >
+            <option value="">All chefs</option>
+            {chefs.map((c) => (
+              <option key={c.id} value={c.id}>{c.chef_name || `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.email || c.id}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -106,12 +162,20 @@ const MarketingAds = () => {
             <div className="p-4">
               <div className="flex items-start justify-between mb-2">
                 <h3 className="font-semibold text-gray-900">{ad.name}</h3>
-                {ad.vendor_id && (
-                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                    Vendor
-                  </span>
-                )}
+                <div className="flex gap-1">
+                  {ad.vendor_id && (
+                    <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Vendor</span>
+                  )}
+                  {ad.chef_id && (
+                    <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-800 rounded-full">Chef</span>
+                  )}
+                </div>
               </div>
+              {(ad.vendor_name || ad.chef_name) && (
+                <p className="text-xs text-gray-500 mb-1">
+                  {ad.vendor_name || ad.chef_name}
+                </p>
+              )}
               {ad.title && <p className="text-sm text-gray-600 mb-2">{ad.title}</p>}
               <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                 <span>{ad.ad_type} • {ad.placement}</span>
@@ -123,7 +187,7 @@ const MarketingAds = () => {
                   {ad.approval_status}
                 </span>
               </div>
-              {ad.approval_status === 'pending' && ad.vendor_id && (
+              {ad.approval_status === 'pending' && (ad.vendor_id || ad.chef_id) && (
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleApprove(ad.id)}

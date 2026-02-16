@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { Plus, Tag, Loader2, Trash2 } from 'lucide-react'
+import { Plus, Tag, Loader2, Trash2, Pencil } from 'lucide-react'
 import { CATEGORY_ICONS } from '../data/categoryIcons'
 
 const Categories = () => {
@@ -12,6 +12,8 @@ const Categories = () => {
   const [formData, setFormData] = useState({ name: '', description: '', image_url: '' })
   const [error, setError] = useState('')
   const [deletingId, setDeletingId] = useState(null)
+  const [editCategory, setEditCategory] = useState(null)
+  const [editFormData, setEditFormData] = useState({ name: '', description: '', image_url: '', is_active: true })
 
   const fetchCategories = async () => {
     setLoading(true)
@@ -64,6 +66,41 @@ const Categories = () => {
       }
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to add category')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleEdit = (cat) => {
+    setEditCategory(cat)
+    setEditFormData({
+      name: cat.name || '',
+      description: cat.description || '',
+      image_url: cat.image_url || '',
+      is_active: cat.is_active !== false,
+    })
+    setError('')
+  }
+
+  const handleUpdateSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    if (!editFormData.name?.trim()) {
+      setError('Category name is required')
+      return
+    }
+    setSaving(true)
+    try {
+      const { data: updated } = await api.put(`/admin/vendors/categories/${editCategory.id}`, {
+        name: editFormData.name.trim(),
+        description: editFormData.description?.trim() || null,
+        image_url: editFormData.image_url?.trim() || null,
+        is_active: editFormData.is_active,
+      })
+      setCategories((prev) => prev.map((c) => (c.id === editCategory.id ? { ...c, ...updated } : c)))
+      setEditCategory(null)
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to update category')
     } finally {
       setSaving(false)
     }
@@ -190,6 +227,88 @@ const Categories = () => {
         </div>
       )}
 
+      {editCategory && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Edit category</h2>
+            <form onSubmit={handleUpdateSubmit} className="space-y-4">
+              {error && (
+                <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <input
+                  type="text"
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                  placeholder="e.g. Grains & Cereals"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                <textarea
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                  placeholder="Brief description of this category"
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Icon (optional)</label>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORY_ICONS.map(({ emoji, label }) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setEditFormData({ ...editFormData, image_url: emoji })}
+                      title={label}
+                      className={`w-10 h-10 rounded-lg border-2 text-xl flex items-center justify-center transition-colors ${
+                        editFormData.image_url === emoji
+                          ? 'border-primary-600 bg-primary-50'
+                          : 'border-gray-200 hover:border-gray-300 bg-white'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editFormData.is_active}
+                    onChange={(e) => setEditFormData({ ...editFormData, is_active: e.target.checked })}
+                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-gray-700">Active</span>
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEditCategory(null); setError('') }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {loadError && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between">
           <p className="text-amber-800 text-sm">{loadError}</p>
@@ -245,15 +364,25 @@ const Categories = () => {
                       </span>
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(cat)}
-                        disabled={deletingId === cat.id}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
-                        title="Delete category"
-                      >
-                        {deletingId === cat.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(cat)}
+                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                          title="Edit category"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(cat)}
+                          disabled={deletingId === cat.id}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
+                          title="Delete category"
+                        >
+                          {deletingId === cat.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

@@ -21,6 +21,14 @@ class CategoryCreate(BaseModel):
     image_url: str | None = None  # emoji or icon id for category icon
 
 
+class CategoryUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    slug: str | None = None
+    image_url: str | None = None
+    is_active: bool | None = None
+
+
 class CategoryResponse(BaseModel):
     id: str
     name: str
@@ -83,6 +91,56 @@ async def create_category(
         is_active=True,
     )
     db.add(category)
+    db.commit()
+    db.refresh(category)
+    return {
+        "id": str(category.id),
+        "name": category.name,
+        "slug": category.slug,
+        "description": category.description or "",
+        "image_url": category.image_url,
+        "is_active": category.is_active,
+    }
+
+
+@router.put("/{category_id}", response_model=dict)
+async def update_category(
+    category_id: str,
+    data: CategoryUpdate,
+    current_admin: dict = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Update a category."""
+    try:
+        cat_uuid = UUID(category_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid category ID format")
+
+    category = db.query(Category).filter(Category.id == cat_uuid).first()
+    if not category:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
+
+    if data.name is not None:
+        category.name = data.name
+    if data.description is not None:
+        category.description = data.description or None
+    if data.image_url is not None:
+        category.image_url = data.image_url or None
+    if data.is_active is not None:
+        category.is_active = data.is_active
+    if data.slug is not None and data.slug.strip():
+        slug = data.slug.strip()
+        existing = db.query(Category).filter(Category.slug == slug, Category.id != cat_uuid).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Slug already in use")
+        category.slug = slug
+    elif data.name is not None and not (data.slug and data.slug.strip()):
+        slug = re.sub(r"[^a-z0-9]+", "-", data.name.lower()).strip("-")
+        if slug:
+            existing = db.query(Category).filter(Category.slug == slug, Category.id != cat_uuid).first()
+            if not existing:
+                category.slug = slug
+
     db.commit()
     db.refresh(category)
     return {

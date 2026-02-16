@@ -286,6 +286,14 @@ async def get_recipe_image(filename: str):
 CHEF_UPLOAD_DIR = UPLOAD_BASE_DIR / "chefs"
 CHEF_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+# Vendor profile images
+VENDOR_PROFILE_DIR = UPLOAD_BASE_DIR / "vendor_profile"
+VENDOR_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+
+# Driver documents (signup - no auth required)
+DRIVER_DOCS_DIR = UPLOAD_BASE_DIR / "driver_documents"
+DRIVER_DOCS_DIR.mkdir(parents=True, exist_ok=True)
+
 
 @router.post("/image", response_model=dict)
 @router.post("/chefs", response_model=dict)
@@ -328,6 +336,80 @@ async def upload_image(
         "filename": unique_filename,
         "size": len(file_content)
     }
+
+
+@router.post("/vendor-profile", response_model=dict)
+async def upload_vendor_profile_image(
+    file: UploadFile = File(...),
+    current_vendor: dict = Depends(get_current_vendor),
+):
+    """Upload vendor/store profile image."""
+    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid file type. Allowed: {', '.join(allowed_types)}",
+        )
+    file_content = await file.read()
+    if len(file_content) > settings.MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File too large. Max {settings.MAX_UPLOAD_SIZE / (1024*1024)}MB",
+        )
+    file_ext = Path(file.filename).suffix or ".jpg"
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    try:
+        file_url = _save_file(file_content, "vendor_profile", unique_filename, file.content_type)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save file: {str(e)}",
+        )
+    return {"url": file_url, "filename": unique_filename, "size": len(file_content)}
+
+
+@router.post("/driver-documents", response_model=dict)
+async def upload_driver_document(
+    file: UploadFile = File(...),
+):
+    """Upload driver licence, insurance, or vehicle registration during signup. No auth required."""
+    allowed_types = [
+        "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif",
+        "application/pdf"
+    ]
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid file type. Allowed: JPEG, PNG, WebP, GIF, PDF",
+        )
+    file_content = await file.read()
+    max_size = 5 * 1024 * 1024  # 5MB
+    if len(file_content) > max_size:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File too large. Maximum 5MB.",
+        )
+    file_ext = Path(file.filename).suffix or ".pdf"
+    if file_ext.lower() not in (".jpg", ".jpeg", ".png", ".webp", ".gif", ".pdf"):
+        file_ext = ".pdf"
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    try:
+        file_url = _save_file(file_content, "driver_documents", unique_filename, file.content_type)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save file: {str(e)}",
+        )
+    return {"url": file_url, "filename": unique_filename, "size": len(file_content)}
+
+
+@router.get("/vendor_profile/{filename}")
+async def get_vendor_profile_image(filename: str):
+    """Serve uploaded vendor profile images"""
+    file_path = VENDOR_PROFILE_DIR / filename
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    return FileResponse(path=str(file_path), media_type="image/jpeg")
 
 
 @router.get("/chefs/{filename}")

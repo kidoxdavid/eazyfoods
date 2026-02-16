@@ -26,7 +26,14 @@ class DriverSignup(BaseModel):
     license_plate: Optional[str] = None
     driver_license_number: Optional[str] = None
     preferred_delivery_zones: Optional[List[str]] = None
-    
+    # Document uploads (URLs) and validity dates - required at signup
+    driver_license_url: Optional[str] = None
+    driver_license_validity: Optional[datetime] = None
+    vehicle_registration_url: Optional[str] = None
+    vehicle_registration_validity: Optional[datetime] = None
+    insurance_document_url: Optional[str] = None
+    insurance_validity: Optional[datetime] = None
+
     class Config:
         from_attributes = True
 

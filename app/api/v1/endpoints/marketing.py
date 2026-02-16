@@ -231,6 +231,8 @@ async def get_ads(
     approval_status: Optional[str] = None,
     placement: Optional[str] = None,
     vendor_id: Optional[str] = None,
+    chef_id: Optional[str] = None,
+    source_filter: Optional[str] = None,  # "vendor" | "chef" - filter by source type
     pending_vendor_ads: Optional[bool] = False,  # Filter for pending vendor ads
     current_admin: dict = Depends(get_current_admin),
     db: Session = Depends(get_db)
@@ -246,6 +248,12 @@ async def get_ads(
         query = query.filter(Ad.placement == placement)
     if vendor_id:
         query = query.filter(Ad.vendor_id == UUID(vendor_id))
+    if chef_id:
+        query = query.filter(Ad.chef_id == UUID(chef_id))
+    if source_filter == "vendor":
+        query = query.filter(Ad.vendor_id.isnot(None))
+    elif source_filter == "chef":
+        query = query.filter(Ad.chef_id.isnot(None))
     if pending_vendor_ads:
         # Show only vendor and chef ads pending approval
         query = query.filter(

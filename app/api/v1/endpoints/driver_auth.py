@@ -103,6 +103,19 @@ async def driver_signup(
         
         if driver_data.driver_license_number:
             driver_kwargs["driver_license_number"] = driver_data.driver_license_number
+
+        if driver_data.driver_license_url:
+            driver_kwargs["driver_license_url"] = driver_data.driver_license_url
+        if driver_data.driver_license_validity:
+            driver_kwargs["driver_license_validity"] = driver_data.driver_license_validity
+        if driver_data.vehicle_registration_url:
+            driver_kwargs["vehicle_registration_url"] = driver_data.vehicle_registration_url
+        if driver_data.vehicle_registration_validity:
+            driver_kwargs["vehicle_registration_validity"] = driver_data.vehicle_registration_validity
+        if driver_data.insurance_document_url:
+            driver_kwargs["insurance_document_url"] = driver_data.insurance_document_url
+        if driver_data.insurance_validity:
+            driver_kwargs["insurance_validity"] = driver_data.insurance_validity
         
         # Handle preferred_delivery_zones
         if driver_data.preferred_delivery_zones:

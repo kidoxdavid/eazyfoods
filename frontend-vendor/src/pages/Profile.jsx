@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { Save, MapPin, Clock, Truck, Image as ImageIcon, Building2 } from 'lucide-react'
+import { Save, MapPin, Clock, Truck, Image as ImageIcon, Building2, Upload } from 'lucide-react'
 
 const Profile = () => {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [vendor, setVendor] = useState(null)
   const [formData, setFormData] = useState({
     business_name: '',
@@ -84,6 +85,31 @@ const Profile = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
+  }
+
+  const handleProfileImageUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file (JPEG, PNG, WebP, GIF)')
+      return
+    }
+    setUploadingImage(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await api.post('/uploads/vendor-profile', fd)
+      const url = res.data?.url
+      if (url) {
+        setFormData(prev => ({ ...prev, store_profile_image_url: url }))
+      }
+    } catch (err) {
+      console.error('Upload failed:', err)
+      alert(err.response?.data?.detail || 'Failed to upload image')
+    } finally {
+      setUploadingImage(false)
+      e.target.value = ''
+    }
   }
 
   const handleOperatingHoursChange = (day, field, value) => {
@@ -193,27 +219,46 @@ const Profile = () => {
 
             <div className="md:col-span-2">
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                Store Profile Image URL
+                Store Profile Image
               </label>
-              <div className="flex items-center space-x-4">
-                <input
-                  type="url"
-                  name="store_profile_image_url"
-                  value={formData.store_profile_image_url}
-                  onChange={handleChange}
-                  className="input flex-1"
-                  placeholder="https://example.com/image.jpg"
-                />
-                {formData.store_profile_image_url && (
-                  <img
-                    src={formData.store_profile_image_url}
-                    alt="Store preview"
-                    className="h-16 w-16 object-cover rounded-lg border border-gray-300"
-                    onError={(e) => {
-                      e.target.style.display = 'none'
-                    }}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div className="relative">
+                  {formData.store_profile_image_url ? (
+                    <img
+                      src={formData.store_profile_image_url}
+                      alt="Store preview"
+                      className="h-24 w-24 object-cover rounded-lg border border-gray-300"
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                      }}
+                    />
+                  ) : (
+                    <div className="h-24 w-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+                      <ImageIcon className="h-10 w-10 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 text-sm font-medium">
+                    <Upload className="h-4 w-4" />
+                    {uploadingImage ? 'Uploading...' : 'Upload Image'}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                      onChange={handleProfileImageUpload}
+                      disabled={uploadingImage}
+                      className="sr-only"
+                    />
+                  </label>
+                  <input
+                    type="url"
+                    name="store_profile_image_url"
+                    value={formData.store_profile_image_url}
+                    onChange={handleChange}
+                    className="input text-sm max-w-xs"
+                    placeholder="Or paste image URL"
                   />
-                )}
+                </div>
               </div>
             </div>
           </div>
