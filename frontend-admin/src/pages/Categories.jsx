@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { Plus, Tag, Loader2 } from 'lucide-react'
+import { Plus, Tag, Loader2, Trash2 } from 'lucide-react'
 import { CATEGORY_ICONS } from '../data/categoryIcons'
 
 const Categories = () => {
@@ -11,6 +11,7 @@ const Categories = () => {
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({ name: '', description: '', image_url: '' })
   const [error, setError] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
 
   const fetchCategories = async () => {
     setLoading(true)
@@ -65,6 +66,19 @@ const Categories = () => {
       setError(err.response?.data?.detail || 'Failed to add category')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDelete = async (cat) => {
+    if (!window.confirm(`Delete category "${cat.name}"? This will fail if any products use it.`)) return
+    setDeletingId(cat.id)
+    try {
+      await api.delete(`/admin/vendors/categories/${cat.id}`)
+      setCategories((prev) => prev.filter((c) => c.id !== cat.id))
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to delete category')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -198,12 +212,13 @@ const Categories = () => {
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Slug</th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {categories.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 sm:px-6 py-8 text-center text-gray-500">
+                  <td colSpan={5} className="px-4 sm:px-6 py-8 text-center text-gray-500">
                     No categories yet. Click &quot;Add Category&quot; to create one.
                   </td>
                 </tr>
@@ -228,6 +243,17 @@ const Categories = () => {
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${cat.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
                         {cat.is_active ? 'Active' : 'Inactive'}
                       </span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(cat)}
+                        disabled={deletingId === cat.id}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
+                        title="Delete category"
+                      >
+                        {deletingId === cat.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      </button>
                     </td>
                   </tr>
                 ))

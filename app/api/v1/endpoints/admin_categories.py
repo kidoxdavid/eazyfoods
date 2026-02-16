@@ -4,6 +4,7 @@ Admin category management - add categories that show up in vendor product form
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+from uuid import UUID
 from pydantic import BaseModel
 from app.core.database import get_db
 from app.models.product import Category
@@ -92,3 +93,35 @@ async def create_category(
         "image_url": category.image_url,
         "is_active": category.is_active,
     }
+
+
+@router.delete("/{category_id}", response_model=dict)
+async def delete_category(
+    category_id: str,
+    current_admin: dict = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Delete a category. Fails if any products use this category."""
+    from app.models.product import Product
+
+    try:
+        cat_uuid = UUID(category_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid category ID format")
+
+    category = db.query(Category).filter(Category.id == cat_uuid).first()
+    if not category:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
+
+    product_count = db.query(Product).filter(
+        (Product.category_id == cat_uuid) | (Product.subcategory_id == cat_uuid)
+    ).count()
+    if product_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot delete category: {product_count} product(s) use this category. Reassign or remove those products first."
+        )
+
+    db.delete(category)
+    db.commit()
+    return {"message": "Category deleted successfully"}

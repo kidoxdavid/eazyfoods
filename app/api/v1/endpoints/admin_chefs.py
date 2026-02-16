@@ -132,7 +132,18 @@ async def verify_chef(
     
     db.commit()
     db.refresh(chef)
-    
+
+    from app.models.admin import AdminActivityLog
+    log = AdminActivityLog(
+        admin_id=UUID(current_admin["admin_id"]),
+        action="chef_verified",
+        entity_type="chef",
+        entity_id=chef.id,
+        details={"chef_name": chef.chef_name or f"{chef.first_name} {chef.last_name}"}
+    )
+    db.add(log)
+    db.commit()
+
     return {"message": "Chef verified successfully", "chef_id": str(chef.id)}
 
 
@@ -151,9 +162,20 @@ async def reject_chef(
     chef.verification_status = "rejected"
     chef.verification_notes = rejection_data.get("notes", "")
     chef.is_active = False
-    
+
     db.commit()
-    
+
+    from app.models.admin import AdminActivityLog
+    log = AdminActivityLog(
+        admin_id=UUID(current_admin["admin_id"]),
+        action="chef_rejected",
+        entity_type="chef",
+        entity_id=chef.id,
+        details={"chef_name": chef.chef_name or f"{chef.first_name} {chef.last_name}"}
+    )
+    db.add(log)
+    db.commit()
+
     return {"message": "Chef application rejected", "chef_id": str(chef.id)}
 
 
@@ -171,9 +193,20 @@ async def suspend_chef(
     chef.verification_status = "suspended"
     chef.is_active = False
     chef.is_available = False
-    
+
     db.commit()
-    
+
+    from app.models.admin import AdminActivityLog
+    log = AdminActivityLog(
+        admin_id=UUID(current_admin["admin_id"]),
+        action="chef_suspended",
+        entity_type="chef",
+        entity_id=chef.id,
+        details={"chef_name": chef.chef_name or f"{chef.first_name} {chef.last_name}"}
+    )
+    db.add(log)
+    db.commit()
+
     return {"message": "Chef suspended successfully", "chef_id": str(chef.id)}
 
 
@@ -189,9 +222,20 @@ async def activate_chef(
         raise HTTPException(status_code=404, detail="Chef not found")
     
     chef.is_active = True
-    
+
     db.commit()
-    
+
+    from app.models.admin import AdminActivityLog
+    log = AdminActivityLog(
+        admin_id=UUID(current_admin["admin_id"]),
+        action="chef_activated",
+        entity_type="chef",
+        entity_id=chef.id,
+        details={"chef_name": chef.chef_name or f"{chef.first_name} {chef.last_name}"}
+    )
+    db.add(log)
+    db.commit()
+
     return {"message": "Chef activated successfully", "chef_id": str(chef.id)}
 
 
