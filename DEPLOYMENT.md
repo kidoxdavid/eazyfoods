@@ -58,8 +58,8 @@ Good free tiers, minimal setup. You get URLs like:
 5. Deploy. Note the backend URL (e.g. `https://eazyfoods-api.onrender.com`).
 
 **CORS:** Set `CORS_ORIGINS` to your live frontend URLs, comma-separated (no spaces), e.g.  
-`https://eazyfoods-customer.vercel.app,https://eazyfoods-vendor.vercel.app`  
-The app accepts this as a single env var and will allow those origins. Do not use `*` in production.
+`https://eazyfoods.ca,https://vendor.eazyfoods.ca,https://admin.eazyfoods.ca,https://customer.eazyfoods.ca`  
+The app accepts this as a single env var and will allow those origins. **Must include `https://eazyfoods.ca`** for customer Google sign-in. Use `*` to allow all (not recommended for production).
 
 ### 3. Frontends on Vercel
 
