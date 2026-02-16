@@ -31,11 +31,11 @@ class CategoryResponse(BaseModel):
 @router.get("", response_model=List[dict])
 @router.get("/", response_model=List[dict])
 async def get_categories(
-    include_inactive: bool = False,
+    include_inactive: bool = True,
     current_admin: dict = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    """Get all categories for admin management"""
+    """Get all categories for admin management. Defaults to including inactive so admin always sees full list."""
     query = db.query(Category).order_by(Category.name)
     if not include_inactive:
         query = query.filter(Category.is_active == True)
