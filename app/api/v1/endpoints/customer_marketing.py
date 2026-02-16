@@ -149,14 +149,20 @@ async def get_active_ads(
                 print(f"DEBUG: Error tracking impression for ad {ad.id}: {e}")
                 db.rollback()
             
+            # Normalize image/video URLs so relative paths always start with / for frontend resolution
+            def _normalize_media_url(u):
+                u = resolve_upload_url(u) or u
+                if isinstance(u, str) and u and not u.startswith("http") and not u.startswith("/"):
+                    u = f"/{u}"
+                return u
             result.append({
                 "id": str(ad.id),
                 "name": ad.name,
                 "ad_type": ad.ad_type,
                 "title": ad.title,
                 "description": ad.description,
-                "image_url": resolve_upload_url(ad.image_url) or ad.image_url,
-                "video_url": resolve_upload_url(ad.video_url) or ad.video_url,
+                "image_url": _normalize_media_url(ad.image_url),
+                "video_url": _normalize_media_url(ad.video_url),
                 "cta_text": ad.cta_text,
                 "cta_link": ad.cta_link,
                 "design_data": ad.design_data,

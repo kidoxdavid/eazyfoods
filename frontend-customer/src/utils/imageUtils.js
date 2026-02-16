@@ -1,11 +1,21 @@
 /**
- * Get API origin when VITE_API_BASE_URL is an absolute URL (production).
+ * Get API origin for building absolute image URLs.
+ * Uses the same sources as the API client so ad/product images load when the app
+ * points to a remote API (e.g. customer app on Vercel, API on Render).
  * E.g. https://eazyfoods-api.onrender.com/api/v1 -> https://eazyfoods-api.onrender.com
  */
 const getApiOrigin = () => {
-  const base = import.meta.env.VITE_API_BASE_URL
+  let base = ''
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('API_BASE_URL')
+    if (stored && (stored.startsWith('http://') || stored.startsWith('https://'))) base = stored
+    else if (window.API_BASE_URL && (window.API_BASE_URL.startsWith('http://') || window.API_BASE_URL.startsWith('https://'))) base = window.API_BASE_URL
+  }
+  if (!base && import.meta.env.VITE_API_BASE_URL) {
+    const envUrl = import.meta.env.VITE_API_BASE_URL
+    if (typeof envUrl === 'string' && (envUrl.startsWith('http://') || envUrl.startsWith('https://'))) base = envUrl
+  }
   if (!base || typeof base !== 'string') return ''
-  if (!base.startsWith('http://') && !base.startsWith('https://')) return ''
   try {
     const u = new URL(base)
     return u.origin
