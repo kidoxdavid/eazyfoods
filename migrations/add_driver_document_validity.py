@@ -1,8 +1,20 @@
 """
 Migration: Add document validity columns to drivers table
+Run from project root: python migrations/add_driver_document_validity.py
+Uses DATABASE_URL from environment (no app import needed).
 """
-from app.core.database import engine
-from sqlalchemy import text
+import os
+from sqlalchemy import create_engine, text
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    print("Error: DATABASE_URL not set")
+    exit(1)
+# Render uses postgres:// but SQLAlchemy expects postgresql://
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+engine = create_engine(DATABASE_URL)
 
 
 def migrate():
