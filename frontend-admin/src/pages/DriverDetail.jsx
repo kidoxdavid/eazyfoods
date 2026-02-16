@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { ArrowLeft, CheckCircle, XCircle, Truck, MapPin, Phone, Mail, DollarSign, Package } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, Truck, MapPin, Phone, Mail, DollarSign, Package, FileText, ExternalLink } from 'lucide-react'
+
+// Resolve relative upload URLs to full API URL (for viewing documents)
+const resolveDocUrl = (url) => {
+  if (!url) return null
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  const base = api.defaults.baseURL || ''
+  const origin = base.replace(/\/api\/v1\/?$/, '')
+  return origin ? `${origin}${url.startsWith('/') ? url : `/${url}`}` : url
+}
 
 const DriverDetail = () => {
   const { id } = useParams()
@@ -120,6 +129,64 @@ const DriverDetail = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Documents for Verification */}
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Documents for Verification
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="text-sm font-medium text-gray-700 mb-1">Driver Licence</div>
+                {driver.driver_license_url ? (
+                  <>
+                    <a href={resolveDocUrl(driver.driver_license_url)} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                      View document <ExternalLink className="h-4 w-4" />
+                    </a>
+                    {driver.driver_license_validity && (
+                      <p className="text-xs text-gray-500 mt-1">Valid until: {new Date(driver.driver_license_validity).toLocaleDateString()}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">Not uploaded</p>
+                )}
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="text-sm font-medium text-gray-700 mb-1">Vehicle Registration</div>
+                {driver.vehicle_registration_url ? (
+                  <>
+                    <a href={resolveDocUrl(driver.vehicle_registration_url)} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                      View document <ExternalLink className="h-4 w-4" />
+                    </a>
+                    {driver.vehicle_registration_validity && (
+                      <p className="text-xs text-gray-500 mt-1">Valid until: {new Date(driver.vehicle_registration_validity).toLocaleDateString()}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">Not uploaded</p>
+                )}
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="text-sm font-medium text-gray-700 mb-1">Insurance</div>
+                {driver.insurance_document_url ? (
+                  <>
+                    <a href={resolveDocUrl(driver.insurance_document_url)} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                      View document <ExternalLink className="h-4 w-4" />
+                    </a>
+                    {driver.insurance_validity && (
+                      <p className="text-xs text-gray-500 mt-1">Valid until: {new Date(driver.insurance_validity).toLocaleDateString()}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">Not uploaded</p>
+                )}
+              </div>
+            </div>
+            {!driver.driver_license_url && !driver.vehicle_registration_url && !driver.insurance_document_url && (
+              <p className="text-sm text-gray-500 mt-2">No documents submitted yet.</p>
+            )}
           </div>
 
           {/* Vehicle Information */}
