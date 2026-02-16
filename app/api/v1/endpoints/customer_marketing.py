@@ -8,6 +8,7 @@ from typing import List, Optional
 from datetime import datetime
 from uuid import UUID
 from app.core.database import get_db
+from app.core.config import resolve_upload_url
 from app.models.marketing import Ad
 from app.models.vendor import Vendor
 from app.models.store import Store
@@ -154,8 +155,8 @@ async def get_active_ads(
                 "ad_type": ad.ad_type,
                 "title": ad.title,
                 "description": ad.description,
-                "image_url": ad.image_url,
-                "video_url": ad.video_url,
+                "image_url": resolve_upload_url(ad.image_url) or ad.image_url,
+                "video_url": resolve_upload_url(ad.video_url) or ad.video_url,
                 "cta_text": ad.cta_text,
                 "cta_link": ad.cta_link,
                 "design_data": ad.design_data,

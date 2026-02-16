@@ -50,7 +50,10 @@ export const resolveImageUrl = (url, type) => {
       const match = str.match(new RegExp(`${prefix.replace(/\//g, '\\/')}\\/?([^/]+)$`))
       return match ? match[1] : str
     }
-    if (urlStr.includes('ad') || urlStr.includes('ads') || urlStr.includes('banner')) {
+    // Paths that already contain uploads/ (e.g. from chef ad uploads: "api/v1/uploads/chefs/xxx" or "uploads/chefs/xxx")
+    if (urlStr.includes('/uploads/') || urlStr.startsWith('uploads/')) {
+      path = path.startsWith('/api/v1') ? path : `/api/v1/${path.replace(/^\/?api\/v1\/?/, '')}`
+    } else if (urlStr.includes('ad') || urlStr.includes('ads') || urlStr.includes('banner')) {
       path = `/api/v1/uploads/ads/${getFilename(path, 'ads')}`
     } else if (urlStr.startsWith('recipes/') || /\/recipes\//.test(urlStr) || type === 'recipe') {
       const filename = path.replace(/^recipes\//, '').replace(/^.*\/recipes\//, '')

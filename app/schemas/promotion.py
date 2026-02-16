@@ -15,7 +15,8 @@ class PromotionCreate(BaseModel):
     discount_value: Optional[Decimal] = None
     minimum_order_amount: Optional[Decimal] = None
     applies_to_all_products: bool = False
-    product_ids: Optional[List[str]] = None
+    product_ids: Optional[List[str]] = None  # vendor promotions
+    cuisine_ids: Optional[List[str]] = None   # chef promotions
     requires_approval: bool = False
     start_date: datetime
     end_date: datetime
@@ -34,6 +35,7 @@ class PromotionUpdate(BaseModel):
     minimum_order_amount: Optional[Decimal] = None
     applies_to_all_products: Optional[bool] = None
     product_ids: Optional[List[str]] = None
+    cuisine_ids: Optional[List[str]] = None
     is_active: Optional[bool] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
