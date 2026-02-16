@@ -95,10 +95,48 @@ async def customer_login(
 
 
 @router.post("/google", response_model=dict)
-async def customer_google(body: GoogleTokenBody):
-    """Google sign-in disabled temporarily."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Google sign-in is temporarily disabled. Please use email and password.",
+async def customer_google(
+    body: GoogleTokenBody,
+    db: Session = Depends(get_db),
+):
+    """Sign in or sign up with Google (customer portal only)."""
+    from app.core.google_auth import verify_google_id_token
+
+    payload = await verify_google_id_token(body.id_token)
+    if not payload or not payload.get("email"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Google token. Please try again.",
+        )
+
+    email = payload["email"]
+    parts = (payload.get("name") or "").strip().split(None, 1)
+    first_name = payload.get("given_name") or (parts[0] if parts else "User")
+    last_name = payload.get("family_name") or (parts[1] if len(parts) > 1 else "")
+
+    customer = db.query(Customer).filter(Customer.email == email).first()
+    if not customer:
+        customer = Customer(
+            email=email,
+            password_hash=None,
+            first_name=(first_name or "User").strip() or "User",
+            last_name=(last_name or "").strip() or ".",
+            phone=None,
+            is_email_verified=True,
+        )
+        db.add(customer)
+        db.commit()
+        db.refresh(customer)
+
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": customer.email, "customer_id": str(customer.id)},
+        expires_delta=access_token_expires,
     )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "customer_id": str(customer.id),
+    }
 
