@@ -6,27 +6,31 @@ import { CATEGORY_ICONS } from '../data/categoryIcons'
 const Categories = () => {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({ name: '', description: '', image_url: '' })
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    fetchCategories()
-  }, [])
-
   const fetchCategories = async () => {
     setLoading(true)
+    setLoadError(null)
     try {
-      const response = await api.get('/admin/vendors/categories')
-      setCategories(Array.isArray(response.data) ? response.data : [])
+      const response = await api.get('/admin/vendors/categories', { params: { include_inactive: true } })
+      const list = Array.isArray(response.data) ? response.data : []
+      setCategories(list)
     } catch (err) {
       console.error('Failed to fetch categories:', err)
+      setLoadError(err.response?.data?.detail || err.message || 'Failed to load categories')
       setCategories([])
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchCategories()
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -52,9 +56,9 @@ const Categories = () => {
           return next
         })
       }
-      // Refetch in background to stay in sync (don't set loading so list stays visible)
-      const res = await api.get('/admin/vendors/categories')
-      if (Array.isArray(res.data) && res.data.length > 0) {
+      // Refetch to show full list from server
+      const res = await api.get('/admin/vendors/categories', { params: { include_inactive: true } })
+      if (Array.isArray(res.data)) {
         setCategories(res.data)
       }
     } catch (err) {
@@ -64,7 +68,7 @@ const Categories = () => {
     }
   }
 
-  if (loading) {
+  if (loading && categories.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-12 w-12 animate-spin text-primary-600" />
@@ -74,6 +78,18 @@ const Categories = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {loadError && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 flex items-center justify-between gap-3">
+          <p className="text-sm text-amber-800">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => fetchCategories()}
+            className="shrink-0 px-3 py-1.5 text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-lg transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Categories</h1>
@@ -157,6 +173,19 @@ const Categories = () => {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {loadError && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between">
+          <p className="text-amber-800 text-sm">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => fetchCategories()}
+            className="px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm"
+          >
+            Retry
+          </button>
         </div>
       )}
 

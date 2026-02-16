@@ -2,6 +2,25 @@ import { useEffect, useState } from 'react'
 import api from '../services/api'
 import { Plus, Edit, Trash2, MapPin, Clock, CheckCircle, XCircle, Star } from 'lucide-react'
 
+const STORE_TIMEZONES = [
+  { value: 'UTC', label: 'UTC (GMT)' },
+  { value: 'America/New_York', label: 'Eastern Time (US & Canada)' },
+  { value: 'America/Chicago', label: 'Central Time (US & Canada)' },
+  { value: 'America/Denver', label: 'Mountain Time (US)' },
+  { value: 'America/Phoenix', label: 'Mountain Time - Arizona (no DST)' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time (US & Canada)' },
+  { value: 'America/Edmonton', label: 'Mountain Time (Canada)' },
+  { value: 'America/Toronto', label: 'Eastern Time (Canada)' },
+  { value: 'America/Vancouver', label: 'Pacific Time (Canada)' },
+  { value: 'America/Winnipeg', label: 'Central Time (Canada)' },
+  { value: 'America/St_Johns', label: 'Newfoundland Time' },
+  { value: 'Europe/London', label: 'GMT (UK)' },
+  { value: 'Europe/Paris', label: 'Central European Time' },
+  { value: 'Africa/Lagos', label: 'West Africa Time' },
+  { value: 'Asia/Dubai', label: 'Gulf Standard Time' },
+  { value: 'Asia/Kolkata', label: 'India Standard Time' },
+]
+
 const Stores = () => {
   const [stores, setStores] = useState([])
   const [loading, setLoading] = useState(true)
@@ -221,6 +240,7 @@ const StoreModal = ({ store, onClose, onSuccess }) => {
     minimum_order_amount: store?.minimum_order_amount || 0.00,
     estimated_prep_time_minutes: store?.estimated_prep_time_minutes || 30,
     is_primary: store?.is_primary || false,
+    timezone: store?.timezone || 'UTC',
     operating_hours: store?.operating_hours || {
       monday: { open: '09:00', close: '17:00', closed: false },
       tuesday: { open: '09:00', close: '17:00', closed: false },
@@ -419,6 +439,20 @@ const StoreModal = ({ store, onClose, onSuccess }) => {
               />
               <span className="ml-2 text-xs sm:text-sm text-gray-700">Primary Store</span>
             </label>
+          </div>
+
+          <div>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Operating hours time zone</label>
+            <select
+              value={formData.timezone}
+              onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
+              className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            >
+              {STORE_TIMEZONES.map((tz) => (
+                <option key={tz.value} value={tz.value}>{tz.label}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Used for your store&apos;s opening and closing times.</p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 pt-3 sm:pt-4">

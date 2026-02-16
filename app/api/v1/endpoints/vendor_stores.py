@@ -30,6 +30,7 @@ class StoreCreate(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     operating_hours: Optional[dict] = None
+    timezone: str = "UTC"
     pickup_available: bool = True
     delivery_available: bool = True
     delivery_radius_km: float = 5.0
@@ -54,6 +55,7 @@ class StoreUpdate(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
     operating_hours: Optional[dict] = None
+    timezone: Optional[str] = None
     pickup_available: Optional[bool] = None
     delivery_available: Optional[bool] = None
     delivery_radius_km: Optional[float] = None
@@ -94,6 +96,7 @@ async def get_stores(
             "phone": s.phone,
             "email": s.email,
             "operating_hours": s.operating_hours,
+            "timezone": s.timezone or "UTC",
             "pickup_available": s.pickup_available,
             "delivery_available": s.delivery_available,
             "delivery_radius_km": float(s.delivery_radius_km) if s.delivery_radius_km else None,
@@ -144,6 +147,7 @@ async def get_store(
         "phone": store.phone,
         "email": store.email,
         "operating_hours": store.operating_hours,
+        "timezone": store.timezone or "UTC",
         "pickup_available": store.pickup_available,
         "delivery_available": store.delivery_available,
         "delivery_radius_km": float(store.delivery_radius_km) if store.delivery_radius_km else None,
@@ -188,6 +192,7 @@ async def create_store(
         phone=store_data.phone,
         email=store_data.email,
         operating_hours=store_data.operating_hours,
+        timezone=store_data.timezone or "UTC",
         pickup_available=store_data.pickup_available,
         delivery_available=store_data.delivery_available,
         delivery_radius_km=Decimal(str(store_data.delivery_radius_km)),
@@ -254,6 +259,8 @@ async def update_store(
         store.email = store_data.email
     if store_data.operating_hours is not None:
         store.operating_hours = store_data.operating_hours
+    if store_data.timezone is not None:
+        store.timezone = store_data.timezone
     if store_data.pickup_available is not None:
         store.pickup_available = store_data.pickup_available
     if store_data.delivery_available is not None:
