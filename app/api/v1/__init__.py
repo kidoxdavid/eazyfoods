@@ -74,8 +74,9 @@ api_router.include_router(customer_chefs.router, prefix="/customer", tags=["Cust
 # Admin endpoints
 api_router.include_router(admin_auth.router, prefix="/admin/auth", tags=["Admin Auth"])
 api_router.include_router(admin_dashboard.router, prefix="/admin/dashboard", tags=["Admin Dashboard"])
-api_router.include_router(admin_vendors.router, prefix="/admin/vendors", tags=["Admin Vendors"])
+# Register categories before vendors so GET /admin/vendors/categories hits categories, not vendors/{vendor_id}
 api_router.include_router(admin_categories.router, prefix="/admin/vendors/categories", tags=["Admin Categories"])
+api_router.include_router(admin_vendors.router, prefix="/admin/vendors", tags=["Admin Vendors"])
 api_router.include_router(admin_customers.router, prefix="/admin/customers", tags=["Admin Customers"])
 api_router.include_router(admin_products.router, prefix="/admin/products", tags=["Admin Products"])
 api_router.include_router(admin_orders.router, prefix="/admin/orders", tags=["Admin Orders"])
