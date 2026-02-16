@@ -465,63 +465,46 @@ const Home = () => {
                 <div className={`${categories.length > 5 ? 'overflow-y-auto max-h-[420px] pr-2 custom-scrollbar' : 'space-y-3'}`}>
                   <div className="space-y-3">
                   {categories.map((category) => {
-                    // Map category names to appropriate icons with better 3D styling
-                    const getCategoryIcon = (categoryName) => {
-                      const name = categoryName?.toLowerCase() || ''
-                      if (name.includes('fruit') || name.includes('produce')) return { Icon: Apple, color: 'from-red-400 to-red-600', shadow: 'shadow-red-200' }
-                      if (name.includes('meat') || name.includes('protein') || name.includes('chicken') || name.includes('beef') || name.includes('poultry')) return { Icon: Drumstick, color: 'from-rose-400 to-rose-600', shadow: 'shadow-rose-200' }
-                      if (name.includes('fish') || name.includes('seafood')) return { Icon: Fish, color: 'from-blue-400 to-blue-600', shadow: 'shadow-blue-200' }
-                      if (name.includes('dairy') || name.includes('milk') || name.includes('cheese')) return { Icon: Milk, color: 'from-cyan-400 to-cyan-600', shadow: 'shadow-cyan-200' }
-                      if (name.includes('grain') || name.includes('rice') || name.includes('flour') || name.includes('wheat') || name.includes('cereal')) return { Icon: Wheat, color: 'from-amber-400 to-amber-600', shadow: 'shadow-amber-200' }
-                      if (name.includes('beverage') || name.includes('drink') || name.includes('juice') || name.includes('coffee') || name.includes('tea') || name.includes('soda')) return { Icon: Wine, color: 'from-emerald-400 to-emerald-600', shadow: 'shadow-emerald-200' }
-                      if (name.includes('snack') || name.includes('cookie') || name.includes('cracker') || name.includes('chips') || name.includes('nuts')) return { Icon: Candy, color: 'from-pink-400 to-pink-600', shadow: 'shadow-pink-200' }
-                      if (name.includes('spice') || name.includes('seasoning') || name.includes('herb') || name.includes('pepper')) return { Icon: Flame, color: 'from-orange-400 to-orange-600', shadow: 'shadow-orange-200' }
-                      if (name.includes('vegetable') || name.includes('veggie')) return { Icon: Carrot, color: 'from-orange-400 to-orange-600', shadow: 'shadow-orange-200' }
-                      if (name.includes('meal') || name.includes('food') || name.includes('dish') || name.includes('prepared')) return { Icon: ChefHat, color: 'from-purple-400 to-purple-600', shadow: 'shadow-purple-200' }
-                      if (name.includes('frozen') || name.includes('ice')) return { Icon: IceCream, color: 'from-sky-400 to-sky-600', shadow: 'shadow-sky-200' }
-                      if (name.includes('bakery') || name.includes('bread')) return { Icon: Cookie, color: 'from-yellow-400 to-yellow-600', shadow: 'shadow-yellow-200' }
-                      return { Icon: ShoppingBag, color: 'from-nude-400 to-nude-600', shadow: 'shadow-nude-200' } // Default icon
+                    // Solid colored boxes + white outline icons per category
+                    const getCategoryStyle = (categoryName) => {
+                      const name = (categoryName?.toLowerCase() || '') + (category.slug?.toLowerCase() || '')
+                      if (name.includes('fruit') || name.includes('produce')) return { Icon: Apple, bg: 'bg-red-500' }
+                      if (name.includes('meat') || name.includes('protein') || name.includes('chicken') || name.includes('beef') || name.includes('poultry')) return { Icon: Drumstick, bg: 'bg-rose-500' }
+                      if (name.includes('fish') || name.includes('seafood')) return { Icon: Fish, bg: 'bg-blue-500' }
+                      if (name.includes('dairy') || name.includes('milk') || name.includes('cheese')) return { Icon: Milk, bg: 'bg-cyan-500' }
+                      if (name.includes('grain') || name.includes('rice') || name.includes('flour') || name.includes('wheat') || name.includes('cereal')) return { Icon: Wheat, bg: 'bg-amber-500' }
+                      if (name.includes('beverage') || name.includes('drink') || name.includes('juice') || name.includes('coffee') || name.includes('tea') || name.includes('soda')) return { Icon: Wine, bg: 'bg-emerald-500' }
+                      if (name.includes('snack') || name.includes('cookie') || name.includes('cracker') || name.includes('chips') || name.includes('nuts')) return { Icon: Candy, bg: 'bg-pink-500' }
+                      if (name.includes('spice') || name.includes('seasoning') || name.includes('herb') || name.includes('pepper')) return { Icon: Flame, bg: 'bg-orange-500' }
+                      if (name.includes('vegetable') || name.includes('veggie')) return { Icon: Carrot, bg: 'bg-orange-500' }
+                      if (name.includes('meal') || name.includes('food') || name.includes('dish') || name.includes('prepared')) return { Icon: ChefHat, bg: 'bg-purple-500' }
+                      if (name.includes('frozen') || name.includes('ice')) return { Icon: IceCream, bg: 'bg-sky-500' }
+                      if (name.includes('bakery') || name.includes('bread')) return { Icon: Cookie, bg: 'bg-yellow-500' }
+                      return { Icon: ShoppingBag, bg: 'bg-gray-500' }
                     }
-                    const { Icon: CategoryIcon, color, shadow } = getCategoryIcon(category.name)
+                    const { Icon: CategoryIcon, bg } = getCategoryStyle(category.name)
+                    const useEmoji = category.image_url && !category.image_url.startsWith('http')
                     
                     return (
                       <Link
                         key={category.id}
                         to={`/groceries?category_id=${category.id}`}
-                        className="group relative flex items-center p-4 bg-white rounded-xl border border-gray-200 hover:border-emerald-300 hover:shadow-lg transition-all duration-300 gap-4 overflow-hidden h-20"
+                        className="group flex items-center p-4 bg-white rounded-xl border border-gray-200 hover:border-emerald-300 hover:shadow-lg transition-all duration-300 gap-4"
                       >
-                        {/* Animated background gradient on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-50/0 via-emerald-50/0 to-emerald-50/0 group-hover:from-emerald-50 group-hover:via-white group-hover:to-emerald-50 transition-all duration-300"></div>
-                        {/* Icon on the left - modern design */}
-                        <div className="relative flex-shrink-0 z-10">
-                          <div 
-                            className={`w-14 h-14 bg-gradient-to-br ${color} rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300`}
-                          >
-                            {category.image_url ? (
-                              <img
-                                src={resolveImageUrl(category.image_url)}
-                                alt={category.name}
-                                className="w-full h-full object-cover rounded-lg"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <CategoryIcon className="h-7 w-7 text-white" />
-                            )}
-                          </div>
-                        </div>
-                        {/* Category name beside icon */}
-                        <div className="flex-1 min-w-0 relative z-10">
-                          <h3 className="text-base font-semibold text-gray-900 truncate group-hover:text-emerald-600 transition-colors">{category.name}</h3>
-                          {category.description && (
-                            <p className="text-sm text-gray-500 truncate mt-1">{category.description}</p>
+                        <div className={`flex-shrink-0 w-14 h-14 ${bg} rounded-xl flex items-center justify-center`}>
+                          {useEmoji ? (
+                            <span className="text-2xl" aria-hidden>{category.image_url}</span>
+                          ) : (
+                            <CategoryIcon className="h-7 w-7 text-white" strokeWidth={2} />
                           )}
                         </div>
-                        {/* Arrow indicator */}
-                        <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300 z-10">
-                          <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
-                            <span className="text-emerald-600 text-xs">→</span>
-                          </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base font-semibold text-gray-900 truncate group-hover:text-emerald-600 transition-colors">{category.name}</h3>
+                          {category.description && (
+                            <p className="text-sm text-gray-500 truncate mt-0.5">{category.description}</p>
+                          )}
                         </div>
+                        <span className="flex-shrink-0 text-gray-400 group-hover:text-emerald-500 transition-colors">→</span>
                       </Link>
                     )
                   })}

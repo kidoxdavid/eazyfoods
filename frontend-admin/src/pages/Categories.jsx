@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
 import { Plus, Tag, Loader2 } from 'lucide-react'
+import { CATEGORY_ICONS } from '../data/categoryIcons'
 
 const Categories = () => {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [formData, setFormData] = useState({ name: '', description: '' })
+  const [formData, setFormData] = useState({ name: '', description: '', image_url: '' })
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -39,8 +40,9 @@ const Categories = () => {
       await api.post('/admin/vendors/categories', {
         name: formData.name.trim(),
         description: formData.description?.trim() || null,
+        image_url: formData.image_url?.trim() || null,
       })
-      setFormData({ name: '', description: '' })
+      setFormData({ name: '', description: '', image_url: '' })
       setShowAddForm(false)
       fetchCategories()
     } catch (err) {
@@ -104,6 +106,27 @@ const Categories = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Icon (optional)</label>
+              <div className="flex flex-wrap gap-2">
+                {CATEGORY_ICONS.map(({ emoji, label }) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, image_url: emoji })}
+                    title={label}
+                    className={`w-10 h-10 rounded-lg border-2 text-xl flex items-center justify-center transition-colors ${
+                      formData.image_url === emoji
+                        ? 'border-primary-600 bg-primary-50'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Click an icon to use it for this category. It will show on the customer site.</p>
+            </div>
             <div className="flex gap-2">
               <button
                 type="submit"
@@ -115,7 +138,7 @@ const Categories = () => {
               </button>
               <button
                 type="button"
-                onClick={() => { setShowAddForm(false); setError(''); setFormData({ name: '', description: '' }) }}
+                onClick={() => { setShowAddForm(false); setError(''); setFormData({ name: '', description: '', image_url: '' }) }}
                 className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
               >
                 Cancel
@@ -148,7 +171,11 @@ const Categories = () => {
                   <tr key={cat.id} className="hover:bg-gray-50">
                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4 text-gray-400" />
+                        {cat.image_url ? (
+                          <span className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-lg" title="Category icon">{cat.image_url}</span>
+                        ) : (
+                          <Tag className="h-4 w-4 text-gray-400" />
+                        )}
                         <span className="font-medium text-gray-900">{cat.name}</span>
                       </div>
                     </td>

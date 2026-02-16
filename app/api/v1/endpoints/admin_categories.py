@@ -17,6 +17,7 @@ class CategoryCreate(BaseModel):
     name: str
     description: str | None = None
     slug: str | None = None
+    image_url: str | None = None  # emoji or icon id for category icon
 
 
 class CategoryResponse(BaseModel):
@@ -77,6 +78,7 @@ async def create_category(
         name=data.name,
         slug=slug,
         description=data.description or None,
+        image_url=data.image_url or None,
         is_active=True,
     )
     db.add(category)
@@ -87,5 +89,6 @@ async def create_category(
         "name": category.name,
         "slug": category.slug,
         "description": category.description or "",
+        "image_url": category.image_url,
         "is_active": category.is_active,
     }

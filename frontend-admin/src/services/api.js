@@ -3,29 +3,15 @@ import axios from 'axios'
 // Allow overriding API URL via environment variable or localStorage
 // For sharing/testing: Set window.API_BASE_URL or localStorage.setItem('API_BASE_URL', 'https://your-ngrok-url.ngrok.io/api/v1')
 const getApiBaseURL = () => {
-  // Check localStorage first (for easy testing)
   const stored = localStorage.getItem('API_BASE_URL')
-  if (stored) {
-    console.log('[API] Using localStorage API_BASE_URL:', stored)
-    return stored
+  if (stored) return stored
+  if (window.API_BASE_URL) return window.API_BASE_URL
+  if (import.meta.env.VITE_API_BASE_URL) return import.meta.env.VITE_API_BASE_URL
+  if (typeof window !== 'undefined') {
+    const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    if (isProd) return 'https://eazyfoods-api.onrender.com/api/v1'
   }
-  
-  // Check window variable (for runtime override)
-  if (window.API_BASE_URL) {
-    console.log('[API] Using window.API_BASE_URL:', window.API_BASE_URL)
-    return window.API_BASE_URL
-  }
-  
-  // Check environment variable (for build-time)
-  if (import.meta.env.VITE_API_BASE_URL) {
-    console.log('[API] Using VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
-    return import.meta.env.VITE_API_BASE_URL
-  }
-  
-  // Default: use proxy (for local development)
-  const defaultURL = '/api/v1'
-  console.log('[API] Using default proxy URL:', defaultURL)
-  return defaultURL
+  return '/api/v1'
 }
 
 // Get the base URL and log it
