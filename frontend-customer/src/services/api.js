@@ -56,6 +56,10 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  // FormData must not have Content-Type set - browser sets multipart/form-data with boundary
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type']
+  }
   
   // Log request for debugging
   console.log('[API Request]', {

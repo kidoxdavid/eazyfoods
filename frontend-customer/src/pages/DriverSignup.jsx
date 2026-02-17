@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { Truck, Mail, Lock, User, Phone, MapPin, Car, Eye, EyeOff } from 'lucide-react'
+import { Truck, Mail, Lock, User, Phone, MapPin, Car, Eye, EyeOff, FileText } from 'lucide-react'
 import { vehicleModels } from '../utils/vehicleModels'
 
 // Calgary Delivery Zones with neighborhoods
@@ -124,8 +124,23 @@ const DriverSignup = () => {
     vehicle_color: '',
     license_plate: '',
     driver_license_number: '',
-    delivery_zone: ''
+    delivery_zone: '',
+    driver_license_validity: '',
+    vehicle_registration_validity: '',
+    insurance_validity: ''
   })
+  const [docFiles, setDocFiles] = useState({
+    driver_license: null,
+    vehicle_registration: null,
+    insurance: null
+  })
+
+  const uploadDocument = async (file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await api.post('/uploads/driver-documents', fd)
+    return res.data?.url
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -133,6 +148,22 @@ const DriverSignup = () => {
     setLoading(true)
 
     try {
+      // Upload documents first
+      if (!docFiles.driver_license || !docFiles.vehicle_registration || !docFiles.insurance) {
+        throw new Error('Please upload driver licence, insurance, and vehicle registration documents.')
+      }
+      if (!formData.driver_license_validity || !formData.vehicle_registration_validity || !formData.insurance_validity) {
+        throw new Error('Please enter validity dates for all documents.')
+      }
+      const [licenceUrl, regUrl, insUrl] = await Promise.all([
+        uploadDocument(docFiles.driver_license),
+        uploadDocument(docFiles.vehicle_registration),
+        uploadDocument(docFiles.insurance)
+      ])
+      if (!licenceUrl || !regUrl || !insUrl) {
+        throw new Error('Failed to upload one or more documents. Please try again.')
+      }
+
       // Clean up form data - remove empty strings for optional fields
       const cleanedData = {
         ...formData,
@@ -155,6 +186,13 @@ const DriverSignup = () => {
       if (formData.delivery_zone) {
         cleanedData.preferred_delivery_zones = [formData.delivery_zone]
       }
+
+      cleanedData.driver_license_url = licenceUrl
+      cleanedData.driver_license_validity = formData.driver_license_validity
+      cleanedData.vehicle_registration_url = regUrl
+      cleanedData.vehicle_registration_validity = formData.vehicle_registration_validity
+      cleanedData.insurance_document_url = insUrl
+      cleanedData.insurance_validity = formData.insurance_validity
       
       const response = await api.post('/driver/auth/signup', cleanedData)
       alert('Driver application submitted successfully! You will be notified once your application is reviewed.')
@@ -485,10 +523,71 @@ const DriverSignup = () => {
               </div>
             </div>
 
+            {/* Documents - Required */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Required Documents
+              </h2>
+              <p className="text-sm text-gray-600 mb-4">Upload driver licence, insurance, and vehicle registration. Accepts PDF or images (max 5MB each).</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Driver Licence *</label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
+                    onChange={(e) => setDocFiles((prev) => ({ ...prev, driver_license: e.target.files?.[0] || null }))}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                  />
+                  <label className="block text-xs text-gray-600 mt-2">Validity / Expiry date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.driver_license_validity}
+                    onChange={(e) => setFormData({ ...formData, driver_license_validity: e.target.value })}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Registration *</label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
+                    onChange={(e) => setDocFiles((prev) => ({ ...prev, vehicle_registration: e.target.files?.[0] || null }))}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                  />
+                  <label className="block text-xs text-gray-600 mt-2">Validity / Expiry date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.vehicle_registration_validity}
+                    onChange={(e) => setFormData({ ...formData, vehicle_registration_validity: e.target.value })}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Insurance *</label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
+                    onChange={(e) => setDocFiles((prev) => ({ ...prev, insurance: e.target.files?.[0] || null }))}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                  />
+                  <label className="block text-xs text-gray-600 mt-2">Validity / Expiry date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.insurance_validity}
+                    onChange={(e) => setFormData({ ...formData, insurance_validity: e.target.value })}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> Your application will be reviewed by our team. You'll receive an email notification once your application is approved. 
-                You'll need to provide additional documents (driver's license, vehicle registration, insurance) after approval.
+                <strong>Note:</strong> Your application will be reviewed by our team. You'll receive an email notification once your application is approved.
               </p>
             </div>
 

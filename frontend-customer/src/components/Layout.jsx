@@ -110,6 +110,7 @@ const Layout = ({ children }) => {
   const navigationLinks = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Top Market Deals', href: '/top-market-deals', icon: Zap },
+    { name: 'Top Chef Deals', href: '/top-chef-deals', icon: ChefHat },
     { name: 'Local Markets', href: '/stores', icon: Store },
     { name: 'Groceries', href: '/groceries', icon: Package },
     { name: 'Meals', href: '/meals', icon: Utensils },
@@ -526,6 +527,7 @@ const Layout = ({ children }) => {
             '/contact': 'contact_bottom_banner',
             '/meals': 'meals_bottom_banner',
             '/top-market-deals': 'top_market_deals_bottom_banner',
+            '/top-chef-deals': 'top_chef_deals_bottom_banner',
             '/checkout': 'checkout_bottom_banner'
           }
           const placement = pathToPlacement[location.pathname] || (location.pathname.startsWith('/products') ? 'products_bottom_banner' : 'home_bottom_banner')
@@ -568,7 +570,7 @@ const Layout = ({ children }) => {
                 </div>
                 <div className="flex-shrink-0">
                   <a
-                    href="http://localhost:3004"
+                    href={(import.meta.env.VITE_DRIVER_SIGNUP_URL || import.meta.env.VITE_PORTAL_DELIVERY_URL || 'http://localhost:3004').trim()}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group relative inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white text-primary-600 rounded-xl font-bold text-base sm:text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"

@@ -8,6 +8,7 @@ from app.core.database import get_db
 from app.models.chef import Chef
 from app.schemas.chef import ChefResponse
 from sqlalchemy import func, or_
+
 from uuid import UUID
 
 router = APIRouter()
@@ -191,6 +192,140 @@ async def get_chef(
         "website_url": chef.website_url,
         "reviews": review_list
     }
+
+
+@router.get("/chef-cuisines-deals", response_model=dict)
+async def get_chef_cuisines_deals(
+    city: Optional[str] = Query(None),
+    cuisine_type: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    limit: int = Query(100, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """Get chef cuisines (dishes) that have active promotions - for Top Chef Deals page"""
+    from app.models.cuisine import Cuisine
+    from app.models.promotion import Promotion
+    from datetime import datetime
+    from app.core.config import resolve_upload_url
+
+    now = datetime.utcnow()
+    # Get active chef promotions
+    promo_query = db.query(Promotion).join(Chef, Promotion.chef_id == Chef.id).filter(
+        Promotion.is_active == True,
+        Promotion.start_date <= now,
+        Promotion.end_date >= now,
+        Promotion.chef_id.isnot(None),
+        Chef.verification_status == "verified",
+        Chef.is_active == True
+    )
+    if city and city.strip().lower() != "all":
+        promo_query = promo_query.filter(
+            Chef.city.isnot(None),
+            func.lower(Chef.city).ilike(f"%{city.strip().lower()}%")
+        )
+    promos = promo_query.all()
+
+    # Collect cuisine IDs from promotions (applies_to_all or cuisine_ids)
+    cuisine_ids = set()
+    chef_promo_map = {}  # cuisine_id -> [promos]
+    for p in promos:
+        if p.applies_to_all_products:
+            # Get all cuisines for this chef
+            cuisines = db.query(Cuisine.id).filter(
+                Cuisine.chef_id == p.chef_id,
+                Cuisine.status == "active"
+            ).all()
+            for c in cuisines:
+                cid = str(c.id)
+                cuisine_ids.add(cid)
+                if cid not in chef_promo_map:
+                    chef_promo_map[cid] = []
+                chef_promo_map[cid].append(p)
+        elif p.cuisine_ids:
+            for cid in p.cuisine_ids:
+                cid_str = str(cid)
+                cuisine_ids.add(cid_str)
+                if cid_str not in chef_promo_map:
+                    chef_promo_map[cid_str] = []
+                chef_promo_map[cid_str].append(p)
+
+    if not cuisine_ids:
+        return {"cuisines": [], "total": 0}
+
+    # Fetch cuisines
+    cuisine_objs = db.query(Cuisine).filter(
+        Cuisine.id.in_([UUID(cid) for cid in cuisine_ids]),
+        Cuisine.status == "active"
+    ).all()
+
+    # Build result with chef info
+    result = []
+    for c in cuisine_objs:
+        chef = db.query(Chef).filter(Chef.id == c.chef_id).first()
+        if not chef:
+            continue
+        promos_for_c = chef_promo_map.get(str(c.id), [])
+        if not promos_for_c:
+            continue
+
+        # Filter by cuisine_type
+        if cuisine_type and cuisine_type.strip():
+            ctype = (c.cuisine_type or "").lower()
+            if cuisine_type.strip().lower() not in ctype and cuisine_type.strip().lower() not in (c.name or "").lower():
+                continue
+
+        # Filter by search
+        if search and search.strip():
+            term = search.strip().lower()
+            if term not in (c.name or "").lower() and term not in (c.description or "").lower() and term not in (c.cuisine_type or "").lower():
+                if term not in (chef.chef_name or "").lower():
+                    continue
+
+        # Build promo list for this cuisine
+        promo_list = []
+        for promo in promos_for_c:
+            discount_display = ""
+            if promo.discount_type == "percentage" and promo.discount_value:
+                discount_display = f"{int(promo.discount_value)}% OFF"
+            elif promo.discount_type == "fixed_amount" and promo.discount_value:
+                discount_display = f"${float(promo.discount_value):.2f} OFF"
+            promo_list.append({
+                "id": str(promo.id),
+                "name": promo.name or "Special Offer",
+                "discount_type": promo.discount_type,
+                "discount_value": float(promo.discount_value) if promo.discount_value else None,
+                "discount_display": discount_display
+            })
+
+        price = float(c.price) if c.price else 0
+        # Apply first promo for display price
+        discounted_price = price
+        if promo_list and promo_list[0].get("discount_type") == "percentage" and promo_list[0].get("discount_value"):
+            discounted_price = price * (1 - promo_list[0]["discount_value"] / 100)
+        elif promo_list and promo_list[0].get("discount_type") == "fixed_amount" and promo_list[0].get("discount_value"):
+            discounted_price = max(0, price - promo_list[0]["discount_value"])
+
+        result.append({
+            "id": str(c.id),
+            "name": c.name,
+            "description": c.description,
+            "cuisine_type": c.cuisine_type,
+            "price": price,
+            "discounted_price": round(discounted_price, 2),
+            "image_url": resolve_upload_url(c.image_url),
+            "images": [resolve_upload_url(u) for u in (c.images or []) if u],
+            "serves": c.serves,
+            "chef_id": str(chef.id),
+            "chef_name": chef.chef_name or f"{chef.first_name} {chef.last_name}",
+            "chef_profile_image_url": chef.profile_image_url,
+            "promotions": promo_list,
+            "average_rating": float(chef.average_rating) if chef.average_rating else None,
+            "total_reviews": chef.total_reviews or 0
+        })
+
+    # Sort by discount
+    result.sort(key=lambda x: (x["price"] - x["discounted_price"]), reverse=True)
+    return {"cuisines": result[:limit], "total": len(result)}
 
 
 # Note: Review creation should be handled in customer_reviews.py with proper auth

@@ -12,6 +12,7 @@ const segmentNameMap = {
   'profile': { name: 'Profile', icon: User },
   'chefs': { name: 'Chefs', icon: ChefHat },
   'top-market-deals': { name: 'Top Market Deals', icon: TrendingUp },
+  'top-chef-deals': { name: 'Top Chef Deals', icon: ChefHat },
   'about': { name: 'About', icon: Info },
   'contact': { name: 'Contact Us', icon: Mail },
   'become-a-driver': { name: 'Become a Driver', icon: Truck }

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
-import { ShoppingCart, Star, TrendingUp, MapPin, Sparkles, AlertCircle, Eye, Heart, Tag, Calendar, Apple, Fish, Wheat, Beef, Milk, Coffee, Cookie, Cherry, Carrot, UtensilsCrossed, Package, ChefHat, IceCream, Candy, Soup, Drumstick, Grape, Banana, Nut, ShoppingBag, Wine, Flame, Zap } from 'lucide-react'
+import { ShoppingCart, Star, TrendingUp, MapPin, Sparkles, AlertCircle, Eye, Heart, Tag, Calendar, Apple, Fish, Wheat, Beef, Milk, Coffee, Cookie, Cherry, Carrot, UtensilsCrossed, Package, ChefHat, IceCream, Candy, Soup, Drumstick, Grape, Banana, Nut, ShoppingBag, Wine, Flame, Zap, Store } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
 import { useLocation } from '../contexts/LocationContext'
 import { useToast } from '../contexts/ToastContext'
@@ -642,36 +642,45 @@ const Home = () => {
               {promotions.length > 0 ? (
                 <div className={`${promotions.length > 5 ? 'overflow-y-auto max-h-[420px] pr-2 custom-scrollbar' : 'space-y-3'}`}>
                   <div className="space-y-3">
-                  {promotions.slice(0, 5).map((promo) => (
-                    <Link
-                      key={promo.id}
-                      to="/top-market-deals"
-                      className="group relative flex items-center p-4 bg-white rounded-xl border border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all duration-300 overflow-hidden h-20"
-                    >
-                      {/* Gradient background */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 via-white to-orange-50/30 group-hover:from-orange-100/70 group-hover:via-white group-hover:to-orange-100/50 transition-all duration-300"></div>
-                      
-                      <div className="relative z-10 flex items-center gap-3 w-full">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-orange-600 transition-colors mb-0.5">{promo.name}</h3>
-                          <p className="text-xs text-gray-600 truncate">{promo.description || 'Special offer available'}</p>
-                        </div>
-                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                          {promo.discount_display && (
-                            <span className="px-2.5 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded-lg shadow-md">
-                              {promo.discount_display}
-                            </span>
-                          )}
-                          {promo.end_date && (
-                            <div className="flex items-center text-xs text-gray-500">
-                              <Calendar className="h-3 w-3 mr-1" />
-                              <span>Ends {new Date(promo.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  {promotions.slice(0, 5).map((promo) => {
+                    const isChef = promo.source === 'chef'
+                    const offerLink = isChef ? '/top-chef-deals' : '/top-market-deals'
+                    return (
+                      <Link
+                        key={promo.id}
+                        to={offerLink}
+                        className="group relative flex items-center p-4 bg-white rounded-xl border border-orange-200 hover:border-orange-400 hover:shadow-lg transition-all duration-300 overflow-hidden h-20"
+                      >
+                        {/* Gradient background */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-orange-50/50 via-white to-orange-50/30 group-hover:from-orange-100/70 group-hover:via-white group-hover:to-orange-100/50 transition-all duration-300"></div>
+                        
+                        <div className="relative z-10 flex items-center gap-3 w-full">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-orange-600 transition-colors">{promo.name}</h3>
+                              <span className={`px-1.5 py-0.5 text-[10px] font-semibold rounded flex-shrink-0 ${isChef ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'}`}>
+                                {isChef ? 'Chef' : 'Vendor'}
+                              </span>
                             </div>
-                          )}
+                            <p className="text-xs text-gray-600 truncate">{promo.description || 'Special offer available'}</p>
+                          </div>
+                          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                            {promo.discount_display && (
+                              <span className="px-2.5 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded-lg shadow-md">
+                                {promo.discount_display}
+                              </span>
+                            )}
+                            {promo.end_date && (
+                              <div className="flex items-center text-xs text-gray-500">
+                                <Calendar className="h-3 w-3 mr-1" />
+                                <span>Ends {new Date(promo.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    )
+                  })}
                   </div>
                 </div>
               ) : (
@@ -711,6 +720,17 @@ const Home = () => {
                       <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30 group-hover:from-blue-100/70 group-hover:via-white group-hover:to-indigo-100/50 transition-all duration-300"></div>
                       
                       <div className="relative z-10 flex items-center gap-3 w-full">
+                        <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
+                          {(store.store_profile_image_url || store.store_banner_image_url) ? (
+                            <img
+                              src={resolveImageUrl(store.store_profile_image_url || store.store_banner_image_url)}
+                              alt={store.business_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Store className="h-6 w-6 text-blue-600" />
+                          )}
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2 mb-0.5">
                             <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{store.business_name}</h3>

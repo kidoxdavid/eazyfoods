@@ -23,6 +23,7 @@ def _format_promo(promo, vendor=None, chef=None):
         discount_display = f"{int(promo.discount_value)}% OFF"
     elif promo.discount_type == "fixed_amount" and promo.discount_value:
         discount_display = f"${float(promo.discount_value):.2f} OFF"
+    source = "vendor" if promo.vendor_id else "chef"
     return {
         "id": str(promo.id),
         "name": promo.name or "Special Offer",
@@ -30,6 +31,7 @@ def _format_promo(promo, vendor=None, chef=None):
         "discount_type": promo.discount_type,
         "discount_value": float(promo.discount_value) if promo.discount_value else None,
         "discount_display": discount_display,
+        "source": source,
         "vendor_id": str(promo.vendor_id) if promo.vendor_id else None,
         "vendor_name": vendor.business_name if vendor else None,
         "chef_id": str(promo.chef_id) if promo.chef_id else None,

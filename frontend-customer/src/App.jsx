@@ -29,6 +29,7 @@ import MealPlanDetail from './pages/MealPlanDetail'
 import About from './pages/About'
 import ContactUs from './pages/ContactUs'
 import TopMarketDeals from './pages/TopMarketDeals'
+import TopChefDeals from './pages/TopChefDeals'
 import Chefs from './pages/Chefs'
 import ChefDetail from './pages/ChefDetail'
 import Groceries from './pages/Groceries'
@@ -66,6 +67,7 @@ function App() {
                             <Route path="/about" element={<About />} />
                             <Route path="/contact" element={<ContactUs />} />
                             <Route path="/top-market-deals" element={<TopMarketDeals />} />
+                            <Route path="/top-chef-deals" element={<TopChefDeals />} />
                             <Route path="/groceries" element={<Groceries />} />
                             <Route path="/chefs" element={<Chefs />} />
                             <Route path="/chefs/:id" element={<ChefDetail />} />
@@ -100,6 +102,7 @@ function App() {
                             <Route path="/about" element={<About />} />
                             <Route path="/contact" element={<ContactUs />} />
                             <Route path="/top-market-deals" element={<TopMarketDeals />} />
+                            <Route path="/top-chef-deals" element={<TopChefDeals />} />
                             <Route path="/groceries" element={<Groceries />} />
                             <Route path="/chefs" element={<Chefs />} />
                             <Route path="/chefs/:id" element={<ChefDetail />} />
