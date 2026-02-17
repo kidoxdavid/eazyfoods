@@ -5,6 +5,7 @@ import { MapPin, Star, Clock, Truck, Store, Sparkles, TrendingUp, Users } from '
 import { useLocation } from '../contexts/LocationContext'
 import PageBanner from '../components/PageBanner'
 import { StoreCardSkeleton } from '../components/SkeletonLoader'
+import { resolveImageUrl } from '../utils/imageUtils'
 
 const Stores = () => {
   const [stores, setStores] = useState([])
