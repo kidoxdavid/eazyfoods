@@ -16,7 +16,8 @@ router = APIRouter()
 
 
 class GoogleTokenBody(BaseModel):
-    id_token: str
+    id_token: str | None = None
+    credential: str | None = None  # Some clients send credential instead of id_token
 
 
 @router.post("/signup", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -105,8 +106,22 @@ async def customer_google(
 
     logger = logging.getLogger(__name__)
 
+    token = body.id_token or body.credential
+    if not token or not str(token).strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing Google token. Please try again.",
+        )
+
+    if not getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", None) or not str(settings.GOOGLE_OAUTH_CLIENT_ID).strip():
+        logger.error("GOOGLE_OAUTH_CLIENT_ID not configured on server")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google sign-in is not configured. Please use email and password.",
+        )
+
     try:
-        payload = await verify_google_id_token(body.id_token)
+        payload = await verify_google_id_token(token)
         if not payload or not payload.get("email"):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

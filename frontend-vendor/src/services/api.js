@@ -60,6 +60,14 @@ if (token) {
   api.defaults.headers.common['Authorization'] = `Bearer ${token}`
 }
 
+// Request interceptor: FormData must not have Content-Type set (browser sets multipart/form-data with boundary)
+api.interceptors.request.use((config) => {
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type']
+  }
+  return config
+})
+
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
