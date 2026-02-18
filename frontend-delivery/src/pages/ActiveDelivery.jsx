@@ -1,29 +1,29 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { GoogleMap, LoadScript, Marker, Polyline } from '@react-google-maps/api'
+import { GoogleMap, LoadScript, Marker, DirectionsService, DirectionsRenderer } from '@react-google-maps/api'
 import api from '../services/api'
 import { startLocationTracking, stopLocationTracking, getCurrentPosition } from '../services/locationTracking'
-import { MapPin, Clock, Navigation, CheckCircle, X, ArrowLeft } from 'lucide-react'
+import { MapPin, Clock, Navigation, CheckCircle, ArrowLeft } from 'lucide-react'
 
 const ActiveDelivery = () => {
   const { deliveryId } = useParams()
   const navigate = useNavigate()
   const [delivery, setDelivery] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [route, setRoute] = useState(null)
   const [currentLocation, setCurrentLocation] = useState(null)
+  const [directionsResult, setDirectionsResult] = useState(null)
+  const directionsPanelRef = useRef(null)
 
   const mapContainerStyle = {
     width: '100%',
-    height: 'calc(100vh - 200px)',
-    minHeight: '500px'
+    height: '100%',
+    minHeight: '400px'
   }
 
   useEffect(() => {
     if (!deliveryId) return
 
     fetchDelivery()
-    fetchRoute()
 
     // Start location tracking
     getCurrentPosition()
@@ -65,15 +65,6 @@ const ActiveDelivery = () => {
       alert('Failed to load delivery details')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const fetchRoute = async () => {
-    try {
-      const response = await api.get(`/driver/deliveries/${deliveryId}/route`)
-      setRoute(response.data)
-    } catch (error) {
-      console.error('Failed to fetch route:', error)
     }
   }
 
@@ -133,11 +124,31 @@ const ActiveDelivery = () => {
     ? { lat: currentLocation.latitude, lng: currentLocation.longitude }
     : delivery.current_latitude && delivery.current_longitude
     ? { lat: delivery.current_latitude, lng: delivery.current_longitude }
+    : delivery.pickup_latitude && delivery.pickup_longitude
+    ? { lat: delivery.pickup_latitude, lng: delivery.pickup_longitude }
     : { lat: 51.0447, lng: -114.0719 }
 
   const deliveryLocation = delivery.delivery_latitude && delivery.delivery_longitude
     ? { lat: delivery.delivery_latitude, lng: delivery.delivery_longitude }
     : null
+
+  // Origin for directions: current position > last known > pickup location
+  const originForDirections = currentLocation
+    ? { lat: currentLocation.latitude, lng: currentLocation.longitude }
+    : delivery.current_latitude != null && delivery.current_longitude != null
+    ? { lat: delivery.current_latitude, lng: delivery.current_longitude }
+    : delivery.pickup_latitude != null && delivery.pickup_longitude != null
+    ? { lat: delivery.pickup_latitude, lng: delivery.pickup_longitude }
+    : null
+
+  const hasDirectionsRequest = originForDirections && deliveryLocation &&
+    (originForDirections.lat !== deliveryLocation.lat || originForDirections.lng !== deliveryLocation.lng)
+
+  const directionsCallback = (result, status) => {
+    if (status === 'OK' && result) {
+      setDirectionsResult(result)
+    }
+  }
 
   return (
     <div className="h-screen flex flex-col">
@@ -205,57 +216,78 @@ const ActiveDelivery = () => {
         </div>
       </div>
 
-      {/* Map */}
-      <div className="flex-1 relative">
-        <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}>
-          <GoogleMap
-            mapContainerStyle={mapContainerStyle}
-            center={mapCenter}
-            zoom={deliveryLocation ? 13 : 10}
-            options={{
-              streetViewControl: false,
-              mapTypeControl: false,
-              fullscreenControl: true,
-              zoomControl: true
-            }}
-          >
-            {/* Delivery destination marker */}
-            {deliveryLocation && (
-              <Marker
-                position={deliveryLocation}
-                label="📍"
-                title="Delivery Location"
-              />
-            )}
+      {/* Map + Directions panel */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+        {/* Turn-by-turn directions panel */}
+        <aside className="hidden lg:flex flex-col w-80 xl:w-96 bg-white border-l border-gray-200 overflow-hidden shrink-0">
+          <div className="p-3 border-b border-gray-200 bg-gray-50 shrink-0">
+            <h3 className="font-semibold text-gray-900">Directions to delivery</h3>
+            <p className="text-sm text-gray-600 mt-0.5">
+              {directionsResult ? 'Route loaded' : hasDirectionsRequest ? 'Loading…' : 'Enable location for turn-by-turn'}
+            </p>
+          </div>
+          <div ref={directionsPanelRef} className="flex-1 overflow-auto p-2" />
+        </aside>
 
-            {/* Current location marker */}
-            {(currentLocation || (delivery.current_latitude && delivery.current_longitude)) && (
-              <Marker
-                position={currentLocation 
-                  ? { lat: currentLocation.latitude, lng: currentLocation.longitude }
-                  : { lat: delivery.current_latitude, lng: delivery.current_longitude }
-                }
-                label="🚗"
-                title="Your Location"
-                icon={{
-                  url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-                }}
-              />
-            )}
+        {/* Embedded map */}
+        <div className="flex-1 relative min-w-0" style={{ minHeight: 400 }}>
+          <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}>
+            <GoogleMap
+              mapContainerStyle={mapContainerStyle}
+              center={mapCenter}
+              zoom={deliveryLocation ? 13 : 10}
+              options={{
+                streetViewControl: false,
+                mapTypeControl: false,
+                fullscreenControl: true,
+                zoomControl: true
+              }}
+            >
+              {/* Fetch and render directions when we have origin + destination */}
+              {hasDirectionsRequest && (
+                <DirectionsService
+                  options={{
+                    origin: originForDirections,
+                    destination: deliveryLocation,
+                    travelMode: 'DRIVING'
+                  }}
+                  callback={directionsCallback}
+                />
+              )}
 
-            {/* Route polyline */}
-            {route?.polyline && (
-              <Polyline
-                path={[]} // Would need polyline decoder
-                options={{
-                  strokeColor: '#10B981',
-                  strokeWeight: 4,
-                  strokeOpacity: 0.8
-                }}
-              />
-            )}
-          </GoogleMap>
-        </LoadScript>
+              {/* Draw route + directions in panel when we have results */}
+              {directionsResult && (
+                <DirectionsRenderer
+                  directions={directionsResult}
+                  panel={directionsPanelRef.current}
+                  options={{ suppressMarkers: false }}
+                />
+              )}
+
+              {/* Fallback markers when no directions yet */}
+              {!directionsResult && deliveryLocation && (
+                <Marker
+                  position={deliveryLocation}
+                  label="📍"
+                  title="Delivery Location"
+                />
+              )}
+              {!directionsResult && (currentLocation || (delivery.current_latitude != null && delivery.current_longitude != null)) && (
+                <Marker
+                  position={currentLocation 
+                    ? { lat: currentLocation.latitude, lng: currentLocation.longitude }
+                    : { lat: delivery.current_latitude, lng: delivery.current_longitude }
+                  }
+                  label="🚗"
+                  title="Your Location"
+                  icon={{
+                    url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                  }}
+                />
+              )}
+            </GoogleMap>
+          </LoadScript>
+        </div>
       </div>
     </div>
   )
