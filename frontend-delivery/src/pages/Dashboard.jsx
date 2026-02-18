@@ -102,14 +102,14 @@ const Dashboard = () => {
           <div className="space-y-2">
             <button
               onClick={() => navigate('/available-deliveries')}
-              className="w-full px-3 py-2 sm:py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-between transition-colors text-xs sm:text-sm"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-between transition-colors text-sm font-medium"
             >
               <span className="truncate">Available Deliveries</span>
               <MapPin className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 ml-2" />
             </button>
             <button
               onClick={() => navigate('/my-deliveries')}
-              className="w-full px-3 py-2 sm:py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center justify-between transition-colors text-xs sm:text-sm"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center justify-between transition-colors text-sm font-medium"
             >
               <span className="truncate">My Deliveries</span>
               <Package className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 ml-2" />
@@ -120,13 +120,13 @@ const Dashboard = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
           <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Performance</h2>
           <div className="space-y-2">
-            <div className="flex justify-between gap-2 text-xs sm:text-sm">
+            <div className="flex justify-between gap-2 text-sm">
               <span className="text-gray-600">Avg Rating</span>
               <span className="font-medium">
                 {stats?.average_rating ? `⭐ ${parseFloat(stats.average_rating).toFixed(1)}` : 'N/A'}
               </span>
             </div>
-            <div className="flex justify-between gap-2 text-xs sm:text-sm">
+            <div className="flex justify-between gap-2 text-sm">
               <span className="text-gray-600">Completion</span>
               <span className="font-medium">
                 {stats?.total_deliveries > 0
@@ -136,11 +136,11 @@ const Dashboard = () => {
             </div>
             <button
               onClick={() => navigate('/performance')}
-              className="w-full mt-2 sm:mt-3 px-3 py-2 text-primary-600 hover:bg-primary-50 rounded-lg flex items-center justify-center gap-1.5 text-xs sm:text-sm transition-colors"
+              className="w-full mt-2 sm:mt-3 px-3 py-2 text-primary-600 hover:bg-primary-50 rounded-lg flex items-center justify-center gap-1.5 text-sm transition-colors"
             >
-              <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <BarChart3 className="h-4 w-4" />
               View Analytics
-              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -150,33 +150,33 @@ const Dashboard = () => {
           <div className="space-y-1">
             <button
               onClick={() => navigate('/earnings')}
-              className="w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-lg flex items-center justify-between transition-colors text-xs sm:text-sm"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left text-gray-700 hover:bg-gray-50 rounded-lg flex items-center justify-between transition-colors text-sm font-medium"
             >
               <span className="flex items-center gap-2">
-                <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                 Earnings
               </span>
-              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+              <ArrowRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
             </button>
             <button
               onClick={() => navigate('/delivery-history')}
-              className="w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-lg flex items-center justify-between transition-colors text-xs sm:text-sm"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left text-gray-700 hover:bg-gray-50 rounded-lg flex items-center justify-between transition-colors text-sm font-medium"
             >
               <span className="flex items-center gap-2">
-                <History className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <History className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                 Delivery History
               </span>
-              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+              <ArrowRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
             </button>
             <button
               onClick={() => navigate('/ratings')}
-              className="w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-50 rounded-lg flex items-center justify-between transition-colors text-xs sm:text-sm"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left text-gray-700 hover:bg-gray-50 rounded-lg flex items-center justify-between transition-colors text-sm font-medium"
             >
               <span className="flex items-center gap-2">
-                <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <Star className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                 Ratings & Reviews
               </span>
-              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+              <ArrowRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
             </button>
           </div>
         </div>

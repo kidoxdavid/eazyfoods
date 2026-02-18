@@ -34,14 +34,16 @@ const Layout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Mobile sidebar backdrop - match vendor */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-gray-900 bg-opacity-50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-gray-900 bg-opacity-50 backdrop-blur-sm z-20 lg:hidden transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
+      {/* Sidebar - match vendor z-30, shadow-2xl */}
+      <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
         <div className="flex flex-col h-full">
@@ -110,9 +112,10 @@ const Layout = () => {
         </div>
       </aside>
 
+      {/* Main content - match vendor */}
       <div className="lg:pl-64">
-        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
-          <div className="h-14 sm:h-16 px-3 sm:px-4 lg:px-6 flex items-center justify-between">
+        <header className="bg-white shadow-sm sticky top-0 z-10">
+          <div className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 lg:px-6">
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden text-gray-600 hover:text-gray-900 p-2 rounded-md hover:bg-gray-100 transition-colors"
@@ -120,7 +123,8 @@ const Layout = () => {
             >
               <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
-            <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex-1" />
+            <div className="flex items-center space-x-2 sm:space-x-4">
               {driver && (
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <span className="text-xs sm:text-sm text-gray-600">Available:</span>
@@ -171,7 +175,7 @@ const Layout = () => {
             </Link>
           </div>
         )}
-        <main className="p-3 sm:p-4 lg:p-6 max-w-full overflow-x-auto min-w-0">
+        <main className="p-3 sm:p-4 lg:p-6 max-w-full min-w-0 overflow-x-auto">
           <Outlet />
         </main>
       </div>

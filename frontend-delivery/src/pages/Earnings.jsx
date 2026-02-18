@@ -97,70 +97,70 @@ const Earnings = () => {
   }
 
   return (
-    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Earnings</h1>
-          <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">Delivery earnings and payments</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Earnings</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Delivery earnings and payments</p>
         </div>
-        <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2">
-          <Download className="h-4 w-4" />
+        <button className="px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2 text-sm font-medium">
+          <Download className="h-4 w-4 sm:h-5 sm:w-5" />
           Export
         </button>
       </div>
 
-      {/* Stats Cards - compact */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <div className="flex items-center justify-between gap-2">
+      {/* Stats Cards - match vendor */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Total</p>
-              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 sm:mt-2 truncate">
                 {formatCurrency(stats?.total || 0)}
               </p>
             </div>
-            <DollarSign className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-green-500 flex-shrink-0" />
+            <DollarSign className="h-4 w-4 sm:h-5 sm:w-6 lg:h-6 lg:w-6 text-green-500 flex-shrink-0 ml-2" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <div className="flex items-center justify-between gap-2">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Completed</p>
-              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Completed</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 sm:mt-2 truncate">
                 {formatCurrency(stats?.completedTotal || 0)}
               </p>
             </div>
-            <TrendingUp className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-500 flex-shrink-0" />
+            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-6 lg:h-6 lg:w-6 text-blue-500 flex-shrink-0 ml-2" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <div className="flex items-center justify-between gap-2">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Pending</p>
-              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Pending</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 sm:mt-2 truncate">
                 {formatCurrency(stats?.pending || 0)}
               </p>
             </div>
-            <Calendar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-yellow-500 flex-shrink-0" />
+            <Calendar className="h-4 w-4 sm:h-5 sm:w-6 lg:h-6 lg:w-6 text-yellow-500 flex-shrink-0 ml-2" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <div className="flex items-center justify-between gap-2">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Avg/Delivery</p>
-              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Avg/Delivery</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 sm:mt-2 truncate">
                 {formatCurrency(stats?.average || 0)}
               </p>
             </div>
-            <TrendingUp className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-purple-500 flex-shrink-0" />
+            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-6 lg:h-6 lg:w-6 text-purple-500 flex-shrink-0 ml-2" />
           </div>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters - match vendor card */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
@@ -194,25 +194,25 @@ const Earnings = () => {
         </div>
       </div>
 
-      {/* Earnings Table */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* Earnings Table - match vendor */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto scrollbar-hide">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Order #
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Amount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Address
                 </th>
               </tr>
@@ -220,23 +220,23 @@ const Earnings = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {earnings.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan="5" className="px-4 xl:px-6 py-12 text-center text-gray-500">
                     No earnings found for the selected filters
                   </td>
                 </tr>
               ) : (
                 earnings.map((earning) => (
                   <tr key={earning.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {earning.order_number}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(earning.date)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">
                       {formatCurrency(earning.amount)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                         earning.status === 'delivered' 
                           ? 'bg-green-100 text-green-800'
@@ -249,7 +249,7 @@ const Earnings = () => {
                         {earning.status.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
+                    <td className="px-4 xl:px-6 py-4 text-sm text-gray-500">
                       {earning.delivery_address?.street || 'N/A'}
                     </td>
                   </tr>

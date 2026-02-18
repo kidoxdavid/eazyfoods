@@ -102,10 +102,10 @@ const Settings = () => {
   }
 
   return (
-    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
       <div>
-        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">Account preferences</p>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Settings</h1>
+        <p className="text-xs sm:text-sm text-gray-600 mt-1">Account preferences</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

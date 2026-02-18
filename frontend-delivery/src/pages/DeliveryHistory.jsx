@@ -91,13 +91,13 @@ const DeliveryHistory = () => {
   }
 
   return (
-    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
       <div>
-        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Delivery History</h1>
-        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">Past and current deliveries</p>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Delivery History</h1>
+        <p className="text-xs sm:text-sm text-gray-600 mt-1">Past and current deliveries</p>
       </div>
 
-      {/* Search and Filters */}
+      {/* Search and Filters - match vendor */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 relative min-w-0">
@@ -140,20 +140,20 @@ const DeliveryHistory = () => {
 
       {/* Deliveries Grid */}
       {filteredDeliveries.length === 0 ? (
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-12 text-center">
-          <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No deliveries found</p>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 text-center">
+          <Package className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+          <p className="text-sm sm:text-base text-gray-600">No deliveries found</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           {filteredDeliveries.map((delivery) => (
             <div
               key={delivery.id}
-              className="bg-white rounded-lg shadow border border-gray-200 p-6 hover:shadow-lg transition-shadow"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow"
             >
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start justify-between mb-3 sm:mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                     {delivery.order_number}
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">

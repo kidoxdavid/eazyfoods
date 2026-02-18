@@ -121,16 +121,16 @@ const AvailableDeliveries = () => {
   }
 
   return (
-    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
       <div>
-        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Available Deliveries</h1>
-        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">Accept deliveries and earn</p>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Available Deliveries</h1>
+        <p className="text-xs sm:text-sm text-gray-600 mt-1">Accept deliveries and earn</p>
       </div>
 
       {deliveries.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 text-center">
-          <MapPin className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-sm text-gray-600">No available deliveries at the moment</p>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 text-center">
+          <MapPin className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+          <p className="text-sm sm:text-base text-gray-600">No available deliveries at the moment</p>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
