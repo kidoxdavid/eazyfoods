@@ -57,15 +57,15 @@ const Documentation = () => {
   ]
 
   return (
-    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
       <div>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Documentation</h1>
-        <p className="text-xs sm:text-sm text-gray-600 mt-1">View your submitted documents (read-only)</p>
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Documentation</h1>
+        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">Submitted documents</p>
       </div>
 
       {data?.verification_status === 'approved' ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
+          <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 flex items-center gap-2">
             <FileText className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
             Approved Documents
           </h2>

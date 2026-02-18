@@ -95,16 +95,16 @@ const AvailableDeliveries = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleAccept(row.id)}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+            className="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-1.5 text-xs sm:text-sm"
           >
-            <CheckCircle className="h-4 w-4" />
+            <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             Accept
           </button>
           <button
             onClick={() => handleReject(row.id)}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 flex items-center gap-2"
+            className="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 flex items-center gap-1.5 text-xs sm:text-sm"
           >
-            <XCircle className="h-4 w-4" />
+            <XCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             Reject
           </button>
         </div>
@@ -121,16 +121,16 @@ const AvailableDeliveries = () => {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
       <div>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Available Deliveries</h1>
-        <p className="text-gray-600 mt-1">Accept new delivery orders</p>
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Available Deliveries</h1>
+        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">Accept deliveries and earn</p>
       </div>
 
       {deliveries.length === 0 ? (
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-12 text-center">
-          <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No available deliveries at the moment</p>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 text-center">
+          <MapPin className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3" />
+          <p className="text-sm text-gray-600">No available deliveries at the moment</p>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">

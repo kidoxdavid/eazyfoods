@@ -99,19 +99,19 @@ const Ratings = () => {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
       <div>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Ratings & Reviews</h1>
-        <p className="text-xs sm:text-sm text-gray-600 mt-1">View customer feedback and ratings</p>
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Ratings & Reviews</h1>
+        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">Customer feedback</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
-          <div className="flex items-center justify-between">
+      {/* Stats Cards - compact */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <p className="text-xs sm:text-sm text-gray-500 truncate">Average Rating</p>
-              <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mt-1 sm:mt-2 truncate">
+              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Average</p>
+              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">
                 {stats?.average ? stats.average.toFixed(1) : 'N/A'}
               </p>
               <div className="mt-2">
@@ -122,39 +122,39 @@ const Ratings = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <p className="text-xs sm:text-sm text-gray-500 truncate">Total Ratings</p>
-              <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mt-1 sm:mt-2 truncate">
+              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Total</p>
+              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">
                 {stats?.total || 0}
               </p>
             </div>
-            <MessageSquare className="h-10 w-10 text-blue-500 flex-shrink-0" />
+            <MessageSquare className="h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 text-blue-500 flex-shrink-0" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <p className="text-xs sm:text-sm text-gray-500 truncate">5-Star Ratings</p>
-              <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mt-1 sm:mt-2 truncate">
+              <p className="text-[10px] sm:text-xs text-gray-500 truncate">5-Star</p>
+              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">
                 {stats?.ratingCounts?.[5] || 0}
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
                 {stats?.total > 0 
                   ? `${((stats.ratingCounts[5] / stats.total) * 100).toFixed(0)}% of total`
                   : '0%'}
               </p>
             </div>
-            <Star className="h-10 w-10 text-yellow-500 fill-current flex-shrink-0" />
+            <Star className="h-8 w-8 sm:h-9 sm:w-9 lg:h-10 lg:w-10 text-yellow-500 fill-current flex-shrink-0" />
           </div>
         </div>
       </div>
 
       {/* Rating Distribution */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
-        <h2 className="text-base sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Rating Distribution</h2>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
+        <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Rating Distribution</h2>
         <div className="space-y-3">
           {[5, 4, 3, 2, 1].map((rating) => {
             const count = stats?.ratingCounts?.[rating] || 0

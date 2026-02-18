@@ -45,8 +45,8 @@ const Layout = () => {
         sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6 border-b border-gray-200 bg-gradient-to-r from-primary-600 to-primary-700">
-            <h1 className="text-lg sm:text-xl font-bold text-white truncate">eazyfoods Driver</h1>
+          <div className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 border-b border-gray-200 bg-gradient-to-r from-primary-600 to-primary-700">
+            <h1 className="text-base sm:text-lg lg:text-xl font-bold text-white truncate">eazyfoods Driver</h1>
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden text-white hover:text-gray-200 p-1 rounded-md transition-colors"
@@ -56,7 +56,7 @@ const Layout = () => {
             </button>
           </div>
 
-          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          <nav className="flex-1 px-3 py-4 sm:px-4 sm:py-6 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon
               const isActive = item.href === '/' 
@@ -67,18 +67,18 @@ const Layout = () => {
                   key={item.href}
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                  className={`flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-lg transition-colors ${
                     isActive
                       ? 'bg-primary-50 text-primary-700'
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <div className="flex items-center space-x-3">
-                    <Icon className="h-5 w-5" />
-                    <span>{item.name}</span>
+                  <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+                    <Icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                    <span className="truncate">{item.name}</span>
                   </div>
                   {item.badge > 0 && (
-                    <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] text-center animate-pulse">
+                    <span className="ml-1.5 sm:ml-2 px-1.5 sm:px-2 py-0.5 bg-red-500 text-white text-[10px] sm:text-xs font-bold rounded-full min-w-[18px] sm:min-w-[20px] text-center animate-pulse flex-shrink-0">
                       {item.badge > 99 ? '99+' : item.badge}
                     </span>
                   )}
@@ -87,16 +87,16 @@ const Layout = () => {
             })}
           </nav>
 
-          <div className="p-4 border-t">
-            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-900">{driver?.first_name} {driver?.last_name}</p>
-              <p className="text-xs text-gray-500">{driver?.email}</p>
+          <div className="p-3 sm:p-4 border-t">
+            <div className="mb-2 sm:mb-3 p-2.5 sm:p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{driver?.first_name} {driver?.last_name}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 truncate">{driver?.email}</p>
             </div>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="w-full flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 sm:py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs sm:text-sm font-medium"
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
               <span>Logout</span>
             </button>
           </div>
@@ -113,10 +113,10 @@ const Layout = () => {
             >
               <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               {driver && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Available:</span>
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="text-xs sm:text-sm text-gray-600">Available:</span>
                   <button
                     onClick={async () => {
                       try {
@@ -135,13 +135,13 @@ const Layout = () => {
                   >
                     {driver.is_available ? (
                       <>
-                        <ToggleRight className="h-5 w-5 text-green-600" />
-                        <span className="text-sm text-green-600">On</span>
+                        <ToggleRight className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                        <span className="text-xs sm:text-sm text-green-600">On</span>
                       </>
                     ) : (
                       <>
-                        <ToggleLeft className="h-5 w-5 text-gray-400" />
-                        <span className="text-sm text-gray-400">Off</span>
+                        <ToggleLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+                        <span className="text-xs sm:text-sm text-gray-400">Off</span>
                       </>
                     )}
                   </button>
@@ -152,8 +152,8 @@ const Layout = () => {
         </header>
 
         {(driver?.document_expired || driver?.document_expiring_soon) && (
-          <div className={`mx-3 mt-3 sm:mx-4 sm:mt-4 lg:mx-6 lg:mt-6 rounded-lg p-3 flex items-center justify-between flex-wrap gap-2 ${driver?.document_expired ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'}`}>
-            <p className="text-sm">
+          <div className={`mx-3 mt-3 sm:mx-4 sm:mt-4 lg:mx-6 lg:mt-6 rounded-lg p-2.5 sm:p-3 flex items-center justify-between flex-wrap gap-2 ${driver?.document_expired ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'}`}>
+            <p className="text-xs sm:text-sm">
               {driver?.document_expired
                 ? 'One or more documents have expired. You have been deactivated until you resubmit.'
                 : 'One or more documents expire within 14 days. Please resubmit to avoid deactivation.'}

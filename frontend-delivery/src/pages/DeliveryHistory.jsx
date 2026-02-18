@@ -91,23 +91,23 @@ const DeliveryHistory = () => {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
       <div>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Delivery History</h1>
-        <p className="text-gray-600 mt-1">View all your past and current deliveries</p>
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Delivery History</h1>
+        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">Past and current deliveries</p>
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 relative min-w-0">
+            <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search by order number, address, or vendor..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full pl-8 sm:pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
           
