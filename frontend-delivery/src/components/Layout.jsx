@@ -36,7 +36,7 @@ const Layout = () => {
     <div className="min-h-screen bg-gray-50">
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-gray-900 bg-opacity-50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -104,13 +104,14 @@ const Layout = () => {
       </aside>
 
       <div className="lg:pl-64">
-        <header className="bg-white shadow border-b border-gray-200 sticky top-0 z-30">
-          <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
+          <div className="h-14 sm:h-16 px-3 sm:px-4 lg:px-6 flex items-center justify-between">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-500 hover:text-gray-700"
+              className="lg:hidden text-gray-600 hover:text-gray-900 p-2 rounded-md hover:bg-gray-100 transition-colors"
+              aria-label="Open menu"
             >
-              <Menu className="h-6 w-6" />
+              <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
             <div className="flex items-center gap-4">
               {driver && (
@@ -151,7 +152,7 @@ const Layout = () => {
         </header>
 
         {(driver?.document_expired || driver?.document_expiring_soon) && (
-          <div className={`mx-4 mt-4 sm:mx-6 sm:mt-6 lg:mx-8 rounded-lg p-3 flex items-center justify-between flex-wrap gap-2 ${driver?.document_expired ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'}`}>
+          <div className={`mx-3 mt-3 sm:mx-4 sm:mt-4 lg:mx-6 lg:mt-6 rounded-lg p-3 flex items-center justify-between flex-wrap gap-2 ${driver?.document_expired ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'}`}>
             <p className="text-sm">
               {driver?.document_expired
                 ? 'One or more documents have expired. You have been deactivated until you resubmit.'
@@ -163,7 +164,7 @@ const Layout = () => {
             </Link>
           </div>
         )}
-        <main className="p-4 sm:p-6 lg:p-8 max-w-full overflow-x-auto min-w-0">
+        <main className="p-3 sm:p-4 lg:p-6 max-w-full overflow-x-auto min-w-0">
           <Outlet />
         </main>
       </div>

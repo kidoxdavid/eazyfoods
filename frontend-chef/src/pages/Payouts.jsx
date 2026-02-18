@@ -54,67 +54,67 @@ const Payouts = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Payouts</h1>
-        <p className="text-gray-600 mt-1">Track your earnings and payouts</p>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Payouts</h1>
+        <p className="text-xs sm:text-sm text-gray-600 mt-1">Track your earnings and payouts</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Available Balance</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Available Balance</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1 sm:mt-2 truncate">
                 {formatCurrency(balance?.available_balance || 0)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {balance?.pending_orders_count || 0} pending orders
               </p>
             </div>
-            <DollarSign className="h-8 w-8 text-green-500" />
+            <DollarSign className="h-8 w-8 text-green-500 flex-shrink-0" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Paid</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total Paid</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1 sm:mt-2 truncate">
                 {formatCurrency(stats?.total_paid || 0)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {stats?.total_payouts || 0} payouts
               </p>
             </div>
-            <TrendingUp className="h-8 w-8 text-blue-500" />
+            <TrendingUp className="h-8 w-8 text-blue-500 flex-shrink-0" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Pending</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1 sm:mt-2 truncate">
                 {formatCurrency(stats?.pending_amount || 0)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {stats?.pending_payouts || 0} in process
               </p>
             </div>
-            <DollarSign className="h-8 w-8 text-yellow-500" />
+            <DollarSign className="h-8 w-8 text-yellow-500 flex-shrink-0" />
           </div>
         </div>
       </div>
 
       {/* Payouts Table */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Payout History</h2>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Payout History</h2>
         {payouts.length === 0 ? (
-          <div className="text-center py-12">
-            <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No payouts yet</p>
+          <div className="text-center py-8 sm:py-12">
+            <DollarSign className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
+            <p className="text-sm sm:text-base text-gray-600">No payouts yet</p>
             <p className="text-sm text-gray-500 mt-2">Your earnings will appear here once payouts are processed</p>
           </div>
         ) : (

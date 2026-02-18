@@ -86,16 +86,16 @@ const Gallery = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Gallery</h1>
-            <p className="text-sm text-gray-600 mt-1">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Gallery</h1>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">
               Showcase your culinary creations with photos
             </p>
           </div>
-          <label className="cursor-pointer">
+          <label className="cursor-pointer flex-shrink-0">
             <input
               type="file"
               accept="image/*"

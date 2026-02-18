@@ -97,11 +97,11 @@ const Earnings = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Earnings</h1>
-          <p className="text-gray-600 mt-1">Track your delivery earnings and payments</p>
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Earnings</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Track your delivery earnings and payments</p>
         </div>
         <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2">
           <Download className="h-4 w-4" />
@@ -110,58 +110,58 @@ const Earnings = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Earnings</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm text-gray-500 truncate">Total Earnings</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1 sm:mt-2 truncate">
                 {formatCurrency(stats?.total || 0)}
               </p>
             </div>
-            <DollarSign className="h-8 w-8 text-green-500" />
+            <DollarSign className="h-8 w-8 text-green-500 flex-shrink-0" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Completed</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm text-gray-500 truncate">Completed</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1 sm:mt-2 truncate">
                 {formatCurrency(stats?.completedTotal || 0)}
               </p>
             </div>
-            <TrendingUp className="h-8 w-8 text-blue-500" />
+            <TrendingUp className="h-8 w-8 text-blue-500 flex-shrink-0" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Pending</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm text-gray-500 truncate">Pending</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1 sm:mt-2 truncate">
                 {formatCurrency(stats?.pending || 0)}
               </p>
             </div>
-            <Calendar className="h-8 w-8 text-yellow-500" />
+            <Calendar className="h-8 w-8 text-yellow-500 flex-shrink-0" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Average per Delivery</p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm text-gray-500 truncate">Average per Delivery</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1 sm:mt-2 truncate">
                 {formatCurrency(stats?.average || 0)}
               </p>
             </div>
-            <TrendingUp className="h-8 w-8 text-purple-500" />
+            <TrendingUp className="h-8 w-8 text-purple-500 flex-shrink-0" />
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-gray-500" />

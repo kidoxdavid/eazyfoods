@@ -57,21 +57,21 @@ const Documentation = () => {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Documentation</h1>
-        <p className="text-gray-600 mt-1">View your submitted documents (read-only)</p>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Documentation</h1>
+        <p className="text-xs sm:text-sm text-gray-600 mt-1">View your submitted documents (read-only)</p>
       </div>
 
       {data?.verification_status === 'approved' ? (
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
+            <FileText className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
             Approved Documents
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {docs.map((doc) => (
-              <div key={doc.label} className="border border-gray-200 rounded-lg p-4">
+              <div key={doc.label} className="border border-gray-200 rounded-lg p-3 sm:p-4">
                 <div className="text-sm font-medium text-gray-700 mb-1">{doc.label}</div>
                 {doc.url ? (
                   <>
@@ -102,19 +102,19 @@ const Documentation = () => {
 
       {/* Document view popup (same tab) */}
       {docViewUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setDocViewUrl(null)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl max-h-[90vh] w-full overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center p-3 border-b">
-              <span className="font-medium">Document</span>
-              <button type="button" onClick={() => setDocViewUrl(null)} className="p-1 rounded hover:bg-gray-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4" onClick={() => setDocViewUrl(null)}>
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-3 border-b flex-shrink-0">
+              <span className="font-medium text-sm sm:text-base">Document</span>
+              <button type="button" onClick={() => setDocViewUrl(null)} className="p-2 rounded hover:bg-gray-100" aria-label="Close">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="flex-1 min-h-0 overflow-auto p-4">
+            <div className="flex-1 min-h-0 overflow-auto p-2 sm:p-4">
               {/\.(pdf)$/i.test(docViewUrl) ? (
-                <iframe src={docViewUrl} title="Document" className="w-full h-[70vh] border-0 rounded" />
+                <iframe src={docViewUrl} title="Document" className="w-full min-h-[50vh] sm:min-h-[70vh] border-0 rounded" />
               ) : (
-                <img src={docViewUrl} alt="Document" className="max-w-full h-auto max-h-[70vh] object-contain mx-auto" />
+                <img src={docViewUrl} alt="Document" className="max-w-full h-auto max-h-[75vh] sm:max-h-[70vh] object-contain mx-auto" />
               )}
             </div>
           </div>

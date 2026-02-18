@@ -83,16 +83,16 @@ const Settings = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-1">Manage your account settings and preferences</p>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Settings</h1>
+        <p className="text-xs sm:text-sm text-gray-600 mt-1">Manage your account settings and preferences</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Service Settings */}
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-          <div className="flex items-center space-x-2 mb-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+          <div className="flex items-center space-x-2 mb-3 sm:mb-4">
             <Globe className="h-5 w-5 text-primary-600" />
             <h2 className="text-xl font-semibold text-gray-900">Service Settings</h2>
           </div>

@@ -73,8 +73,8 @@ const OrderDetail = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-4">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+      <div className="flex items-center space-x-3 sm:space-x-4">
         <button
           onClick={() => navigate('/orders')}
           className="text-gray-600 hover:text-gray-900"
@@ -82,7 +82,7 @@ const OrderDetail = () => {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Order {order.order_number}</h1>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">Order {order.order_number}</h1>
           <p className="text-gray-600 mt-1">{formatDateTime(order.created_at)}</p>
         </div>
       </div>

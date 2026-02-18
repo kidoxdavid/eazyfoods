@@ -68,15 +68,15 @@ const Ads = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Ads</h1>
-          <p className="text-gray-600 mt-1">Create and manage your marketing ads</p>
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">My Ads</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Create and manage your marketing ads</p>
         </div>
         <Link
           to="/ads/new"
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+          className="px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2 text-sm font-medium flex-shrink-0"
         >
           <Plus className="h-4 w-4" />
           Create Ad

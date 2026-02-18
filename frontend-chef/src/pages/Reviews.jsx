@@ -53,11 +53,11 @@ const Reviews = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Customer Reviews</h1>
-          <div className="text-sm text-gray-600">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Customer Reviews</h1>
+          <div className="text-xs sm:text-sm text-gray-600">
             {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}
           </div>
         </div>

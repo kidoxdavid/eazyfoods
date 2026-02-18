@@ -71,15 +71,15 @@ const Support = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Support</h1>
-          <p className="text-gray-600 mt-1">Contact eazyfoods support team</p>
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Support</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Contact eazyfoods support team</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+          className="flex items-center justify-center px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium flex-shrink-0"
         >
           <Plus className="h-5 w-5 mr-2" />
           New Message
@@ -87,7 +87,7 @@ const Support = () => {
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Create Support Ticket</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

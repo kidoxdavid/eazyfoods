@@ -71,7 +71,7 @@ const Layout = ({ children }) => {
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20 lg:hidden"
+          className="fixed inset-0 bg-gray-900 bg-opacity-50 backdrop-blur-sm z-20 lg:hidden transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -142,20 +142,24 @@ const Layout = ({ children }) => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <header className="sticky top-0 z-10 bg-white shadow-sm">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+        <header className="bg-white shadow-sm sticky top-0 z-10">
+          <div className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 lg:px-6">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-500 hover:text-gray-700"
+              className="lg:hidden text-gray-600 hover:text-gray-900 p-2 rounded-md hover:bg-gray-100 transition-colors"
+              aria-label="Open menu"
             >
-              <Menu className="h-6 w-6" />
+              <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
             <div className="flex-1" />
+            <span className="text-xs sm:text-sm text-gray-600 truncate max-w-[120px] sm:max-w-none">
+              {user?.chef_name || 'Chef Portal'}
+            </span>
           </div>
         </header>
 
         {/* Page content - responsive padding and overflow for tables on mobile */}
-        <main className="p-4 sm:p-6 lg:p-8 max-w-full overflow-x-auto min-w-0">
+        <main className="p-3 sm:p-4 lg:p-6 max-w-full overflow-x-auto min-w-0">
           {children}
         </main>
       </div>
