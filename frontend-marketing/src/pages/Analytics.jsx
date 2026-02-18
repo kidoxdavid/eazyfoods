@@ -372,12 +372,12 @@ const Analytics = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Marketing Analytics</h1>
-          <p className="text-gray-600 mt-1">Comprehensive insights into your marketing performance</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Marketing Analytics</h1>
+          <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">Performance insights</p>
         </div>
         <div className="flex items-center gap-2">
           <button

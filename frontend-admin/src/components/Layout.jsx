@@ -47,7 +47,7 @@ const Layout = () => {
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-gray-900 bg-opacity-50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -58,8 +58,8 @@ const Layout = () => {
       }`}>
         <div className="flex flex-col h-full">
           {/* Logo - same as vendor: blue bar, white text */}
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6 border-b border-gray-200 bg-gradient-to-r from-primary-600 to-primary-700">
-            <h1 className="text-lg sm:text-xl font-bold text-white truncate">eazyfoods Admin</h1>
+          <div className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 border-b border-gray-200 bg-gradient-to-r from-primary-600 to-primary-700">
+            <h1 className="text-base sm:text-lg lg:text-xl font-bold text-white truncate">eazyfoods Admin</h1>
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden text-white hover:text-gray-200 p-1 rounded-md transition-colors"
@@ -123,27 +123,25 @@ const Layout = () => {
       </aside>
 
       {/* Main content */}
-      <div className="lg:ml-64">
-        {/* Top bar */}
+      <div className="lg:pl-64">
         <header className="bg-white shadow-sm sticky top-0 z-30">
-          <div className="px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <div className="h-14 sm:h-16 px-3 sm:px-4 lg:px-6 flex items-center justify-between">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-gray-500 hover:text-gray-700 lg:hidden"
+              className="lg:hidden text-gray-600 hover:text-gray-900 p-2 rounded-md hover:bg-gray-100 transition-colors"
               type="button"
               aria-label="Toggle menu"
             >
-              <Menu className="h-6 w-6" />
+              <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
-            <div className="flex-1"></div>
-            <div className="text-sm text-gray-600 hidden sm:block">
+            <div className="flex-1" />
+            <span className="text-xs sm:text-sm text-gray-600 truncate max-w-[120px] sm:max-w-none">
               {user?.first_name} {user?.last_name}
-            </div>
+            </span>
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="p-4 sm:p-6">
+        <main className="p-3 sm:p-4 lg:p-6 max-w-full overflow-x-auto min-w-0">
           <Outlet />
         </main>
       </div>

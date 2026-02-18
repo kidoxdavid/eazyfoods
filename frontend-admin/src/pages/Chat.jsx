@@ -147,9 +147,9 @@ const Chat = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Chat</h1>
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Chat</h1>
         <p className="text-gray-600 mt-1">Communicate with customers, vendors, and drivers</p>
       </div>
 

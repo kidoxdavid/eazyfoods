@@ -45,11 +45,11 @@ const ContentLibrary = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Content Library</h1>
-          <p className="text-gray-600 mt-1">Manage all your marketing assets and content</p>
+    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Content Library</h1>
+          <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">Marketing assets</p>
         </div>
         <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2">
           <Plus className="h-4 w-4" />

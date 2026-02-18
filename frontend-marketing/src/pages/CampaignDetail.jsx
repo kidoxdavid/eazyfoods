@@ -44,7 +44,7 @@ const CampaignDetail = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
       <Link to="/campaigns" className="text-primary-600 hover:text-primary-700 flex items-center gap-2">
         <ArrowLeft className="h-4 w-4" />
         Back to Campaigns
@@ -53,7 +53,7 @@ const CampaignDetail = () => {
       <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{campaign.name}</h1>
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-2 truncate">{campaign.name}</h1>
             <span className={`px-3 py-1 text-sm font-medium rounded-full ${
               campaign.status === 'active' ? 'bg-green-100 text-green-800' :
               campaign.status === 'draft' ? 'bg-gray-100 text-gray-800' :

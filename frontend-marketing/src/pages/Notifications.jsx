@@ -41,11 +41,11 @@ const Notifications = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
-          <p className="text-gray-600 mt-1">Send SMS and Push notifications</p>
+    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Notifications</h1>
+          <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">SMS & Push</p>
         </div>
         <div className="flex gap-2">
           <Link

@@ -114,7 +114,7 @@ const OrderDetail = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -125,7 +125,7 @@ const OrderDetail = () => {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Order Details</h1>
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Order Details</h1>
             <p className="text-gray-600 mt-1">Order #{order.order_number}</p>
           </div>
         </div>
@@ -196,7 +196,7 @@ const OrderDetail = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-2 sm:space-y-3 lg:space-y-4">
           {/* Status Card */}
           <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Status</h2>

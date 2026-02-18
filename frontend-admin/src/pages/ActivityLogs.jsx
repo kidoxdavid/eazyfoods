@@ -93,10 +93,10 @@ const ActivityLogs = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Activity Logs</h1>
+    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Activity Logs</h1>
           <p className="text-gray-600 mt-1">Track all admin actions and system events</p>
         </div>
         <button

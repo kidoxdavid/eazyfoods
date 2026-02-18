@@ -55,135 +55,125 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Marketing Dashboard</h1>
-        <p className="text-gray-600 mt-1">Overview of your marketing campaigns and performance</p>
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Marketing Dashboard</h1>
+        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">Campaigns and performance</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Campaigns</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stats?.totalCampaigns || 0}</p>
-              <p className="text-xs text-green-600 mt-1">{stats?.activeCampaigns || 0} active</p>
+      {/* Stats Grid - compact */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Campaigns</p>
+              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">{stats?.totalCampaigns || 0}</p>
+              <p className="text-[10px] sm:text-xs text-green-600 mt-0.5">{stats?.activeCampaigns || 0} active</p>
             </div>
-            <Megaphone className="h-8 w-8 text-primary-500" />
+            <Megaphone className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-primary-500 flex-shrink-0" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Ads</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stats?.totalAds || 0}</p>
-              <p className="text-xs text-gray-600 mt-1">
-                {stats?.activeAds || 0} active, {stats?.pendingAds || 0} pending
-              </p>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Ads</p>
+              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">{stats?.totalAds || 0}</p>
+              <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">{stats?.activeAds || 0} active, {stats?.pendingAds || 0} pending</p>
             </div>
-            <Image className="h-8 w-8 text-blue-500" />
+            <Image className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-500 flex-shrink-0" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Email Campaigns</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stats?.totalEmails || 0}</p>
-              <p className="text-xs text-gray-600 mt-1">{stats?.sentEmails || 0} sent</p>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Email Campaigns</p>
+              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">{stats?.totalEmails || 0}</p>
+              <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">{stats?.sentEmails || 0} sent</p>
             </div>
-            <Mail className="h-8 w-8 text-green-500" />
+            <Mail className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-green-500 flex-shrink-0" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Impressions</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Impressions</p>
+              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">
                 {(stats?.totalImpressions || 0).toLocaleString()}
               </p>
-              <p className="text-xs text-primary-600 mt-1">
-                {stats?.ctr?.toFixed(2) || 0}% CTR
-              </p>
+              <p className="text-[10px] sm:text-xs text-primary-600 mt-0.5">{stats?.ctr?.toFixed(2) || 0}% CTR</p>
             </div>
-            <Eye className="h-8 w-8 text-purple-500" />
+            <Eye className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-purple-500 flex-shrink-0" />
           </div>
         </div>
       </div>
 
-      {/* Pending Vendor Ads Alert */}
+      {/* Pending Vendor Ads Alert - compact */}
       {stats?.pendingAds > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Image className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-yellow-900">
-                  {stats.pendingAds} Vendor Ad{stats.pendingAds > 1 ? 's' : ''} Pending Review
-                </h3>
-                <p className="text-sm text-yellow-700">Review and approve vendor-created ads</p>
-              </div>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="p-1.5 sm:p-2 bg-yellow-100 rounded-lg flex-shrink-0">
+              <Image className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
             </div>
-            <Link
-              to="/ads?approval_status=pending"
-              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm font-medium"
-            >
-              Review Now
-            </Link>
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-base font-semibold text-yellow-900">
+                {stats.pendingAds} Vendor Ad{stats.pendingAds > 1 ? 's' : ''} Pending
+              </h3>
+              <p className="text-xs text-yellow-700 hidden sm:block">Review and approve vendor-created ads</p>
+            </div>
           </div>
+          <Link
+            to="/ads?approval_status=pending"
+            className="px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-xs sm:text-sm font-medium text-center flex-shrink-0"
+          >
+            Review Now
+          </Link>
         </div>
       )}
 
-      {/* Performance Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Clicks</h3>
-            <MousePointerClick className="h-5 w-5 text-blue-500" />
+      {/* Performance Metrics - compact */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
+          <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
+            <h3 className="text-sm sm:text-base font-semibold text-gray-900">Clicks</h3>
+            <MousePointerClick className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500 flex-shrink-0" />
           </div>
-          <p className="text-3xl font-bold text-gray-900">
+          <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 truncate">
             {(stats?.totalClicks || 0).toLocaleString()}
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Conversions</h3>
-            <TrendingUp className="h-5 w-5 text-green-500" />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
+          <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
+            <h3 className="text-sm sm:text-base font-semibold text-gray-900">Conversions</h3>
+            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
           </div>
-          <p className="text-3xl font-bold text-gray-900">
+          <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 truncate">
             {(stats?.totalConversions || 0).toLocaleString()}
           </p>
-          <p className="text-sm text-gray-500 mt-2">
-            {stats?.conversionRate?.toFixed(2) || 0}% conversion rate
-          </p>
+          <p className="text-[10px] sm:text-xs text-gray-500 mt-1">{stats?.conversionRate?.toFixed(2) || 0}% conversion rate</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-          </div>
-          <div className="space-y-2">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 sm:mb-3">Quick Actions</h3>
+          <div className="space-y-1.5">
             <Link
               to="/campaigns"
-              className="block w-full text-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
+              className="block w-full text-center px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-xs sm:text-sm"
             >
               Create Campaign
             </Link>
             <Link
               to="/ads/new"
-              className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              className="block w-full text-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm"
             >
               Design Ad
             </Link>
             <Link
               to="/email-campaigns/new"
-              className="block w-full text-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+              className="block w-full text-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm"
             >
               Send Email
             </Link>
