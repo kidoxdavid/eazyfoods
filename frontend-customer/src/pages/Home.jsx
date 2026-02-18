@@ -186,7 +186,7 @@ const Home = () => {
         api.get('/customer/products', { params: { ...productParams, discounted: true, limit: 20 } }),
         api.get('/customer/products', { params: { ...productParams, low_stock: true, limit: 20 } }),
         api.get('/customer/products', { params: allProductsParams }),
-        api.get('/customer/categories'),
+        api.get('/customer/categories', { params: selectedCity && selectedCity !== 'All' ? { city: selectedCity } : {} }),
         Object.keys(storeParams).length > 0
           ? api.get('/customer/stores/', { params: storeParams })
           : api.get('/customer/stores/'),
@@ -568,10 +568,13 @@ const Home = () => {
                     icon: '🦁',
                     description: 'Braai, Bobotie & More'
                   }
-                ].slice(0, 5).map((item, index) => (
+                ]
+                .filter(item => selectedCity === 'All' || nearbyStores.some(s => s.region === item.region))
+                .slice(0, 5)
+                .map((item, index) => (
                   <Link
                     key={item.region}
-                    to={`/stores?region=${encodeURIComponent(item.region)}`}
+                    to={`/stores?region=${encodeURIComponent(item.region)}${selectedCity && selectedCity !== 'All' ? `&city=${encodeURIComponent(selectedCity)}` : ''}`}
                     className="group relative flex items-center overflow-hidden rounded-xl border border-gray-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 bg-white h-20"
                   >
                     {/* Subtle background gradient */}

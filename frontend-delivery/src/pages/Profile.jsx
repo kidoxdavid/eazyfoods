@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { User, Mail, Phone, MapPin, Car, Shield, DollarSign, Package, Star, Edit, Save, X, Eye, EyeOff } from 'lucide-react'
+import { CANADIAN_PROVINCES, getCitiesForProvince } from '../constants/locations'
 
 // Calgary Delivery Zones with neighborhoods
 const DELIVERY_ZONES = [
@@ -399,29 +400,39 @@ const Profile = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
                   {editing ? (
-                    <input
-                      type="text"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    <select
+                      value={formData.state}
+                      onChange={(e) => {
+                        setFormData({ ...formData, state: e.target.value, city: '' })
+                      }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                    />
+                    >
+                      <option value="">Select province</option>
+                      {CANADIAN_PROVINCES.map(p => (
+                        <option key={p.value} value={p.value}>{p.label}</option>
+                      ))}
+                    </select>
                   ) : (
-                    <p className="text-gray-900">{profile.city || 'Not set'}</p>
+                    <p className="text-gray-900">{profile.state || 'Not set'}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
                   {editing ? (
-                    <input
-                      type="text"
-                      value={formData.state}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    <select
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                    />
+                    >
+                      <option value="">Select city</option>
+                      {getCitiesForProvince(formData.state).map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
                   ) : (
-                    <p className="text-gray-900">{profile.state || 'Not set'}</p>
+                    <p className="text-gray-900">{profile.city || 'Not set'}</p>
                   )}
                 </div>
                 <div>

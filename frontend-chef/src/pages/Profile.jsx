@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
 import { Save, Upload, X, MapPin, ChefHat, Globe, DollarSign, Clock, Users } from 'lucide-react'
+import { CANADIAN_PROVINCES, getCitiesForProvince } from '../constants/locations'
 
 // Cuisine types: African countries (same as CuisineForm dropdown)
 const AFRICAN_CUISINE_TYPES = [
@@ -401,25 +402,37 @@ const Profile = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Province *</label>
+                <select
+                  name="state"
                   required
+                  value={formData.state}
+                  onChange={(e) => {
+                    handleChange(e)
+                    setFormData(prev => ({ ...prev, city: '' }))
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                />
+                >
+                  <option value="">Select province</option>
+                  {CANADIAN_PROVINCES.map(p => (
+                    <option key={p.value} value={p.value}>{p.label}</option>
+                  ))}
+                </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">State/Province</label>
-                <input
-                  type="text"
-                  name="state"
-                  value={formData.state}
+                <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
+                <select
+                  name="city"
+                  required
+                  value={formData.city}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                />
+                >
+                  <option value="">Select city</option>
+                  {getCitiesForProvince(formData.state).map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code *</label>

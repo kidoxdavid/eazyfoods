@@ -29,9 +29,12 @@ const TopMarketDeals = () => {
   const { selectedCity } = useLocation()
 
   useEffect(() => {
-    fetchCategories()
     loadFavorites()
   }, [])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [selectedCity])
 
   useEffect(() => {
     fetchDeals()
@@ -61,7 +64,8 @@ const TopMarketDeals = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get('/customer/categories')
+      const params = selectedCity && selectedCity !== 'All' ? { city: selectedCity } : {}
+      const response = await api.get('/customer/categories', { params })
       const categoriesData = Array.isArray(response.data) ? response.data : (response.data?.categories || [])
       setCategories(categoriesData)
     } catch (error) {

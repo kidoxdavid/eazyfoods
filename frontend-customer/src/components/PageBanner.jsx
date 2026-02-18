@@ -17,9 +17,6 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
   const selectedCity = (locationContext && locationContext.selectedCity) ? locationContext.selectedCity : 'All'
 
   useEffect(() => {
-    setAds([])
-    setLoading(true)
-    setCurrentIndex(0)
     fetchAds()
   }, [placement, selectedCity])
 
@@ -89,7 +86,11 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
     become_a_driver_bottom_banner: []
   }
 
+  const adsCountRef = useRef(0)
+  useEffect(() => { adsCountRef.current = ads.length }, [ads.length])
+
   const fetchAds = async () => {
+    if (adsCountRef.current === 0) setLoading(true)
     try {
       const placementsToTry = [placement, ...(LEGACY_PLACEMENTS[placement] || [])]
       let adsData = []
@@ -314,12 +315,9 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
                     }}
                 loading="lazy"
                 onError={(e) => {
-                  console.error('[PageBanner] Image failed to load:', {
-                    originalUrl: currentAd.image_url,
-                    resolvedUrl: imageUrl,
-                    fullUrl: window.location.origin + imageUrl
-                  })
-                  e.target.style.display = 'none'
+                  console.warn('[PageBanner] Image failed to load, using gradient fallback:', currentAd.image_url)
+                  e.target.style.opacity = '0'
+                  e.target.style.pointerEvents = 'none'
                 }}
               />
             )}

@@ -43,8 +43,11 @@ const Groceries = () => {
 
   useEffect(() => {
     loadFavorites()
-    fetchCategories()
   }, [])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [selectedCity])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -78,7 +81,8 @@ const Groceries = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get('/customer/categories')
+      const params = selectedCity && selectedCity !== 'All' ? { city: selectedCity } : {}
+      const response = await api.get('/customer/categories', { params })
       const categoriesData = Array.isArray(response.data) ? response.data : (response.data?.categories || [])
       setCategories(categoriesData)
     } catch (error) {

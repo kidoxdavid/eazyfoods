@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
 import { Save, MapPin, Clock, Truck, Image as ImageIcon, Building2, Upload } from 'lucide-react'
+import { CANADIAN_PROVINCES, getCitiesForProvince } from '../constants/locations'
 
 const Profile = () => {
   const [loading, setLoading] = useState(true)
@@ -287,30 +288,37 @@ const Profile = () => {
             </div>
 
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                City *
-              </label>
-              <input
-                type="text"
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Province *</label>
+              <select
+                name="state"
+                required
+                value={formData.state}
+                onChange={(e) => {
+                  handleChange(e)
+                  setFormData(prev => ({ ...prev, city: '' }))
+                }}
+                className="input"
+              >
+                <option value="">Select province</option>
+                {CANADIAN_PROVINCES.map(p => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">City *</label>
+              <select
                 name="city"
+                required
                 value={formData.city}
                 onChange={handleChange}
-                required
                 className="input"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                Province
-              </label>
-              <input
-                type="text"
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                className="input"
-              />
+              >
+                <option value="">Select city</option>
+                {getCitiesForProvince(formData.state).map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
 
             <div>

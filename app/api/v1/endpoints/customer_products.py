@@ -17,17 +17,52 @@ router = APIRouter()
 
 @router.get("/categories")
 async def get_categories(
+    city: Optional[str] = Query(None, description="Filter categories to those with products from stores in this city"),
     db: Session = Depends(get_db)
 ):
-    """Get all categories (uses app DB so Render DATABASE_URL works)."""
+    """Get categories. When city is provided, only return categories that have products from stores in that city."""
     from sqlalchemy import text
+    from uuid import UUID
     try:
-        result = db.execute(text("""
-            SELECT id, name, slug, description, image_url
-            FROM categories
-            WHERE is_active = true
-            ORDER BY name
-        """))
+        if city and city.strip() and city.strip().lower() != 'all':
+            city_filter = city.strip()
+            store_ids = [r[0] for r in db.query(Store.id).filter(
+                Store.city.isnot(None),
+                func.lower(Store.city).ilike(f"%{city_filter.lower()}%"),
+                Store.is_active == True
+            ).all()]
+            vendor_ids = [r[0] for r in db.query(Vendor.id).filter(
+                Vendor.city.isnot(None),
+                func.lower(Vendor.city).ilike(f"%{city_filter.lower()}%"),
+                Vendor.status == "active"
+            ).all()]
+            from sqlalchemy import or_
+            q = db.query(Product.category_id).filter(Product.category_id.isnot(None)).distinct()
+            if store_ids or vendor_ids:
+                conds = []
+                if store_ids:
+                    conds.append(Product.store_id.in_(store_ids))
+                if vendor_ids:
+                    conds.append(Product.vendor_id.in_(vendor_ids))
+                q = q.filter(or_(*conds))
+            else:
+                return []
+            matching_cat_ids = list(set(str(r[0]) for r in q.all() if r[0]))
+            if not matching_cat_ids:
+                return []
+            result = db.execute(text("""
+                SELECT id, name, slug, description, image_url
+                FROM categories
+                WHERE is_active = true AND id::text = ANY(:cat_ids)
+                ORDER BY name
+            """), {"cat_ids": matching_cat_ids})
+        else:
+            result = db.execute(text("""
+                SELECT id, name, slug, description, image_url
+                FROM categories
+                WHERE is_active = true
+                ORDER BY name
+            """))
         rows = result.fetchall()
         categories_list = []
         for row in rows:

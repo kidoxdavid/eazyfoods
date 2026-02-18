@@ -248,7 +248,9 @@ const Chefs = () => {
                   {/* Location */}
                   <div className="flex items-center text-gray-600 mb-2">
                     <MapPin className="h-4 w-4 mr-1.5 flex-shrink-0 text-primary-600" />
-                    <span className="text-sm font-medium">{chef.city}</span>
+                    <span className="text-sm font-medium">
+                      {[chef.city, chef.state].filter(Boolean).join(', ') || 'Location not set'}
+                    </span>
                   </div>
                   
                   {/* Service Info */}
