@@ -55,6 +55,7 @@ const MarketingAds = () => {
       await api.put(`/admin/marketing/ads/${id}/approve`)
       alert('Ad approved successfully')
       fetchAds()
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
     } catch (error) {
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to approve ad'
       alert(`Failed to approve ad: ${errorMessage}`)
@@ -68,6 +69,7 @@ const MarketingAds = () => {
       await api.put(`/admin/marketing/ads/${id}/reject`)
       alert('Ad rejected')
       fetchAds()
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
     } catch (error) {
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to reject ad'
       alert(`Failed to reject ad: ${errorMessage}`)

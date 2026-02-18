@@ -13,9 +13,13 @@ export const useNotifications = () => {
 
   useEffect(() => {
     fetchNotifications()
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000)
-    return () => clearInterval(interval)
+    const interval = setInterval(fetchNotifications, 10000)
+    const onRefresh = () => fetchNotifications()
+    window.addEventListener('refresh-notifications', onRefresh)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('refresh-notifications', onRefresh)
+    }
   }, [])
 
   const fetchNotifications = async () => {

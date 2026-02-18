@@ -26,6 +26,7 @@ const MarketingPendingApprovals = () => {
       await api.put(`/admin/marketing/admin/ads/${adId}/admin-approve`)
       alert('Ad approved successfully')
       fetchPending()
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
     } catch (error) {
       alert('Failed to approve ad: ' + (error.response?.data?.detail || error.message))
     }
@@ -37,6 +38,7 @@ const MarketingPendingApprovals = () => {
       await api.put(`/admin/marketing/admin/ads/${adId}/admin-reject?reason=${encodeURIComponent(reason || '')}`)
       alert('Ad rejected')
       fetchPending()
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
     } catch (error) {
       alert('Failed to reject ad: ' + (error.response?.data?.detail || error.message))
     }
@@ -47,6 +49,7 @@ const MarketingPendingApprovals = () => {
       await api.put(`/admin/marketing/admin/campaigns/${campaignId}/admin-approve`)
       alert('Campaign approved successfully')
       fetchPending()
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
     } catch (error) {
       alert('Failed to approve campaign: ' + (error.response?.data?.detail || error.message))
     }

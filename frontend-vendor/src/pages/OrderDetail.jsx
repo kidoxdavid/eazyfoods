@@ -33,6 +33,8 @@ const OrderDetail = () => {
     try {
       await api.put(`/orders/${id}/${action.replace(' ', '-')}`)
       fetchOrder()
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
+      window.dispatchEvent(new CustomEvent('refresh-orders-list'))
     } catch (error) {
       alert('Failed to update order status')
     } finally {

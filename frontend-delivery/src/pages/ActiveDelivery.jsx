@@ -79,6 +79,7 @@ const ActiveDelivery = () => {
         latitude: location.latitude,
         longitude: location.longitude
       })
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
       alert(`Status updated to ${status}`)
       if (status === 'delivered') {
         stopLocationTracking()

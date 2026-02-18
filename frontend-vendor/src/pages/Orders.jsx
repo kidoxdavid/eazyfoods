@@ -24,6 +24,17 @@ const Orders = () => {
     fetchOrders()
   }, [tab, statusFilter])
 
+  useEffect(() => {
+    const onRefresh = () => fetchOrders()
+    window.addEventListener('refresh-orders-list', onRefresh)
+    return () => window.removeEventListener('refresh-orders-list', onRefresh)
+  }, [tab, statusFilter])
+
+  useEffect(() => {
+    const interval = setInterval(fetchOrders, 15000)
+    return () => clearInterval(interval)
+  }, [tab, statusFilter])
+
   // Sync tab with URL (e.g. /orders?tab=delivery)
   useEffect(() => {
     const t = searchParams.get('tab')
@@ -50,6 +61,7 @@ const Orders = () => {
       const response = await api.get('/orders/', { params })
       const all = Array.isArray(response.data) ? response.data : []
       setAllOrders(all)
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
     } catch (error) {
       console.error('Failed to fetch orders:', error)
       setAllOrders([])

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from datetime import timedelta
 from app.core.database import get_db
 from app.models.customer import Customer
@@ -160,6 +161,13 @@ async def customer_google(
         }
     except HTTPException:
         raise
+    except IntegrityError as e:
+        logger.exception("Google sign-in DB error (run migration?): %s", e)
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google sign-in is not fully set up. Please use email and password, or run the database migration (add_google_oauth_columns.sql) on production.",
+        )
     except Exception as e:
         logger.exception("Google sign-in failed: %s", e)
         raise HTTPException(

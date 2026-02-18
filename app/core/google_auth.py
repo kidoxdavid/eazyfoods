@@ -1,9 +1,12 @@
 """
 Verify Google OAuth2 ID token and return payload (email, sub, name, etc.).
 """
+import logging
 import httpx
 from typing import Optional
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 async def verify_google_id_token(id_token: str) -> Optional[dict]:
@@ -21,10 +24,13 @@ async def verify_google_id_token(id_token: str) -> Optional[dict]:
                 params={"id_token": id_token},
                 timeout=10.0,
             )
-            r.raise_for_status()
+            if r.status_code != 200:
+                logger.warning("Google tokeninfo returned %s: %s", r.status_code, r.text[:200])
+                return None
             data = r.json()
-            # Verify audience (optional but recommended)
+            # Verify audience (required: token must be for this app)
             if data.get("aud") != client_id:
+                logger.warning("Google token audience mismatch: aud=%s expected=%s", data.get("aud"), client_id)
                 return None
             return {
                 "email": data.get("email"),
@@ -33,5 +39,6 @@ async def verify_google_id_token(id_token: str) -> Optional[dict]:
                 "given_name": data.get("given_name") or "",
                 "family_name": data.get("family_name") or "",
             }
-    except Exception:
+    except Exception as e:
+        logger.warning("Google token verification failed: %s", e)
         return None

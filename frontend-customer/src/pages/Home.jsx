@@ -800,37 +800,45 @@ const Home = () => {
                     <Link
                       key={chef.id}
                       to={`/chefs/${chef.id}`}
-                      className="group relative flex items-center p-4 bg-white rounded-xl border border-amber-200 hover:border-amber-400 hover:shadow-lg transition-all duration-300 overflow-hidden h-20"
+                      className="group relative flex items-center p-4 bg-white rounded-xl border border-amber-200 hover:border-amber-400 hover:shadow-lg transition-all duration-300 overflow-hidden min-h-[5rem]"
                     >
                       <div className="absolute inset-0 bg-gradient-to-br from-amber-50/50 via-white to-rose-50/30 group-hover:from-amber-100/70 group-hover:via-white group-hover:to-rose-100/50 transition-all duration-300"></div>
-                      <div className="relative z-10 flex items-center gap-3 w-full">
-                        <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden bg-amber-100 flex items-center justify-center">
-                          {chef.profile_image_url ? (
-                            <img src={resolveImageUrl(chef.profile_image_url)} alt={chef.chef_name} className="w-full h-full object-cover" />
-                          ) : (
-                            <ChefHat className="h-6 w-6 text-amber-600" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-amber-600 transition-colors">{chef.chef_name}</h3>
-                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                            {chef.average_rating > 0 && (
-                              <div className="flex items-center space-x-0.5">
-                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                                <span className="text-xs font-semibold text-gray-900">{chef.average_rating.toFixed(1)}</span>
-                              </div>
-                            )}
-                            {chef.city && (
-                              <span className="flex items-center gap-0.5 text-xs text-gray-600">
-                                <MapPin className="h-3 w-3" />
-                                {chef.city}{chef.state ? `, ${chef.state}` : ''}
-                              </span>
-                            )}
-                            {chef.cuisines?.[0] && (
-                              <p className="text-xs text-gray-600 truncate">{chef.cuisines[0]}</p>
+                      <div className="relative z-10 flex items-center justify-between gap-3 w-full">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden bg-amber-100 flex items-center justify-center">
+                            {chef.profile_image_url ? (
+                              <img src={resolveImageUrl(chef.profile_image_url)} alt={chef.chef_name} className="w-full h-full object-cover" />
+                            ) : (
+                              <ChefHat className="h-6 w-6 text-amber-600" />
                             )}
                           </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-amber-600 transition-colors">{chef.chef_name}</h3>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              {chef.average_rating > 0 && (
+                                <div className="flex items-center space-x-0.5">
+                                  <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                  <span className="text-xs font-semibold text-gray-900">{chef.average_rating.toFixed(1)}</span>
+                                </div>
+                              )}
+                              {chef.city && (
+                                <span className="flex items-center gap-0.5 text-xs text-gray-600">
+                                  <MapPin className="h-3 w-3" />
+                                  {chef.city}{chef.state ? `, ${chef.state}` : ''}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
+                        {chef.cuisines?.length > 0 && (
+                          <div className="flex-shrink-0 flex flex-wrap justify-end gap-1 max-w-[45%]">
+                            {(Array.isArray(chef.cuisines) ? chef.cuisines : [chef.cuisines]).slice(0, 3).map((c) => (
+                              <span key={c} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 group-hover:bg-amber-200 group-hover:border-amber-300 transition-colors">
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </Link>
                   ))}

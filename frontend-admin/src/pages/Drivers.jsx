@@ -47,6 +47,7 @@ const Drivers = () => {
       await api.put(`/admin/drivers/${driverId}/verify?verification_status=${status}&verification_notes=${encodeURIComponent(notes)}`)
       alert(`Driver ${status} successfully`)
       fetchDrivers()
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
     } catch (error) {
       console.error('Failed to verify driver:', error)
       const errorMessage = error.response?.data?.detail || error.message || `Failed to ${status} driver`

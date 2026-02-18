@@ -41,6 +41,7 @@ const Promotions = () => {
       await api.put(`/admin/promotions/${promoId}/approve`)
       alert('Promotion approved successfully')
       fetchPromotions()
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
     } catch (error) {
       alert('Failed to approve promotion')
     }
@@ -52,6 +53,7 @@ const Promotions = () => {
       await api.put(`/admin/promotions/${promoId}/reject`)
       alert('Promotion rejected successfully')
       fetchPromotions()
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
     } catch (error) {
       alert('Failed to reject promotion')
     }

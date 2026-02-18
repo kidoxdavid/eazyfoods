@@ -70,3 +70,26 @@ All four portals support **sign in or sign up** with Google:
 - **Driver:** If the email is new, a driver account is created with `verification_status=pending` and `is_active=false`; they can complete profile and wait for admin approval.
 
 After setup, the login and signup pages will show an “Or continue with” / “Or sign in with Google” section and the Google button when `VITE_GOOGLE_OAUTH_CLIENT_ID` is set.
+
+---
+
+## Troubleshooting: "Sign up with Google" returns 500 or fails
+
+1. **Run the database migration on production (Render)**  
+   If the API returns 500 when using Google sign-in, the production database may still have `password_hash` as NOT NULL. Run the migration once:
+   - Render Dashboard → PostgreSQL → **Connect** (External Database URL).
+   - Run: `psql "$DATABASE_URL" -f migrations/add_google_oauth_columns.sql`  
+   Or paste and run the contents of `migrations/add_google_oauth_columns.sql` in the Render shell or any Postgres client connected to the Render DB.
+
+2. **Set `GOOGLE_OAUTH_CLIENT_ID` on Render**  
+   In Render → your **Web Service** (API) → **Environment**, add:
+   ```bash
+   GOOGLE_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
+   ```
+   Use the **same** Client ID as in your frontend `VITE_GOOGLE_OAUTH_CLIENT_ID`. Redeploy the API after adding the variable.
+
+3. **Check Render logs**  
+   After the changes above, if it still fails, open Render → your API service → **Logs**. The backend now logs the real error (e.g. "Google token audience mismatch", "DB error (run migration?)"). Fix the cause indicated there.
+
+4. **Cross-Origin-Opener-Policy (COOP) warnings**  
+   If you see "Cross-Origin-Opener-Policy policy would block the window.postMessage call" in the browser console, the Google popup may be blocked by your host's COOP header. Ensure your frontend origin is in Google Cloud Console **Authorized JavaScript origins**. If the host sends `Cross-Origin-Opener-Policy: same-origin`, consider using a redirect-based Google sign-in flow or setting `Cross-Origin-Opener-Policy: same-origin-allow-popups` for the login/signup pages if your host allows it.

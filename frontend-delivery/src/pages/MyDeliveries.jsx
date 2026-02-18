@@ -28,6 +28,7 @@ const MyDeliveries = () => {
   const handleUpdateStatus = async (deliveryId, status) => {
     try {
       await api.put(`/driver/deliveries/${deliveryId}/status`, { status })
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
       alert(`Status updated to ${status}`)
       fetchDeliveries()
     } catch (error) {

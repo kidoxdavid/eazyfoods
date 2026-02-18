@@ -9,7 +9,7 @@ const AvailableDeliveries = () => {
 
   useEffect(() => {
     fetchDeliveries()
-    const interval = setInterval(fetchDeliveries, 30000) // Refresh every 30 seconds
+    const interval = setInterval(fetchDeliveries, 15000)
     return () => clearInterval(interval)
   }, [])
 
@@ -17,6 +17,7 @@ const AvailableDeliveries = () => {
     try {
       const response = await api.get('/driver/available-orders')
       setDeliveries(Array.isArray(response.data) ? response.data : [])
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
     } catch (error) {
       console.error('Failed to fetch deliveries:', error)
       setDeliveries([])
@@ -34,6 +35,7 @@ const AvailableDeliveries = () => {
       })
       alert('Delivery accepted! Check My Deliveries.')
       fetchDeliveries()
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
     } catch (error) {
       const detail = error.response?.data?.detail
       const msg = typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map((e) => e.msg || e.loc?.join('.')).join(', ') : 'Failed to accept delivery'
@@ -46,6 +48,7 @@ const AvailableDeliveries = () => {
     try {
       await api.post(`/driver/deliveries/${orderId}/reject`)
       fetchDeliveries()
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
     } catch (error) {
       alert(error.response?.data?.detail || 'Failed to decline')
     }

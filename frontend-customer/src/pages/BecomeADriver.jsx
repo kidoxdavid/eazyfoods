@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Truck, DollarSign, Clock, Zap, MapPin, FileCheck, ArrowRight, CheckCircle } from 'lucide-react'
+import PageBanner from '../components/PageBanner'
 
 const BecomeADriver = () => {
   const benefits = [
@@ -35,39 +36,40 @@ const BecomeADriver = () => {
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Hero - compact with orange accents */}
-      <div className="bg-gradient-to-r from-primary-600 via-orange-600 to-primary-700 text-white overflow-hidden flex items-center mb-4" style={{ minHeight: '160px', height: '160px' }}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-4 text-center">
-          {/* Icon + title on one line, centered */}
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center flex-shrink-0">
-              <Truck className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+      {/* Top banner: same height (240px) as other pages, with optional ad */}
+      <PageBanner
+        title="Become a Delivery Driver"
+        subtitle="Join the eazyfoods driver network. Flexible hours, competitive pay, simple signup."
+        placement="become_a_driver_top_banner"
+        variant="orange"
+        defaultContent={
+          <div className="text-center w-full">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center flex-shrink-0">
+                <Truck className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              </div>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Become a Delivery Driver</h1>
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">
-              Become a Delivery Driver
-            </h1>
+            <p className="text-white/95 text-sm sm:text-base max-w-2xl mx-auto mb-4">
+              Join the eazyfoods driver network. Flexible hours, competitive pay, simple signup.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-1.5 bg-white/25 backdrop-blur-sm px-3 sm:px-4 py-1.5 rounded-full border border-white/30">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <span className="font-semibold text-xs sm:text-sm whitespace-nowrap">Flexible Earnings</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-white/25 backdrop-blur-sm px-3 sm:px-4 py-1.5 rounded-full border border-white/30">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <span className="font-semibold text-xs sm:text-sm whitespace-nowrap">Work Your Hours</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-white/25 backdrop-blur-sm px-3 sm:px-4 py-1.5 rounded-full border border-white/30">
+                <Zap className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <span className="font-semibold text-xs sm:text-sm whitespace-nowrap">Quick Signup</span>
+              </div>
+            </div>
           </div>
-          {/* Paragraph centered below */}
-          <p className="text-white/95 text-sm sm:text-base max-w-2xl mx-auto mb-4">
-            Join the eazyfoods driver network. Flexible hours, competitive pay, simple signup.
-          </p>
-          {/* Three pills in one horizontal row, centered */}
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-            <div className="flex items-center gap-1.5 bg-white/25 backdrop-blur-sm px-3 sm:px-4 py-1.5 rounded-full border border-white/30">
-              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-              <span className="font-semibold text-xs sm:text-sm whitespace-nowrap">Flexible Earnings</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-white/25 backdrop-blur-sm px-3 sm:px-4 py-1.5 rounded-full border border-white/30">
-              <Clock className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-              <span className="font-semibold text-xs sm:text-sm whitespace-nowrap">Work Your Hours</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-white/25 backdrop-blur-sm px-3 sm:px-4 py-1.5 rounded-full border border-white/30">
-              <Zap className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-              <span className="font-semibold text-xs sm:text-sm whitespace-nowrap">Quick Signup</span>
-            </div>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Intro */}
@@ -147,28 +149,33 @@ const BecomeADriver = () => {
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="text-center">
-          <div className="inline-flex flex-col sm:flex-row items-center gap-3 p-5 sm:p-6 bg-gradient-to-r from-primary-600 via-orange-600 to-primary-700 rounded-2xl shadow-lg">
-            <div className="text-white text-left">
-              <h3 className="text-xl sm:text-2xl font-bold mb-2">Ready to start?</h3>
-              <p className="text-white/90 text-sm sm:text-base mb-4">
-                Complete the driver application. It only takes a few minutes.
-              </p>
-              <Link
-                to="/driver-signup"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-primary-600 font-semibold rounded-xl hover:bg-gray-100 transition-colors shadow-md"
-              >
-                <FileCheck className="h-5 w-5" />
-                Apply to drive
-                <ArrowRight className="h-5 w-5" />
-              </Link>
+        {/* CTA - redesigned */}
+        <section className="mt-10">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-700 to-orange-700 shadow-xl">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-80" aria-hidden="true" />
+            <div className="relative px-6 py-10 sm:px-10 sm:py-12 flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="text-center sm:text-left">
+                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">Ready to start?</h3>
+                <p className="text-white/90 text-sm sm:text-base max-w-md">
+                  Complete the driver application in a few minutes. Join the network and start earning on your schedule.
+                </p>
+              </div>
+              <div className="flex-shrink-0">
+                <Link
+                  to="/driver-signup"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-primary-600 font-semibold rounded-xl hover:bg-nude-50 transition-colors shadow-lg hover:shadow-xl"
+                >
+                  <FileCheck className="h-5 w-5" />
+                  Apply to drive
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Footer note */}
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-gray-500 mt-8">
           Questions? Visit our <Link to="/contact" className="text-primary-600 hover:underline">Contact</Link> page or email support@eazyfoods.com.
         </p>
       </div>

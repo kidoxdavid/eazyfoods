@@ -142,7 +142,7 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
     if (ads.length <= 1 || dismissed) return
 
     const currentAd = ads[currentIndex]
-    const duration = (currentAd?.slideshow_duration || 5) * 1000
+    const duration = Math.max((currentAd?.slideshow_duration || 5) * 1000, 3000)
     const transitionTime = 500
 
     const transitionStartTimer = setTimeout(() => {
@@ -239,8 +239,9 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
   const videoUrl = hasVideo ? resolveMediaUrl(currentAd.video_url) : null
   const transitionStyle = currentAd?.transition_style || 'fade'
 
+  // Only apply transition (hide) when we have multiple ads and are actually switching; prevents single-ad flash
   const getTransitionClasses = () => {
-    if (!transitioning) return ''
+    if (ads.length <= 1 || !transitioning) return ''
     switch (transitionStyle) {
       case 'slide':
         return 'transform transition-transform duration-500'
@@ -310,7 +311,8 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
                       transition: 'transform 0.1s ease-out',
                       objectPosition: `center ${parallaxOffset}px`
                     }}
-                loading="lazy"
+                loading="eager"
+                decoding="async"
                 onError={(e) => {
                   console.warn('[PageBanner] Image failed to load, using gradient fallback:', currentAd.image_url)
                   e.target.style.opacity = '0'
