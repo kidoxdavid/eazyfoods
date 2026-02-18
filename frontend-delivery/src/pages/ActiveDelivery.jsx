@@ -91,12 +91,22 @@ const ActiveDelivery = () => {
     }
   }
 
-  const openNavigation = () => {
+  const getNavigationUrl = () => {
     if (delivery?.delivery_latitude && delivery?.delivery_longitude) {
-      const url = `https://www.google.com/maps/dir/?api=1&destination=${delivery.delivery_latitude},${delivery.delivery_longitude}`
-      window.open(url, '_blank')
+      return `https://www.google.com/maps/dir/?api=1&destination=${delivery.delivery_latitude},${delivery.delivery_longitude}`
     }
+    // Fallback: use address text when lat/long are missing
+    const addr = delivery?.delivery_address
+    if (addr && (addr.street || addr.city)) {
+      const parts = [addr.street, addr.city, addr.state, addr.postal_code].filter(Boolean)
+      if (parts.length) {
+        return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(parts.join(', '))}`
+      }
+    }
+    return null
   }
+
+  const navUrl = getNavigationUrl()
 
   if (loading) {
     return (
@@ -205,14 +215,22 @@ const ActiveDelivery = () => {
         )}
 
         <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <button
-            onClick={openNavigation}
-            className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2"
-            disabled={!deliveryLocation}
-          >
-            <Navigation className="h-5 w-5" />
-            Open Navigation
-          </button>
+          {navUrl ? (
+            <a
+              href={navUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2"
+            >
+              <Navigation className="h-5 w-5" />
+              Open Navigation
+            </a>
+          ) : (
+            <div className="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded-lg flex items-center justify-center gap-2 cursor-not-allowed">
+              <Navigation className="h-5 w-5" />
+              Open Navigation (no address)
+            </div>
+          )}
         </div>
       </div>
 
@@ -281,7 +299,7 @@ const ActiveDelivery = () => {
                   label="🚗"
                   title="Your Location"
                   icon={{
-                    url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
+                    url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
                   }}
                 />
               )}
