@@ -35,8 +35,8 @@ const BecomeADriver = () => {
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Hero - centered like Discover Local Markets (240px) */}
-      <div className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 text-white overflow-hidden flex items-center mb-6" style={{ minHeight: '240px', height: '240px' }}>
+      {/* Hero - compact with orange accents */}
+      <div className="bg-gradient-to-r from-primary-600 via-orange-600 to-primary-700 text-white overflow-hidden flex items-center mb-4" style={{ minHeight: '160px', height: '160px' }}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-4 text-center">
           {/* Icon + title on one line, centered */}
           <div className="flex items-center justify-center gap-3 mb-2">
@@ -78,17 +78,17 @@ const BecomeADriver = () => {
         </section>
 
         {/* Benefits */}
-        <section className="mb-12">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 text-center">Why drive with us</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section className="mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 text-center">Why drive with us</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {benefits.map((item) => {
               const Icon = item.icon
               return (
                 <div
                   key={item.title}
-                  className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+                  className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow border-l-4 border-l-orange-500"
                 >
-                  <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center mb-4">
+                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center mb-3">
                     <Icon className="h-6 w-6 text-primary-600" />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
@@ -100,12 +100,12 @@ const BecomeADriver = () => {
         </section>
 
         {/* How it works */}
-        <section className="mb-12">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 text-center">How it works</h2>
+        <section className="mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 text-center">How it works</h2>
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <ul className="divide-y divide-gray-100">
               {steps.map((step) => (
-                <li key={step.number} className="flex gap-4 p-6 sm:p-6">
+                <li key={step.number} className="flex gap-3 p-4">
                   <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold text-lg">
                     {step.number}
                   </div>
@@ -120,9 +120,9 @@ const BecomeADriver = () => {
         </section>
 
         {/* Requirements */}
-        <section className="mb-12">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 text-center">What you need</h2>
-          <div className="bg-white rounded-xl p-6 sm:p-8 border border-gray-200 shadow-sm">
+        <section className="mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 text-center">What you need</h2>
+          <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm border-l-4 border-l-orange-500">
             <ul className="space-y-3">
               {requirements.map((req) => (
                 <li key={req} className="flex items-start gap-3">
@@ -135,7 +135,7 @@ const BecomeADriver = () => {
         </section>
 
         {/* Delivery areas hint */}
-        <section className="mb-12 rounded-xl bg-gray-50 border border-gray-200 p-6">
+        <section className="mb-6 rounded-xl bg-orange-50/50 border border-orange-200 p-4">
           <div className="flex items-start gap-3">
             <MapPin className="h-6 w-6 text-primary-600 flex-shrink-0 mt-0.5" />
             <div>
@@ -149,7 +149,7 @@ const BecomeADriver = () => {
 
         {/* CTA */}
         <section className="text-center">
-          <div className="inline-flex flex-col sm:flex-row items-center gap-4 p-6 sm:p-8 bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-lg">
+          <div className="inline-flex flex-col sm:flex-row items-center gap-3 p-5 sm:p-6 bg-gradient-to-r from-primary-600 via-orange-600 to-primary-700 rounded-2xl shadow-lg">
             <div className="text-white text-left">
               <h3 className="text-xl sm:text-2xl font-bold mb-2">Ready to start?</h3>
               <p className="text-white/90 text-sm sm:text-base mb-4">
@@ -168,7 +168,7 @@ const BecomeADriver = () => {
         </section>
 
         {/* Footer note */}
-        <p className="text-center text-sm text-gray-500 mt-8">
+        <p className="text-center text-sm text-gray-500 mt-6">
           Questions? Visit our <Link to="/contact" className="text-primary-600 hover:underline">Contact</Link> page or email support@eazyfoods.com.
         </p>
       </div>

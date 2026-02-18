@@ -149,6 +149,7 @@ async def get_vendor_detail(
         "state": vendor.state,
         "postal_code": vendor.postal_code,
         "region": vendor.region,
+        "government_id_url": vendor.government_id_url,
         "status": vendor.status,
         "verification_status": vendor.verification_status,
         "verified_at": vendor.verified_at,

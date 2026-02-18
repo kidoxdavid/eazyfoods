@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
-import { User, Mail, Phone, MapPin, Car, Shield, DollarSign, Package, Star, Edit, Save, X, Eye, EyeOff, Power } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Car, Shield, DollarSign, Package, Star, Edit, Save, X, Eye, EyeOff } from 'lucide-react'
 
 // Calgary Delivery Zones with neighborhoods
 const DELIVERY_ZONES = [
@@ -131,7 +131,6 @@ const Profile = () => {
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
-  const [availabilityLoading, setAvailabilityLoading] = useState(false)
 
   useEffect(() => {
     if (token) {
@@ -228,33 +227,6 @@ const Profile = () => {
     setMessage({ type: '', text: '' })
   }
 
-  const toggleAvailability = async () => {
-    if (availabilityLoading) return
-    
-    setAvailabilityLoading(true)
-    try {
-      const newAvailability = !profile.is_available
-      await api.put('/driver/availability', null, {
-        params: { is_available: newAvailability }
-      })
-      setProfile({ ...profile, is_available: newAvailability })
-      setMessage({ 
-        type: 'success', 
-        text: `You are now ${newAvailability ? 'available' : 'unavailable'}. ${newAvailability ? 'You can receive delivery requests.' : 'You will not receive new delivery requests.'}` 
-      })
-      // Clear message after 5 seconds
-      setTimeout(() => setMessage({ type: '', text: '' }), 5000)
-    } catch (error) {
-      console.error('Failed to toggle availability:', error)
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.detail || 'Failed to update availability. Please try again.' 
-      })
-    } finally {
-      setAvailabilityLoading(false)
-    }
-  }
-
   const handleChangePassword = async () => {
     if (passwordData.new_password !== passwordData.confirm_password) {
       setMessage({ type: 'error', text: 'New passwords do not match' })
@@ -340,38 +312,6 @@ const Profile = () => {
           message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
         }`}>
           {message.text}
-        </div>
-      )}
-
-      {/* Availability Toggle */}
-      {profile && (
-        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Power className={`h-5 w-5 ${profile.is_available ? 'text-green-600' : 'text-gray-400'}`} />
-              <div>
-                <p className="text-sm font-medium text-gray-700">Availability Status</p>
-                <p className={`text-xs ${profile.is_available ? 'text-green-600' : 'text-gray-500'}`}>
-                  {profile.is_available ? 'Available - Accepting delivery requests' : 'Unavailable - Not accepting delivery requests'}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={toggleAvailability}
-              disabled={availabilityLoading}
-              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                profile.is_available ? 'bg-primary-600' : 'bg-gray-200'
-              } ${availabilityLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              role="switch"
-              aria-checked={profile.is_available}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  profile.is_available ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
         </div>
       )}
 

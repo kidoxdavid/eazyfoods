@@ -138,7 +138,7 @@ const TopChefDeals = () => {
           title="Top Chef Deals"
           subtitle="Discover amazing deals from talented chefs. Authentic African meals prepared just for you!"
           placement="top_chef_deals_top_banner"
-          variant="amber"
+          variant="orange"
         />
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4">
           <ProductGridSkeleton count={10} />
@@ -153,7 +153,7 @@ const TopChefDeals = () => {
         title="Top Chef Deals"
         subtitle="Discover amazing deals from talented chefs. Authentic African meals prepared just for you!"
         placement="top_chef_deals_top_banner"
-        variant="amber"
+        variant="orange"
         defaultContent={
           <div className="text-center w-full">
             <div className="flex items-center justify-center gap-4 mb-3">
@@ -193,14 +193,14 @@ const TopChefDeals = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
               title="Grid View"
             >
               <Grid3x3 className="h-5 w-5" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
               title="List View"
             >
               <List className="h-5 w-5" />
@@ -216,7 +216,7 @@ const TopChefDeals = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search chef deals..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             />
           </div>
 
@@ -236,7 +236,7 @@ const TopChefDeals = () => {
                 <select
                   value={cuisineTypeFilter}
                   onChange={(e) => setCuisineTypeFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                 >
                   <option value="">All Cuisine Types</option>
                   {cuisineTypes.map((ct) => (
@@ -252,7 +252,7 @@ const TopChefDeals = () => {
                 <select
                   value={offerTypeFilter}
                   onChange={(e) => setOfferTypeFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                 >
                   <option value="">All Offers</option>
                   {allOfferTypes.map((ot) => (
@@ -267,7 +267,7 @@ const TopChefDeals = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
               >
                 <option value="discount">Biggest Discount</option>
                 <option value="price-low">Price: Low to High</option>
@@ -294,7 +294,7 @@ const TopChefDeals = () => {
                   key={ct}
                   onClick={() => setCuisineTypeFilter(cuisineTypeFilter === ct ? '' : ct)}
                   className={`px-3 py-1 text-xs rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-                    cuisineTypeFilter === ct ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    cuisineTypeFilter === ct ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                   type="button"
                 >
@@ -319,7 +319,7 @@ const TopChefDeals = () => {
             <p className="text-sm text-gray-600 mb-4">Check back soon for amazing discounts from our talented chefs!</p>
             <Link
               to="/chefs"
-              className="inline-block px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm"
+              className="inline-block px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
             >
               Browse All Chefs
             </Link>
@@ -350,7 +350,7 @@ const TopChefDeals = () => {
                         )}
                         {badge && (
                           <div className="absolute top-1.5 right-1.5 z-10">
-                            <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg flex items-center gap-0.5">
+                            <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg flex items-center gap-0.5">
                               <Zap className="h-2.5 w-2.5 fill-white" />
                               {badge}
                             </span>
@@ -359,25 +359,25 @@ const TopChefDeals = () => {
                       </Link>
                       <div className="flex-1">
                         <Link to={`/chefs/${cuisine.chef_id}`}>
-                          <h3 className="text-lg font-bold text-gray-900 hover:text-amber-600 transition-colors mb-1">{cuisine.name}</h3>
+                          <h3 className="text-lg font-bold text-gray-900 hover:text-orange-600 transition-colors mb-1">{cuisine.name}</h3>
                         </Link>
                         <p className="text-xs text-gray-500 mb-2">by {cuisine.chef_name}</p>
                         {cuisine.cuisine_type && (
-                          <span className="inline-block px-2 py-0.5 bg-amber-50 text-amber-700 text-xs rounded mb-2">{cuisine.cuisine_type}</span>
+                          <span className="inline-block px-2 py-0.5 bg-orange-50 text-orange-700 text-xs rounded mb-2">{cuisine.cuisine_type}</span>
                         )}
                         <div className="flex items-baseline gap-2">
                           <p className="text-xl font-bold text-green-600">${(cuisine.discounted_price ?? cuisine.price).toFixed(2)}</p>
                           {cuisine.price > (cuisine.discounted_price ?? cuisine.price) && (
                             <p className="text-sm text-gray-400 line-through">${cuisine.price.toFixed(2)}</p>
                           )}
-                          {savingsAmount && <p className="text-xs font-semibold text-amber-600">Save ${savingsAmount}</p>}
+                          {savingsAmount && <p className="text-xs font-semibold text-orange-600">Save ${savingsAmount}</p>}
                         </div>
                         <div className="mt-2">
                           <StarRating rating={cuisine.average_rating || 0} totalReviews={cuisine.total_reviews || 0} size="sm" />
                         </div>
                         <Link
                           to={`/chefs/${cuisine.chef_id}`}
-                          className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-medium"
+                          className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium"
                         >
                           View Chef & Order
                           <Eye className="h-4 w-4" />
@@ -413,7 +413,7 @@ const TopChefDeals = () => {
                       )}
                       {badge && (
                         <div className="absolute top-1.5 right-1.5 z-10">
-                          <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg flex items-center gap-0.5">
+                          <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg flex items-center gap-0.5">
                             <Zap className="h-2.5 w-2.5 fill-white" />
                             {badge}
                           </span>
@@ -428,10 +428,10 @@ const TopChefDeals = () => {
                       </button>
                     </div>
                     <div className="px-1.5 pb-1.5 pt-1">
-                      <h3 className="text-sm font-bold text-gray-900 line-clamp-2 min-h-[2rem] group-hover:text-amber-600 transition-colors">{cuisine.name}</h3>
+                      <h3 className="text-sm font-bold text-gray-900 line-clamp-2 min-h-[2rem] group-hover:text-orange-600 transition-colors">{cuisine.name}</h3>
                       <p className="text-[9px] text-gray-500 mt-0.5">by {cuisine.chef_name}</p>
                       {cuisine.cuisine_type && (
-                        <span className="inline-block px-1.5 py-0.5 bg-amber-50 text-amber-700 text-[10px] rounded mt-1">{cuisine.cuisine_type}</span>
+                        <span className="inline-block px-1.5 py-0.5 bg-orange-50 text-orange-700 text-[10px] rounded mt-1">{cuisine.cuisine_type}</span>
                       )}
                       <div className="mt-1 flex items-baseline gap-1">
                         <p className="text-base font-bold text-green-600">${(cuisine.discounted_price ?? cuisine.price).toFixed(2)}</p>
@@ -439,7 +439,7 @@ const TopChefDeals = () => {
                           <p className="text-[10px] text-gray-400 line-through">${cuisine.price.toFixed(2)}</p>
                         )}
                       </div>
-                      {savingsAmount && <p className="text-xs font-semibold text-amber-600">Save ${savingsAmount}</p>}
+                      {savingsAmount && <p className="text-xs font-semibold text-orange-600">Save ${savingsAmount}</p>}
                       <div className="mt-1">
                         <StarRating rating={cuisine.average_rating || 0} totalReviews={cuisine.total_reviews || 0} size="sm" />
                       </div>
@@ -448,7 +448,7 @@ const TopChefDeals = () => {
                   <div className="px-1.5 pb-1.5">
                     <Link
                       to={`/chefs/${cuisine.chef_id}`}
-                      className="block w-full p-1.5 text-center bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-medium"
+                      className="block w-full p-1.5 text-center bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium"
                     >
                       View Chef & Order
                     </Link>

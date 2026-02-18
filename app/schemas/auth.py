@@ -2,6 +2,7 @@
 Authentication schemas
 """
 from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 
 class VendorSignup(BaseModel):
@@ -17,6 +18,7 @@ class VendorSignup(BaseModel):
     postal_code: str
     country: str = "Canada"
     business_type: str
+    government_id_url: Optional[str] = None
     
     class Config:
         from_attributes = True

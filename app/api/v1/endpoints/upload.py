@@ -403,6 +403,40 @@ async def upload_driver_document(
     return {"url": file_url, "filename": unique_filename, "size": len(file_content)}
 
 
+BUSINESS_DOCS_DIR = UPLOAD_BASE_DIR / "business_documents"
+BUSINESS_DOCS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@router.post("/vendor-documents", response_model=dict)
+async def upload_vendor_document(file: UploadFile = File(...)):
+    """Upload vendor license/document during signup. No auth required."""
+    return await _upload_business_document(file, "business_documents")
+
+
+@router.post("/chef-documents", response_model=dict)
+async def upload_chef_document(file: UploadFile = File(...)):
+    """Upload chef license/document during signup. No auth required."""
+    return await _upload_business_document(file, "business_documents")
+
+
+async def _upload_business_document(file: UploadFile, folder: str) -> dict:
+    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "application/pdf"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Invalid file type. Allowed: JPEG, PNG, WebP, GIF, PDF")
+    file_content = await file.read()
+    if len(file_content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large. Maximum 5MB.")
+    file_ext = Path(file.filename).suffix or ".pdf"
+    if file_ext.lower() not in (".jpg", ".jpeg", ".png", ".webp", ".gif", ".pdf"):
+        file_ext = ".pdf"
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    try:
+        file_url = _save_file(file_content, folder, unique_filename, file.content_type)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to save file")
+    return {"url": file_url, "filename": unique_filename, "size": len(file_content)}
+
+
 @router.get("/vendor_profile/{filename}")
 async def get_vendor_profile_image(filename: str):
     """Serve uploaded vendor profile images"""

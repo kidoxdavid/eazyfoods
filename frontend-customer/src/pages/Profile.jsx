@@ -34,6 +34,9 @@ const Profile = () => {
     new_password: '',
     confirm_password: ''
   })
+  const [editingPhone, setEditingPhone] = useState(false)
+  const [phoneValue, setPhoneValue] = useState('')
+  const [phoneSaving, setPhoneSaving] = useState(false)
 
   useEffect(() => {
     if (token) {
@@ -110,6 +113,31 @@ const Profile = () => {
     } catch (error) {
       console.error('Failed to set default address:', error)
     }
+  }
+
+  const handleStartEditPhone = () => {
+    setPhoneValue(profile?.phone || '')
+    setEditingPhone(true)
+  }
+
+  const handleSavePhone = async () => {
+    setPhoneSaving(true)
+    try {
+      await api.put('/customer/me', { phone: phoneValue || null })
+      await fetchProfileData()
+      setEditingPhone(false)
+      setPhoneValue('')
+    } catch (error) {
+      console.error('Failed to update phone:', error)
+      alert(error.response?.data?.detail || 'Failed to update phone number')
+    } finally {
+      setPhoneSaving(false)
+    }
+  }
+
+  const handleCancelEditPhone = () => {
+    setEditingPhone(false)
+    setPhoneValue('')
   }
 
   if (loading) {
@@ -234,9 +262,32 @@ const Profile = () => {
                     </div>
                     <div className="flex items-center space-x-4">
                       <Phone className="h-5 w-5 text-gray-400" />
-                      <div>
+                      <div className="flex-1">
                         <p className="text-sm text-gray-600">Phone</p>
-                        <p className="font-semibold text-gray-900">{profile?.phone || 'Not set'}</p>
+                        {editingPhone ? (
+                          <div className="flex items-center gap-2 mt-1">
+                            <input
+                              type="tel"
+                              value={phoneValue}
+                              onChange={(e) => setPhoneValue(e.target.value)}
+                              placeholder="e.g. +1 403 555 1234"
+                              className="input max-w-xs"
+                            />
+                            <button onClick={handleSavePhone} disabled={phoneSaving} className="btn-primary py-2 px-3 text-sm">
+                              {phoneSaving ? 'Saving...' : 'Save'}
+                            </button>
+                            <button onClick={handleCancelEditPhone} disabled={phoneSaving} className="btn-secondary py-2 px-3 text-sm">
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-gray-900">{profile?.phone || 'Not set'}</p>
+                            <button onClick={handleStartEditPhone} className="p-1.5 text-gray-500 hover:text-primary-600" title="Edit phone">
+                              <Edit className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">

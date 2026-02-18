@@ -226,10 +226,12 @@ async def get_chef_cuisines_deals(
     promos = promo_query.all()
 
     # Collect cuisine IDs from promotions (applies_to_all or cuisine_ids)
+    # For chef promos: applies_to_all_products means all cuisines; empty cuisine_ids also means all
     cuisine_ids = set()
     chef_promo_map = {}  # cuisine_id -> [promos]
     for p in promos:
-        if p.applies_to_all_products:
+        applies_to_all = p.applies_to_all_products or not (p.cuisine_ids and len(p.cuisine_ids) > 0)
+        if applies_to_all:
             # Get all cuisines for this chef
             cuisines = db.query(Cuisine.id).filter(
                 Cuisine.chef_id == p.chef_id,

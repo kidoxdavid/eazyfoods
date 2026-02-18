@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useLocation } from '../contexts/LocationContext'
-import { useAuth } from '../contexts/AuthContext'
 import { resolveImageUrl } from '../utils/imageUtils'
 
 const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'primary', size = 'normal' }) => {
@@ -14,22 +13,15 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
   const [transitioning, setTransitioning] = useState(false)
   const [parallaxOffset, setParallaxOffset] = useState(0)
   const bannerRef = useRef(null)
-  const authContext = useAuth()
-  const token = (authContext && authContext.token) ? authContext.token : null
   const locationContext = useLocation()
   const selectedCity = (locationContext && locationContext.selectedCity) ? locationContext.selectedCity : 'All'
 
   useEffect(() => {
-    if (!token) {
-      setAds([])
-      setLoading(false)
-      return
-    }
     setAds([])
     setLoading(true)
     setCurrentIndex(0)
     fetchAds()
-  }, [placement, selectedCity, token])
+  }, [placement, selectedCity])
 
   // Parallax effect on scroll (only for top banners; bottom banner keeps image fixed)
   useEffect(() => {
@@ -89,6 +81,8 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
     meals_bottom_banner: [],
     top_market_deals_top_banner: ['top_market_deals_banner'],
     top_market_deals_bottom_banner: [],
+    top_chef_deals_top_banner: ['top_chef_deals_banner'],
+    top_chef_deals_bottom_banner: [],
     checkout_top_banner: ['checkout_banner'],
     checkout_bottom_banner: [],
     become_a_driver_top_banner: [],

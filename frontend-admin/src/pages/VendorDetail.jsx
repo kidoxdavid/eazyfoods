@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { ArrowLeft, Store, Mail, Phone, MapPin, CheckCircle, XCircle, Package, ShoppingBag, DollarSign, Calendar, Percent, Users, CreditCard, Edit, Save } from 'lucide-react'
+import { ArrowLeft, Store, Mail, Phone, MapPin, CheckCircle, XCircle, Package, ShoppingBag, DollarSign, Calendar, Percent, Users, CreditCard, Edit, Save, FileText, ExternalLink } from 'lucide-react'
 
 const VendorDetail = () => {
   const { id } = useParams()
@@ -196,6 +196,20 @@ const VendorDetail = () => {
                 <div className="col-span-2">
                   <p className="text-sm text-gray-500">Description</p>
                   <p className="font-medium text-gray-900">{vendor.description}</p>
+                </div>
+              )}
+              {vendor.government_id_url && (
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-500">License / ID Document</p>
+                  <button
+                    type="button"
+                    onClick={() => window.open(vendor.government_id_url.startsWith('http') ? vendor.government_id_url : `${window.location.origin}/api/v1${vendor.government_id_url}`.replace(/\/\/api/, '/api'), '_blank', 'width=800,height=600,scrollbars=yes')}
+                    className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <FileText className="h-4 w-4" />
+                    View document
+                    <ExternalLink className="h-4 w-4" />
+                  </button>
                 </div>
               )}
             </div>

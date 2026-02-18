@@ -149,11 +149,18 @@ async def create_order(
         
         total_amount = subtotal - vendor_discount + tax_amount + shipping_amount
         
-        # Commission calculation - use vendor's commission rate or default to 10%
+        # Commission calculation - use vendor's commission rate or admin default
         if vendor.commission_rate is not None:
             commission_rate = Decimal(str(vendor.commission_rate))
         else:
-            commission_rate = Decimal("10.00")  # Default commission rate
+            from app.models.platform_settings import PlatformSettings
+            ps = db.query(PlatformSettings).filter(
+                PlatformSettings.setting_type == "commission"
+            ).first()
+            default_rate = 15
+            if ps and ps.settings_data and "default_commission_rate" in ps.settings_data:
+                default_rate = float(ps.settings_data["default_commission_rate"])
+            commission_rate = Decimal(str(default_rate))
         commission_amount = subtotal * (commission_rate / Decimal("100"))
         net_payout = subtotal - commission_amount
         

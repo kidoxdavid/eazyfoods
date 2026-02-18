@@ -170,18 +170,18 @@ const RecipesAndMealPlans = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {recipes.map((recipe) => (
                   <div key={recipe.id} className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                     {recipe.image_url && (
-                      <div className="aspect-video bg-gray-100 overflow-hidden">
+                      <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
                         <img src={recipe.image_url} alt={recipe.name} className="w-full h-full object-cover" />
                       </div>
                     )}
-                    <div className="p-6">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1">{recipe.name}</h3>
+                    <div className="p-3 sm:p-4">
+                      <div className="flex items-start justify-between mb-1">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base font-semibold text-gray-900 truncate">{recipe.name}</h3>
                           <div className="flex gap-2 flex-wrap">
                             <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full capitalize">
                               {recipe.meal_type}
@@ -205,10 +205,10 @@ const RecipesAndMealPlans = () => {
                       </div>
 
                       {recipe.description && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{recipe.description}</p>
+                        <p className="text-xs text-gray-600 mb-2 line-clamp-2">{recipe.description}</p>
                       )}
 
-                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
+                      <div className="flex items-center gap-3 text-xs text-gray-500 mb-3">
                         {recipe.prep_time_minutes && (
                           <span>Prep: {recipe.prep_time_minutes}min</span>
                         )}
@@ -218,19 +218,19 @@ const RecipesAndMealPlans = () => {
                         <span>Serves: {recipe.servings}</span>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <Link
                           to={`/recipes/${recipe.id}/edit`}
-                          className="flex-1 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-1 text-sm"
+                          className="flex-1 px-2 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-1 text-xs"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3.5 w-3.5" />
                           Edit
                         </Link>
                         <button
                           onClick={() => handleDeleteRecipe(recipe.id)}
-                          className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                          className="px-2 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
@@ -282,18 +282,18 @@ const RecipesAndMealPlans = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {mealPlans.map((plan) => (
                   <div key={plan.id} className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                     {plan.image_url && (
-                      <div className="aspect-video bg-gray-100 overflow-hidden">
+                      <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
                         <img src={plan.image_url} alt={plan.name} className="w-full h-full object-cover" />
                       </div>
                     )}
-                    <div className="p-6">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1">{plan.name}</h3>
+                    <div className="p-3 sm:p-4">
+                      <div className="flex items-start justify-between mb-1">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base font-semibold text-gray-900 truncate">{plan.name}</h3>
                           <div className="flex gap-2 flex-wrap">
                             <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
                               {plan.plan_type === 'one_day' ? '1 Day' : plan.plan_type === 'one_week' ? '1 Week' : '1 Month'}
@@ -312,37 +312,37 @@ const RecipesAndMealPlans = () => {
                       </div>
 
                       {plan.description && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{plan.description}</p>
+                        <p className="text-xs text-gray-600 mb-2 line-clamp-2">{plan.description}</p>
                       )}
 
-                      <div className="text-sm text-gray-500 mb-4">
+                      <div className="text-xs text-gray-500 mb-3">
                         <p>{plan.meals?.length || 0} meals included</p>
                         {plan.price && (
                           <p className="font-semibold text-gray-900 mt-1">${plan.price.toFixed(2)}</p>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         {!plan.is_live && (
                           <button
                             onClick={() => handlePublishMealPlan(plan.id)}
-                            className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-1 text-sm"
+                            className="flex-1 px-2 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-1 text-xs"
                           >
-                            <CheckCircle className="h-4 w-4" />
+                            <CheckCircle className="h-3.5 w-3.5" />
                             Publish
                           </button>
                         )}
                         <Link
                           to={`/meal-plans/${plan.id}/edit`}
-                          className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-1 text-sm"
+                          className="px-2 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-1 text-xs"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3.5 w-3.5" />
                         </Link>
                         <button
                           onClick={() => handleDeleteMealPlan(plan.id)}
-                          className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                          className="px-2 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>

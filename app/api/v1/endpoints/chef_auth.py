@@ -34,6 +34,7 @@ class ChefSignup(BaseModel):
     postal_code: str
     country: str = "Canada"
     cuisines: List[str] = []
+    government_id_url: Optional[str] = None
 
 
 @router.post("/signup", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -72,6 +73,7 @@ async def chef_signup(
             postal_code=chef_data.postal_code,
             country=chef_data.country,
             cuisines=chef_data.cuisines,
+            government_id_url=chef_data.government_id_url,
             verification_status="pending",
             is_active=False,  # Inactive until admin verifies
             is_available=False

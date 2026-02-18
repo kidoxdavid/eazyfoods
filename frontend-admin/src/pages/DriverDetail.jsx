@@ -142,9 +142,9 @@ const DriverDetail = () => {
                 <div className="text-sm font-medium text-gray-700 mb-1">Driver Licence</div>
                 {driver.driver_license_url ? (
                   <>
-                    <a href={resolveDocUrl(driver.driver_license_url)} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                    <button type="button" onClick={() => window.open(resolveDocUrl(driver.driver_license_url), '_blank', 'width=800,height=600,scrollbars=yes')} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
                       View document <ExternalLink className="h-4 w-4" />
-                    </a>
+                    </button>
                     {driver.driver_license_validity && (
                       <p className="text-xs text-gray-500 mt-1">Valid until: {new Date(driver.driver_license_validity).toLocaleDateString()}</p>
                     )}
@@ -157,9 +157,9 @@ const DriverDetail = () => {
                 <div className="text-sm font-medium text-gray-700 mb-1">Vehicle Registration</div>
                 {driver.vehicle_registration_url ? (
                   <>
-                    <a href={resolveDocUrl(driver.vehicle_registration_url)} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                    <button type="button" onClick={() => window.open(resolveDocUrl(driver.vehicle_registration_url), '_blank', 'width=800,height=600,scrollbars=yes')} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
                       View document <ExternalLink className="h-4 w-4" />
-                    </a>
+                    </button>
                     {driver.vehicle_registration_validity && (
                       <p className="text-xs text-gray-500 mt-1">Valid until: {new Date(driver.vehicle_registration_validity).toLocaleDateString()}</p>
                     )}
@@ -172,9 +172,9 @@ const DriverDetail = () => {
                 <div className="text-sm font-medium text-gray-700 mb-1">Insurance</div>
                 {driver.insurance_document_url ? (
                   <>
-                    <a href={resolveDocUrl(driver.insurance_document_url)} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                    <button type="button" onClick={() => window.open(resolveDocUrl(driver.insurance_document_url), '_blank', 'width=800,height=600,scrollbars=yes')} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
                       View document <ExternalLink className="h-4 w-4" />
-                    </a>
+                    </button>
                     {driver.insurance_validity && (
                       <p className="text-xs text-gray-500 mt-1">Valid until: {new Date(driver.insurance_validity).toLocaleDateString()}</p>
                     )}

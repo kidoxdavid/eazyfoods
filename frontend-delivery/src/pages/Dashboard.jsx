@@ -1,16 +1,12 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { Package, DollarSign, TrendingUp, Clock, MapPin, BarChart3, Star, History, ArrowRight, Power } from 'lucide-react'
+import { Package, DollarSign, TrendingUp, Clock, MapPin, BarChart3, Star, History, ArrowRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-
 const Dashboard = () => {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState(null)
-  const [availabilityLoading, setAvailabilityLoading] = useState(false)
   const navigate = useNavigate()
-  const { refreshDriver } = useAuth()
 
   useEffect(() => {
     fetchStats()
@@ -37,28 +33,6 @@ const Dashboard = () => {
     }
   }
 
-  const toggleAvailability = async () => {
-    if (availabilityLoading || !profile) return
-    
-    setAvailabilityLoading(true)
-    try {
-      const newAvailability = !profile.is_available
-      await api.put('/driver/availability', null, {
-        params: { is_available: newAvailability }
-      })
-      setProfile({ ...profile, is_available: newAvailability })
-      // Refresh driver data in auth context
-      if (refreshDriver) {
-        await refreshDriver()
-      }
-    } catch (error) {
-      console.error('Failed to toggle availability:', error)
-      alert(error.response?.data?.detail || 'Failed to update availability. Please try again.')
-    } finally {
-      setAvailabilityLoading(false)
-    }
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -75,35 +49,6 @@ const Dashboard = () => {
           <p className="text-sm sm:text-base text-gray-600 mt-1">Your delivery overview</p>
         </div>
         
-        {/* Availability Toggle */}
-        {profile && (
-          <div className="flex items-center space-x-3 sm:space-x-4 bg-white p-3 sm:p-4 rounded-lg shadow border border-gray-200">
-            <div className="flex items-center space-x-3">
-              <Power className={`h-5 w-5 ${profile.is_available ? 'text-green-600' : 'text-gray-400'}`} />
-              <div>
-                <p className="text-sm font-medium text-gray-700">Availability Status</p>
-                <p className={`text-xs ${profile.is_available ? 'text-green-600' : 'text-gray-500'}`}>
-                  {profile.is_available ? 'Available - Accepting delivery requests' : 'Unavailable - Not accepting delivery requests'}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={toggleAvailability}
-              disabled={availabilityLoading}
-              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                profile.is_available ? 'bg-primary-600' : 'bg-gray-200'
-              } ${availabilityLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              role="switch"
-              aria-checked={profile.is_available}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  profile.is_available ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Stats Cards */}

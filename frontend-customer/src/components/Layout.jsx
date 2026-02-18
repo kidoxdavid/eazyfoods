@@ -570,7 +570,7 @@ const Layout = ({ children }) => {
                 </div>
                 <div className="flex-shrink-0">
                   <a
-                    href={(import.meta.env.VITE_DRIVER_SIGNUP_URL || import.meta.env.VITE_PORTAL_DELIVERY_URL || 'http://localhost:3004').trim()}
+                    href={(import.meta.env.VITE_DRIVER_SIGNUP_URL || import.meta.env.VITE_PORTAL_DELIVERY_URL || 'https://eazyfoods-delivery.vercel.app').trim()}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group relative inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white text-primary-600 rounded-xl font-bold text-base sm:text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"

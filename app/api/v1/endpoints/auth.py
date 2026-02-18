@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from datetime import timedelta
+from datetime import timedelta, datetime
 from app.core.database import get_db
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.config import settings
@@ -13,6 +13,7 @@ from app.schemas.auth import Token, VendorLogin, VendorSignup
 from app.models.vendor import Vendor, VendorUser
 from app.models.store import Store
 from decimal import Decimal
+from uuid import UUID
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -51,7 +52,8 @@ async def vendor_signup(
         country=vendor_data.country if vendor_data.country else "Canada",
         business_type=vendor_data.business_type,
         password_hash=get_password_hash(vendor_data.password),
-        status="onboarding"
+        status="onboarding",
+        government_id_url=getattr(vendor_data, "government_id_url", None) or None
     )
     
     db.add(vendor)
@@ -167,6 +169,18 @@ async def vendor_login(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Vendor account is not active"
         )
+    
+    # Update last_login_at for vendor users (staff or owner)
+    if user_id:
+        vendor_user = db.query(VendorUser).filter(VendorUser.id == UUID(user_id)).first()
+    else:
+        vendor_user = db.query(VendorUser).filter(
+            VendorUser.vendor_id == vendor_id,
+            VendorUser.email == form_data.username
+        ).first()
+    if vendor_user:
+        vendor_user.last_login_at = datetime.utcnow()
+        db.commit()
     
     # Create access token
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)

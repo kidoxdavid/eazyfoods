@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { ArrowLeft, CheckCircle, XCircle, ChefHat, MapPin, Star, Mail, Phone } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, ChefHat, MapPin, Star, Mail, Phone, FileText, ExternalLink } from 'lucide-react'
 
 const ChefDetail = () => {
   const { id } = useParams()
@@ -135,6 +135,42 @@ const ChefDetail = () => {
               </div>
             </div>
           </div>
+
+          {/* Documents */}
+          {(chef.government_id_url || chef.chef_certification_url) && (
+            <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Documents
+              </h2>
+              <div className="space-y-3">
+                {chef.government_id_url && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">License / ID Document</label>
+                    <button
+                      type="button"
+                      onClick={() => window.open(chef.government_id_url.startsWith('http') ? chef.government_id_url : `/api/v1${chef.government_id_url}`.replace(/\/\/api/, '/api'), '_blank', 'width=800,height=600,scrollbars=yes')}
+                      className="mt-1 text-sm text-blue-600 hover:underline flex items-center gap-1"
+                    >
+                      View document <ExternalLink className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+                {chef.chef_certification_url && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Chef Certification</label>
+                    <button
+                      type="button"
+                      onClick={() => window.open(chef.chef_certification_url.startsWith('http') ? chef.chef_certification_url : `/api/v1${chef.chef_certification_url}`.replace(/\/\/api/, '/api'), '_blank', 'width=800,height=600,scrollbars=yes')}
+                      className="mt-1 text-sm text-blue-600 hover:underline flex items-center gap-1"
+                    >
+                      View document <ExternalLink className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Cuisines */}
           <div className="bg-white rounded-lg shadow border border-gray-200 p-6">

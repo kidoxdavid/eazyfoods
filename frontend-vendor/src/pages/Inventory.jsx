@@ -221,7 +221,38 @@ const Inventory = () => {
   )
 }
 
+const ProductSearchDropdown = ({ searchTerm, onSearch, results, onSelect, loading }) => {
+  useEffect(() => {
+    if (!searchTerm?.trim() || searchTerm.trim().length < 2) return
+    const t = setTimeout(() => onSearch(searchTerm.trim()), 350)
+    return () => clearTimeout(t)
+  }, [searchTerm])
+  if (!searchTerm?.trim() || searchTerm.trim().length < 2 || (results.length === 0 && !loading)) return null
+  return (
+    <div className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg">
+      {loading ? (
+        <div className="p-4 text-center text-gray-500">Searching...</div>
+      ) : (
+        results.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => onSelect(p)}
+            className="w-full text-left px-4 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+          >
+            <span className="font-medium">{p.name}</span>
+            {p.sku && <span className="text-gray-500 ml-2">SKU: {p.sku}</span>}
+            <span className="block text-xs text-gray-500">Stock: {p.stock_quantity || 0}</span>
+          </button>
+        ))
+      )}
+    </div>
+  )
+}
+
 const InventoryAdjustmentModal = ({ onClose, onSuccess, showScanner, setShowScanner, selectedProduct, setSelectedProduct }) => {
+  const [productSearchResults, setProductSearchResults] = useState([])
+  const [productSearchLoading, setProductSearchLoading] = useState(false)
   const [formData, setFormData] = useState({
     product_id: selectedProduct?.id || '',
     barcode: '',
@@ -291,13 +322,28 @@ const InventoryAdjustmentModal = ({ onClose, onSuccess, showScanner, setShowScan
 
   const handleBarcodeLookup = async () => {
     if (!formData.barcode.trim()) return
-    
     try {
       const response = await api.get('/barcode/lookup', { params: { barcode: formData.barcode } })
       setSelectedProduct(response.data)
       setFormData(prev => ({ ...prev, product_id: response.data.id }))
     } catch (error) {
       alert('Product not found with this barcode')
+    }
+  }
+
+  const handleProductSearch = async (term) => {
+    if (!term || term.length < 2) {
+      setProductSearchResults([])
+      return
+    }
+    setProductSearchLoading(true)
+    try {
+      const res = await api.get('/products', { params: { search: term, limit: 10 } })
+      setProductSearchResults(Array.isArray(res.data) ? res.data : [])
+    } catch {
+      setProductSearchResults([])
+    } finally {
+      setProductSearchLoading(false)
     }
   }
 
@@ -314,32 +360,51 @@ const InventoryAdjustmentModal = ({ onClose, onSuccess, showScanner, setShowScan
         <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Product</label>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative flex-1">
-                <Barcode className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={formData.barcode}
-                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                  placeholder="Enter or scan barcode..."
-                  className="w-full pl-8 sm:pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                />
+            <p className="text-xs text-gray-500 mb-1">Enter product name, SKU, or barcode — or scan barcode</p>
+            <div className="flex flex-col gap-2 relative">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Barcode className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={formData.barcode}
+                    onChange={(e) => {
+                      setFormData({ ...formData, barcode: e.target.value })
+                      setSelectedProduct(null)
+                    }}
+                    onBlur={() => setTimeout(() => setProductSearchResults([]), 200)}
+                    onFocus={() => formData.barcode && handleProductSearch(formData.barcode)}
+                    placeholder="Search by name, SKU, or barcode..."
+                    className="w-full pl-8 sm:pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowScanner(true)}
+                  className="px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
+                >
+                  <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span className="hidden sm:inline">Scan</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBarcodeLookup}
+                  className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm sm:text-base whitespace-nowrap"
+                >
+                  Lookup
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowScanner(true)}
-                className="px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
-              >
-                <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="hidden sm:inline">Scan</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleBarcodeLookup}
-                className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm sm:text-base whitespace-nowrap"
-              >
-                Lookup
-              </button>
+              <ProductSearchDropdown
+                searchTerm={formData.barcode}
+                onSearch={handleProductSearch}
+                results={productSearchResults}
+                onSelect={(p) => {
+                  setSelectedProduct(p)
+                  setFormData(prev => ({ ...prev, product_id: p.id, barcode: p.barcode || '' }))
+                  setProductSearchResults([])
+                }}
+                loading={productSearchLoading}
+              />
             </div>
             {selectedProduct && (
               <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">

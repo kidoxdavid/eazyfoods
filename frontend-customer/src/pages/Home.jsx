@@ -151,15 +151,15 @@ const Home = () => {
         productParams.city = selectedCity.trim()
       }
       
-      // Build store params with city filter
+      // Build store params: when "All" don't pass coordinates so we get stores from all cities (not just nearest)
       const storeParams = {}
-      if (coordinates && coordinates.lat && coordinates.lng) {
-        storeParams.latitude = coordinates.lat
-        storeParams.longitude = coordinates.lng
-        storeParams.radius_km = 50
-      }
       if (selectedCity && selectedCity !== 'All') {
         storeParams.city = selectedCity
+        if (coordinates && coordinates.lat && coordinates.lng) {
+          storeParams.latitude = coordinates.lat
+          storeParams.longitude = coordinates.lng
+          storeParams.radius_km = 50
+        }
       }
       
       console.log('Home: Fetching with params:', { 

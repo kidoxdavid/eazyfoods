@@ -2,8 +2,12 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { UserPlus, Eye, EyeOff } from 'lucide-react'
+import { CANADIAN_PROVINCES, getCitiesForProvince } from '../constants/locations'
+import { AFRICAN_CUISINE_TYPES } from '../constants/cuisines'
+import api from '../services/api'
 
 const Signup = () => {
+  const [licenseFile, setLicenseFile] = useState(null)
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -18,7 +22,6 @@ const Signup = () => {
     country: 'Canada',
     cuisines: [],
   })
-  const [cuisineInput, setCuisineInput] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -29,21 +32,12 @@ const Signup = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  const addCuisine = () => {
-    if (cuisineInput.trim() && !formData.cuisines.includes(cuisineInput.trim())) {
-      setFormData({
-        ...formData,
-        cuisines: [...formData.cuisines, cuisineInput.trim()]
-      })
-      setCuisineInput('')
+  const toggleCuisine = (cuisine) => {
+    if (formData.cuisines.includes(cuisine)) {
+      setFormData({ ...formData, cuisines: formData.cuisines.filter(c => c !== cuisine) })
+    } else {
+      setFormData({ ...formData, cuisines: [...formData.cuisines, cuisine] })
     }
-  }
-
-  const removeCuisine = (cuisine) => {
-    setFormData({
-      ...formData,
-      cuisines: formData.cuisines.filter(c => c !== cuisine)
-    })
   }
 
   const handleSubmit = async (e) => {
@@ -57,7 +51,14 @@ const Signup = () => {
 
     setLoading(true)
     try {
-      await signup(formData)
+      let payload = { ...formData }
+      if (licenseFile) {
+        const fd = new FormData()
+        fd.append('file', licenseFile)
+        const uploadRes = await api.post('/uploads/chef-documents', fd)
+        if (uploadRes.data?.url) payload.government_id_url = uploadRes.data.url
+      }
+      await signup(payload)
       navigate('/login', { state: { message: 'Account created successfully! Please wait for admin verification.' } })
     } catch (err) {
       setError(err.response?.data?.detail || 'Signup failed. Please try again.')
@@ -176,26 +177,38 @@ const Signup = () => {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Province *</label>
+              <select
+                name="state"
+                required
+                value={formData.state}
+                onChange={(e) => {
+                  handleChange(e)
+                  setFormData(prev => ({ ...prev, city: '' }))
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="">Select province</option>
+                {CANADIAN_PROVINCES.map(p => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
-              <input
-                type="text"
+              <select
                 name="city"
                 required
                 value={formData.city}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">State/Province</label>
-              <input
-                type="text"
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-              />
+              >
+                <option value="">Select city</option>
+                {getCitiesForProvince(formData.state).map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -208,6 +221,17 @@ const Signup = () => {
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Business License / Chef Certification</label>
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"
+                onChange={(e) => setLicenseFile(e.target.files?.[0] || null)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">Upload your chef certification or government ID (JPEG, PNG, PDF – max 5MB)</p>
             </div>
 
             <div>
@@ -223,41 +247,26 @@ const Signup = () => {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Cuisines *</label>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={cuisineInput}
-                  onChange={(e) => setCuisineInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCuisine())}
-                  placeholder="e.g., Nigerian, Ghanaian, West African"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                />
-                <button
-                  type="button"
-                  onClick={addCuisine}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-                >
-                  Add
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {formData.cuisines.map((cuisine, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full flex items-center gap-2"
+              <p className="text-xs text-gray-500 mb-2">Select all cuisines you specialize in</p>
+              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-gray-200 rounded-lg">
+                {AFRICAN_CUISINE_TYPES.map((cuisine) => (
+                  <button
+                    key={cuisine}
+                    type="button"
+                    onClick={() => toggleCuisine(cuisine)}
+                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                      formData.cuisines.includes(cuisine)
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
                   >
                     {cuisine}
-                    <button
-                      type="button"
-                      onClick={() => removeCuisine(cuisine)}
-                      className="text-primary-700 hover:text-primary-900"
-                    >
-                      ×
-                    </button>
-                  </span>
+                  </button>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-1">Add at least one cuisine type you specialize in</p>
+              {formData.cuisines.length > 0 && (
+                <p className="text-xs text-primary-600 mt-1">Selected: {formData.cuisines.join(', ')}</p>
+              )}
             </div>
           </div>
 

@@ -18,16 +18,28 @@ router = APIRouter()
 async def get_products(
     skip: int = 0,
     limit: int = 100,
+    search: str = None,
     current_vendor: dict = Depends(get_current_vendor),
     db: Session = Depends(get_db)
 ):
-    """Get all products for current vendor"""
+    """Get all products for current vendor. Optional search by name, SKU, or barcode."""
     from uuid import UUID
+    from sqlalchemy import or_
     try:
-        # Show all products regardless of status (vendor can see inactive products too)
-        products = db.query(Product).filter(
+        query = db.query(Product).filter(
             Product.vendor_id == UUID(current_vendor["vendor_id"])
-        ).order_by(Product.created_at.desc()).offset(skip).limit(limit).all()
+        )
+        if search and search.strip():
+            term = f"%{search.strip()}%"
+            from sqlalchemy import and_
+            query = query.filter(
+                or_(
+                    Product.name.ilike(term),
+                    and_(Product.sku.isnot(None), Product.sku.ilike(term)),
+                    and_(Product.barcode.isnot(None), Product.barcode.ilike(term))
+                )
+            )
+        products = query.order_by(Product.created_at.desc()).offset(skip).limit(limit).all()
         
         # Convert UUIDs to strings for response
         result = []

@@ -7,7 +7,7 @@ from typing import List
 from app.core.database import get_db
 from app.models.customer import Customer, CustomerAddress
 from app.api.v1.dependencies import get_current_customer
-from app.schemas.customer import CustomerResponse, CustomerAddressCreate, CustomerAddressUpdate
+from app.schemas.customer import CustomerResponse, CustomerProfileUpdate, CustomerAddressCreate, CustomerAddressUpdate
 from uuid import UUID
 
 router = APIRouter()
@@ -28,6 +28,33 @@ async def get_customer_profile(
             detail="Customer not found"
         )
     
+    return CustomerResponse(
+        id=str(customer.id),
+        email=customer.email,
+        first_name=customer.first_name,
+        last_name=customer.last_name,
+        phone=customer.phone,
+        is_email_verified=customer.is_email_verified,
+        created_at=customer.created_at
+    )
+
+
+@router.put("/me", response_model=CustomerResponse)
+async def update_customer_profile(
+    update_data: CustomerProfileUpdate,
+    current_customer: dict = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    """Update current customer's profile (first_name, last_name, phone)"""
+    customer_id = UUID(current_customer["customer_id"])
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
+    update_dict = update_data.dict(exclude_unset=True)
+    for key, value in update_dict.items():
+        setattr(customer, key, value)
+    db.commit()
+    db.refresh(customer)
     return CustomerResponse(
         id=str(customer.id),
         email=customer.email,

@@ -36,6 +36,12 @@ class CustomerResponse(BaseModel):
         from_attributes = True
 
 
+class CustomerProfileUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
+
+
 class CustomerAddressCreate(BaseModel):
     street_address: str
     city: str

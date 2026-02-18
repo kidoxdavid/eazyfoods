@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { UserPlus, Eye, EyeOff } from 'lucide-react'
+import api from '../services/api'
+import { UserPlus, Eye, EyeOff, FileText } from 'lucide-react'
+import { CANADIAN_PROVINCES, getCitiesForProvince } from '../constants/locations'
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -17,7 +19,9 @@ const Signup = () => {
     postal_code: '',
     country: 'Canada',
     business_type: 'grocery',
+    government_id_url: '',
   })
+  const [licenseFile, setLicenseFile] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -34,7 +38,14 @@ const Signup = () => {
     setLoading(true)
 
     try {
-      await signup(formData)
+      let payload = { ...formData }
+      if (licenseFile) {
+        const fd = new FormData()
+        fd.append('file', licenseFile)
+        const uploadRes = await api.post('/uploads/vendor-documents', fd)
+        if (uploadRes.data?.url) payload.government_id_url = uploadRes.data.url
+      }
+      await signup(payload)
       navigate('/login', { state: { message: 'Account created successfully! Please login.' } })
     } catch (err) {
       setError(err.response?.data?.detail || 'Signup failed. Please try again.')
@@ -178,26 +189,49 @@ const Signup = () => {
             </div>
 
             <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Province *</label>
+              <select
+                name="state"
+                required
+                value={formData.state}
+                onChange={(e) => {
+                  handleChange(e)
+                  setFormData(prev => ({ ...prev, city: '' }))
+                }}
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="">Select province</option>
+                {CANADIAN_PROVINCES.map(p => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">City *</label>
-              <input
-                type="text"
+              <select
                 name="city"
                 required
                 value={formData.city}
                 onChange={handleChange}
                 className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-              />
+              >
+                <option value="">Select city</option>
+                {getCitiesForProvince(formData.state).map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
 
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Province</label>
+            <div className="sm:col-span-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Business License / ID Document</label>
               <input
-                type="text"
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"
+                onChange={(e) => setLicenseFile(e.target.files?.[0] || null)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
+              <p className="text-xs text-gray-500 mt-1">Upload your business license or government ID (JPEG, PNG, PDF – max 5MB)</p>
             </div>
 
             <div>

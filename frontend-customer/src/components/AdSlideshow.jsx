@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useLocation } from '../contexts/LocationContext'
-import { useAuth } from '../contexts/AuthContext'
 import { resolveImageUrl } from '../utils/imageUtils'
 
 const AdSlideshow = () => {
@@ -12,8 +11,6 @@ const AdSlideshow = () => {
   const [loading, setLoading] = useState(true)
   const [dismissed, setDismissed] = useState(false)
   const [transitioning, setTransitioning] = useState(false)
-  const authContext = useAuth()
-  const token = (authContext && authContext.token) ? authContext.token : null
   const { selectedCity } = useLocation()
 
   // Check if ads were dismissed in localStorage (but reset on page reload for new ads)
@@ -30,13 +27,8 @@ const AdSlideshow = () => {
   }
 
   useEffect(() => {
-    if (!token) {
-      setAds([])
-      setLoading(false)
-      return
-    }
     fetchAds()
-  }, [selectedCity, token])
+  }, [selectedCity])
 
   const fetchAds = async () => {
     try {
