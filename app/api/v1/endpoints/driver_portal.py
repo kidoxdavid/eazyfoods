@@ -495,6 +495,62 @@ async def get_my_deliveries(
     return out
 
 
+@router.get("/deliveries/{delivery_id}", response_model=DeliveryResponse)
+async def get_delivery_by_id(
+    delivery_id: str,
+    current_driver: dict = Depends(get_current_driver),
+    db: Session = Depends(get_db)
+):
+    """Get a single delivery by ID (for tracking page)."""
+    delivery = db.query(Delivery).filter(
+        Delivery.id == UUID(delivery_id),
+        Delivery.driver_id == UUID(current_driver["driver_id"])
+    ).first()
+    if not delivery:
+        raise HTTPException(status_code=404, detail="Delivery not found")
+    order = db.query(Order).filter(Order.id == delivery.order_id).first()
+    order_number = order.order_number if order else None
+    delivery_address_display = None
+    if order and getattr(order, "delivery_address_id", None):
+        addr = db.query(CustomerAddress).filter(
+            CustomerAddress.id == order.delivery_address_id
+        ).first()
+        if addr:
+            delivery_address_display = DeliveryAddressDisplay(
+                street=addr.street_address,
+                city=addr.city,
+                state=addr.state,
+                postal_code=addr.postal_code,
+            )
+    return DeliveryResponse(
+        id=str(delivery.id),
+        order_id=str(delivery.order_id),
+        driver_id=str(delivery.driver_id),
+        status=delivery.status,
+        order_number=order_number,
+        delivery_address=delivery_address_display,
+        pickup_latitude=float(delivery.pickup_latitude) if delivery.pickup_latitude else None,
+        pickup_longitude=float(delivery.pickup_longitude) if delivery.pickup_longitude else None,
+        delivery_latitude=float(delivery.delivery_latitude) if delivery.delivery_latitude else None,
+        delivery_longitude=float(delivery.delivery_longitude) if delivery.delivery_longitude else None,
+        current_latitude=float(delivery.current_latitude) if delivery.current_latitude else None,
+        current_longitude=float(delivery.current_longitude) if delivery.current_longitude else None,
+        estimated_pickup_time=delivery.estimated_pickup_time,
+        estimated_delivery_time=delivery.estimated_delivery_time,
+        actual_pickup_time=delivery.actual_pickup_time,
+        actual_delivery_time=delivery.actual_delivery_time,
+        distance_km=float(delivery.distance_km) if delivery.distance_km else None,
+        delivery_fee=float(delivery.delivery_fee) if delivery.delivery_fee else None,
+        driver_earnings=float(delivery.driver_earnings) if delivery.driver_earnings else None,
+        route_polyline=getattr(delivery, "route_polyline", None),
+        route_distance_km=float(delivery.route_distance_km) if hasattr(delivery, "route_distance_km") and delivery.route_distance_km else None,
+        route_duration_seconds=getattr(delivery, "route_duration_seconds", None),
+        current_eta_minutes=getattr(delivery, "current_eta_minutes", None),
+        last_location_update=getattr(delivery, "last_location_update", None),
+        created_at=delivery.created_at,
+    )
+
+
 @router.put("/deliveries/{delivery_id}/status", response_model=DeliveryResponse)
 async def update_delivery_status(
     delivery_id: str,
