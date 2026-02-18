@@ -26,13 +26,13 @@ export const useNotifications = () => {
       let reviewsCount = 0
       let supportCount = 0
       
-      // Fetch pending/new orders
+      // Fetch new orders (status 'new' = just placed, need vendor attention)
       try {
-        const ordersRes = await api.get('/orders/', { params: { status: 'pending', limit: 1000 } })
-        const pendingOrders = Array.isArray(ordersRes.data) ? ordersRes.data.filter(order => 
-          order.status === 'pending' || order.status === 'confirmed'
+        const ordersRes = await api.get('/orders/', { params: { limit: 1000 } })
+        const newOrders = Array.isArray(ordersRes.data) ? ordersRes.data.filter(order => 
+          order.status === 'new'
         ) : []
-        ordersCount = pendingOrders.length
+        ordersCount = newOrders.length
       } catch (error) {
         console.error('Failed to fetch orders notifications:', error)
       }

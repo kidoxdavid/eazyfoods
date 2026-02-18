@@ -66,6 +66,11 @@ class Ad(Base):
     slideshow_enabled = Column(Boolean, default=True)  # Whether to include in slideshow
     transition_style = Column(String(50), default='fade')  # fade, slide, none
     
+    # Payment for ads (vendor/chef paid placements)
+    ad_duration = Column(String(20), nullable=True)  # day, week, 2weeks, month
+    ad_cost = Column(DECIMAL(10, 2), nullable=True)  # amount paid
+    payment_intent_id = Column(String(255), nullable=True)  # Stripe/Helcim reference
+    
     # Vendor ads
     vendor_id = Column(UUID(as_uuid=True), ForeignKey("vendors.id"), nullable=True)
     # Chef ads

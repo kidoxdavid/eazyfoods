@@ -13,6 +13,7 @@ import SearchAutocomplete from './SearchAutocomplete'
 const Layout = ({ children }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false) // Default to closed, opens only when hamburger is clicked
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [showLocationModal, setShowLocationModal] = useState(false)
   const [cartPreviewOpen, setCartPreviewOpen] = useState(false)
@@ -133,9 +134,9 @@ const Layout = ({ children }) => {
         />
       )}
 
-      {/* Sidebar - Can be toggled on all screen sizes */}
+      {/* Sidebar - Mobile: 50% width; desktop: w-72 */}
       <aside 
-        className={`fixed inset-y-0 left-0 z-[60] w-72 bg-gradient-to-b from-primary-50 to-white shadow-2xl transform transition-transform duration-300 ease-in-out flex-shrink-0 ${
+        className={`fixed inset-y-0 left-0 z-[60] w-1/2 md:w-72 bg-gradient-to-b from-primary-50 to-white shadow-2xl transform transition-transform duration-300 ease-in-out flex-shrink-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -295,12 +296,41 @@ const Layout = ({ children }) => {
                           onClose={() => setCartPreviewOpen(false)}
                         />
                       </div>
-                      <Link
-                        to="/profile"
-                        className="p-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center"
-                      >
-                        <User className="h-5 w-5 sm:h-6 sm:w-6" />
-                      </Link>
+                      <div className="relative">
+                        <button
+                          onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setCartPreviewOpen(false) }}
+                          className="p-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center"
+                          type="button"
+                          aria-label="Profile menu"
+                        >
+                          <User className="h-5 w-5 sm:h-6 sm:w-6" />
+                        </button>
+                        {profileDropdownOpen && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setProfileDropdownOpen(false)} aria-hidden="true" />
+                            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden py-2">
+                              <p className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
+                                Hello, {user?.first_name || user?.email || 'User'}
+                              </p>
+                              <Link
+                                to="/profile"
+                                onClick={() => { setProfileDropdownOpen(false) }}
+                                className="block px-4 py-3 text-gray-700 hover:bg-gray-50 font-medium"
+                              >
+                                Profile
+                              </Link>
+                              <button
+                                onClick={() => { handleLogout(); setProfileDropdownOpen(false) }}
+                                className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 flex items-center gap-2 font-medium"
+                                type="button"
+                              >
+                                <LogOut className="h-4 w-4" />
+                                Log out
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </>
                   ) : (
                     <>
@@ -543,8 +573,8 @@ const Layout = ({ children }) => {
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1">Become a Delivery Driver</h3>
-                      <p className="text-sm sm:text-base text-white/90">Earn money on your own schedule</p>
+                      <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1">Drive with eazyfoods</h3>
+                      <p className="text-sm sm:text-base text-white/90">Deliver groceries and meals in your area — set your own hours</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-6 mt-4">
@@ -552,19 +582,19 @@ const Layout = ({ children }) => {
                       <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
                         <DollarSign className="h-4 w-4 text-white" />
                       </div>
-                      <span className="font-medium">Flexible Earnings</span>
+                      <span className="font-medium">Earn per delivery</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm sm:text-base">
                       <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
                         <Clock className="h-4 w-4 text-white" />
                       </div>
-                      <span className="font-medium">Work Your Hours</span>
+                      <span className="font-medium">Your schedule</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm sm:text-base">
                       <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
                         <Zap className="h-4 w-4 text-white" />
                       </div>
-                      <span className="font-medium">Quick Signup</span>
+                      <span className="font-medium">Start in minutes</span>
                     </div>
                   </div>
                 </div>
@@ -576,7 +606,7 @@ const Layout = ({ children }) => {
                     className="group relative inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white text-primary-600 rounded-xl font-bold text-base sm:text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                    <span className="relative z-10">Get Started</span>
+                    <span className="relative z-10">Apply to drive</span>
                     <ArrowRight className="h-5 w-5 relative z-10 transform group-hover:translate-x-1 transition-transform" />
                   </a>
                 </div>

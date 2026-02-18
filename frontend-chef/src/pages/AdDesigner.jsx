@@ -37,6 +37,21 @@ const AdDesigner = () => {
     }
   })
 
+  const DURATION_OPTIONS = [
+    { value: 'day', label: '1 day', cost: 10 },
+    { value: 'week', label: '1 week', cost: 50 },
+    { value: '2weeks', label: '2 weeks', cost: 90 },
+    { value: 'month', label: '1 month', cost: 150 }
+  ]
+  const [payment, setPayment] = useState({
+    ad_duration: '',
+    card_last4: '',
+    card_expiry: '',
+    card_cvc: ''
+  })
+  const selectedDuration = DURATION_OPTIONS.find(d => d.value === payment.ad_duration)
+  const paymentFilled = !!(payment.ad_duration && payment.card_last4?.replace(/\D/g, '').length >= 4 && payment.card_expiry && payment.card_cvc?.replace(/\D/g, '').length >= 3)
+
   useEffect(() => {
     if (isEdit) {
       fetchAd()
@@ -221,7 +236,12 @@ const AdDesigner = () => {
         slideshow_duration: formData.slideshow_duration || 5,
         transition_style: formData.transition_style || 'fade'
       }
-      
+      if (!isEdit && selectedDuration) {
+        data.ad_duration = payment.ad_duration
+        data.ad_cost = selectedDuration.cost
+        data.payment_intent_id = `placeholder_${payment.card_last4}`
+      }
+
       if (isEdit) {
         await api.put(`/chef/marketing/ads/${id}`, data)
       } else {
@@ -552,10 +572,69 @@ const AdDesigner = () => {
               )}
             </div>
 
+            {!isEdit && (
+              <div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Payment</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Duration *</label>
+                    <select
+                      value={payment.ad_duration}
+                      onChange={(e) => setPayment({ ...payment, ad_duration: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                    >
+                      <option value="">Select duration</option>
+                      {DURATION_OPTIONS.map((d) => (
+                        <option key={d.value} value={d.value}>{d.label} — ${d.cost}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {selectedDuration && (
+                    <p className="text-sm text-gray-600">Cost: ${selectedDuration.cost}</p>
+                  )}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Card number (last 4 digits) *</label>
+                    <input
+                      type="text"
+                      maxLength={4}
+                      value={payment.card_last4}
+                      onChange={(e) => setPayment({ ...payment, card_last4: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                      placeholder="1234"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Expiry (MM/YY) *</label>
+                      <input
+                        type="text"
+                        placeholder="MM/YY"
+                        maxLength={5}
+                        value={payment.card_expiry}
+                        onChange={(e) => setPayment({ ...payment, card_expiry: e.target.value })}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">CVC *</label>
+                      <input
+                        type="text"
+                        maxLength={4}
+                        value={payment.card_cvc}
+                        onChange={(e) => setPayment({ ...payment, card_cvc: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                        placeholder="123"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="mt-6">
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || (!isEdit && !paymentFilled)}
                 className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Save className="h-4 w-4" />

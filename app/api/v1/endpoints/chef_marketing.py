@@ -32,6 +32,9 @@ class ChefAdCreate(BaseModel):
     end_date: Optional[datetime] = None
     slideshow_duration: Optional[int] = 5
     transition_style: Optional[str] = 'fade'
+    ad_duration: Optional[str] = None  # day, week, 2weeks, month
+    ad_cost: Optional[float] = None
+    payment_intent_id: Optional[str] = None
 
 
 @router.get("/ads", response_model=List[dict])
@@ -119,6 +122,9 @@ async def create_chef_ad(
         end_date=ad_data.end_date,
         slideshow_duration=ad_data.slideshow_duration or 5,
         transition_style=ad_data.transition_style or 'fade',
+        ad_duration=ad_data.ad_duration,
+        ad_cost=ad_data.ad_cost,
+        payment_intent_id=ad_data.payment_intent_id,
         chef_id=chef_id,
         created_by=chef_id,  # Use chef_id as created_by for chefs
         created_by_type="chef",

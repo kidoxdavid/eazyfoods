@@ -17,6 +17,7 @@ class DashboardStats(BaseModel):
     month_revenue: Decimal
     average_rating: Optional[Decimal]
     total_reviews: int
+    ad_spend: Optional[Decimal] = None  # Total ad cost for this vendor (paid ads)
 
 
 class TopProduct(BaseModel):

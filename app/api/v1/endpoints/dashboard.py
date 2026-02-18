@@ -12,6 +12,7 @@ from app.models.order import Order, OrderItem
 from app.models.product import Product
 from app.models.vendor import Vendor
 from app.models.inventory import LowStockAlert
+from app.models.marketing import Ad
 from app.schemas.dashboard import DashboardStats, SalesReport, TopProduct
 from app.api.v1.dependencies import get_current_vendor
 
@@ -39,14 +40,21 @@ async def get_dashboard_stats(
         Order.status.in_(["new", "accepted", "picking"])
     ).scalar() or 0
     
-    # Low stock alerts
+    # Low stock: count from alerts table, or fallback to products currently below threshold
+    from uuid import UUID
     low_stock_alerts = db.query(func.count(LowStockAlert.id)).filter(
-        LowStockAlert.vendor_id == vendor_id,
+        LowStockAlert.vendor_id == UUID(vendor_id),
         LowStockAlert.is_resolved == False
     ).scalar() or 0
+    if low_stock_alerts == 0:
+        # Fallback: count products that are currently low stock (in case trigger didn't create alerts)
+        low_stock_alerts = db.query(func.count(Product.id)).filter(
+            Product.vendor_id == UUID(vendor_id),
+            Product.track_inventory == True,
+            Product.stock_quantity <= Product.low_stock_threshold
+        ).scalar() or 0
     
     # Expiring products (within 1 month)
-    from uuid import UUID
     one_month_from_now = today + timedelta(days=30)
     expiring_products_count = db.query(func.count(Product.id)).filter(
         Product.vendor_id == UUID(vendor_id),
@@ -84,6 +92,12 @@ async def get_dashboard_stats(
     average_rating = vendor.average_rating if vendor else None
     total_reviews = vendor.total_reviews if vendor else 0
     
+    # Ad spend (sum of ad_cost for this vendor's ads)
+    ad_spend = db.query(func.coalesce(func.sum(Ad.ad_cost), 0)).filter(
+        Ad.vendor_id == vendor_id,
+        Ad.ad_cost.isnot(None)
+    ).scalar() or Decimal(0)
+    
     return DashboardStats(
         today_orders=today_orders,
         pending_orders=pending_orders,
@@ -93,7 +107,8 @@ async def get_dashboard_stats(
         week_revenue=Decimal(str(week_revenue)),
         month_revenue=Decimal(str(month_revenue)),
         average_rating=average_rating,
-        total_reviews=total_reviews
+        total_reviews=total_reviews,
+        ad_spend=Decimal(str(ad_spend)) if ad_spend else None
     )
 
 

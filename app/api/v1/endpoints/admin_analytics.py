@@ -10,9 +10,10 @@ from app.core.database import get_db
 from app.models.vendor import Vendor
 from app.models.customer import Customer
 from app.models.product import Product
-from app.models.order import Order
+from app.models.order import Order, OrderItem
 from app.models.admin import AdminUser
 from app.models.driver import Driver, Delivery
+from app.models.marketing import Ad
 from app.api.v1.dependencies import get_current_admin
 
 router = APIRouter()
@@ -60,18 +61,20 @@ async def get_analytics_overview(
         func.sum(Order.total_amount).desc()
     ).limit(10).all()
     
-    # Top products by sales
+    # Top products by sales (via order_items)
     top_products = db.query(
         Product.id,
         Product.name,
-        func.sum(Order.total_amount).label('revenue'),
-        func.count(Order.id).label('orders')
-    ).join(Order, Order.vendor_id == Product.vendor_id).filter(
+        func.sum(OrderItem.subtotal).label('revenue'),
+        func.count(OrderItem.order_id.distinct()).label('orders')
+    ).join(OrderItem, OrderItem.product_id == Product.id).join(
+        Order, OrderItem.order_id == Order.id
+    ).filter(
         Order.created_at >= start_dt,
         Order.created_at <= end_dt,
         Order.status.in_(["delivered", "picked_up"])
     ).group_by(Product.id, Product.name).order_by(
-        func.sum(Order.total_amount).desc()
+        func.sum(OrderItem.subtotal).desc()
     ).limit(10).all()
     
     # Order status breakdown
@@ -269,6 +272,13 @@ async def get_analytics_overview(
         Delivery.created_at <= end_dt
     ).scalar() or 0
     
+    # Ad spend (vendor/chef paid ads in period)
+    total_ad_spend = db.query(func.coalesce(func.sum(Ad.ad_cost), 0)).filter(
+        Ad.created_at >= start_dt,
+        Ad.created_at <= end_dt,
+        Ad.ad_cost.isnot(None)
+    ).scalar() or 0
+    
     return {
         "revenue_trends": [
             {
@@ -400,7 +410,8 @@ async def get_analytics_overview(
                 "avg_earnings": float(driver.avg_earnings) if driver.avg_earnings else 0
             }
             for driver in top_drivers
-        ]
+        ],
+        "total_ad_spend": float(total_ad_spend) if total_ad_spend else 0.0
     }
 
 

@@ -33,6 +33,9 @@ class VendorAdCreate(BaseModel):
     end_date: Optional[datetime] = None
     slideshow_duration: Optional[int] = 5  # Duration in seconds before switching to next ad
     transition_style: Optional[str] = 'fade'  # fade, slide, none
+    ad_duration: Optional[str] = None  # day, week, 2weeks, month
+    ad_cost: Optional[float] = None
+    payment_intent_id: Optional[str] = None
 
 
 @router.get("/ads", response_model=List[dict])
@@ -122,6 +125,9 @@ async def create_vendor_ad(
         end_date=ad_data.end_date,
         slideshow_duration=ad_data.slideshow_duration or 5,
         transition_style=ad_data.transition_style or 'fade',
+        ad_duration=ad_data.ad_duration,
+        ad_cost=ad_data.ad_cost,
+        payment_intent_id=ad_data.payment_intent_id,
         vendor_id=vendor_id,
         created_by=UUID(current_vendor.get("user_id")) if current_vendor.get("user_id") else None,
         created_by_type="vendor",

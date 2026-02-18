@@ -70,6 +70,9 @@ class AdCreate(BaseModel):
     slideshow_duration: Optional[int] = 5  # Duration in seconds
     slideshow_enabled: Optional[bool] = True  # Whether to include in slideshow
     transition_style: Optional[str] = 'fade'  # fade, slide, none
+    ad_duration: Optional[str] = None
+    ad_cost: Optional[float] = None
+    payment_intent_id: Optional[str] = None
 
 
 class AdUpdate(BaseModel):
@@ -358,6 +361,9 @@ async def create_ad(
         slideshow_duration=ad_data.slideshow_duration or 5,
         slideshow_enabled=ad_data.slideshow_enabled if ad_data.slideshow_enabled is not None else True,
         transition_style=ad_data.transition_style or 'fade',
+        ad_duration=ad_data.ad_duration,
+        ad_cost=ad_data.ad_cost,
+        payment_intent_id=ad_data.payment_intent_id,
         created_by=UUID(current_admin["admin_id"]),
         created_by_type="admin",
         status="active",  # Admin ads are auto-approved

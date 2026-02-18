@@ -265,6 +265,9 @@ const Products = () => {
                       Stock
                     </th>
                     <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Expiring
+                    </th>
+                    <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
                     <th className="px-4 xl:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -314,6 +317,11 @@ const Products = () => {
                       </td>
                       <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {product.stock_quantity}
+                      </td>
+                      <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {product.track_expiry && product.expiry_date
+                          ? new Date(product.expiry_date).toLocaleDateString()
+                          : '—'}
                       </td>
                       <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                         <span
@@ -416,6 +424,10 @@ const Products = () => {
                         <div className="flex items-center gap-2">
                           <span className="font-medium">Stock:</span>
                           <span>{product.stock_quantity}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Expiring:</span>
+                          <span>{product.track_expiry && product.expiry_date ? new Date(product.expiry_date).toLocaleDateString() : '—'}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="font-medium">Status:</span>
