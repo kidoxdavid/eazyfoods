@@ -17,6 +17,7 @@ import Analytics from './pages/Analytics'
 import Promotions from './pages/Promotions'
 import Staff from './pages/Staff'
 import Profile from './pages/Profile'
+import Documentation from './pages/Documentation'
 import Ads from './pages/Ads'
 import AdDesigner from './pages/AdDesigner'
 import Stores from './pages/Stores'
@@ -54,6 +55,7 @@ function App() {
                     <Route path="/chat" element={<Chat />} />
                     <Route path="/staff" element={<Staff />} />
                     <Route path="/profile" element={<Profile />} />
+                    <Route path="/documentation" element={<Documentation />} />
                     <Route path="/ads" element={<Ads />} />
                     <Route path="/ads/new" element={<AdDesigner />} />
                     <Route path="/ads/:id/edit" element={<AdDesigner />} />

@@ -48,6 +48,7 @@ class VendorResponse(BaseModel):
     accepts_online_payment: Optional[bool] = None
     accepts_cash_on_delivery: Optional[bool] = None
     region: Optional[str] = None  # West African, East African, North African, Central African, South African
+    government_id_url: Optional[str] = None
     
     class Config:
         from_attributes = True

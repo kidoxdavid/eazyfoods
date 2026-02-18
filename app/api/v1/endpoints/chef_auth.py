@@ -225,7 +225,9 @@ async def get_me(
             "total_reviews": chef.total_reviews or 0,
             "gallery_images": chef.gallery_images or [],
             "created_at": chef.created_at,
-            "updated_at": chef.updated_at
+            "updated_at": chef.updated_at,
+            "government_id_url": getattr(chef, "government_id_url", None),
+            "chef_certification_url": getattr(chef, "chef_certification_url", None)
         }
         
         return ChefResponse(**chef_dict)

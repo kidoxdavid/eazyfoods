@@ -15,6 +15,7 @@ import Chat from './pages/Chat'
 import Support from './pages/Support'
 import Cuisines from './pages/Cuisines'
 import CuisineForm from './pages/CuisineForm'
+import Documentation from './pages/Documentation'
 import Orders from './pages/Orders'
 import OrderDetail from './pages/OrderDetail'
 import Promotions from './pages/Promotions'
@@ -50,6 +51,7 @@ function App() {
                     <Route path="/cuisines" element={<Cuisines />} />
                     <Route path="/cuisines/new" element={<CuisineForm />} />
                     <Route path="/cuisines/:id/edit" element={<CuisineForm />} />
+                    <Route path="/documentation" element={<Documentation />} />
                     <Route path="/orders" element={<Orders />} />
                     <Route path="/orders/:id" element={<OrderDetail />} />
                     <Route path="/promotions" element={<Promotions />} />

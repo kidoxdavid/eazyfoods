@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { ArrowLeft, CheckCircle, XCircle, ChefHat, MapPin, Star, Mail, Phone, FileText, ExternalLink, X } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, ChefHat, MapPin, Star, Mail, Phone, FileText, Eye, X } from 'lucide-react'
+
+const resolveDocUrl = (url) => {
+  if (!url) return null
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  const base = api.defaults.baseURL || ''
+  const origin = base.replace(/\/api\/v1\/?$/, '')
+  return origin ? `${origin}${url.startsWith('/') ? url : `/${url}`}` : url
+}
 
 const ChefDetail = () => {
   const { id } = useParams()
@@ -150,10 +158,11 @@ const ChefDetail = () => {
                     <label className="text-sm font-medium text-gray-500">License / ID Document</label>
                     <button
                       type="button"
-                      onClick={() => setDocViewUrl(chef.government_id_url.startsWith('http') ? chef.government_id_url : `/api/v1${chef.government_id_url}`.replace(/\/\/api/, '/api'))}
+                      onClick={() => setDocViewUrl(resolveDocUrl(chef.government_id_url))}
                       className="mt-1 text-sm text-blue-600 hover:underline flex items-center gap-1"
                     >
-                      View document <ExternalLink className="h-4 w-4" />
+                      <Eye className="h-4 w-4" />
+                      View document
                     </button>
                   </div>
                 )}
@@ -162,10 +171,11 @@ const ChefDetail = () => {
                     <label className="text-sm font-medium text-gray-500">Chef Certification</label>
                     <button
                       type="button"
-                      onClick={() => setDocViewUrl(chef.chef_certification_url.startsWith('http') ? chef.chef_certification_url : `/api/v1${chef.chef_certification_url}`.replace(/\/\/api/, '/api'))}
+                      onClick={() => setDocViewUrl(resolveDocUrl(chef.chef_certification_url))}
                       className="mt-1 text-sm text-blue-600 hover:underline flex items-center gap-1"
                     >
-                      View document <ExternalLink className="h-4 w-4" />
+                      <Eye className="h-4 w-4" />
+                      View document
                     </button>
                   </div>
                 )}

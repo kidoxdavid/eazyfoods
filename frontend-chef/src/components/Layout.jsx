@@ -19,6 +19,7 @@ import {
   ShoppingCart,
   Tag,
   DollarSign,
+  FileText,
 } from 'lucide-react'
 
 const Layout = ({ children }) => {
@@ -39,6 +40,7 @@ const Layout = ({ children }) => {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Profile', href: '/profile', icon: ChefHat },
+    { name: 'Documentation', href: '/documentation', icon: FileText },
     { name: 'Cuisines', href: '/cuisines', icon: UtensilsCrossed },
     { name: 'Orders', href: '/orders', icon: ShoppingCart },
     { name: 'Promotions', href: '/promotions', icon: Tag },

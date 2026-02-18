@@ -80,6 +80,8 @@ class ChefResponse(ChefBase):
     gallery_images: Optional[List[str]] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    government_id_url: Optional[str] = None
+    chef_certification_url: Optional[str] = None
     
     class Config:
         from_attributes = True

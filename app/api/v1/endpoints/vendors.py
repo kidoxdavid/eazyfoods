@@ -67,7 +67,8 @@ async def get_current_vendor_info(
         specialties=vendor.specialties if vendor.specialties else None,
         accepts_online_payment=vendor.accepts_online_payment,
         accepts_cash_on_delivery=vendor.accepts_cash_on_delivery,
-        region=vendor.region
+        region=vendor.region,
+        government_id_url=getattr(vendor, 'government_id_url', None)
     )
 
 

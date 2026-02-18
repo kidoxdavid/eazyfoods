@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
-import { FileText, Eye, Clock, Upload } from 'lucide-react'
+import { FileText, Eye, Clock, Upload, X } from 'lucide-react'
 
 const resolveDocUrl = (url) => {
   if (!url) return null
@@ -15,6 +15,7 @@ const Documentation = () => {
   const { driver, refreshDriver } = useAuth()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [docViewUrl, setDocViewUrl] = useState(null)
   const [resubmitting, setResubmitting] = useState(false)
   const [resubmitForm, setResubmitForm] = useState({
     driver_license_file: null,
@@ -74,15 +75,14 @@ const Documentation = () => {
                 <div className="text-sm font-medium text-gray-700 mb-1">{doc.label}</div>
                 {doc.url ? (
                   <>
-                    <a
-                      href={resolveDocUrl(doc.url)}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => setDocViewUrl(resolveDocUrl(doc.url))}
                       className="text-sm text-blue-600 hover:underline flex items-center gap-1"
                     >
                       <Eye className="h-4 w-4" />
                       View document
-                    </a>
+                    </button>
                     {doc.validity && (
                       <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -98,7 +98,30 @@ const Documentation = () => {
           </div>
           <p className="text-xs text-gray-500 mt-4">Documents cannot be deleted. Contact support if you need to update them.</p>
         </div>
-      ) : (
+      ) : null}
+
+      {/* Document view popup (same tab) */}
+      {docViewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setDocViewUrl(null)}>
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl max-h-[90vh] w-full overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-3 border-b">
+              <span className="font-medium">Document</span>
+              <button type="button" onClick={() => setDocViewUrl(null)} className="p-1 rounded hover:bg-gray-100">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-auto p-4">
+              {/\.(pdf)$/i.test(docViewUrl) ? (
+                <iframe src={docViewUrl} title="Document" className="w-full h-[70vh] border-0 rounded" />
+              ) : (
+                <img src={docViewUrl} alt="Document" className="max-w-full h-auto max-h-[70vh] object-contain mx-auto" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {data?.verification_status !== 'approved' ? (
         <div className="space-y-4">
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-amber-900 mb-2">Documents Under Review</h2>

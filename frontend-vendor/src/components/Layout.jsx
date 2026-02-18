@@ -21,6 +21,7 @@ import {
   Users,
   Settings,
   MapPin,
+  FileText,
 } from 'lucide-react'
 
 const Layout = ({ children }) => {
@@ -54,6 +55,7 @@ const Layout = ({ children }) => {
     { name: 'Chat', href: '/chat', icon: MessageCircle },
     { name: 'Staff', href: '/staff', icon: Users },
     { name: 'Profile', href: '/profile', icon: Settings },
+    { name: 'Documentation', href: '/documentation', icon: FileText },
   ]
 
   const isActive = (path) => {

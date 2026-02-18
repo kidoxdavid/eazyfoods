@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { ArrowLeft, Store, Mail, Phone, MapPin, CheckCircle, XCircle, Package, ShoppingBag, DollarSign, Calendar, Percent, Users, CreditCard, Edit, Save, FileText, ExternalLink, X } from 'lucide-react'
+import { ArrowLeft, Store, Mail, Phone, MapPin, CheckCircle, XCircle, Package, ShoppingBag, DollarSign, Calendar, Percent, Users, CreditCard, Edit, Save, FileText, Eye, X } from 'lucide-react'
+
+const resolveDocUrl = (url) => {
+  if (!url) return null
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  const base = api.defaults.baseURL || ''
+  const origin = base.replace(/\/api\/v1\/?$/, '')
+  return origin ? `${origin}${url.startsWith('/') ? url : `/${url}`}` : url
+}
 
 const VendorDetail = () => {
   const { id } = useParams()
@@ -204,12 +212,11 @@ const VendorDetail = () => {
                   <p className="text-sm text-gray-500">License / ID Document</p>
                   <button
                     type="button"
-                    onClick={() => setDocViewUrl(vendor.government_id_url.startsWith('http') ? vendor.government_id_url : `${window.location.origin}/api/v1${vendor.government_id_url}`.replace(/\/\/api/, '/api'))}
+                    onClick={() => setDocViewUrl(resolveDocUrl(vendor.government_id_url))}
                     className="text-sm text-blue-600 hover:underline flex items-center gap-1"
                   >
-                    <FileText className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                     View document
-                    <ExternalLink className="h-4 w-4" />
                   </button>
                 </div>
               )}
