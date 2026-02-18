@@ -42,63 +42,63 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-[10px] sm:text-xs lg:text-sm text-gray-600 mt-0.5">Your delivery overview</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Your delivery overview</p>
         </div>
       </div>
 
-      {/* Stats Cards - compact on mobile */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <div className="flex items-center justify-between gap-2">
+      {/* Stats Cards - match vendor */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Total Deliveries</p>
-              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">{stats?.total_deliveries || 0}</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total Deliveries</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 sm:mt-2 truncate">{stats?.total_deliveries || 0}</p>
             </div>
-            <Package className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-500 flex-shrink-0" />
+            <Package className="h-4 w-4 sm:h-5 sm:w-6 lg:h-6 lg:w-6 text-blue-500 flex-shrink-0 ml-2" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <div className="flex items-center justify-between gap-2">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Completed</p>
-              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">{stats?.completed_deliveries || 0}</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Completed</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 sm:mt-2 truncate">{stats?.completed_deliveries || 0}</p>
             </div>
-            <TrendingUp className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-green-500 flex-shrink-0" />
+            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-6 lg:h-6 lg:w-6 text-green-500 flex-shrink-0 ml-2" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <div className="flex items-center justify-between gap-2">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Total Earnings</p>
-              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Total Earnings</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 sm:mt-2 truncate">
                 ${parseFloat(stats?.total_earnings || 0).toFixed(2)}
               </p>
             </div>
-            <DollarSign className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-yellow-500 flex-shrink-0" />
+            <DollarSign className="h-4 w-4 sm:h-5 sm:w-6 lg:h-6 lg:w-6 text-yellow-500 flex-shrink-0 ml-2" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <div className="flex items-center justify-between gap-2">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Active</p>
-              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">{stats?.active_deliveries || 0}</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Active</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 sm:mt-2 truncate">{stats?.active_deliveries || 0}</p>
             </div>
-            <Clock className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-purple-500 flex-shrink-0" />
+            <Clock className="h-4 w-4 sm:h-5 sm:w-6 lg:h-6 lg:w-6 text-purple-500 flex-shrink-0 ml-2" />
           </div>
         </div>
       </div>
 
-      {/* Quick Actions - compact */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Quick Actions</h2>
+      {/* Quick Actions - match vendor */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Quick Actions</h2>
           <div className="space-y-2">
             <button
               onClick={() => navigate('/available-deliveries')}
@@ -117,8 +117,8 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Performance</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Performance</h2>
           <div className="space-y-2">
             <div className="flex justify-between gap-2 text-xs sm:text-sm">
               <span className="text-gray-600">Avg Rating</span>
@@ -145,8 +145,8 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Quick Links</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Quick Links</h2>
           <div className="space-y-1">
             <button
               onClick={() => navigate('/earnings')}

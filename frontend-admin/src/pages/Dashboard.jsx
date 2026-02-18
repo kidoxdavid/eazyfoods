@@ -171,11 +171,11 @@ const Dashboard = () => {
   ]
 
   return (
-    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">Platform overview</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Platform overview</p>
         </div>
         <button
           onClick={handleMasterExport}
@@ -189,22 +189,22 @@ const Dashboard = () => {
         </button>
       </div>
 
-      {/* Stats Grid - compact */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
+      {/* Stats Grid - match vendor */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         {statCards.map((stat) => {
           const Icon = stat.icon
           return (
-            <div key={stat.title} className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5 overflow-hidden">
-              <div className="flex items-center justify-between gap-2">
+            <div key={stat.title} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] sm:text-xs font-medium text-gray-600 truncate">{stat.title}</p>
-                  <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">{stat.value}</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{stat.title}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 sm:mt-2 truncate">{stat.value}</p>
                   {stat.active !== undefined && (
-                    <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">{stat.active} active</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500 mt-1 truncate">{stat.active} active</p>
                   )}
                 </div>
-                <div className={`p-2 sm:p-3 rounded-lg bg-${stat.color}-100 flex-shrink-0`}>
-                  <Icon className={`h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-${stat.color}-600`} />
+                <div className={`p-2 sm:p-3 rounded-lg bg-${stat.color}-100 flex-shrink-0 ml-2`}>
+                  <Icon className={`h-4 w-4 sm:h-5 sm:w-6 lg:h-6 lg:w-6 text-${stat.color}-600`} />
                 </div>
               </div>
             </div>
@@ -212,12 +212,12 @@ const Dashboard = () => {
         })}
       </div>
 
-      {/* Charts Row - compact */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
         {/* Order Status Breakdown Chart */}
         {stats?.order_status_breakdown && Object.keys(stats.order_status_breakdown).length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-            <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Order Status Distribution</h2>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Order Status Distribution</h2>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -244,15 +244,15 @@ const Dashboard = () => {
         )}
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 flex items-center gap-2">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
             <Activity className="h-4 w-4 sm:h-5 sm:w-5" />
             Recent Activity
           </h2>
           <div className="space-y-2 max-h-48 sm:max-h-64 lg:max-h-80 overflow-y-auto">
             {Array.isArray(recentActivity) && recentActivity.length > 0 ? (
               recentActivity.map((activity) => (
-                <div key={activity.id} className="p-3 bg-gray-50 rounded-lg">
+                <div key={activity.id} className="p-3 sm:p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">
@@ -280,8 +280,8 @@ const Dashboard = () => {
 
       {/* Order Status Breakdown */}
       {stats?.order_status_breakdown && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <h2 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Order Status Breakdown</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Order Status Breakdown</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             {Object.entries(stats.order_status_breakdown).map(([status, count]) => (
               <div key={status} className="text-center p-3 sm:p-4 bg-gray-50 rounded-lg">

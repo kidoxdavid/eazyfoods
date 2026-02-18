@@ -236,6 +236,7 @@ const Reviews = () => {
 
       {/* Reviews Table */}
       <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto scrollbar-hide">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -341,6 +342,7 @@ const Reviews = () => {
             ))}
           </tbody>
         </table>
+        </div>
         {totalPages > 1 && (
           <Pagination
             currentPage={currentPage}

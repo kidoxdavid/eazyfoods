@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
 import { 
   LayoutDashboard, Megaphone, Mail, Image, BarChart3, 
-  LogOut, Menu, X, FileText, Palette, Target, Users, 
+  LogOut, Menu, X, FileText, Palette, Target, Users, User,
   FlaskConical, Share2, Bell, Workflow, DollarSign, Settings, Shield, Utensils, Calendar
 } from 'lucide-react'
 import { useState } from 'react'
@@ -53,8 +53,8 @@ const Layout = () => {
         sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 border-b border-gray-200 bg-gradient-to-r from-primary-600 to-primary-700">
-            <h1 className="text-base sm:text-lg lg:text-xl font-bold text-white truncate">eazyfoods Marketing</h1>
+          <div className="flex items-center justify-between h-16 px-4 sm:px-6 border-b border-gray-200 bg-gradient-to-r from-primary-600 to-primary-700">
+            <h1 className="text-lg sm:text-xl font-bold text-white truncate">eazyfoods Marketing</h1>
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden text-white hover:text-gray-200 p-1 rounded-md transition-colors"
@@ -65,7 +65,7 @@ const Layout = () => {
             </button>
           </div>
 
-          <nav className="flex-1 px-3 py-4 sm:px-4 sm:py-6 space-y-1 overflow-y-auto">
+          <nav className="flex-1 px-2 sm:px-4 py-4 sm:py-6 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon
               const isActive = item.href === '/' 
@@ -76,18 +76,18 @@ const Layout = () => {
                   key={item.href}
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium rounded-lg transition-colors ${
+                  className={`flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive
-                      ? 'bg-primary-50 text-primary-700'
+                      ? 'bg-primary-50 text-primary-700 shadow-sm'
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
-                    <Icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                  <div className="flex items-center min-w-0 flex-1">
+                    <Icon className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                     <span className="truncate">{item.name}</span>
                   </div>
                   {item.badge > 0 && (
-                    <span className="ml-1.5 sm:ml-2 px-1.5 sm:px-2 py-0.5 bg-red-500 text-white text-[10px] sm:text-xs font-bold rounded-full min-w-[18px] sm:min-w-[20px] text-center animate-pulse flex-shrink-0">
+                    <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] text-center animate-pulse flex-shrink-0">
                       {item.badge > 99 ? '99+' : item.badge}
                     </span>
                   )}
@@ -96,17 +96,24 @@ const Layout = () => {
             })}
           </nav>
 
-          <div className="p-3 sm:p-4 border-t">
-            <div className="mb-2 sm:mb-3 p-2.5 sm:p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{user?.first_name} {user?.last_name}</p>
-              <p className="text-[10px] sm:text-xs text-gray-500 truncate">{user?.email}</p>
+          <div className="p-3 sm:p-4 border-t border-gray-200 bg-gray-50">
+            <div className="flex items-center px-3 sm:px-4 py-2 mb-2">
+              <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
+              </div>
+              <div className="flex-1 min-w-0 ml-2 sm:ml-3">
+                <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
+                  {user?.first_name} {user?.last_name}
+                </p>
+                <p className="text-[10px] sm:text-xs text-gray-500 truncate">{user?.email}</p>
+              </div>
             </div>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center sm:justify-start space-x-2 px-3 sm:px-4 py-2 sm:py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs sm:text-sm font-medium"
+              className="flex items-center justify-center w-full px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-200 rounded-lg transition-colors font-medium"
             >
-              <LogOut className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-              <span>Logout</span>
+              <LogOut className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+              Logout
             </button>
           </div>
         </div>

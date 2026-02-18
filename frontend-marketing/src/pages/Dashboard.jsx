@@ -55,64 +55,64 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
       <div>
-        <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Marketing Dashboard</h1>
-        <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">Campaigns and performance</p>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Marketing Dashboard</h1>
+        <p className="text-xs sm:text-sm text-gray-600 mt-1">Campaigns and performance</p>
       </div>
 
-      {/* Stats Grid - compact */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <div className="flex items-center justify-between gap-2">
+      {/* Stats Grid - match vendor */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Campaigns</p>
-              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">{stats?.totalCampaigns || 0}</p>
-              <p className="text-[10px] sm:text-xs text-green-600 mt-0.5">{stats?.activeCampaigns || 0} active</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Campaigns</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 sm:mt-2 truncate">{stats?.totalCampaigns || 0}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 mt-1 truncate">{stats?.activeCampaigns || 0} active</p>
             </div>
-            <Megaphone className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-primary-500 flex-shrink-0" />
+            <Megaphone className="h-4 w-4 sm:h-5 sm:w-6 lg:h-6 lg:w-6 text-primary-500 flex-shrink-0 ml-2" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <div className="flex items-center justify-between gap-2">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Ads</p>
-              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">{stats?.totalAds || 0}</p>
-              <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">{stats?.activeAds || 0} active, {stats?.pendingAds || 0} pending</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Ads</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 sm:mt-2 truncate">{stats?.totalAds || 0}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 mt-1 truncate">{stats?.activeAds || 0} active, {stats?.pendingAds || 0} pending</p>
             </div>
-            <Image className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-500 flex-shrink-0" />
+            <Image className="h-4 w-4 sm:h-5 sm:w-6 lg:h-6 lg:w-6 text-blue-500 flex-shrink-0 ml-2" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <div className="flex items-center justify-between gap-2">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Email Campaigns</p>
-              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">{stats?.totalEmails || 0}</p>
-              <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">{stats?.sentEmails || 0} sent</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Email Campaigns</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 sm:mt-2 truncate">{stats?.totalEmails || 0}</p>
+              <p className="text-[10px] sm:text-xs text-gray-500 mt-1 truncate">{stats?.sentEmails || 0} sent</p>
             </div>
-            <Mail className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-green-500 flex-shrink-0" />
+            <Mail className="h-4 w-4 sm:h-5 sm:w-6 lg:h-6 lg:w-6 text-green-500 flex-shrink-0 ml-2" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <div className="flex items-center justify-between gap-2">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-[10px] sm:text-xs text-gray-500 truncate">Impressions</p>
-              <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Impressions</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 sm:mt-2 truncate">
                 {(stats?.totalImpressions || 0).toLocaleString()}
               </p>
-              <p className="text-[10px] sm:text-xs text-primary-600 mt-0.5">{stats?.ctr?.toFixed(2) || 0}% CTR</p>
+              <p className="text-[10px] sm:text-xs text-primary-600 mt-1 truncate">{stats?.ctr?.toFixed(2) || 0}% CTR</p>
             </div>
-            <Eye className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-purple-500 flex-shrink-0" />
+            <Eye className="h-4 w-4 sm:h-5 sm:w-6 lg:h-6 lg:w-6 text-purple-500 flex-shrink-0 ml-2" />
           </div>
         </div>
       </div>
 
-      {/* Pending Vendor Ads Alert - compact */}
+      {/* Pending Vendor Ads Alert */}
       {stats?.pendingAds > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="p-1.5 sm:p-2 bg-yellow-100 rounded-lg flex-shrink-0">
               <Image className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
@@ -133,32 +133,32 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Performance Metrics - compact */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
-            <h3 className="text-sm sm:text-base font-semibold text-gray-900">Clicks</h3>
+      {/* Performance & Quick Actions - match vendor card style */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs sm:text-sm font-medium text-gray-600">Clicks</h3>
             <MousePointerClick className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500 flex-shrink-0" />
           </div>
-          <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 truncate">
+          <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
             {(stats?.totalClicks || 0).toLocaleString()}
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3">
-            <h3 className="text-sm sm:text-base font-semibold text-gray-900">Conversions</h3>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs sm:text-sm font-medium text-gray-600">Conversions</h3>
             <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
           </div>
-          <p className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 truncate">
+          <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
             {(stats?.totalConversions || 0).toLocaleString()}
           </p>
           <p className="text-[10px] sm:text-xs text-gray-500 mt-1">{stats?.conversionRate?.toFixed(2) || 0}% conversion rate</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-5">
-          <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2 sm:mb-3">Quick Actions</h3>
-          <div className="space-y-1.5">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 hover:shadow-md transition-shadow">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Quick Actions</h3>
+          <div className="space-y-2">
             <Link
               to="/campaigns"
               className="block w-full text-center px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-xs sm:text-sm"

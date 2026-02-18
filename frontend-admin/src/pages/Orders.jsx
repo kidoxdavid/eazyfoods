@@ -116,11 +116,11 @@ const Orders = () => {
   }
 
   return (
-    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Orders</h1>
-          <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">View and manage orders</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Orders</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">View and manage orders</p>
         </div>
         <button
           onClick={handleExport}
@@ -188,7 +188,7 @@ const Orders = () => {
 
       {/* Orders Table - Desktop */}
       <div className="hidden md:block bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-hide">
           <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
