@@ -139,6 +139,7 @@ const TopChefDeals = () => {
           subtitle="Discover amazing deals from talented chefs. Authentic African meals prepared just for you!"
           placement="top_chef_deals_top_banner"
           variant="orange"
+          size="normal"
         />
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4">
           <ProductGridSkeleton count={10} />
@@ -154,8 +155,9 @@ const TopChefDeals = () => {
         subtitle="Discover amazing deals from talented chefs. Authentic African meals prepared just for you!"
         placement="top_chef_deals_top_banner"
         variant="orange"
+        size="normal"
         defaultContent={
-          <div className="text-center w-full">
+          <div className="text-center w-full min-h-[200px] flex flex-col items-center justify-center py-6">
             <div className="flex items-center justify-center gap-4 mb-3">
               <ChefHat className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">Top Chef Deals</h1>

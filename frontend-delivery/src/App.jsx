@@ -15,6 +15,7 @@ import Support from './pages/Support'
 import Profile from './pages/Profile'
 import Chat from './pages/Chat'
 import Settings from './pages/Settings'
+import Documentation from './pages/Documentation'
 import Layout from './components/Layout'
 import './index.css'
 
@@ -56,6 +57,7 @@ function AppRoutes() {
         <Route path="support" element={<Support />} />
         <Route path="chat" element={<Chat />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="documentation" element={<Documentation />} />
         <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>

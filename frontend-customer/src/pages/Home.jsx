@@ -813,12 +813,18 @@ const Home = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-semibold text-gray-900 truncate group-hover:text-amber-600 transition-colors">{chef.chef_name}</h3>
-                          <div className="flex items-center gap-2 mt-0.5">
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                             {chef.average_rating > 0 && (
                               <div className="flex items-center space-x-0.5">
                                 <Star className="h-3 w-3 text-yellow-400 fill-current" />
                                 <span className="text-xs font-semibold text-gray-900">{chef.average_rating.toFixed(1)}</span>
                               </div>
+                            )}
+                            {chef.city && (
+                              <span className="flex items-center gap-0.5 text-xs text-gray-600">
+                                <MapPin className="h-3 w-3" />
+                                {chef.city}{chef.state ? `, ${chef.state}` : ''}
+                              </span>
                             )}
                             {chef.cuisines?.[0] && (
                               <p className="text-xs text-gray-600 truncate">{chef.cuisines[0]}</p>

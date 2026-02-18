@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { ArrowLeft, CheckCircle, XCircle, Truck, MapPin, Phone, Mail, DollarSign, Package, FileText, ExternalLink } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, Truck, MapPin, Phone, Mail, DollarSign, Package, FileText, ExternalLink, X } from 'lucide-react'
 
 // Resolve relative upload URLs to full API URL (for viewing documents)
 const resolveDocUrl = (url) => {
@@ -17,6 +17,7 @@ const DriverDetail = () => {
   const navigate = useNavigate()
   const [driver, setDriver] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [docViewUrl, setDocViewUrl] = useState(null)
 
   useEffect(() => {
     fetchDriver()
@@ -142,7 +143,7 @@ const DriverDetail = () => {
                 <div className="text-sm font-medium text-gray-700 mb-1">Driver Licence</div>
                 {driver.driver_license_url ? (
                   <>
-                    <button type="button" onClick={() => window.open(resolveDocUrl(driver.driver_license_url), '_blank', 'width=800,height=600,scrollbars=yes')} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                    <button type="button" onClick={() => setDocViewUrl(resolveDocUrl(driver.driver_license_url))} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
                       View document <ExternalLink className="h-4 w-4" />
                     </button>
                     {driver.driver_license_validity && (
@@ -157,7 +158,7 @@ const DriverDetail = () => {
                 <div className="text-sm font-medium text-gray-700 mb-1">Vehicle Registration</div>
                 {driver.vehicle_registration_url ? (
                   <>
-                    <button type="button" onClick={() => window.open(resolveDocUrl(driver.vehicle_registration_url), '_blank', 'width=800,height=600,scrollbars=yes')} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                    <button type="button" onClick={() => setDocViewUrl(resolveDocUrl(driver.vehicle_registration_url))} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
                       View document <ExternalLink className="h-4 w-4" />
                     </button>
                     {driver.vehicle_registration_validity && (
@@ -172,7 +173,7 @@ const DriverDetail = () => {
                 <div className="text-sm font-medium text-gray-700 mb-1">Insurance</div>
                 {driver.insurance_document_url ? (
                   <>
-                    <button type="button" onClick={() => window.open(resolveDocUrl(driver.insurance_document_url), '_blank', 'width=800,height=600,scrollbars=yes')} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                    <button type="button" onClick={() => setDocViewUrl(resolveDocUrl(driver.insurance_document_url))} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
                       View document <ExternalLink className="h-4 w-4" />
                     </button>
                     {driver.insurance_validity && (
@@ -332,6 +333,27 @@ const DriverDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Document view popup */}
+      {docViewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setDocViewUrl(null)}>
+          <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-3 border-b">
+              <span className="font-medium">Document Preview</span>
+              <button onClick={() => setDocViewUrl(null)} className="p-1 hover:bg-gray-100 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-auto p-4">
+              {docViewUrl?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? (
+                <img src={docViewUrl} alt="Document" className="max-w-full h-auto" />
+              ) : (
+                <iframe src={docViewUrl} title="Document" className="w-full h-[70vh] border-0" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -10,6 +10,7 @@ const ActiveDelivery = () => {
   const navigate = useNavigate()
   const [delivery, setDelivery] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [tripStarted, setTripStarted] = useState(false)
   const [currentLocation, setCurrentLocation] = useState(null)
   const [directionsResult, setDirectionsResult] = useState(null)
   const directionsPanelRef = useRef(null)
@@ -158,6 +159,40 @@ const ActiveDelivery = () => {
     if (status === 'OK' && result) {
       setDirectionsResult(result)
     }
+  }
+
+  // Start Trip screen: show before map + directions
+  if (!tripStarted) {
+    const addr = delivery?.delivery_address
+    const addrStr = addr ? [addr.street, addr.city, addr.state, addr.postal_code].filter(Boolean).join(', ') : 'Delivery address'
+    return (
+      <div className="h-screen flex flex-col">
+        <div className="bg-white border-b border-gray-200 p-4 flex items-center gap-4">
+          <button onClick={() => navigate('/my-deliveries')} className="p-2 hover:bg-gray-100 rounded-lg">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Delivery #{delivery.order_id?.slice(0, 8)}</h1>
+            <p className="text-sm text-gray-600 capitalize">{delivery.status.replace('_', ' ')}</p>
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gray-50">
+          <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-gray-200 p-8 text-center">
+            <MapPin className="h-16 w-16 text-primary-600 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Ready to start your trip?</h2>
+            <p className="text-gray-600 mb-6">Tap Start Trip to see the map and turn-by-turn directions to the delivery location.</p>
+            <p className="text-sm text-gray-500 mb-6 truncate" title={addrStr}>{addrStr}</p>
+            <button
+              onClick={() => setTripStarted(true)}
+              className="w-full px-6 py-3 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2"
+            >
+              <Navigation className="h-5 w-5" />
+              Start Trip
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

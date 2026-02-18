@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from datetime import timedelta
+from datetime import datetime, timedelta
 from app.core.database import get_db
 from app.models.driver import Driver
 from app.core.security import verify_password, get_password_hash, create_access_token
@@ -172,11 +172,19 @@ async def driver_login(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Check if driver is active
+    # Check document expiry and deactivate if expired
+    now = datetime.utcnow()
+    expiry_cutoff = now + timedelta(days=14)
+    for attr in ("driver_license_validity", "vehicle_registration_validity", "insurance_validity"):
+        val = getattr(driver, attr, None)
+        if val and val <= now:
+            driver.is_active = False
+            db.commit()
+            break
     if not driver.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your driver account is not active. Please contact support."
+            detail="Your documents have expired. Please resubmit documents from your profile to be reactivated."
         )
     
     # Create access token

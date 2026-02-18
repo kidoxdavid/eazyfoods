@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { ArrowLeft, CheckCircle, XCircle, ChefHat, MapPin, Star, Mail, Phone, FileText, ExternalLink } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, ChefHat, MapPin, Star, Mail, Phone, FileText, ExternalLink, X } from 'lucide-react'
 
 const ChefDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const [chef, setChef] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [docViewUrl, setDocViewUrl] = useState(null)
 
   useEffect(() => {
     fetchChef()
@@ -149,7 +150,7 @@ const ChefDetail = () => {
                     <label className="text-sm font-medium text-gray-500">License / ID Document</label>
                     <button
                       type="button"
-                      onClick={() => window.open(chef.government_id_url.startsWith('http') ? chef.government_id_url : `/api/v1${chef.government_id_url}`.replace(/\/\/api/, '/api'), '_blank', 'width=800,height=600,scrollbars=yes')}
+                      onClick={() => setDocViewUrl(chef.government_id_url.startsWith('http') ? chef.government_id_url : `/api/v1${chef.government_id_url}`.replace(/\/\/api/, '/api'))}
                       className="mt-1 text-sm text-blue-600 hover:underline flex items-center gap-1"
                     >
                       View document <ExternalLink className="h-4 w-4" />
@@ -161,7 +162,7 @@ const ChefDetail = () => {
                     <label className="text-sm font-medium text-gray-500">Chef Certification</label>
                     <button
                       type="button"
-                      onClick={() => window.open(chef.chef_certification_url.startsWith('http') ? chef.chef_certification_url : `/api/v1${chef.chef_certification_url}`.replace(/\/\/api/, '/api'), '_blank', 'width=800,height=600,scrollbars=yes')}
+                      onClick={() => setDocViewUrl(chef.chef_certification_url.startsWith('http') ? chef.chef_certification_url : `/api/v1${chef.chef_certification_url}`.replace(/\/\/api/, '/api'))}
                       className="mt-1 text-sm text-blue-600 hover:underline flex items-center gap-1"
                     >
                       View document <ExternalLink className="h-4 w-4" />
@@ -264,6 +265,26 @@ const ChefDetail = () => {
           )}
         </div>
       </div>
+
+      {docViewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setDocViewUrl(null)}>
+          <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-3 border-b">
+              <span className="font-medium">Document Preview</span>
+              <button onClick={() => setDocViewUrl(null)} className="p-1 hover:bg-gray-100 rounded">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-auto p-4">
+              {docViewUrl?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? (
+                <img src={docViewUrl} alt="Document" className="max-w-full h-auto" />
+              ) : (
+                <iframe src={docViewUrl} title="Document" className="w-full h-[70vh] border-0" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

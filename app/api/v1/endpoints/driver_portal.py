@@ -47,6 +47,36 @@ def _safe_float(val):
         return None
 
 
+def _check_driver_document_expiry(driver, db: Session) -> tuple[bool, bool, list]:
+    """Check if driver documents are expired or expiring within 14 days.
+    Returns (expired: bool, expiring_soon: bool, expiring_document_names: list).
+    If expired, deactivates driver, sets verification_status to pending, and commits."""
+    now = datetime.utcnow()
+    expiry_cutoff = now + timedelta(days=14)
+    expired = False
+    expiring_soon = False
+    expiring_names = []
+    checks = [
+        (driver.driver_license_validity, "Driver licence"),
+        (driver.vehicle_registration_validity, "Vehicle registration"),
+        (driver.insurance_validity, "Insurance"),
+    ]
+    for d, name in checks:
+        if d:
+            if d <= now:
+                expired = True
+                expiring_names.append(name)
+            elif d <= expiry_cutoff:
+                expiring_soon = True
+                if name not in expiring_names:
+                    expiring_names.append(name)
+    if expired and driver.is_active:
+        driver.is_active = False
+        driver.verification_status = "pending"
+        db.commit()
+    return expired, expiring_soon, expiring_names
+
+
 @router.get("/me", response_model=DriverResponse)
 async def get_driver_profile(
     current_driver: dict = Depends(get_current_driver),
@@ -56,6 +86,8 @@ async def get_driver_profile(
     driver = db.query(Driver).filter(Driver.id == UUID(current_driver["driver_id"])).first()
     if not driver:
         raise HTTPException(status_code=404, detail="Driver not found")
+    
+    doc_expired, doc_expiring_soon, expiring_names = _check_driver_document_expiry(driver, db)
     
     return DriverResponse(
         id=str(driver.id),
@@ -88,8 +120,74 @@ async def get_driver_profile(
         bank_account_number=driver.bank_account_number,
         bank_routing_number=driver.bank_routing_number,
         bank_name=driver.bank_name,
-        created_at=driver.created_at
+        created_at=driver.created_at,
+        document_expiring_soon=doc_expiring_soon,
+        document_expired=doc_expired,
+        expiring_document_names=expiring_names if expiring_names else None,
     )
+
+
+class DriverDocumentsUpdate(BaseModel):
+    """Schema for resubmitting documents."""
+    driver_license_url: Optional[str] = None
+    driver_license_validity: Optional[datetime] = None
+    vehicle_registration_url: Optional[str] = None
+    vehicle_registration_validity: Optional[datetime] = None
+    insurance_document_url: Optional[str] = None
+    insurance_validity: Optional[datetime] = None
+
+
+@router.put("/documents", response_model=dict)
+async def update_my_documents(
+    data: DriverDocumentsUpdate,
+    current_driver: dict = Depends(get_current_driver),
+    db: Session = Depends(get_db)
+):
+    """Resubmit documents (e.g. after expiration). Sets verification_status to pending."""
+    driver = db.query(Driver).filter(Driver.id == UUID(current_driver["driver_id"])).first()
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    if data.driver_license_url is not None:
+        driver.driver_license_url = data.driver_license_url
+    if data.driver_license_validity is not None:
+        driver.driver_license_validity = data.driver_license_validity
+    if data.vehicle_registration_url is not None:
+        driver.vehicle_registration_url = data.vehicle_registration_url
+    if data.vehicle_registration_validity is not None:
+        driver.vehicle_registration_validity = data.vehicle_registration_validity
+    if data.insurance_document_url is not None:
+        driver.insurance_document_url = data.insurance_document_url
+    if data.insurance_validity is not None:
+        driver.insurance_validity = data.insurance_validity
+    driver.verification_status = "pending"
+    driver.verification_notes = None
+    db.commit()
+    return {"message": "Documents submitted for verification. You will be notified once approved."}
+
+
+@router.get("/documents", response_model=dict)
+async def get_my_documents(
+    current_driver: dict = Depends(get_current_driver),
+    db: Session = Depends(get_db)
+):
+    """Get driver's submitted documents (shown when approved). Read-only."""
+    driver = db.query(Driver).filter(Driver.id == UUID(current_driver["driver_id"])).first()
+    if not driver:
+        raise HTTPException(status_code=404, detail="Driver not found")
+    return {
+        "verification_status": driver.verification_status,
+        "documents": [
+            {"type": "driver_license", "url": driver.driver_license_url, "validity": driver.driver_license_validity.isoformat() if driver.driver_license_validity else None},
+            {"type": "vehicle_registration", "url": driver.vehicle_registration_url, "validity": driver.vehicle_registration_validity.isoformat() if driver.vehicle_registration_validity else None},
+            {"type": "insurance", "url": driver.insurance_document_url, "validity": driver.insurance_validity.isoformat() if driver.insurance_validity else None},
+        ],
+        "driver_license_url": driver.driver_license_url,
+        "vehicle_registration_url": driver.vehicle_registration_url,
+        "insurance_document_url": driver.insurance_document_url,
+        "driver_license_validity": driver.driver_license_validity.isoformat() if driver.driver_license_validity else None,
+        "vehicle_registration_validity": driver.vehicle_registration_validity.isoformat() if driver.vehicle_registration_validity else None,
+        "insurance_validity": driver.insurance_validity.isoformat() if driver.insurance_validity else None,
+    }
 
 
 @router.put("/me", response_model=DriverResponse)

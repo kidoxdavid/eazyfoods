@@ -75,6 +75,9 @@ class DriverResponse(BaseModel):
     bank_routing_number: Optional[str] = None
     bank_name: Optional[str] = None
     created_at: datetime
+    document_expiring_soon: Optional[bool] = None  # True if any doc expires within 14 days
+    document_expired: Optional[bool] = None  # True if any required doc is expired (driver deactivated)
+    expiring_document_names: Optional[List[str]] = None  # Names of docs expiring soon or expired
     
     class Config:
         from_attributes = True

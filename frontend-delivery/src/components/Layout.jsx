@@ -1,7 +1,7 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
-import { LayoutDashboard, Package, MapPin, User, LogOut, Menu, X, ToggleLeft, ToggleRight, DollarSign, BarChart3, Star, MessageSquare, MessageCircle, History, Settings } from 'lucide-react'
+import { LayoutDashboard, Package, MapPin, User, LogOut, Menu, X, ToggleLeft, ToggleRight, DollarSign, BarChart3, Star, MessageSquare, MessageCircle, History, Settings, FileText } from 'lucide-react'
 import { useState } from 'react'
 import api from '../services/api'
 
@@ -28,6 +28,7 @@ const Layout = () => {
     { name: 'Support', href: '/support', icon: MessageSquare },
     { name: 'Chat', href: '/chat', icon: MessageCircle },
     { name: 'Profile', href: '/profile', icon: User },
+    { name: 'Documentation', href: '/documentation', icon: FileText },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
@@ -149,6 +150,19 @@ const Layout = () => {
           </div>
         </header>
 
+        {(driver?.document_expired || driver?.document_expiring_soon) && (
+          <div className={`mx-4 mt-4 sm:mx-6 sm:mt-6 lg:mx-8 rounded-lg p-3 flex items-center justify-between flex-wrap gap-2 ${driver?.document_expired ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'}`}>
+            <p className="text-sm">
+              {driver?.document_expired
+                ? 'One or more documents have expired. You have been deactivated until you resubmit.'
+                : 'One or more documents expire within 14 days. Please resubmit to avoid deactivation.'}
+              {driver?.expiring_document_names?.length ? ` (${driver.expiring_document_names.join(', ')})` : ''}
+            </p>
+            <Link to="/documentation" className="text-sm font-medium text-primary-600 hover:text-primary-700 whitespace-nowrap">
+              View & resubmit →
+            </Link>
+          </div>
+        )}
         <main className="p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>

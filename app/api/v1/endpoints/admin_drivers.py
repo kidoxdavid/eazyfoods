@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import UUID
 from app.core.database import get_db
 from app.models.driver import Driver
@@ -74,6 +74,86 @@ async def get_all_drivers(
             "created_at": driver.created_at
         })
     
+    return result
+
+
+@router.get("/expiring-documents", response_model=List[dict])
+async def get_expiring_documents(
+    current_admin: dict = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """List drivers with documents expired or expiring within 14 days (for admin notification)."""
+    now = datetime.utcnow()
+    cutoff = now + timedelta(days=14)
+    drivers = db.query(Driver).filter(Driver.is_active == True).all()
+    result = []
+    for d in drivers:
+        expired = []
+        expiring_soon = []
+        if d.driver_license_validity:
+            if d.driver_license_validity <= now:
+                expired.append("driver_license")
+            elif d.driver_license_validity <= cutoff:
+                expiring_soon.append("driver_license")
+        if d.vehicle_registration_validity:
+            if d.vehicle_registration_validity <= now:
+                expired.append("vehicle_registration")
+            elif d.vehicle_registration_validity <= cutoff:
+                expiring_soon.append("vehicle_registration")
+        if d.insurance_validity:
+            if d.insurance_validity <= now:
+                expired.append("insurance")
+            elif d.insurance_validity <= cutoff:
+                expiring_soon.append("insurance")
+        if expired or expiring_soon:
+            result.append({
+                "id": str(d.id),
+                "first_name": d.first_name,
+                "last_name": d.last_name,
+                "email": d.email,
+                "expired": expired,
+                "expiring_soon": expiring_soon,
+            })
+    return result
+
+
+@router.get("/expiring-documents", response_model=List[dict])
+async def get_expiring_documents(
+    current_admin: dict = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """List drivers with documents expired or expiring within 14 days (for admin notification)."""
+    now = datetime.utcnow()
+    cutoff = now + timedelta(days=14)
+    drivers = db.query(Driver).filter(Driver.is_active == True).all()
+    result = []
+    for d in drivers:
+        expired = []
+        expiring_soon = []
+        if d.driver_license_validity:
+            if d.driver_license_validity <= now:
+                expired.append("driver_license")
+            elif d.driver_license_validity <= cutoff:
+                expiring_soon.append("driver_license")
+        if d.vehicle_registration_validity:
+            if d.vehicle_registration_validity <= now:
+                expired.append("vehicle_registration")
+            elif d.vehicle_registration_validity <= cutoff:
+                expiring_soon.append("vehicle_registration")
+        if d.insurance_validity:
+            if d.insurance_validity <= now:
+                expired.append("insurance")
+            elif d.insurance_validity <= cutoff:
+                expiring_soon.append("insurance")
+        if expired or expiring_soon:
+            result.append({
+                "id": str(d.id),
+                "first_name": d.first_name,
+                "last_name": d.last_name,
+                "email": d.email,
+                "expired": expired,
+                "expiring_soon": expiring_soon,
+            })
     return result
 
 
