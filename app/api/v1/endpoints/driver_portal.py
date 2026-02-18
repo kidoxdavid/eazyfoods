@@ -2,6 +2,7 @@
 Driver portal endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 from typing import List, Optional
