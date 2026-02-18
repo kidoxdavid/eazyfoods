@@ -45,13 +45,10 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
     return () => window.removeEventListener('scroll', handleScroll)
   }, [ads, currentIndex, size])
 
-  const resolveMediaUrl = (url) => {
+  const resolveMediaUrl = (url, type = 'ad') => {
     if (!url) return ''
-    // Use the same image resolution logic for consistency
-    // This handles localhost URLs and relative paths correctly
-    // resolveImageUrl returns a relative path like /api/v1/uploads/ads/image.jpg
-    // This works fine with img src tags and the Vite proxy
-    return resolveImageUrl(url)
+    // Use the same image resolution logic for consistency (type 'ad' so bare filenames → /api/v1/uploads/ads/...)
+    return resolveImageUrl(url, type)
   }
 
   // Legacy placement fallbacks for backward compatibility (new format -> legacy)
@@ -201,8 +198,8 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
   const bannerHeight = size === 'tall' ? 'auto' : '240px'
   const bannerMinHeight = size === 'tall' ? '200px' : '240px'
 
-  // Show default banner if loading, dismissed, or no ads
-  if (loading || dismissed || ads.length === 0) {
+  // Show default banner only when dismissed or no ads (keep showing existing ads while refetching)
+  if (dismissed || ads.length === 0) {
     return (
       <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'flex', alignItems: 'center' }}>
         <div className="max-w-7xl mx-auto w-full">

@@ -1,83 +1,68 @@
-# Stripe Integration Setup Guide
+# Stripe Sandbox (Test Mode) Setup
 
-## Backend Setup
+Use Stripe **test** keys so payments never charge real cards. Charges appear in your Stripe Dashboard with **Test mode** turned ON.
 
-### 1. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+## 1. Get test API keys
 
-### 2. Get Stripe API Keys
-1. Sign up for a Stripe account at https://stripe.com
-2. Go to Developers > API keys
-3. Copy your **Publishable key** and **Secret key**
-4. For webhooks, you'll need to set up a webhook endpoint (see below)
+1. Log in at [https://dashboard.stripe.com](https://dashboard.stripe.com).
+2. Turn **Test mode** ON (toggle in the top-right).
+3. Go to **Developers → API keys**.
+4. Copy:
+   - **Publishable key** (starts with `pk_test_...`)
+   - **Secret key** (starts with `sk_test_...`)
 
-### 3. Configure Environment Variables
-Add these to your `.env` file:
+## 2. Configure the backend
+
+In your project root `.env`:
+
 ```env
-STRIPE_SECRET_KEY=sk_test_...  # Your Stripe secret key (test or live)
-STRIPE_PUBLISHABLE_KEY=pk_test_...  # Your Stripe publishable key (test or live)
-STRIPE_WEBHOOK_SECRET=whsec_...  # Webhook signing secret (get this after setting up webhook)
+PAYMENT_GATEWAY=stripe
+# Paste from Stripe Dashboard -> Developers -> API keys (Test mode ON)
+STRIPE_SECRET_KEY=<your Stripe secret key>
+STRIPE_PUBLISHABLE_KEY=<your Stripe publishable key>
 ```
 
-### 4. Database Migration
-Run this SQL to add Stripe payment fields to the orders table:
-```sql
-ALTER TABLE orders 
-ADD COLUMN IF NOT EXISTS stripe_payment_intent_id VARCHAR(255),
-ADD COLUMN IF NOT EXISTS stripe_payment_method_id VARCHAR(255),
-ADD COLUMN IF NOT EXISTS stripe_charge_id VARCHAR(255);
-```
+Restart the API server after changing `.env`.
 
-### 5. Set Up Stripe Webhook
-1. In Stripe Dashboard, go to Developers > Webhooks
-2. Click "Add endpoint"
-3. Set the endpoint URL to: `https://your-domain.com/api/v1/customer/payments/webhook`
-   - For local testing, use ngrok: `https://your-ngrok-url.ngrok.io/api/v1/customer/payments/webhook`
-4. Select events to listen to:
-   - `payment_intent.succeeded`
-   - `payment_intent.payment_failed`
-5. Copy the "Signing secret" and add it to your `.env` as `STRIPE_WEBHOOK_SECRET`
+## 3. Customer app must use the same API
 
-## Frontend Setup
+The customer frontend loads Stripe using the publishable key from your API:
 
-### 1. Install Stripe.js
-```bash
-cd frontend-customer
-npm install @stripe/stripe-js @stripe/react-stripe-js
-```
+- **GET** `/api/v1/customer/payments/config` → returns `stripe_publishable_key` and `stripe_enabled: true`.
 
-### 2. Get Publishable Key
-The publishable key will be fetched from the backend configuration or you can set it directly in the frontend.
+So the customer app’s API base URL must point at the same backend that has these env vars set:
 
-## Testing
+- Local: usually `VITE_API_BASE_URL=http://localhost:8000` (or your backend port) so requests go to the same machine.
+- Production: set `VITE_API_BASE_URL` to your deployed API (e.g. `https://eazyfoods-api.onrender.com`).
 
-### Test Mode
-- Use test API keys (start with `sk_test_` and `pk_test_`)
-- Use Stripe test cards: https://stripe.com/docs/testing
-- Test card: `4242 4242 4242 4242` (any future expiry, any CVC)
+If the customer app calls a different host (or wrong port), it may get no key or the wrong key and Stripe will not work.
 
-### Production
-- Switch to live API keys (start with `sk_live_` and `pk_live_`)
-- Update webhook endpoint to production URL
-- Test thoroughly before going live
+## 4. Test card numbers (Stripe test mode)
 
-## Payment Flow
+Use these only with **test** keys; they never charge real money.
 
-1. **Create Payment Intent**: Frontend calls `/customer/payments/create-payment-intent` with order total
-2. **Confirm Payment**: User enters card details, Stripe.js handles payment
-3. **Create Order**: After payment succeeds, create order with `payment_intent_id`
-4. **Webhook Confirmation**: Stripe sends webhook to confirm payment (backup verification)
+| Card number           | Result        |
+|-----------------------|---------------|
+| **4242 4242 4242 4242** | Success       |
+| 4000 0000 0000 0002    | Declined      |
+| 4000 0000 0000 3220    | 3D Secure     |
 
-## Security Notes
+- **Expiry:** any future date (e.g. 12/34).
+- **CVC:** any 3 digits (e.g. 123).
+- **ZIP:** any (e.g. 12345).
 
-- Never expose your secret key in frontend code
-- Always verify webhook signatures
-- Use HTTPS in production
-- Store sensitive keys in environment variables only
+Full list: [Stripe test cards](https://docs.stripe.com/testing#cards).
 
+## 5. Verify it’s working
 
+1. Open the **customer** app and add something to the cart.
+2. Go to Checkout and choose **Stripe**.
+3. Optionally click **“Test Stripe — Send $1 to Dashboard”** to create a $1 test payment and confirm it appears in [Stripe Dashboard → Payments](https://dashboard.stripe.com/test/payments) (with Test mode ON).
+4. Place an order using card **4242 4242 4242 4242** and confirm the order completes and the payment shows in the Stripe test Dashboard.
 
+If Stripe still doesn’t work:
 
-
+- Confirm **Test mode** is ON in the Dashboard when you copy keys.
+- Confirm `.env` has `STRIPE_SECRET_KEY` and `STRIPE_PUBLISHABLE_KEY` (no typos, no extra spaces).
+- Confirm the customer app’s API base URL targets the backend that has these env vars (see section 3).
+- Check the browser console and network tab for failed requests to `/customer/payments/config` or `/customer/payments/create-payment-intent`.

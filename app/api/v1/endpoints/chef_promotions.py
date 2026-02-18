@@ -195,17 +195,23 @@ async def update_chef_promotion(
             detail="Promotion not found"
         )
     
-    update_data = promotion_update.dict(exclude_unset=True)
+    try:
+        update_data = promotion_update.model_dump(exclude_unset=True)
+    except AttributeError:
+        update_data = promotion_update.dict(exclude_unset=True)
     
     # Handle cuisine_ids if provided
-    if 'cuisine_ids' in update_data and update_data['cuisine_ids']:
-        try:
-            update_data['cuisine_ids'] = [UUID(cid) for cid in update_data['cuisine_ids']]
-        except (ValueError, TypeError) as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid cuisine ID format: {str(e)}"
-            )
+    if 'cuisine_ids' in update_data:
+        if update_data['cuisine_ids']:
+            try:
+                update_data['cuisine_ids'] = [UUID(cid) for cid in update_data['cuisine_ids']]
+            except (ValueError, TypeError) as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid cuisine ID format: {str(e)}"
+                )
+        else:
+            update_data['cuisine_ids'] = []
     elif 'product_ids' in update_data and update_data['product_ids']:
         # For compatibility, convert product_ids to cuisine_ids
         try:
@@ -230,6 +236,14 @@ async def update_chef_promotion(
             detail=f"Error updating promotion: {str(e)}"
         )
     
+    now = datetime.utcnow()
+    start_date = promotion.start_date
+    end_date = promotion.end_date
+    is_active_now = promotion.is_active and start_date and end_date and now >= start_date and now <= end_date
+    is_upcoming = promotion.is_active and start_date and now < start_date
+    is_expired = end_date and now > end_date
+    status = "active" if is_active_now else ("upcoming" if is_upcoming else ("expired" if is_expired else "inactive"))
+    
     return {
         "id": str(promotion.id),
         "chef_id": str(promotion.chef_id) if promotion.chef_id else None,
@@ -243,6 +257,7 @@ async def update_chef_promotion(
         "cuisine_ids": [str(cid) for cid in promotion.cuisine_ids] if promotion.cuisine_ids else [],
         "requires_approval": promotion.requires_approval,
         "approval_status": promotion.approval_status,
+        "status": status,
         "start_date": promotion.start_date.isoformat() if promotion.start_date else None,
         "end_date": promotion.end_date.isoformat() if promotion.end_date else None,
         "is_active": promotion.is_active,

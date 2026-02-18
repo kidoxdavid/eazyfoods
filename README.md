@@ -75,6 +75,10 @@ The database includes the following main tables:
 - **cart_items** - Shopping cart items
 - **reviews** - Product reviews and ratings
 
+## Payments (Stripe sandbox)
+
+To use **Stripe in test mode** (no real charges), set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `PAYMENT_GATEWAY=stripe` in `.env`. See **[STRIPE_SETUP.md](STRIPE_SETUP.md)** for step-by-step setup and test card numbers (e.g. 4242 4242 4242 4242).
+
 ## Troubleshooting
 
 ### Connection Issues
