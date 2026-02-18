@@ -831,7 +831,7 @@ const Home = () => {
                           </div>
                         </div>
                         {chef.cuisines?.length > 0 && (
-                          <div className="flex-shrink-0 flex flex-wrap justify-end gap-1 max-w-[45%]">
+                          <div className="flex-shrink-0 flex flex-col items-end gap-1 max-w-[45%]">
                             {(Array.isArray(chef.cuisines) ? chef.cuisines : [chef.cuisines]).slice(0, 3).map((c) => (
                               <span key={c} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 group-hover:bg-amber-200 group-hover:border-amber-300 transition-colors">
                                 {c}

@@ -191,10 +191,8 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
     }
   }
 
-  // Default banner gradient by variant
-  const defaultBannerClass = variant === 'orange'
-    ? 'bg-gradient-to-r from-yellow-500 via-orange-500 to-yellow-600'
-    : 'bg-gradient-to-r from-primary-600 to-primary-700'
+  // Same green+orange mix for all banners (primary = green, via orange)
+  const defaultBannerClass = 'bg-gradient-to-r from-primary-600 via-orange-600 to-primary-700'
   const bannerHeight = size === 'tall' ? 'auto' : '240px'
   const bannerMinHeight = size === 'tall' ? '200px' : '240px'
 
@@ -254,7 +252,7 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
   return (
     <div 
       ref={bannerRef}
-      className="relative w-full bg-gradient-to-r from-primary-600 to-primary-800 text-white overflow-hidden mb-6" 
+      className="relative w-full bg-gradient-to-r from-primary-600 via-orange-600 to-primary-700 text-white overflow-hidden mb-6" 
       style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'block', width: '100%', position: 'relative', zIndex: 1 }}
     >
       {/* Dismiss button */}

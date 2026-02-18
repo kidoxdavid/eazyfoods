@@ -19,14 +19,17 @@ const Signup = () => {
   const navigate = useNavigate()
   const googleClientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || ''
 
+  const [signupSuccess, setSignupSuccess] = useState(false)
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
+    setSignupSuccess(false)
 
     try {
       await signup(formData)
-      navigate('/login')
+      setSignupSuccess(true)
     } catch (err) {
       const status = err.response?.status
       const detail = err.response?.data?.detail || err.message || 'Signup failed. Please try again.'
@@ -38,6 +41,21 @@ const Signup = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (signupSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-nude-50 to-nude-100 px-4 py-12">
+        <div className="max-w-md w-full space-y-6 bg-white p-8 rounded-xl shadow-lg text-center">
+          <h1 className="text-2xl font-bold text-primary-600">Check your email</h1>
+          <p className="text-gray-600">
+            We sent a verification link to <strong>{formData.email}</strong>. Click the link in that email to verify your address and complete signup.
+          </p>
+          <p className="text-sm text-gray-500">You can then log in with your email and password.</p>
+          <Link to="/login" className="inline-block mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">Go to Login</Link>
+        </div>
+      </div>
+    )
   }
 
   return (

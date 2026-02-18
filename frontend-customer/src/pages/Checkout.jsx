@@ -5,7 +5,6 @@ import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import { MapPin, CreditCard, Truck, Lock, ChefHat } from 'lucide-react'
 import PrivateRoute from '../components/PrivateRoute'
-import HelcimPayment from '../components/HelcimPayment'
 import StripePayment from '../components/StripePayment'
 import TestStripeModal, { TEST_AMOUNT } from '../components/TestStripeModal'
 
@@ -21,8 +20,8 @@ const Checkout = () => {
   const [deliveryMethod, setDeliveryMethod] = useState('delivery')
   const [paymentData, setPaymentData] = useState(null)
   const [processPaymentFn, setProcessPaymentFn] = useState(null)
-  const [paymentConfig, setPaymentConfig] = useState({ stripe_enabled: true, helcim_enabled: false, payments_suspended: false })
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('stripe') // 'stripe' | 'helcim'
+  const [paymentConfig, setPaymentConfig] = useState({ stripe_enabled: true, payments_suspended: false })
+  const [selectedPaymentMethod] = useState('stripe')
   const [cardReady, setCardReady] = useState(false)
   const [address, setAddress] = useState({
     street_address: '',
@@ -55,15 +54,9 @@ const Checkout = () => {
       const d = r.data || {}
       setPaymentConfig({
         stripe_enabled: !!d.stripe_enabled,
-        helcim_enabled: !!d.helcim_enabled,
         payments_suspended: !!d.payments_suspended
       })
-      setSelectedPaymentMethod(prev => {
-        if (prev === 'stripe' && !d.stripe_enabled && d.helcim_enabled) return 'helcim'
-        if (prev === 'helcim' && !d.helcim_enabled && d.stripe_enabled) return 'stripe'
-        return prev
-      })
-    }).catch(() => setPaymentConfig({ stripe_enabled: true, helcim_enabled: false, payments_suspended: false }))
+    }).catch(() => setPaymentConfig({ stripe_enabled: true, payments_suspended: false }))
   }, [])
 
   const handleCreateTestStripePayment = async () => {
@@ -92,8 +85,6 @@ const Checkout = () => {
 
   const handleSelectPaymentMethod = (method) => {
     if (method === 'stripe' && !paymentConfig.stripe_enabled) return
-    if (method === 'helcim' && !paymentConfig.helcim_enabled) return
-    setSelectedPaymentMethod(method)
     setPaymentData(null)
     setProcessPaymentFn(null)
     setCardReady(false)
@@ -190,7 +181,7 @@ const Checkout = () => {
     setLoading(true)
 
     try {
-      const isStripe = !paymentsSuspended && paymentData?.payment_method === 'stripe'
+      const isStripe = !paymentsSuspended
       const items = cart.map(item => {
         if (item.chef_id && item.cuisine_id) {
           return { chef_id: item.chef_id, cuisine_id: item.cuisine_id, quantity: item.quantity }
@@ -202,9 +193,9 @@ const Checkout = () => {
         store_id: selectedStoreId || null,
         delivery_method: deliveryMethod,
         address: deliveryMethod === 'delivery' ? address : null,
-        payment_method: paymentsSuspended ? 'cash' : (paymentData?.payment_method || selectedPaymentMethod),
+        payment_method: paymentsSuspended ? 'cash' : 'stripe',
         payment_intent_id: paymentsSuspended ? null : (paymentData?.transaction_id || null),
-        helcim_transaction_id: paymentsSuspended ? null : (isStripe ? null : (paymentData?.transaction_id || null)),
+        helcim_transaction_id: null,
         stripe_payment_intent_id: paymentsSuspended ? null : (isStripe ? (paymentData?.transaction_id || paymentData?.payment_intent_id) : null)
       }
 
@@ -477,7 +468,7 @@ const Checkout = () => {
               </div>
             )}
 
-            {/* Payment Method – A/B style: choose Stripe or Helcim */}
+            {/* Payment Method – Stripe */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <h2 className="text-base font-semibold mb-3 flex items-center">
                 <CreditCard className="h-4 w-4 mr-2 text-primary-600" />
@@ -485,7 +476,7 @@ const Checkout = () => {
               </h2>
               <p className="text-xs text-gray-500 mb-3">Choose how you’d like to pay. You can switch and compare both options.</p>
 
-              <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="mb-4">
                 <button
                   type="button"
                   onClick={() => handleSelectPaymentMethod('stripe')}
@@ -501,21 +492,6 @@ const Checkout = () => {
                   <span className="font-semibold text-sm text-gray-900 block">Stripe</span>
                   <span className="text-xs text-gray-500 mt-0.5">Card form on this page. Test payments: Dashboard → Test mode → Payments.</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleSelectPaymentMethod('helcim')}
-                  disabled={!paymentConfig.helcim_enabled}
-                  className={`rounded-lg border-2 p-3 text-left transition-all ${
-                    selectedPaymentMethod === 'helcim'
-                      ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500'
-                      : paymentConfig.helcim_enabled
-                        ? 'border-gray-200 bg-gray-50 opacity-75 hover:opacity-100 hover:border-gray-300'
-                        : 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
-                  }`}
-                >
-                  <span className="font-semibold text-sm text-gray-900 block">Helcim</span>
-                  <span className="text-xs text-gray-500 mt-0.5">Opens secure payment window</span>
-                </button>
               </div>
 
               <div className="mt-3 pt-3 border-t border-gray-100">
@@ -529,31 +505,17 @@ const Checkout = () => {
                 </button>
               </div>
 
-              {selectedPaymentMethod === 'stripe' && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <StripePayment
-                    key={`stripe-${total}`}
-                    amount={total}
-                    token={token}
-                    onSuccess={handlePaymentSuccess}
-                    onError={handlePaymentError}
-                    onPaymentReady={handlePaymentReady}
-                    onCardReady={handleCardReady}
-                  />
-                </div>
-              )}
-              {selectedPaymentMethod === 'helcim' && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <HelcimPayment
-                    amount={total}
-                    token={token}
-                    onSuccess={handlePaymentSuccess}
-                    onError={handlePaymentError}
-                    onPaymentReady={handlePaymentReady}
-                    onCardReady={handleCardReady}
-                  />
-                </div>
-              )}
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <StripePayment
+                  key={`stripe-${total}`}
+                  amount={total}
+                  token={token}
+                  onSuccess={handlePaymentSuccess}
+                  onError={handlePaymentError}
+                  onPaymentReady={handlePaymentReady}
+                  onCardReady={handleCardReady}
+                />
+              </div>
             </div>
           </div>
 

@@ -154,8 +154,8 @@ const Layout = ({ children }) => {
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="p-4 sm:p-6 lg:p-8">
+        {/* Page content - responsive padding and overflow for tables on mobile */}
+        <main className="p-4 sm:p-6 lg:p-8 max-w-full overflow-x-auto min-w-0">
           {children}
         </main>
       </div>

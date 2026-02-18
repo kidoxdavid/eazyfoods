@@ -18,49 +18,49 @@ const Documentation = () => {
   const docUrl = user?.government_id_url
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 px-2 sm:px-0">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Documentation</h1>
-        <p className="text-gray-600 mt-1">View your submitted verification document (read-only)</p>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Documentation</h1>
+        <p className="text-gray-600 mt-1 text-sm sm:text-base">View your submitted verification document (read-only)</p>
       </div>
 
-      <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <FileText className="h-5 w-5" />
+      <div className="bg-white rounded-lg shadow border border-gray-200 p-4 sm:p-6">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
+          <FileText className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
           Documents for Verification
         </h2>
         {docUrl ? (
-          <div className="border border-gray-200 rounded-lg p-4">
+          <div className="border border-gray-200 rounded-lg p-3 sm:p-4">
             <div className="text-sm font-medium text-gray-700 mb-1">License / ID Document</div>
             <button
               type="button"
               onClick={() => setDocViewUrl(resolveDocUrl(docUrl))}
-              className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+              className="text-sm text-blue-600 hover:underline flex items-center gap-1 mt-1"
             >
-              <Eye className="h-4 w-4" />
+              <Eye className="h-4 w-4 flex-shrink-0" />
               View document
             </button>
             <p className="text-xs text-gray-500 mt-2">Documents cannot be deleted. Contact support if you need to update.</p>
           </div>
         ) : (
-          <p className="text-gray-500">No document on file. Submit your verification document during signup or contact support.</p>
+          <p className="text-gray-500 text-sm sm:text-base">No document on file. Submit your verification document during signup or contact support.</p>
         )}
       </div>
 
       {docViewUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setDocViewUrl(null)}>
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl max-h-[90vh] w-full overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center p-3 border-b">
-              <span className="font-medium">Document</span>
-              <button type="button" onClick={() => setDocViewUrl(null)} className="p-1 rounded hover:bg-gray-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4" onClick={() => setDocViewUrl(null)}>
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-3 border-b flex-shrink-0">
+              <span className="font-medium text-sm sm:text-base">Document</span>
+              <button type="button" onClick={() => setDocViewUrl(null)} className="p-2 rounded hover:bg-gray-100" aria-label="Close">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="flex-1 min-h-0 overflow-auto p-4">
+            <div className="flex-1 min-h-0 overflow-auto p-2 sm:p-4">
               {/\.(pdf)$/i.test(docViewUrl) ? (
-                <iframe src={docViewUrl} title="Document" className="w-full h-[70vh] border-0 rounded" />
+                <iframe src={docViewUrl} title="Document" className="w-full min-h-[50vh] sm:min-h-[70vh] border-0 rounded" />
               ) : (
-                <img src={docViewUrl} alt="Document" className="max-w-full h-auto max-h-[70vh] object-contain mx-auto" />
+                <img src={docViewUrl} alt="Document" className="max-w-full h-auto max-h-[75vh] sm:max-h-[70vh] object-contain mx-auto" />
               )}
             </div>
           </div>

@@ -105,6 +105,7 @@ const Profile = () => {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
+  const isApproved = profile?.verification_status === 'approved'
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -138,6 +139,12 @@ const Profile = () => {
       fetchProfile()
     }
   }, [token])
+
+  useEffect(() => {
+    if (profile?.verification_status === 'approved' && editing) {
+      setEditing(false)
+    }
+  }, [profile?.verification_status, editing])
 
   const fetchProfile = async () => {
     try {
@@ -202,6 +209,7 @@ const Profile = () => {
   }
 
   const handleCancel = () => {
+    if (isApproved) return
     setEditing(false)
     if (profile) {
       setFormData({
@@ -297,7 +305,7 @@ const Profile = () => {
           <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
           <p className="text-gray-600 mt-1">Manage your driver profile</p>
         </div>
-        {!editing && (
+        {!editing && !isApproved && (
           <button
             onClick={() => setEditing(true)}
             className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
@@ -305,6 +313,9 @@ const Profile = () => {
             <Edit className="h-5 w-5" />
             Edit Profile
           </button>
+        )}
+        {isApproved && (
+          <p className="text-sm text-gray-500">Profile is locked after approval. Contact support to update details.</p>
         )}
       </div>
 

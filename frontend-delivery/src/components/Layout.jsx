@@ -163,7 +163,7 @@ const Layout = () => {
             </Link>
           </div>
         )}
-        <main className="p-4 sm:p-6 lg:p-8">
+        <main className="p-4 sm:p-6 lg:p-8 max-w-full overflow-x-auto min-w-0">
           <Outlet />
         </main>
       </div>

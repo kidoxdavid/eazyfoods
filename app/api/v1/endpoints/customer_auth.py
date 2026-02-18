@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from datetime import timedelta
 from app.core.database import get_db
 from app.models.customer import Customer
-from app.core.security import verify_password, get_password_hash, create_access_token
+from app.core.security import verify_password, get_password_hash, create_access_token, create_email_verification_token, decode_access_token
 from app.core.config import settings
 from app.schemas.customer import CustomerSignup, CustomerResponse
 
@@ -48,10 +48,20 @@ async def customer_signup(
     db.add(customer)
     db.commit()
     db.refresh(customer)
-    
+
+    # Send verification email (stub: set up SMTP or Resend/SendGrid and implement send_verification_email)
+    try:
+        token = create_email_verification_token(customer.email)
+        # TODO: send email with link to frontend /verify-email?token=... (e.g. Resend, SendGrid, or SMTP)
+        # from app.core.email import send_verification_email
+        # await send_verification_email(customer.email, token)
+    except Exception:
+        pass
+
     return {
-        "message": "Customer account created successfully",
-        "customer_id": str(customer.id)
+        "message": "Customer account created. Please check your email to verify your address and complete signup.",
+        "customer_id": str(customer.id),
+        "verification_sent": True
     }
 
 
@@ -174,4 +184,21 @@ async def customer_google(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Google sign-in failed. Please try again or use email and password.",
         )
+
+
+@router.get("/verify-email", response_model=dict)
+async def verify_email(token: str, db: Session = Depends(get_db)):
+    """Verify customer email from link. Token is a JWT with sub=email and purpose=email_verification."""
+    payload = decode_access_token(token)
+    if not payload or payload.get("purpose") != "email_verification":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification link.")
+    email = payload.get("sub")
+    if not email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid verification link.")
+    customer = db.query(Customer).filter(Customer.email == email).first()
+    if not customer:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found.")
+    customer.is_email_verified = True
+    db.commit()
+    return {"message": "Email verified. You can now log in.", "verified": True}
 

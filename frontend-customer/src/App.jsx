@@ -13,6 +13,7 @@ import StickyBottomNav from './components/StickyBottomNav'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import VerifyEmail from './pages/VerifyEmail'
 import DriverSignup from './pages/DriverSignup'
 import BecomeADriver from './pages/BecomeADriver'
 import ProductDetail from './pages/ProductDetail'
@@ -55,6 +56,7 @@ function App() {
                             <Route path="/" element={<Home />} />
                             <Route path="/login" element={<Login />} />
                             <Route path="/signup" element={<Signup />} />
+                            <Route path="/verify-email" element={<VerifyEmail />} />
                             <Route path="/driver-signup" element={<DriverSignup />} />
                             <Route path="/become-a-driver" element={<BecomeADriver />} />
                             <Route path="/stores" element={<Stores />} />
@@ -90,6 +92,7 @@ function App() {
                             <Route path="/" element={<Home />} />
                             <Route path="/login" element={<Login />} />
                             <Route path="/signup" element={<Signup />} />
+                            <Route path="/verify-email" element={<VerifyEmail />} />
                             <Route path="/driver-signup" element={<DriverSignup />} />
                             <Route path="/become-a-driver" element={<BecomeADriver />} />
                             <Route path="/stores" element={<Stores />} />
