@@ -61,7 +61,7 @@ const Profile = () => {
         delivery_radius_km: data.delivery_radius_km || 5.0,
         pickup_available: data.pickup_available !== undefined ? data.pickup_available : true,
         delivery_available: data.delivery_available !== undefined ? data.delivery_available : true,
-        region: data.region || '',
+        region: data.region || '', // may be comma-separated for multiple regions
         operating_hours: data.operating_hours || {
           monday: { open: '09:00', close: '21:00' },
           tuesday: { open: '09:00', close: '21:00' },
@@ -128,10 +128,15 @@ const Profile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const regions = (formData.region || '').split(',').map((r) => r.trim()).filter(Boolean)
+    if (regions.length === 0) {
+      alert('Please select at least one African region.')
+      return
+    }
     setSaving(true)
     
     try {
-      // Prepare update data
+      // Prepare update data (region stored as comma-separated for multiple)
       const updateData = {
         ...formData,
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
@@ -351,22 +356,29 @@ const Profile = () => {
 
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
-                African Region *
+                African Regions (select up to 3) *
               </label>
-              <select
-                name="region"
-                value={formData.region}
-                onChange={handleChange}
-                required
-                className="input"
-              >
-                <option value="">Select Region</option>
-                <option value="West African">West African</option>
-                <option value="East African">East African</option>
-                <option value="North African">North African</option>
-                <option value="Central African">Central African</option>
-                <option value="South African">South African</option>
-              </select>
+              <div className="flex flex-wrap gap-2">
+                {['West African', 'East African', 'North African', 'Central African', 'South African'].map((opt) => {
+                  const regions = (formData.region || '').split(',').map((r) => r.trim()).filter(Boolean)
+                  const checked = regions.includes(opt)
+                  return (
+                    <label key={opt} className="inline-flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          let next = checked ? regions.filter((r) => r !== opt) : [...regions, opt].slice(0, 3)
+                          setFormData((prev) => ({ ...prev, region: next.join(', ') }))
+                        }}
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-700">{opt}</span>
+                    </label>
+                  )
+                })}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Select at least one, up to three regions.</p>
             </div>
           </div>
 

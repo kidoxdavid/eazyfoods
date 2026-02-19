@@ -1,22 +1,37 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { ShoppingCart, Eye, Search, X } from 'lucide-react'
 import { formatCurrency, formatDateTime } from '../utils/format'
 import Pagination from '../components/Pagination'
 
+const VALID_STATUSES = ['all', 'new', 'accepted', 'ready', 'delivered', 'cancelled']
+
 const Orders = () => {
+  const [searchParams] = useSearchParams()
+  const statusFromUrl = searchParams.get('status')
+  const initialStatus = VALID_STATUSES.includes(statusFromUrl) ? statusFromUrl : 'all'
   const [orders, setOrders] = useState([])
   const [allOrders, setAllOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState(initialStatus)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
 
   useEffect(() => {
+    if (VALID_STATUSES.includes(statusFromUrl)) setStatusFilter(statusFromUrl)
+  }, [statusFromUrl])
+
+  useEffect(() => {
     fetchOrders()
   }, [statusFilter])
+
+  useEffect(() => {
+    const onRefresh = () => fetchOrders()
+    window.addEventListener('refresh-orders-list', onRefresh)
+    return () => window.removeEventListener('refresh-orders-list', onRefresh)
+  }, [])
 
   const fetchOrders = async () => {
     try {

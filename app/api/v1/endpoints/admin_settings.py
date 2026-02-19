@@ -147,7 +147,9 @@ def get_default_settings(setting_type: str) -> dict:
             'helcim_enabled': True,
             'require_payment_verification': True,
             'refund_policy_days': 30,
-            'payments_suspended': False
+            'payments_suspended': False,
+            'suspend_vendor_ad_payments': False,
+            'suspend_chef_ad_payments': False
         },
         'notifications': {
             'email_notifications': True,

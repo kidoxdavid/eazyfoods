@@ -1,16 +1,19 @@
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../contexts/CartContext'
 import { useToast } from '../contexts/ToastContext'
-import { Minus, Plus, Trash2, ShoppingCart, Sparkles, TrendingUp, Users } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingCart, Sparkles, TrendingUp, Users, ArrowRightLeft } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import { resolveImageUrl } from '../utils/imageUtils'
 import EmptyState from '../components/EmptyState'
+import api from '../services/api'
 
 const Cart = () => {
-  const { cart, updateQuantity, removeFromCart, getCartTotal, clearCart } = useCart()
+  const { cart, updateQuantity, removeFromCart, getCartTotal, clearCart, addToCart } = useCart()
   const { success: showSuccessToast, info: showInfoToast, error: showErrorToast } = useToast()
   const navigate = useNavigate()
-  
+  const [compareData, setCompareData] = useState(null)
+
   // Check if product items are from multiple stores (chef items don't have store_id)
   const getStoreIds = () => {
     const storeIds = cart.filter(item => item.store_id).map(item => item.store_id)
@@ -19,6 +22,29 @@ const Cart = () => {
 
   const storeIds = getStoreIds()
   const hasMultipleStores = storeIds.length > 1
+  const productOnlyCart = cart.filter(item => item.store_id && !item.chef_id)
+  const canCompare = storeIds.length === 1 && productOnlyCart.length > 0
+
+  useEffect(() => {
+    if (!canCompare || !storeIds[0]) return
+    const keywords = productOnlyCart.map(i => i.name).join(',').slice(0, 200)
+    api.get('/customer/stores/compare', { params: { store_id: storeIds[0], keywords } })
+      .then(r => {
+        if (r.data?.alternate_store && (r.data?.similar_products?.length > 0 || r.data?.total >= 0)) setCompareData(r.data)
+        else setCompareData(null)
+      })
+      .catch(() => setCompareData(null))
+  }, [storeIds[0], canCompare, cart.length])
+
+  const handleSwitchToCompareStore = () => {
+    if (!compareData?.alternate_store || !compareData?.similar_products?.length) return
+    clearCart()
+    compareData.similar_products.forEach(p => {
+      addToCart({ ...p, store_id: compareData.alternate_store.id }, p.quantity || 1, false)
+    })
+    showSuccessToast(`Switched to ${compareData.alternate_store.store_name || compareData.alternate_store.business_name}. Compare prices at checkout.`)
+    setCompareData(null)
+  }
   
   const handleUpdateQuantity = (itemId, newQuantity) => {
     const item = cart.find(i => i.id === itemId)
@@ -204,6 +230,39 @@ const Cart = () => {
               </div>
             </div>
           )})}
+
+          {/* Compare with another store */}
+          {compareData?.alternate_store && (
+            <div className="card p-4 sm:p-5 border-2 border-primary-200 bg-primary-50/30">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                <ArrowRightLeft className="h-5 w-5 text-primary-600" />
+                Compare with another store
+              </h3>
+              <p className="text-sm text-gray-600 mb-3">
+                Similar items at <strong>{compareData.alternate_store.store_name || compareData.alternate_store.business_name}</strong> in the same city:
+              </p>
+              <ul className="space-y-1.5 mb-3 max-h-32 overflow-y-auto text-sm">
+                {compareData.similar_products.slice(0, 8).map(p => (
+                  <li key={p.id} className="flex justify-between gap-2">
+                    <span className="truncate">{p.name}</span>
+                    <span className="font-medium shrink-0">${Number(p.price).toFixed(2)}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-primary-200">
+                <span className="font-semibold text-gray-900">
+                  Est. total: ${typeof compareData.total === 'number' ? compareData.total.toFixed(2) : '0.00'}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSwitchToCompareStore}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 text-sm"
+                >
+                  Switch to this store
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="lg:col-span-1">

@@ -13,6 +13,17 @@ from uuid import UUID
 router = APIRouter()
 
 
+@router.get("/config")
+async def get_customer_public_config(db: Session = Depends(get_db)):
+    """Public config for customer app (e.g. allow_guest_checkout). No auth required."""
+    from app.models.platform_settings import PlatformSettings
+    ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "customer").first()
+    allow_guest = True
+    if ps and isinstance(getattr(ps, "settings_data", None), dict):
+        allow_guest = bool(ps.settings_data.get("allow_guest_checkout", True))
+    return {"allow_guest_checkout": allow_guest}
+
+
 @router.get("/me", response_model=CustomerResponse)
 async def get_customer_profile(
     current_customer: dict = Depends(get_current_customer),

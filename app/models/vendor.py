@@ -34,6 +34,7 @@ class Vendor(Base):
     tax_number = Column(String(100))
     government_id_url = Column(String(255))
     business_registration_url = Column(String(255))
+    tax_permit_url = Column(String(255))  # Third required document
     verification_status = Column(String(20), default="pending")
     verified_at = Column(DateTime)
     

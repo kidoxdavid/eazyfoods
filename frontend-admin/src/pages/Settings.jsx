@@ -72,7 +72,9 @@ const Settings = () => {
     paypal_enabled: true,
     require_payment_verification: true,
     refund_policy_days: 30,
-    payments_suspended: false
+    payments_suspended: false,
+    suspend_vendor_ad_payments: false,
+    suspend_chef_ad_payments: false
   }))
 
   const [notificationSettings, setNotificationSettings] = useState(() => loadSettings('notifications', {
@@ -766,6 +768,40 @@ const Settings = () => {
               type="checkbox"
               checked={!!paymentSettings.payments_suspended}
               onChange={(e) => setPaymentSettings({ ...paymentSettings, payments_suspended: e.target.checked })}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500" />
+          </div>
+        </label>
+      </div>
+      <div className="p-4 rounded-lg border border-gray-200 bg-gray-50/50 mb-4">
+        <label className="flex items-center justify-between gap-4 cursor-pointer">
+          <div>
+            <span className="text-sm font-semibold text-gray-900">Suspend payments for vendor ads</span>
+            <p className="text-xs text-gray-600 mt-0.5">When on, vendors cannot pay for ad placements.</p>
+          </div>
+          <div className="relative flex-shrink-0">
+            <input
+              type="checkbox"
+              checked={!!paymentSettings.suspend_vendor_ad_payments}
+              onChange={(e) => setPaymentSettings({ ...paymentSettings, suspend_vendor_ad_payments: e.target.checked })}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500" />
+          </div>
+        </label>
+      </div>
+      <div className="p-4 rounded-lg border border-gray-200 bg-gray-50/50 mb-4">
+        <label className="flex items-center justify-between gap-4 cursor-pointer">
+          <div>
+            <span className="text-sm font-semibold text-gray-900">Suspend payments for chef ads</span>
+            <p className="text-xs text-gray-600 mt-0.5">When on, chefs cannot pay for ad placements.</p>
+          </div>
+          <div className="relative flex-shrink-0">
+            <input
+              type="checkbox"
+              checked={!!paymentSettings.suspend_chef_ad_payments}
+              onChange={(e) => setPaymentSettings({ ...paymentSettings, suspend_chef_ad_payments: e.target.checked })}
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500" />

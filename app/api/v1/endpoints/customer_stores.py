@@ -7,7 +7,7 @@ from typing import Optional, List
 from app.core.database import get_db
 from app.models.vendor import Vendor
 from app.models.store import Store
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, or_
 
 router = APIRouter()
 
@@ -37,7 +37,16 @@ async def get_stores(
         )
     
     if region:
-        store_query = store_query.filter(Vendor.region == region)
+        # Support comma-separated region (e.g. "West African, East African")
+        r = region.strip()
+        store_query = store_query.filter(
+            or_(
+                Vendor.region == r,
+                Vendor.region.like(f"{r},%"),
+                Vendor.region.like(f"%, {r},%"),
+                Vendor.region.like(f"%, {r}")
+            )
+        )
     
     if city and city.lower() != 'all':
         # Filter by city (case-insensitive) - only if not "All"
@@ -49,7 +58,15 @@ async def get_stores(
     vendor_query = db.query(Vendor).filter(Vendor.status == "active")
     
     if region:
-        vendor_query = vendor_query.filter(Vendor.region == region)
+        r = region.strip()
+        vendor_query = vendor_query.filter(
+            or_(
+                Vendor.region == r,
+                Vendor.region.like(f"{r},%"),
+                Vendor.region.like(f"%, {r},%"),
+                Vendor.region.like(f"%, {r}")
+            )
+        )
     
     if city and city.lower() != 'all':
         # Filter vendors by city (case-insensitive) - only if not "All"
@@ -154,6 +171,106 @@ async def get_stores(
     stores.sort(key=lambda x: (x["distance_km"] if x["distance_km"] is not None else float('inf'), x["store_name"]))
     
     return stores
+
+
+@router.get("/compare", response_model=dict)
+async def get_compare_store(
+    store_id: str = Query(..., description="Current store ID"),
+    keywords: Optional[str] = Query(None, description="Comma-separated product name keywords to match"),
+    db: Session = Depends(get_db)
+):
+    """Find another store in the same city and similar products for price comparison. For cart comparison."""
+    from uuid import UUID
+    from fastapi import HTTPException
+    from app.models.product import Product
+
+    try:
+        current_store_uuid = UUID(store_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid store ID")
+
+    # Resolve current store and city
+    current_store = db.query(Store).join(Vendor).filter(
+        Store.id == current_store_uuid,
+        Store.is_active == True,
+        Vendor.status == "active"
+    ).first()
+    if not current_store:
+        vendor = db.query(Vendor).filter(Vendor.id == current_store_uuid, Vendor.status == "active").first()
+        if not vendor:
+            raise HTTPException(status_code=404, detail="Store not found")
+        store_city = vendor.city
+        current_vendor_id = vendor.id
+    else:
+        store_city = current_store.city
+        current_vendor_id = current_store.vendor_id
+
+    if not store_city:
+        return {"alternate_store": None, "similar_products": [], "total": 0}
+
+    # Another store in same city, different vendor
+    other_stores = db.query(Store).join(Vendor).filter(
+        Store.is_active == True,
+        Vendor.status == "active",
+        Store.city.ilike(f"%{store_city}%"),
+        Vendor.id != current_vendor_id
+    ).all()
+    if not other_stores:
+        return {"alternate_store": None, "similar_products": [], "total": 0}
+
+    alternate = other_stores[0]
+    alt_vendor = alternate.vendor
+    alternate_store_id = alternate.id
+
+    similar_products = []
+    total = 0.0
+    if keywords:
+        kws = [k.strip().lower() for k in keywords.split(",") if k.strip()]
+        if kws:
+            from sqlalchemy import cast, String
+            from decimal import Decimal
+            cond = or_(*[Product.name.ilike(f"%{kw}%") for kw in kws[:5]])
+            products = db.query(Product).filter(
+                Product.vendor_id == alt_vendor.id,
+                Product.is_active == True,
+                cond
+            ).limit(15).all()
+            for p in products:
+                price = float(p.sale_price) if getattr(p, 'sale_price', None) and p.sale_price else float(p.price)
+                similar_products.append({
+                    "id": str(p.id),
+                    "name": p.name,
+                    "price": price,
+                    "image_url": getattr(p, "image_url", None),
+                    "quantity": 1,
+                })
+                total += price
+    if not similar_products:
+        products = db.query(Product).filter(
+            Product.vendor_id == alt_vendor.id,
+            Product.is_active == True
+        ).limit(10).all()
+        for p in products:
+            price = float(p.sale_price) if getattr(p, 'sale_price', None) and p.sale_price else float(p.price)
+            similar_products.append({
+                "id": str(p.id),
+                "name": p.name,
+                "price": price,
+                "image_url": getattr(p, "image_url", None),
+                "quantity": 1,
+            })
+            total += price
+
+    return {
+        "alternate_store": {
+            "id": str(alternate.id),
+            "store_name": alternate.name,
+            "business_name": alt_vendor.business_name,
+            "city": alternate.city,
+        },
+        "similar_products": similar_products,
+        "total": round(total, 2),
+    }
 
 
 @router.get("/{store_id}", response_model=dict)

@@ -214,10 +214,10 @@ const Layout = ({ children }) => {
         </div>
       </aside>
 
-      {/* Main Content Wrapper */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-x-hidden">
-        {/* Header - Enhanced Sticky Header */}
-        <header className="shadow-lg sticky top-0 z-50 w-full backdrop-blur-sm bg-opacity-95" style={{ backgroundColor: '#ff6b35' }}>
+      {/* Main Content Wrapper: header stays fixed at top, main scrolls */}
+      <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-x-hidden">
+        {/* Orange strip - fixed at top so it does not scroll */}
+        <header className="flex-shrink-0 z-50 w-full shadow-lg backdrop-blur-sm bg-opacity-95" style={{ backgroundColor: '#ff6b35', position: 'sticky', top: 0 }} role="banner">
           <div className="w-full px-2 sm:px-4 lg:px-8">
             {/* Mobile Layout - Stacked */}
             <div className="md:hidden">
@@ -539,8 +539,8 @@ const Layout = ({ children }) => {
         {/* Breadcrumbs */}
         <Breadcrumbs />
 
-        {/* Main Content */}
-        <main className="flex-1 w-full">{children}</main>
+        {/* Main Content - scrollable so orange header stays stuck at top */}
+        <main className="flex-1 w-full min-h-0 overflow-y-auto">{children}</main>
 
         {/* Bottom Banner - Shows ads when available, else Driver Signup default */}
         {(() => {

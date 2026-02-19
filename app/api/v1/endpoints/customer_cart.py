@@ -3,14 +3,16 @@ Customer cart and checkout endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 from app.core.database import get_db
 from app.models.order import Order, OrderItem
 from app.models.product import Product
 from app.models.vendor import Vendor
 from app.models.coupon import Coupon, CouponUsage
-from app.api.v1.dependencies import get_current_customer
+from app.api.v1.dependencies import get_optional_customer
+from app.models.customer import Customer
+from app.models.platform_settings import PlatformSettings
 from decimal import Decimal
 import uuid
 
@@ -20,15 +22,46 @@ router = APIRouter()
 @router.post("/checkout", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_order(
     order_data: dict,
-    current_customer: dict = Depends(get_current_customer),
+    current_customer: Optional[dict] = Depends(get_optional_customer),
     db: Session = Depends(get_db)
 ):
-    """Create orders from cart items (vendor products and/or chef cuisines)."""
+    """Create orders from cart items (vendor products and/or chef cuisines). Supports guest checkout when allow_guest_checkout is true."""
     from uuid import UUID
     from app.models.cuisine import Cuisine
     from app.models.chef import Chef
 
-    customer_id = UUID(current_customer["customer_id"])
+    # Resolve customer: authenticated or guest
+    if current_customer:
+        customer_id = UUID(current_customer["customer_id"])
+    else:
+        # Guest checkout
+        ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "customer").first()
+        allow_guest = True
+        if ps and isinstance(getattr(ps, "settings_data", None), dict):
+            allow_guest = bool(ps.settings_data.get("allow_guest_checkout", True))
+        if not allow_guest:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Please log in to place an order.")
+        guest_email = (order_data.get("guest_email") or "").strip()
+        first_name = (order_data.get("guest_first_name") or order_data.get("first_name") or "").strip()
+        last_name = (order_data.get("guest_last_name") or order_data.get("last_name") or "").strip()
+        if not guest_email or not first_name or not last_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Guest checkout requires email, first name, and last name."
+            )
+        guest = db.query(Customer).filter(Customer.email == guest_email).first()
+        if not guest:
+            guest = Customer(
+                email=guest_email,
+                first_name=first_name,
+                last_name=last_name,
+                phone=order_data.get("guest_phone") or None,
+                password_hash=None,
+                is_email_verified=False,
+            )
+            db.add(guest)
+            db.flush()
+        customer_id = guest.id
     items = order_data.get("items", [])
     delivery_method = order_data.get("delivery_method", "delivery")
     delivery_address_id = order_data.get("delivery_address_id")

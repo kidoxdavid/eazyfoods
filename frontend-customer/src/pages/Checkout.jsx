@@ -4,13 +4,13 @@ import api from '../services/api'
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import { MapPin, CreditCard, Truck, Lock, ChefHat } from 'lucide-react'
-import PrivateRoute from '../components/PrivateRoute'
 import StripePayment from '../components/StripePayment'
 import TestStripeModal, { TEST_AMOUNT } from '../components/TestStripeModal'
 
 const Checkout = () => {
   const { cart, getCartTotal, clearCart } = useCart()
   const { token } = useAuth()
+  const isGuest = !(token || localStorage.getItem('token'))
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [processingPayment, setProcessingPayment] = useState(false)
@@ -23,6 +23,7 @@ const Checkout = () => {
   const [paymentConfig, setPaymentConfig] = useState({ stripe_enabled: true, payments_suspended: false })
   const [selectedPaymentMethod] = useState('stripe')
   const [cardReady, setCardReady] = useState(false)
+  const [guestInfo, setGuestInfo] = useState({ guest_email: '', guest_first_name: '', guest_last_name: '', guest_phone: '' })
   const [address, setAddress] = useState({
     street_address: '',
     city: '',
@@ -145,6 +146,10 @@ const Checkout = () => {
       return
     }
 
+    if (isGuest && (!guestInfo.guest_email || !guestInfo.guest_first_name || !guestInfo.guest_last_name)) {
+      alert('Please enter your email, first name, and last name')
+      return
+    }
     if (deliveryMethod === 'delivery' && (!address.street_address || !address.city || !address.postal_code)) {
       alert('Please fill in the delivery address')
       return
@@ -198,22 +203,27 @@ const Checkout = () => {
         helcim_transaction_id: null,
         stripe_payment_intent_id: paymentsSuspended ? null : (isStripe ? (paymentData?.transaction_id || paymentData?.payment_intent_id) : null)
       }
+      if (isGuest) {
+        orderData.guest_email = guestInfo.guest_email
+        orderData.guest_first_name = guestInfo.guest_first_name
+        orderData.guest_last_name = guestInfo.guest_last_name
+        orderData.guest_phone = guestInfo.guest_phone || null
+      }
 
-      // Use token from AuthContext so we always send the same customer JWT that passed PrivateRoute
       const headers = token ? { Authorization: `Bearer ${token}` } : {}
       const response = await api.post('/customer/cart/checkout', orderData, { headers })
       clearCart()
       
       if (response.data.orders && response.data.orders.length > 0) {
         const orderId = response.data.orders[0].order_id
-        navigate(`/orders/${orderId}`, { 
-          state: { 
-            orderPlaced: true,
-            orderNumber: response.data.orders[0].order_number 
-          } 
-        })
+        const orderNumber = response.data.orders[0].order_number
+        if (isGuest) {
+          navigate('/order-confirmation', { state: { orderNumber, orderId } })
+        } else {
+          navigate(`/orders/${orderId}`, { state: { orderPlaced: true, orderNumber } })
+        }
       } else {
-        navigate('/orders')
+        navigate(isGuest ? '/' : '/orders')
       }
     } catch (error) {
       const detail = error.response?.data?.detail
@@ -266,6 +276,7 @@ const Checkout = () => {
   const isFormValid =
     (!needsStoreSelection || selectedStoreId) &&
     (deliveryMethod === 'pickup' || (address.street_address && address.city && address.postal_code)) &&
+    (!isGuest || (guestInfo.guest_email && guestInfo.guest_first_name && guestInfo.guest_last_name)) &&
     (paymentConfig.payments_suspended || cardReady)
   
   useEffect(() => {
@@ -283,8 +294,7 @@ const Checkout = () => {
   const selectedStore = stores.find(s => s.id === selectedStoreId)
 
   return (
-    <PrivateRoute>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {showRefreshBanner && (
           <div className="mb-4 p-4 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-3">
             <span className="text-amber-600 font-semibold shrink-0">⚠️ Update required</span>
@@ -358,6 +368,56 @@ const Checkout = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Guest: Contact details */}
+            {isGuest && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <h2 className="text-base font-semibold mb-3">Your details</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Email *</label>
+                    <input
+                      type="email"
+                      required
+                      value={guestInfo.guest_email}
+                      onChange={(e) => setGuestInfo((p) => ({ ...p, guest_email: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      placeholder="you@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
+                    <input
+                      type="tel"
+                      value={guestInfo.guest_phone}
+                      onChange={(e) => setGuestInfo((p) => ({ ...p, guest_phone: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      placeholder="Optional"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">First name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={guestInfo.guest_first_name}
+                      onChange={(e) => setGuestInfo((p) => ({ ...p, guest_first_name: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Last name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={guestInfo.guest_last_name}
+                      onChange={(e) => setGuestInfo((p) => ({ ...p, guest_last_name: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -590,7 +650,6 @@ const Checkout = () => {
           </div>
         </div>
       </div>
-    </PrivateRoute>
   )
 }
 

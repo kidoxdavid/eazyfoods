@@ -53,7 +53,10 @@ async def vendor_signup(
         business_type=vendor_data.business_type,
         password_hash=get_password_hash(vendor_data.password),
         status="onboarding",
-        government_id_url=getattr(vendor_data, "government_id_url", None) or None
+        government_id_url=getattr(vendor_data, "government_id_url", None) or None,
+        business_registration_url=getattr(vendor_data, "business_registration_url", None) or None,
+        tax_permit_url=getattr(vendor_data, "tax_permit_url", None) or None,
+        region=getattr(vendor_data, "region", None) or None
     )
     
     db.add(vendor)

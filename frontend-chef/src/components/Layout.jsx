@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useNotifications } from '../hooks/useNotifications'
 import {
   LayoutDashboard,
   Menu,
@@ -27,7 +28,8 @@ const Layout = ({ children }) => {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout, loading: authLoading } = useAuth()
-  
+  const { ordersCount } = useNotifications()
+
   // Show loading while auth is being checked
   if (authLoading) {
     return (
@@ -42,7 +44,7 @@ const Layout = ({ children }) => {
     { name: 'Profile', href: '/profile', icon: ChefHat },
     { name: 'Documentation', href: '/documentation', icon: FileText },
     { name: 'Cuisines', href: '/cuisines', icon: UtensilsCrossed },
-    { name: 'Orders', href: '/orders', icon: ShoppingCart },
+    { name: 'Orders', href: ordersCount > 0 ? '/orders?status=new' : '/orders', icon: ShoppingCart, badge: ordersCount },
     { name: 'Promotions', href: '/promotions', icon: Tag },
     { name: 'Gallery', href: '/gallery', icon: ImageIcon },
     { name: 'Reviews', href: '/reviews', icon: Star },
@@ -110,8 +112,13 @@ const Layout = ({ children }) => {
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <Icon className="mr-3 h-5 w-5" />
-                  {item.name}
+                  <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                  <span className="truncate flex-1">{item.name}</span>
+                  {item.badge > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] text-center animate-pulse flex-shrink-0">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
                 </Link>
               )
             })}

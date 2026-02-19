@@ -19,7 +19,10 @@ class VendorSignup(BaseModel):
     country: str = "Canada"
     business_type: str
     government_id_url: Optional[str] = None
-    
+    business_registration_url: Optional[str] = None
+    tax_permit_url: Optional[str] = None
+    region: Optional[str] = None  # comma-separated, e.g. "West African, East African"
+
     class Config:
         from_attributes = True
 

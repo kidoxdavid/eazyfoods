@@ -39,9 +39,10 @@ class Chef(Base):
     cuisines = Column(ARRAY(String), nullable=False, default=[])  # e.g., ['Nigerian', 'Ghanaian', 'West African']
     cuisine_description = Column(Text)  # Description of their cooking style
     
-    # Documents for verification
+    # Documents for verification (3 required like driver)
     government_id_url = Column(String(255))
-    chef_certification_url = Column(String(255))  # Optional culinary certifications
+    chef_certification_url = Column(String(255))
+    business_permit_url = Column(String(255))  # Third required document
     profile_image_url_verification = Column(String(255))
     
     # Verification

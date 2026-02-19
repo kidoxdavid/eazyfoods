@@ -7,7 +7,9 @@ import { AFRICAN_CUISINE_TYPES } from '../constants/cuisines'
 import api from '../services/api'
 
 const Signup = () => {
-  const [licenseFile, setLicenseFile] = useState(null)
+  const [doc1File, setDoc1File] = useState(null)  // Government ID
+  const [doc2File, setDoc2File] = useState(null)  // Chef certification
+  const [doc3File, setDoc3File] = useState(null)  // Business permit
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -48,16 +50,25 @@ const Signup = () => {
       setError('Please add at least one cuisine type')
       return
     }
+    if (!doc1File || !doc2File || !doc3File) {
+      setError('All three documents are required: Government ID, Chef Certification, and Business Permit.')
+      return
+    }
 
     setLoading(true)
     try {
       let payload = { ...formData }
-      if (licenseFile) {
-        const fd = new FormData()
-        fd.append('file', licenseFile)
-        const uploadRes = await api.post('/uploads/chef-documents', fd)
-        if (uploadRes.data?.url) payload.government_id_url = uploadRes.data.url
-      }
+      const fd1 = new FormData(); fd1.append('file', doc1File)
+      const fd2 = new FormData(); fd2.append('file', doc2File)
+      const fd3 = new FormData(); fd3.append('file', doc3File)
+      const [r1, r2, r3] = await Promise.all([
+        api.post('/uploads/chef-documents', fd1),
+        api.post('/uploads/chef-documents', fd2),
+        api.post('/uploads/chef-documents', fd3)
+      ])
+      if (r1.data?.url) payload.government_id_url = r1.data.url
+      if (r2.data?.url) payload.chef_certification_url = r2.data.url
+      if (r3.data?.url) payload.business_permit_url = r3.data.url
       await signup(payload)
       navigate('/login', { state: { message: 'Account created successfully! Please wait for admin verification.' } })
     } catch (err) {
@@ -224,14 +235,32 @@ const Signup = () => {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Business License / Chef Certification</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Document 1: Government ID *</label>
               <input
                 type="file"
                 accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"
-                onChange={(e) => setLicenseFile(e.target.files?.[0] || null)}
+                onChange={(e) => setDoc1File(e.target.files?.[0] || null)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
-              <p className="text-xs text-gray-500 mt-1">Upload your chef certification or government ID (JPEG, PNG, PDF – max 5MB)</p>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Document 2: Chef Certification *</label>
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"
+                onChange={(e) => setDoc2File(e.target.files?.[0] || null)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Document 3: Business Permit *</label>
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"
+                onChange={(e) => setDoc3File(e.target.files?.[0] || null)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">All three documents required (JPEG, PNG, PDF – max 5MB each)</p>
             </div>
 
             <div>

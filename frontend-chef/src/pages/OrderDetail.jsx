@@ -33,17 +33,22 @@ const OrderDetail = () => {
     try {
       if (action === 'accept') {
         await api.put(`/chef/orders/${id}/accept`)
+        alert('Order accepted.')
       } else if (action === 'mark-ready') {
         await api.put(`/chef/orders/${id}/mark-ready`)
+        alert('Order marked as ready.')
       } else if (action === 'cancel') {
         const reason = prompt('Please provide a cancellation reason:')
         if (reason) {
           await api.put(`/chef/orders/${id}/cancel`, null, { params: { cancellation_reason: reason } })
+          alert('Order cancelled.')
         }
       }
-      fetchOrder()
+      await fetchOrder()
+      window.dispatchEvent(new CustomEvent('refresh-orders-list'))
     } catch (error) {
-      alert('Failed to update order status')
+      const msg = error.response?.data?.detail || error.message || 'Failed to update order status'
+      alert(typeof msg === 'string' ? msg : 'Failed to update order status')
     } finally {
       setProcessing(false)
     }

@@ -462,7 +462,7 @@ const Home = () => {
                 <p className="text-sm text-gray-500 ml-4">Explore our product range</p>
               </div>
               {categories.length > 0 ? (
-                <div className={`${categories.length > 5 ? 'overflow-y-auto max-h-[420px] pr-2 custom-scrollbar' : 'space-y-3'}`}>
+                <div className={`${categories.length > 5 ? 'overflow-y-auto max-h-[420px] scrollbar-hide' : 'space-y-3'}`}>
                   <div className="space-y-3">
                   {categories.map((category) => {
                     // Solid colored boxes + white outline icons per category
@@ -526,7 +526,7 @@ const Home = () => {
                 </div>
                 <p className="text-sm text-gray-500 ml-4">Discover authentic cuisines</p>
               </div>
-              <div className={`space-y-3 ${5 > 5 ? 'overflow-y-auto max-h-[420px] pr-2 custom-scrollbar' : ''}`}>
+              <div className="space-y-3">
                 {[
                   { 
                     region: 'West African', 
@@ -643,7 +643,7 @@ const Home = () => {
                 <p className="text-sm text-gray-500 ml-4">Limited time deals</p>
               </div>
               {promotions.length > 0 ? (
-                <div className={`${promotions.length > 5 ? 'overflow-y-auto max-h-[420px] pr-2 custom-scrollbar' : 'space-y-3'}`}>
+                <div className={`${promotions.length > 5 ? 'overflow-y-auto max-h-[420px] scrollbar-hide' : 'space-y-3'}`}>
                   <div className="space-y-3">
                   {promotions.slice(0, 5).map((promo) => {
                     const isChef = promo.source === 'chef'
@@ -711,7 +711,7 @@ const Home = () => {
                 <p className="text-sm text-gray-500 ml-4">Find stores near you</p>
               </div>
               {nearbyStores.length > 0 ? (
-                <div className={`${nearbyStores.length > 5 ? 'overflow-y-auto max-h-[420px] pr-2 custom-scrollbar' : 'space-y-3'}`}>
+                <div className={`${nearbyStores.length > 5 ? 'overflow-y-auto max-h-[420px] scrollbar-hide' : 'space-y-3'}`}>
                   <div className="space-y-3">
                   {nearbyStores.slice(0, 5).map((store) => (
                     <Link
@@ -794,7 +794,7 @@ const Home = () => {
                 <p className="text-sm text-gray-500 ml-4">Discover talented chefs</p>
               </div>
               {chefs.length > 0 ? (
-                <div className={`${chefs.length > 5 ? 'overflow-y-auto max-h-[420px] pr-2 custom-scrollbar' : 'space-y-3'}`}>
+                <div className={`${chefs.length > 5 ? 'overflow-y-auto max-h-[420px] scrollbar-hide' : 'space-y-3'}`}>
                   <div className="space-y-3">
                   {chefs.slice(0, 5).map((chef) => (
                     <Link
