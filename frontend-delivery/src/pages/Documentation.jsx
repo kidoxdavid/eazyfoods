@@ -196,7 +196,7 @@ const Documentation = () => {
             </div>
           )}
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
