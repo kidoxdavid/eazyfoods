@@ -181,7 +181,7 @@ const Layout = ({ children }) => {
                   }`}
                 >
                   <Icon className={`h-4 w-4 md:h-5 md:w-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-600'}`} />
-                  <span className="font-medium text-xs md:text-base whitespace-nowrap truncate">{link.name}</span>
+                  <span className="font-medium text-sm md:text-base whitespace-nowrap truncate">{link.name}</span>
                 </Link>
               )
             })}
