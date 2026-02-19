@@ -117,7 +117,7 @@ const Layout = ({ children }) => {
     { name: 'Meals', href: '/meals', icon: Utensils },
     { name: 'Chefs', href: '/chefs', icon: ChefHat },
     { name: 'Cart', href: '/cart', icon: ShoppingCart },
-    { name: 'Become a Driver', href: '/become-a-driver', icon: Truck },
+    { name: 'eazydrive', href: '/become-a-driver', icon: Truck },
     { name: 'About', href: '/about', icon: Info },
     { name: 'Contact Us', href: '/contact', icon: Mail },
     { name: 'Orders', href: '/orders', icon: ShoppingBag },
@@ -134,9 +134,9 @@ const Layout = ({ children }) => {
         />
       )}
 
-      {/* Sidebar - Mobile: 50% width; desktop: w-72 */}
+      {/* Sidebar - Mobile: ~65% width (extra beyond half); desktop: w-72 */}
       <aside 
-        className={`fixed inset-y-0 left-0 z-[60] w-1/2 md:w-72 bg-gradient-to-b from-primary-50 to-white shadow-2xl transform transition-transform duration-300 ease-in-out flex-shrink-0 ${
+        className={`fixed inset-y-0 left-0 z-[60] w-[65%] max-w-[280px] md:w-72 bg-gradient-to-b from-primary-50 to-white shadow-2xl transform transition-transform duration-300 ease-in-out flex-shrink-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -161,19 +161,18 @@ const Layout = ({ children }) => {
           </div>
 
           {/* Navigation Links */}
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto bg-white">
+          <nav className="flex-1 p-3 md:p-4 space-y-0.5 md:space-y-1 overflow-y-auto bg-white">
             {navigationLinks.map((link, index) => {
               const Icon = link.icon
               const isActive = location.pathname === link.href || 
                 (link.href !== '/' && location.pathname.startsWith(link.href))
-              // Alternate between two nude shades for visual distinction
               const isEven = index % 2 === 0
               return (
                 <Link
                   key={link.href}
                   to={link.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                  className={`flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl transition-all duration-200 ${
                     isActive
                       ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg transform scale-105'
                       : isEven
@@ -181,8 +180,8 @@ const Layout = ({ children }) => {
                         : 'text-gray-700 hover:bg-gradient-to-r hover:from-nude-100 hover:to-nude-200 hover:shadow-md bg-white'
                   }`}
                 >
-                  <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-600'}`} />
-                  <span className="font-medium">{link.name}</span>
+                  <Icon className={`h-4 w-4 md:h-5 md:w-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-600'}`} />
+                  <span className="font-medium text-xs md:text-base whitespace-nowrap truncate">{link.name}</span>
                 </Link>
               )
             })}
@@ -562,52 +561,52 @@ const Layout = ({ children }) => {
           }
           const placement = pathToPlacement[location.pathname] || (location.pathname.startsWith('/products') ? 'products_bottom_banner' : 'home_bottom_banner')
           const driverSignupContent = (
-            <div className="relative max-w-7xl mx-auto w-full">
-              <div className="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
-                <div className="flex-1 text-center lg:text-left">
-                  <div className="flex items-center justify-center lg:justify-start gap-3 mb-3">
-                    <div className="relative">
+            <div className="relative max-w-7xl mx-auto w-full py-4 sm:py-5 px-2 sm:px-4">
+              <div className="flex flex-col lg:flex-row items-center justify-between gap-3 sm:gap-4 lg:gap-8">
+                <div className="flex-1 text-center lg:text-left w-full min-w-0">
+                  <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-2 sm:gap-3">
+                    <div className="relative flex-shrink-0">
                       <div className="absolute inset-0 bg-white/20 rounded-full blur-xl" />
-                      <div className="relative w-12 h-12 sm:w-14 sm:h-14 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20">
-                        <Truck className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+                      <div className="relative w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20">
+                        <Truck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 text-white" />
                       </div>
                     </div>
-                    <div>
-                      <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1">Drive with eazyfoods</h3>
-                      <p className="text-sm sm:text-base text-white/90">Deliver groceries and meals in your area — set your own hours</p>
+                    <div className="min-w-0">
+                      <h3 className="text-base sm:text-xl lg:text-3xl font-bold mb-0.5 sm:mb-1">Drive with eazyfoods</h3>
+                      <p className="text-xs sm:text-sm lg:text-base text-white/90">Deliver groceries and meals — set your own hours</p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-6 mt-4">
-                    <div className="flex items-center gap-2 text-sm sm:text-base">
-                      <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
-                        <DollarSign className="h-4 w-4 text-white" />
+                  <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-3 lg:gap-6 mt-2 sm:mt-3 lg:mt-4">
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 flex-shrink-0">
+                        <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                       </div>
-                      <span className="font-medium">Earn per delivery</span>
+                      <span className="font-medium whitespace-nowrap">Earn per delivery</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm sm:text-base">
-                      <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
-                        <Clock className="h-4 w-4 text-white" />
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 flex-shrink-0">
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                       </div>
-                      <span className="font-medium">Your schedule</span>
+                      <span className="font-medium whitespace-nowrap">Your schedule</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm sm:text-base">
-                      <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
-                        <Zap className="h-4 w-4 text-white" />
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 flex-shrink-0">
+                        <Zap className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                       </div>
-                      <span className="font-medium">Start in minutes</span>
+                      <span className="font-medium whitespace-nowrap">Start in minutes</span>
                     </div>
                   </div>
                 </div>
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 mt-2 sm:mt-0">
                   <a
                     href={(import.meta.env.VITE_DRIVER_SIGNUP_URL || import.meta.env.VITE_PORTAL_DELIVERY_URL || 'https://delivery.eazyfoods.ca').trim()}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group relative inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white text-primary-600 rounded-xl font-bold text-base sm:text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
+                    className="group relative inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 lg:py-4 bg-white text-primary-600 rounded-xl font-bold text-sm sm:text-base lg:text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                     <span className="relative z-10">Apply to drive</span>
-                    <ArrowRight className="h-5 w-5 relative z-10 transform group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 relative z-10 transform group-hover:translate-x-1 transition-transform" />
                   </a>
                 </div>
               </div>

@@ -130,15 +130,15 @@ const Cart = () => {
           </div>
         }
       />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-        <div className="lg:col-span-2 space-y-3 sm:space-y-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-4 sm:pb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+        <div className="lg:col-span-2 space-y-2 sm:space-y-4">
           {cart.map((item) => {
             const itemLink = item.chef_id ? `/chefs/${item.chef_id}` : `/products/${item.id}`
             return (
-            <div key={item.id} className="card flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div key={item.id} className="card flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-3 sm:p-4">
               <Link to={itemLink} className="flex-shrink-0 w-full sm:w-auto">
-                <div className="w-full sm:w-24 h-48 sm:h-24 bg-gray-200 rounded-lg overflow-hidden">
+                <div className="w-full sm:w-24 h-28 sm:h-24 bg-gray-200 rounded-lg overflow-hidden">
                   {item.image_url ? (
                     <img
                       src={resolveImageUrl(item.image_url)}
@@ -163,42 +163,42 @@ const Cart = () => {
                   </div>
                 </div>
               </Link>
-              <div className="flex-1 w-full sm:w-auto">
+              <div className="flex-1 w-full sm:w-auto min-w-0">
                 <Link to={itemLink}>
-                  <h3 className="font-semibold text-gray-900 mb-1 text-sm sm:text-base">{item.name}</h3>
+                  <h3 className="font-semibold text-gray-900 mb-0.5 sm:mb-1 text-xs sm:text-base line-clamp-2">{item.name}</h3>
                 </Link>
-                <p className="text-base sm:text-lg font-bold text-gray-900">${item.price.toFixed(2)}</p>
+                <p className="text-sm sm:text-lg font-bold text-gray-900">${item.price.toFixed(2)}</p>
               </div>
-              <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-4">
-                <div className="flex items-center space-x-2 border border-gray-300 rounded-lg">
+              <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-2 sm:gap-4">
+                <div className="flex items-center space-x-1 sm:space-x-2 border border-gray-300 rounded-lg">
                   <button
                     onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                    className="p-2 hover:bg-gray-50"
+                    className="p-1.5 sm:p-2 hover:bg-gray-50"
                   >
-                    <Minus className="h-4 w-4" />
+                    <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
-                  <span className="px-3 sm:px-4 py-2 text-sm sm:text-base">{item.quantity}</span>
+                  <span className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-base">{item.quantity}</span>
                   <button
                     onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                    className="p-2 hover:bg-gray-50"
+                    className="p-1.5 sm:p-2 hover:bg-gray-50"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                 </div>
                 <button
                   onClick={() => handleRemoveFromCart(item.id)}
-                  className="p-2 text-red-600 hover:text-red-700"
+                  className="p-1.5 sm:p-2 text-red-600 hover:text-red-700"
                 >
-                  <Trash2 className="h-5 w-5" />
+                  <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
                 </button>
                 <div className="text-right sm:hidden">
-                  <p className="text-base font-bold text-gray-900">
+                  <p className="text-sm font-bold text-gray-900">
                     ${(item.price * item.quantity).toFixed(2)}
                   </p>
                 </div>
               </div>
               <div className="text-right hidden sm:block">
-                <p className="text-lg font-bold text-gray-900">
+                <p className="text-base sm:text-lg font-bold text-gray-900">
                   ${(item.price * item.quantity).toFixed(2)}
                 </p>
               </div>
@@ -207,9 +207,9 @@ const Cart = () => {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="card sticky top-4 lg:top-24">
-            <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-            <div className="space-y-4 mb-6">
+          <div className="card sticky top-4 lg:top-24 p-4 sm:p-5">
+            <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Order Summary</h2>
+            <div className="space-y-2 sm:space-y-4 mb-4 sm:mb-6">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal</span>
                 <span className="font-semibold">${getCartTotal().toFixed(2)}</span>
@@ -218,10 +218,10 @@ const Cart = () => {
                 <span className="text-gray-600">Shipping</span>
                 <span className="font-semibold">Calculated at checkout</span>
               </div>
-              <div className="border-t border-gray-200 pt-4">
+              <div className="border-t border-gray-200 pt-3 sm:pt-4">
                 <div className="flex justify-between">
-                  <span className="text-lg font-semibold">Total</span>
-                  <span className="text-lg font-bold text-primary-600">
+                  <span className="text-base sm:text-lg font-semibold">Total</span>
+                  <span className="text-base sm:text-lg font-bold text-primary-600">
                     ${getCartTotal().toFixed(2)}
                   </span>
                 </div>
@@ -242,7 +242,7 @@ const Cart = () => {
             </button>
             <Link
               to="/groceries"
-              className="block text-center mt-4 text-primary-600 hover:text-primary-700"
+              className="block text-center mt-3 sm:mt-4 text-sm sm:text-base text-primary-600 hover:text-primary-700"
             >
               Continue Shopping
             </Link>

@@ -199,7 +199,7 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
   // Show default banner only when dismissed or no ads (keep showing existing ads while refetching)
   if (dismissed || ads.length === 0) {
     return (
-      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'flex', alignItems: 'center' }}>
+      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden ${size === 'tall' ? 'py-4 sm:py-5' : ''}`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'flex', alignItems: 'center' }}>
         <div className="max-w-7xl mx-auto w-full">
           {defaultContent || (
             <>
@@ -218,7 +218,7 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
   
   if (!currentAd) {
     return (
-      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'flex', alignItems: 'center' }}>
+      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden ${size === 'tall' ? 'py-4 sm:py-5' : ''}`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'flex', alignItems: 'center' }}>
         <div className="max-w-7xl mx-auto w-full">
           {defaultContent || (
             <>
