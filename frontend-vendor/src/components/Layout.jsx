@@ -44,7 +44,7 @@ const Layout = ({ children }) => {
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Stores', href: '/stores', icon: MapPin },
     { name: 'Products', href: '/products', icon: Package },
-    { name: 'Orders', href: '/orders', icon: ShoppingCart, badge: notifications.orders },
+    { name: 'Orders', href: notifications.orders > 0 ? '/orders?status=new' : '/orders', icon: ShoppingCart, badge: notifications.orders },
     { name: 'Inventory', href: '/inventory', icon: Warehouse },
     { name: 'Promotions', href: '/promotions', icon: Tag },
     { name: 'Ads', href: '/ads', icon: Image },

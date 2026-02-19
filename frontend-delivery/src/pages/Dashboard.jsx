@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { Package, DollarSign, TrendingUp, Clock, MapPin, BarChart3, Star, History, ArrowRight } from 'lucide-react'
+import { Package, DollarSign, TrendingUp, Clock, MapPin, BarChart3, Star, History, ArrowRight, FileText } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 const Dashboard = () => {
   const [stats, setStats] = useState(null)
@@ -175,6 +175,16 @@ const Dashboard = () => {
               <span className="flex items-center gap-2">
                 <Star className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
                 Ratings & Reviews
+              </span>
+              <ArrowRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+            </button>
+            <button
+              onClick={() => navigate('/documentation')}
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left text-gray-700 hover:bg-gray-50 rounded-lg flex items-center justify-between transition-colors text-sm font-medium"
+            >
+              <span className="flex items-center gap-2">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                Documentation
               </span>
               <ArrowRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
             </button>

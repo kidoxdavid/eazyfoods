@@ -11,11 +11,12 @@ const TAB_DELIVERY = 'delivery'
 const Orders = () => {
   const [searchParams] = useSearchParams()
   const tabParam = searchParams.get('tab')
+  const statusParam = searchParams.get('status')
   const initialTab = tabParam === 'delivery' ? TAB_DELIVERY : TAB_PICKUP
   const [allOrders, setAllOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState(initialTab)
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState(statusParam === 'new' ? 'new' : 'all')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
@@ -35,11 +36,13 @@ const Orders = () => {
     return () => clearInterval(interval)
   }, [tab, statusFilter])
 
-  // Sync tab with URL (e.g. /orders?tab=delivery)
+  // Sync tab and status with URL (e.g. /orders?tab=delivery, /orders?status=new)
   useEffect(() => {
     const t = searchParams.get('tab')
+    const st = searchParams.get('status')
     if (t === 'delivery' && tab !== TAB_DELIVERY) setTab(TAB_DELIVERY)
     else if (t !== 'delivery' && tab !== TAB_PICKUP) setTab(TAB_PICKUP)
+    if (st === 'new') setStatusFilter('new')
   }, [searchParams])
 
   const navigate = useNavigate()
