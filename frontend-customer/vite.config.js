@@ -6,9 +6,12 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     force: true, // Force re-optimization on startup
-    // Do NOT include @stripe/* here – pre-bundling pulls Stripe into the main bundle and causes
-    // "Cannot access 'Tt' before initialization". Stripe is loaded only via dynamic import in CheckoutPaymentSection.
-    include: ['react', 'react-dom', 'react-router-dom', 'axios', '@react-google-maps/api']
+    // Do NOT include @stripe/* in include – pre-bundling pulls Stripe into the main bundle and causes TDZ.
+    include: ['react', 'react-dom', 'react-router-dom', 'axios', '@react-google-maps/api'],
+    // Exclude Stripe from pre-bundling: Vite still discovers it by crawling (CheckoutPaymentSection
+    // has dynamic import('@stripe/...')). Without exclude, it pre-bundles Stripe and can trigger
+    // "Cannot access 'Tt' before initialization" when that pre-bundle is evaluated.
+    exclude: ['@stripe/stripe-js', '@stripe/react-stripe-js']
   },
   server: {
     port: 3003,
