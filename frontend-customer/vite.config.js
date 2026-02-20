@@ -6,7 +6,9 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     force: true, // Force re-optimization on startup
-    include: ['react', 'react-dom', 'react-router-dom', 'axios', '@react-google-maps/api', '@stripe/stripe-js', '@stripe/react-stripe-js']
+    // Do NOT include @stripe/* here – pre-bundling pulls Stripe into the main bundle and causes
+    // "Cannot access 'Tt' before initialization". Stripe is loaded only via dynamic import in CheckoutPaymentSection.
+    include: ['react', 'react-dom', 'react-router-dom', 'axios', '@react-google-maps/api']
   },
   server: {
     port: 3003,
