@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { Save, MapPin, Clock, Truck, Image as ImageIcon, Building2, Upload } from 'lucide-react'
+import { Save, MapPin, Clock, Truck, Image as ImageIcon, Building2, Upload, CreditCard } from 'lucide-react'
 import { CANADIAN_PROVINCES, getCitiesForProvince } from '../constants/locations'
 
 const Profile = () => {
@@ -32,7 +32,11 @@ const Profile = () => {
       friday: { open: '09:00', close: '21:00' },
       saturday: { open: '09:00', close: '21:00' },
       sunday: { open: '10:00', close: '20:00' }
-    }
+    },
+    bank_account_name: '',
+    bank_account_number: '',
+    bank_routing_number: '',
+    bank_name: ''
   })
 
   useEffect(() => {
@@ -70,7 +74,11 @@ const Profile = () => {
           friday: { open: '09:00', close: '21:00' },
           saturday: { open: '09:00', close: '21:00' },
           sunday: { open: '10:00', close: '20:00' }
-        }
+        },
+        bank_account_name: data.bank_account_name || '',
+        bank_account_number: data.bank_account_number || '',
+        bank_routing_number: data.bank_routing_number || '',
+        bank_name: data.bank_name || ''
       })
     } catch (error) {
       console.error('Failed to fetch vendor:', error)
@@ -496,6 +504,33 @@ const Profile = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Bank details for payout */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <CreditCard className="h-5 w-5 text-primary-600" />
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Bank details for payout</h2>
+          </div>
+          <p className="text-xs sm:text-sm text-gray-600 mb-4">Add your bank account details to receive payouts</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Bank name</label>
+              <input type="text" name="bank_name" value={formData.bank_name} onChange={handleChange} className="input" />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Account holder name</label>
+              <input type="text" name="bank_account_name" value={formData.bank_account_name} onChange={handleChange} className="input" />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Account number</label>
+              <input type="text" name="bank_account_number" value={formData.bank_account_number} onChange={handleChange} className="input" />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Routing number</label>
+              <input type="text" name="bank_routing_number" value={formData.bank_routing_number} onChange={handleChange} className="input" />
+            </div>
           </div>
         </div>
 

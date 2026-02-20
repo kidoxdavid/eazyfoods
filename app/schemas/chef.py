@@ -54,6 +54,10 @@ class ChefUpdate(BaseModel):
     website_url: Optional[str] = None
     gallery_images: Optional[List[str]] = None
     is_available: Optional[bool] = None
+    bank_account_name: Optional[str] = None
+    bank_account_number: Optional[str] = None
+    bank_routing_number: Optional[str] = None
+    bank_name: Optional[str] = None
 
 
 class ChefResponse(ChefBase):
@@ -82,7 +86,11 @@ class ChefResponse(ChefBase):
     updated_at: Optional[datetime] = None
     government_id_url: Optional[str] = None
     chef_certification_url: Optional[str] = None
-    
+    bank_account_name: Optional[str] = None
+    bank_account_number: Optional[str] = None
+    bank_routing_number: Optional[str] = None
+    bank_name: Optional[str] = None
+
     class Config:
         from_attributes = True
 

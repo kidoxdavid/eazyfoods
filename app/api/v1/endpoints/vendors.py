@@ -68,7 +68,11 @@ async def get_current_vendor_info(
         accepts_online_payment=vendor.accepts_online_payment,
         accepts_cash_on_delivery=vendor.accepts_cash_on_delivery,
         region=vendor.region,
-        government_id_url=getattr(vendor, 'government_id_url', None)
+        government_id_url=getattr(vendor, 'government_id_url', None),
+        bank_account_name=vendor.bank_account_name,
+        bank_account_number=vendor.bank_account_number,
+        bank_routing_number=vendor.bank_routing_number,
+        bank_name=vendor.bank_name,
     )
 
 
@@ -150,6 +154,11 @@ async def update_vendor_info(
         specialties=vendor.specialties if vendor.specialties else None,
         accepts_online_payment=vendor.accepts_online_payment,
         accepts_cash_on_delivery=vendor.accepts_cash_on_delivery,
-        region=vendor.region
+        region=vendor.region,
+        government_id_url=getattr(vendor, 'government_id_url', None),
+        bank_account_name=vendor.bank_account_name,
+        bank_account_number=vendor.bank_account_number,
+        bank_routing_number=vendor.bank_routing_number,
+        bank_name=vendor.bank_name,
     )
 

@@ -49,7 +49,11 @@ class VendorResponse(BaseModel):
     accepts_cash_on_delivery: Optional[bool] = None
     region: Optional[str] = None  # West African, East African, North African, Central African, South African
     government_id_url: Optional[str] = None
-    
+    bank_account_name: Optional[str] = None
+    bank_account_number: Optional[str] = None
+    bank_routing_number: Optional[str] = None
+    bank_name: Optional[str] = None
+
     class Config:
         from_attributes = True
 
@@ -90,7 +94,11 @@ class VendorUpdate(BaseModel):
     accepts_online_payment: Optional[bool] = None
     accepts_cash_on_delivery: Optional[bool] = None
     region: Optional[str] = None  # West African, East African, North African, Central African, South African
-    
+    bank_account_name: Optional[str] = None
+    bank_account_number: Optional[str] = None
+    bank_routing_number: Optional[str] = None
+    bank_name: Optional[str] = None
+
     class Config:
         from_attributes = True
 

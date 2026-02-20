@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { Save, Upload, X, MapPin, ChefHat, Globe, DollarSign, Clock, Users } from 'lucide-react'
+import { Save, Upload, X, MapPin, ChefHat, Globe, DollarSign, Clock, Users, CreditCard } from 'lucide-react'
 import { CANADIAN_PROVINCES, getCitiesForProvince } from '../constants/locations'
 
 // Cuisine types: African countries (same as CuisineForm dropdown)
@@ -47,7 +47,11 @@ const Profile = () => {
     },
     profile_image_url: '',
     banner_image_url: '',
-    is_available: true
+    is_available: true,
+    bank_account_name: '',
+    bank_account_number: '',
+    bank_routing_number: '',
+    bank_name: ''
   })
   const [uploading, setUploading] = useState({ profile: false, banner: false })
 
@@ -85,7 +89,11 @@ const Profile = () => {
         social_media_links: data.social_media_links || { facebook: '', instagram: '', youtube: '' },
         profile_image_url: data.profile_image_url || '',
         banner_image_url: data.banner_image_url || '',
-        is_available: data.is_available !== undefined ? data.is_available : true
+        is_available: data.is_available !== undefined ? data.is_available : true,
+        bank_account_name: data.bank_account_name || '',
+        bank_account_number: data.bank_account_number || '',
+        bank_routing_number: data.bank_routing_number || '',
+        bank_name: data.bank_name || ''
       })
     } catch (error) {
       console.error('Failed to fetch profile:', error)
@@ -597,6 +605,33 @@ const Profile = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                   placeholder="https://youtube.com/..."
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Bank details for payout */}
+          <div className="border-b pb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Bank details for payout
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">Add your bank account details to receive payouts</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bank name</label>
+                <input type="text" name="bank_name" value={formData.bank_name} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Account holder name</label>
+                <input type="text" name="bank_account_name" value={formData.bank_account_name} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Account number</label>
+                <input type="text" name="bank_account_number" value={formData.bank_account_number} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Routing number</label>
+                <input type="text" name="bank_routing_number" value={formData.bank_routing_number} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
               </div>
             </div>
           </div>

@@ -3,7 +3,7 @@ Driver portal endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_, func
 from typing import List, Optional
 from datetime import datetime, timedelta
@@ -262,6 +262,37 @@ async def update_availability(
     db.commit()
     
     return {"message": "Availability updated", "is_available": is_available}
+
+
+@router.get("/ratings", response_model=List[dict])
+async def get_driver_ratings(
+    current_driver: dict = Depends(get_current_driver),
+    db: Session = Depends(get_db)
+):
+    """Get ratings received by the driver from customers (from completed deliveries)."""
+    driver_id = UUID(current_driver["driver_id"])
+    deliveries = (
+        db.query(Delivery)
+        .options(joinedload(Delivery.order))
+        .filter(
+            Delivery.driver_id == driver_id,
+            Delivery.customer_rating.isnot(None),
+        )
+        .order_by(Delivery.updated_at.desc())
+        .all()
+    )
+    result = []
+    for d in deliveries:
+        order = getattr(d, "order", None)
+        result.append({
+            "id": str(d.id),
+            "order_number": order.order_number if order else None,
+            "rating": d.customer_rating,
+            "comment": d.customer_feedback,
+            "customer_name": "Customer",
+            "created_at": (d.delivered_at or d.actual_delivery_time or d.updated_at).isoformat() if (d.delivered_at or d.actual_delivery_time or d.updated_at) else None,
+        })
+    return result
 
 
 @router.get("/dashboard/stats", response_model=dict)

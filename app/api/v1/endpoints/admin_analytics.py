@@ -279,12 +279,20 @@ async def get_analytics_overview(
         Ad.ad_cost.isnot(None)
     ).scalar() or 0
     
-    # Platform earnings (commission from vendor/chef orders)
-    total_platform_earnings = db.query(func.coalesce(func.sum(Order.commission_amount), 0)).filter(
+    # Platform earnings: split by vendor, chef, delivery (driver pay)
+    vendor_commission = db.query(func.coalesce(func.sum(Order.commission_amount), 0)).filter(
         Order.created_at >= start_dt,
         Order.created_at <= end_dt,
-        Order.status.in_(["delivered", "picked_up"])
+        Order.status.in_(["delivered", "picked_up"]),
+        Order.vendor_id.isnot(None),
     ).scalar() or 0
+    chef_commission = db.query(func.coalesce(func.sum(Order.commission_amount), 0)).filter(
+        Order.created_at >= start_dt,
+        Order.created_at <= end_dt,
+        Order.status.in_(["delivered", "picked_up"]),
+        Order.chef_id.isnot(None),
+    ).scalar() or 0
+    total_platform_earnings = float(vendor_commission) + float(chef_commission)
     earnings_by_date = db.query(
         func.date(Order.created_at).label('date'),
         func.sum(Order.commission_amount).label('earnings'),
@@ -381,6 +389,10 @@ async def get_analytics_overview(
         },
         "platform_earnings": {
             "total_earnings": float(total_platform_earnings),
+            "vendor_earnings": float(vendor_commission),
+            "chef_earnings": float(chef_commission),
+            "delivery_earnings": float(total_driver_earnings) if total_driver_earnings else 0.0,
+            "ad_revenue": float(total_ad_spend) if total_ad_spend else 0.0,
             "earnings_trends": [
                 {"date": str(e.date), "earnings": float(e.earnings or 0), "orders": e.orders}
                 for e in earnings_by_date
@@ -434,7 +446,8 @@ async def get_analytics_overview(
             }
             for driver in top_drivers
         ],
-        "total_ad_spend": float(total_ad_spend) if total_ad_spend else 0.0
+        "total_ad_spend": float(total_ad_spend) if total_ad_spend else 0.0,
+        "ad_revenue": float(total_ad_spend) if total_ad_spend else 0.0
     }
 
 

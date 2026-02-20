@@ -68,6 +68,12 @@ class Chef(Base):
     social_media_links = Column(JSON)  # {"facebook": "url", "instagram": "url", "youtube": "url"}
     website_url = Column(String(255))
     
+    # Bank account for payouts
+    bank_account_name = Column(String(200))
+    bank_account_number = Column(String(50))
+    bank_routing_number = Column(String(50))
+    bank_name = Column(String(200))
+
     # Ratings
     average_rating = Column(DECIMAL(3, 2), default=0.0)
     total_reviews = Column(Integer, default=0)

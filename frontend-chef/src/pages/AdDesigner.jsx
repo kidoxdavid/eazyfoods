@@ -39,9 +39,11 @@ const AdDesigner = () => {
 
   const DEFAULT_DURATION_PRICES = { day: 5, week: 25, '2weeks': 45, month: 80 }
   const [adPlacementPricing, setAdPlacementPricing] = useState({})
+  const [adPaymentsSuspended, setAdPaymentsSuspended] = useState(false)
   useEffect(() => {
     api.get('/chef/marketing/config').then(r => {
       if (r.data && r.data.ad_placement_pricing) setAdPlacementPricing(r.data.ad_placement_pricing)
+      setAdPaymentsSuspended(!!(r.data && r.data.ad_payments_suspended))
     }).catch(() => {})
   }, [])
   const durationOptionsForPlacement = (placement) => {
@@ -247,10 +249,16 @@ const AdDesigner = () => {
         slideshow_duration: formData.slideshow_duration || 5,
         transition_style: formData.transition_style || 'fade'
       }
-      if (!isEdit && selectedDuration) {
-        data.ad_duration = payment.ad_duration
-        data.ad_cost = selectedDuration.cost
-        data.payment_intent_id = `placeholder_${payment.card_last4}`
+      if (!isEdit) {
+        if (adPaymentsSuspended) {
+          data.ad_duration = payment.ad_duration || 'day'
+          data.ad_cost = 0
+          data.payment_intent_id = null
+        } else if (selectedDuration) {
+          data.ad_duration = payment.ad_duration
+          data.ad_cost = selectedDuration.cost
+          data.payment_intent_id = `placeholder_${payment.card_last4}`
+        }
       }
 
       if (isEdit) {
@@ -590,6 +598,9 @@ const AdDesigner = () => {
             {!isEdit && (
               <div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Payment</h3>
+                {adPaymentsSuspended ? (
+                  <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">No payment required — ad payments are currently suspended. You can create ads for free.</p>
+                ) : (
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Duration *</label>
@@ -643,13 +654,14 @@ const AdDesigner = () => {
                     </div>
                   </div>
                 </div>
+                )}
               </div>
             )}
 
             <div className="mt-6">
               <button
                 type="submit"
-                disabled={saving || (!isEdit && !paymentFilled)}
+                disabled={saving || (!isEdit && !adPaymentsSuspended && !paymentFilled)}
                 className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Save className="h-4 w-4" />

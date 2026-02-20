@@ -51,7 +51,11 @@ def _chef_to_response(chef):
         "total_reviews": chef.total_reviews or 0,
         "gallery_images": chef.gallery_images or [],
         "created_at": chef.created_at,
-        "updated_at": chef.updated_at
+        "updated_at": chef.updated_at,
+        "bank_account_name": getattr(chef, "bank_account_name", None),
+        "bank_account_number": getattr(chef, "bank_account_number", None),
+        "bank_routing_number": getattr(chef, "bank_routing_number", None),
+        "bank_name": getattr(chef, "bank_name", None),
     })
 
 

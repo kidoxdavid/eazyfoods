@@ -81,23 +81,14 @@ const Ads = () => {
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">My Ads</h1>
           <p className="text-xs sm:text-sm text-gray-600 mt-1">Create and manage your marketing ads</p>
         </div>
-        {adPaymentsSuspended ? (
-          <span
-            className="px-3 sm:px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed flex items-center justify-center gap-2 text-sm font-medium flex-shrink-0"
-            title="Ad creation is currently suspended by the platform."
-          >
-            <Plus className="h-4 w-4" />
-            Create Ad
-          </span>
-        ) : (
-          <Link
-            to="/ads/new"
-            className="px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2 text-sm font-medium flex-shrink-0"
-          >
-            <Plus className="h-4 w-4" />
-            Create Ad
-          </Link>
-        )}
+        <Link
+          to="/ads/new"
+          className="px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2 text-sm font-medium flex-shrink-0"
+        >
+          <Plus className="h-4 w-4" />
+          Create Ad
+          {adPaymentsSuspended && <span className="ml-1 text-xs opacity-90">(free)</span>}
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">

@@ -119,16 +119,6 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
         const allowed = new Set([placement, ...(LEGACY_PLACEMENTS[placement] || [])])
         adsData = allAds.filter(ad => ad && (!ad.placement || allowed.has(ad.placement)))
       }
-      // Replicate home behaviour on other pages: if still no ads, show home-top/home-bottom ads so banners are never empty
-      if (adsData.length === 0 && placement !== 'home_top_banner' && placement !== 'home_bottom_banner') {
-        for (const p of ['home_top_banner', 'home_banner', 'home_bottom_banner']) {
-          const res = await api.get('/customer/marketing/ads', { params: { placement: p, status: 'active', approval_status: 'approved', ...(selectedCity && selectedCity !== 'All' ? { city: selectedCity } : {}) } })
-          const data = (res && res.data && Array.isArray(res.data)) ? res.data : []
-          const seen = new Set(adsData.map(a => a.id))
-          data.forEach(ad => { if (ad && ad.id && !seen.has(ad.id)) { seen.add(ad.id); adsData.push(ad) } })
-          if (adsData.length > 0) break
-        }
-      }
 
       // Filter by date and sort by priority
       const now = new Date()
@@ -302,32 +292,15 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
             className="h-full relative overflow-hidden"
             style={{
               width: '55%',
+              backgroundImage: imageUrl ? `url(${imageUrl})` : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
               maskImage: 'linear-gradient(to right, black 0%, black 70%, transparent 100%)',
               WebkitMaskImage: 'linear-gradient(to right, black 0%, black 70%, transparent 100%)',
             }}
           >
-            {/* Image */}
-            {imageUrl && (
-              <img
-                src={imageUrl}
-                alt={currentAd.title || 'Banner'}
-                className="absolute inset-0 w-full h-full object-cover"
-                style={size === 'tall'
-                  ? {}
-                  : {
-                      transform: `translateY(${parallaxOffset * 0.3}px)`,
-                      transition: 'transform 0.1s ease-out',
-                      objectPosition: `center ${parallaxOffset}px`
-                    }}
-                loading="eager"
-                decoding="async"
-                onError={(e) => {
-                  console.warn('[PageBanner] Image failed to load, using gradient fallback:', currentAd.image_url)
-                  e.target.style.opacity = '0'
-                  e.target.style.pointerEvents = 'none'
-                }}
-              />
-            )}
+            {/* Image via CSS background (same as home AdSlideshow) so ad image shows reliably on all pages */}
             {/* Video overlay if video exists */}
             {videoUrl && (
               <video

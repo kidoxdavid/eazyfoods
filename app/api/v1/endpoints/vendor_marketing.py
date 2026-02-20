@@ -119,12 +119,13 @@ async def create_vendor_ad(
     current_vendor: dict = Depends(get_current_vendor),
     db: Session = Depends(get_db)
 ):
-    """Create a new ad (requires admin approval)"""
-    if _vendor_ad_payments_suspended(db):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Ad creation is currently suspended by the platform. Please try again later."
-        )
+    """Create a new ad (requires admin approval). When ad payments are suspended, ads can be created without payment; when not suspended, payment is required."""
+    payments_suspended = _vendor_ad_payments_suspended(db)
+    if not payments_suspended:
+        if not ad_data.ad_cost or ad_data.ad_cost <= 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payment is required for ad creation. Please select a duration and complete payment.")
+        if not ad_data.payment_intent_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payment is required. Please complete card payment before submitting.")
     vendor_id = UUID(current_vendor["vendor_id"])
     
     # Verify campaign belongs to vendor if provided

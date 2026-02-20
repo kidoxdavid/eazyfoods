@@ -116,12 +116,13 @@ async def create_chef_ad(
     current_chef: dict = Depends(get_current_chef),
     db: Session = Depends(get_db)
 ):
-    """Create a new ad (requires marketing approval)"""
-    if _chef_ad_payments_suspended(db):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Ad creation is currently suspended by the platform. Please try again later."
-        )
+    """Create a new ad (requires marketing approval). When ad payments are suspended, ads can be created without payment; when not suspended, payment is required."""
+    payments_suspended = _chef_ad_payments_suspended(db)
+    if not payments_suspended:
+        if not ad_data.ad_cost or ad_data.ad_cost <= 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payment is required for ad creation. Please select a duration and complete payment.")
+        if not ad_data.payment_intent_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payment is required. Please complete card payment before submitting.")
     chef_id = UUID(current_chef["chef_id"])
     
     # Verify campaign belongs to chef if provided

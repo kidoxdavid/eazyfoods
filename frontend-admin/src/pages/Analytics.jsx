@@ -977,7 +977,7 @@ const Analytics = () => {
             <p className="text-sm text-gray-500 mb-4">Commission / service fee collected from orders (delivered or picked up) in the selected period.</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-emerald-50 rounded-lg border border-emerald-200 p-4">
-                <p className="text-xs font-medium text-emerald-700 mb-1">Total earnings</p>
+                <p className="text-xs font-medium text-emerald-700 mb-1">Total commission</p>
                 <p className="text-2xl font-bold text-emerald-900">
                   ${(overview.platform_earnings?.total_earnings ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
@@ -989,8 +989,33 @@ const Analytics = () => {
                 </p>
               </div>
               <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-                <p className="text-xs font-medium text-gray-600 mb-1">Days in range</p>
-                <p className="text-2xl font-bold text-gray-900">{(overview.platform_earnings?.earnings_trends ?? []).length}</p>
+                <p className="text-xs font-medium text-gray-600 mb-1">Ad revenue</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ${(overview.platform_earnings?.ad_revenue ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
+                <p className="text-xs font-medium text-blue-700 mb-1">Vendor earnings</p>
+                <p className="text-xl font-bold text-blue-900">
+                  ${(overview.platform_earnings?.vendor_earnings ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Commission from vendor orders</p>
+              </div>
+              <div className="bg-amber-50 rounded-lg border border-amber-200 p-4">
+                <p className="text-xs font-medium text-amber-700 mb-1">Chef earnings</p>
+                <p className="text-xl font-bold text-amber-900">
+                  ${(overview.platform_earnings?.chef_earnings ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Commission from chef orders</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
+                <p className="text-xs font-medium text-slate-700 mb-1">Delivery (driver pay)</p>
+                <p className="text-xl font-bold text-slate-900">
+                  ${(overview.platform_earnings?.delivery_earnings ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Paid to drivers</p>
               </div>
             </div>
             {Array.isArray(overview.platform_earnings?.earnings_trends) && overview.platform_earnings.earnings_trends.length > 0 && (
