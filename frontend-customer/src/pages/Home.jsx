@@ -459,7 +459,6 @@ const Home = () => {
                     Browse Categories
                   </h2>
                 </div>
-                <p className="text-sm text-gray-500 ml-4">Explore our product range</p>
               </div>
               {categories.length > 0 ? (
                 <div className={`${categories.length > 5 ? 'overflow-y-auto max-h-[420px] scrollbar-hide' : 'space-y-3'}`}>
@@ -524,7 +523,6 @@ const Home = () => {
                     Regional Flavors
                   </h2>
                 </div>
-                <p className="text-sm text-gray-500 ml-4">Discover authentic cuisines</p>
               </div>
               <div className="space-y-3">
                 {[
@@ -575,7 +573,7 @@ const Home = () => {
                   <Link
                     key={item.region}
                     to={`/stores?region=${encodeURIComponent(item.region)}${selectedCity && selectedCity !== 'All' ? `&city=${encodeURIComponent(selectedCity)}` : ''}`}
-                    className="group relative flex items-center overflow-hidden rounded-xl border border-gray-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 bg-white min-h-20"
+                    className="group relative flex items-center overflow-hidden rounded-xl border border-gray-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 bg-white h-20"
                   >
                     {/* Subtle background gradient */}
                     <div className={`absolute inset-0 bg-gradient-to-br ${item.bgGradient} opacity-30 group-hover:opacity-50 transition-opacity duration-300`}></div>
@@ -605,7 +603,7 @@ const Home = () => {
                             {item.region}
                           </h3>
                         </div>
-                        <p className="text-xs text-gray-600 line-clamp-2">{item.description}</p>
+                        <p className="text-xs text-gray-600 truncate">{item.description}</p>
                       </div>
                       
                       {/* Icon and arrow */}
@@ -640,7 +638,6 @@ const Home = () => {
                     View All →
                   </Link>
                 </div>
-                <p className="text-sm text-gray-500 ml-4">Limited time deals</p>
               </div>
               {promotions.length > 0 ? (
                 <div className={`${promotions.length > 5 ? 'overflow-y-auto max-h-[420px] scrollbar-hide' : 'space-y-3'}`}>
@@ -708,7 +705,6 @@ const Home = () => {
                     View All →
                   </Link>
                 </div>
-                <p className="text-sm text-gray-500 ml-4">Find stores near you</p>
               </div>
               {nearbyStores.length > 0 ? (
                 <div className={`${nearbyStores.length > 5 ? 'overflow-y-auto max-h-[420px] scrollbar-hide' : 'space-y-3'}`}>
@@ -791,7 +787,6 @@ const Home = () => {
                     View All →
                   </Link>
                 </div>
-                <p className="text-sm text-gray-500 ml-4">Discover talented chefs</p>
               </div>
               {chefs.length > 0 ? (
                 <div className={`${chefs.length > 5 ? 'overflow-y-auto max-h-[420px] scrollbar-hide' : 'space-y-3'}`}>

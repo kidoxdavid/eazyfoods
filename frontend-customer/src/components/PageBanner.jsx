@@ -199,7 +199,7 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
   // Show default banner only when dismissed or no ads (keep showing existing ads while refetching)
   // Use same centered layout from first paint to avoid left-then-center flash on load
   const defaultBannerInner = (
-    <div className="max-w-7xl mx-auto w-full flex flex-col items-center justify-center text-center">
+    <div className="max-w-7xl mx-auto w-full flex flex-col items-center justify-center text-center min-h-[100px]">
       {defaultContent || (
         <>
           <h1 className="text-3xl sm:text-4xl font-bold mb-2">{title}</h1>
@@ -334,8 +334,8 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
         <div 
           className={`h-full flex items-center justify-center px-4 sm:px-6 lg:px-8 relative ${(imageUrl || videoUrl) ? 'w-[45%]' : 'w-full'}`}
         >
-          {/* Content wrapper */}
-          <div className="relative z-10 w-full">
+          {/* Content wrapper - min-height avoids centre jump when switching from default to ad */}
+          <div className="relative z-10 w-full min-h-[100px] flex flex-col items-center justify-center">
             <div className="text-center w-full max-w-2xl mx-auto">
               {currentAd.title && (
                 <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-2 sm:mb-3 drop-shadow-lg">

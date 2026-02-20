@@ -4,9 +4,12 @@ import api from '../services/api'
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import { MapPin, CreditCard, Truck, Lock, ChefHat } from 'lucide-react'
-import TestStripeModal, { TEST_AMOUNT } from '../components/TestStripeModal'
 
+// Lazy-load Stripe-related components so @stripe/* is not evaluated on initial load (avoids "Cannot access 'St' before initialization")
 const StripePayment = lazy(() => import('../components/StripePayment'))
+const TestStripeModal = lazy(() => import('../components/TestStripeModal'))
+
+const TEST_AMOUNT = 1.00
 
 const Checkout = () => {
   const { cart, getCartTotal, clearCart } = useCart()
@@ -588,7 +591,9 @@ const Checkout = () => {
             </div>
           </div>
 
+          <Suspense fallback={null}>
           <TestStripeModal open={testStripeOpen} clientSecret={testStripeClientSecret} onClose={handleCloseTestStripe} />
+        </Suspense>
 
           {/* Order Summary Sidebar */}
           <div className="lg:col-span-1">

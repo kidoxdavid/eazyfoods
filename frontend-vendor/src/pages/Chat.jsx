@@ -34,7 +34,7 @@ const Chat = () => {
   const fetchDrivers = async () => {
     try {
       // Fetch drivers from vendor's deliveries
-      const deliveriesResponse = await api.get('/vendor/deliveries')
+      const deliveriesResponse = await api.get('/deliveries')
       const deliveries = deliveriesResponse.data || []
       
       // Extract unique drivers from deliveries

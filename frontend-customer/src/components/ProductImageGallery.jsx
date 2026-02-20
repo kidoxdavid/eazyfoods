@@ -8,6 +8,7 @@ const ProductImageGallery = ({ images, productName, mainImage, imageType = 'prod
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 })
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const [retryKey, setRetryKey] = useState(0)
   const [is360View, setIs360View] = useState(false)
   const [current360Index, setCurrent360Index] = useState(0)
   const imageRef = useRef(null)
@@ -36,6 +37,7 @@ const ProductImageGallery = ({ images, productName, mainImage, imageType = 'prod
   useEffect(() => {
     setImageLoaded(false)
     setImageError(false)
+    setRetryKey(0)
   }, [selectedIndex, current360Index, is360View])
 
   // Timeout: if image hasn't loaded in 10s, treat as failed to avoid infinite loading
@@ -141,6 +143,7 @@ const ProductImageGallery = ({ images, productName, mainImage, imageType = 'prod
           <>
             <img
               ref={imageRef}
+              key={`${selectedIndex}-${current360Index}-${retryKey}`}
               src={resolveImageUrl(currentImage, imageType)}
               alt={productName}
               className={`w-full h-full object-cover transition-all duration-500 ${
@@ -149,9 +152,12 @@ const ProductImageGallery = ({ images, productName, mainImage, imageType = 'prod
               onLoad={handleImageLoad}
               loading="lazy"
               onError={(e) => {
-                console.error('[ProductImageGallery] Image failed to load:', currentImage)
-                setImageError(true)
-                setImageLoaded(true)
+                if (retryKey === 0) {
+                  setRetryKey(1)
+                } else {
+                  setImageError(true)
+                  setImageLoaded(true)
+                }
                 e.target.style.display = 'none'
               }}
               style={

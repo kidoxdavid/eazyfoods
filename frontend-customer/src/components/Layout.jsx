@@ -440,26 +440,43 @@ const Layout = ({ children }) => {
                         onClose={() => setCartPreviewOpen(false)}
                       />
                     </div>
-                    <div className="relative group flex-shrink-0">
-                      <button className="p-3 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center" type="button">
-                        <User className="h-5 w-5" />
+                    <div className="relative flex-shrink-0">
+                      <button
+                        onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setCartPreviewOpen(false) }}
+                        className="p-3 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center gap-2"
+                        type="button"
+                        aria-label="Profile menu"
+                      >
+                        <User className="h-5 w-5 flex-shrink-0" />
+                        <span className="hidden lg:inline text-sm font-medium truncate max-w-[120px]">
+                          Hello, {user?.first_name || user?.email?.split('@')[0] || 'User'}
+                        </span>
                       </button>
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
-                        <Link
-                          to="/profile"
-                          className="block px-4 py-3 text-gray-700 hover:bg-gray-50 font-medium"
-                        >
-                          Profile
-                        </Link>
-                        <button
-                          onClick={handleLogout}
-                          className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 flex items-center gap-2 font-medium"
-                          type="button"
-                        >
-                          <LogOut className="h-4 w-4" />
-                          <span>Logout</span>
-                        </button>
-                      </div>
+                      {profileDropdownOpen && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setProfileDropdownOpen(false)} aria-hidden="true" />
+                          <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden py-2">
+                            <p className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
+                              Hello, {user?.first_name || user?.email || 'User'}
+                            </p>
+                            <Link
+                              to="/profile"
+                              onClick={() => setProfileDropdownOpen(false)}
+                              className="block px-4 py-3 text-gray-700 hover:bg-gray-50 font-medium"
+                            >
+                              Profile
+                            </Link>
+                            <button
+                              onClick={() => { handleLogout(); setProfileDropdownOpen(false) }}
+                              className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 flex items-center gap-2 font-medium"
+                              type="button"
+                            >
+                              <LogOut className="h-4 w-4" />
+                              Log out
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </>
                 ) : (
