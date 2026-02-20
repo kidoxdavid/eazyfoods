@@ -52,3 +52,10 @@ def create_email_verification_token(email: str) -> str:
     to_encode = {"sub": email, "purpose": "email_verification", "exp": expire}
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
+
+def create_password_reset_token(email: str) -> str:
+    """Create a JWT for password reset (valid 1 hour). Payload: sub=email, purpose=password_reset."""
+    expire = datetime.utcnow() + timedelta(hours=1)
+    to_encode = {"sub": email, "purpose": "password_reset", "exp": expire}
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+

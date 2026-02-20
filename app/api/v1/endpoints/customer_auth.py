@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from datetime import timedelta
 from app.core.database import get_db
 from app.models.customer import Customer
-from app.core.security import verify_password, get_password_hash, create_access_token, create_email_verification_token, decode_access_token
+from app.core.security import verify_password, get_password_hash, create_access_token, create_email_verification_token, decode_access_token, create_password_reset_token
 from app.core.config import settings
 from app.schemas.customer import CustomerSignup, CustomerResponse
 
@@ -184,6 +184,45 @@ async def customer_google(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Google sign-in failed. Please try again or use email and password.",
         )
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+@router.post("/forgot-password", response_model=dict)
+async def forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Request password reset. Always returns success to avoid email enumeration."""
+    customer = db.query(Customer).filter(Customer.email == body.email.strip().lower()).first()
+    if customer and customer.password_hash:
+        token = create_password_reset_token(customer.email)
+        # TODO: send email with reset link (e.g. https://eazyfoods.ca/reset-password?token=...)
+        # from app.core.email import send_password_reset_email
+        # await send_password_reset_email(customer.email, token)
+        pass
+    return {"message": "If an account exists with this email, you will receive a password reset link."}
+
+
+@router.post("/reset-password", response_model=dict)
+async def reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """Reset password using token from email link."""
+    payload = decode_access_token(body.token)
+    if not payload or payload.get("purpose") != "password_reset":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset link.")
+    email = payload.get("sub")
+    if not email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset link.")
+    customer = db.query(Customer).filter(Customer.email == email).first()
+    if not customer:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found.")
+    customer.password_hash = get_password_hash(body.new_password)
+    db.commit()
+    return {"message": "Password updated. You can now log in with your new password."}
 
 
 @router.get("/verify-email", response_model=dict)

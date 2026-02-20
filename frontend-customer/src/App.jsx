@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider } from './contexts/AuthContext'
@@ -20,7 +21,6 @@ import ProductDetail from './pages/ProductDetail'
 import Stores from './pages/Stores'
 import StoreDetail from './pages/StoreDetail'
 import Cart from './pages/Cart'
-import Checkout from './pages/Checkout'
 import OrderConfirmation from './pages/OrderConfirmation'
 import Orders from './pages/Orders'
 import OrderDetail from './pages/OrderDetail'
@@ -37,6 +37,9 @@ import ChefDetail from './pages/ChefDetail'
 import Groceries from './pages/Groceries'
 import PrivateRoute from './components/PrivateRoute'
 import CheckoutRoute from './components/CheckoutRoute'
+
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 
 const googleClientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || ''
 
@@ -59,6 +62,8 @@ function App() {
                             <Route path="/login" element={<Login />} />
                             <Route path="/signup" element={<Signup />} />
                             <Route path="/verify-email" element={<VerifyEmail />} />
+                            <Route path="/forgot-password" element={<Suspense fallback={<div className="min-h-[40vh] flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-2 border-primary-600 border-t-transparent" /></div>}><ForgotPassword /></Suspense>} />
+                            <Route path="/reset-password" element={<Suspense fallback={<div className="min-h-[40vh] flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-2 border-primary-600 border-t-transparent" /></div>}><ResetPassword /></Suspense>} />
                             <Route path="/driver-signup" element={<DriverSignup />} />
                             <Route path="/become-a-driver" element={<BecomeADriver />} />
                             <Route path="/stores" element={<Stores />} />
@@ -96,6 +101,8 @@ function App() {
                             <Route path="/login" element={<Login />} />
                             <Route path="/signup" element={<Signup />} />
                             <Route path="/verify-email" element={<VerifyEmail />} />
+                            <Route path="/forgot-password" element={<Suspense fallback={<div className="min-h-[40vh] flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-2 border-primary-600 border-t-transparent" /></div>}><ForgotPassword /></Suspense>} />
+                            <Route path="/reset-password" element={<Suspense fallback={<div className="min-h-[40vh] flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-2 border-primary-600 border-t-transparent" /></div>}><ResetPassword /></Suspense>} />
                             <Route path="/driver-signup" element={<DriverSignup />} />
                             <Route path="/become-a-driver" element={<BecomeADriver />} />
                             <Route path="/stores" element={<Stores />} />

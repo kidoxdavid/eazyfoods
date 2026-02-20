@@ -9,7 +9,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from app.core.database import get_db
 from app.models.chef import Chef
-from app.core.security import verify_password, get_password_hash, create_access_token
+from app.core.security import verify_password, get_password_hash, create_access_token, create_password_reset_token, decode_access_token
 from app.core.config import settings
 from app.schemas.chef import ChefResponse
 from app.api.v1.dependencies import get_current_chef
@@ -19,6 +19,43 @@ router = APIRouter()
 
 class GoogleTokenBody(BaseModel):
     id_token: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+@router.post("/forgot-password", response_model=dict)
+async def chef_forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Request password reset. Always returns success to avoid email enumeration."""
+    chef = db.query(Chef).filter(Chef.email == body.email.strip().lower()).first()
+    if chef and chef.password_hash:
+        token = create_password_reset_token(chef.email)
+        # TODO: send email with reset link
+        pass
+    return {"message": "If an account exists with this email, you will receive a password reset link."}
+
+
+@router.post("/reset-password", response_model=dict)
+async def chef_reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """Reset password using token from email link."""
+    payload = decode_access_token(body.token)
+    if not payload or payload.get("purpose") != "password_reset":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset link.")
+    email = payload.get("sub")
+    if not email:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset link.")
+    chef = db.query(Chef).filter(Chef.email == email).first()
+    if not chef:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found.")
+    chef.password_hash = get_password_hash(body.new_password)
+    db.commit()
+    return {"message": "Password updated. You can now log in with your new password."}
 
 
 class ChefSignup(BaseModel):

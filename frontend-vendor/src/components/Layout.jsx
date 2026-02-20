@@ -88,7 +88,7 @@ const Layout = ({ children }) => {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6 border-b border-gray-200 bg-gradient-to-r from-primary-600 to-primary-700">
+          <div className="flex items-center justify-between h-16 px-4 sm:px-6 border-b border-gray-200 bg-gradient-to-r from-primary-600 to-primary-700" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
             <h1 className="text-lg sm:text-xl font-bold text-white truncate">eazyfoods Vendor</h1>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -155,7 +155,7 @@ const Layout = ({ children }) => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <header className="bg-white shadow-sm sticky top-0 z-10">
+        <header className="bg-white shadow-sm sticky top-0 z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <div className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 lg:px-6">
             <button
               onClick={() => setSidebarOpen(true)}
