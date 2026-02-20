@@ -1,6 +1,8 @@
 """
 FastAPI application entry point
 """
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -19,9 +21,9 @@ app = FastAPI(
     redoc_url="/api/redoc"
 )
 
-# CORS middleware (cors_origins_list parses comma-separated CORS_ORIGINS env)
-origins = settings.cors_origins_list
-if "*" in origins:
+# CORS origins (must include all frontend origins on Render, e.g. https://eazyfoods.ca,https://admin.eazyfoods.ca)
+origins = settings.cors_origins_list or ["*"]
+if not origins or "*" in origins:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -37,6 +39,24 @@ else:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+
+class EnsureCORSHeadersMiddleware(BaseHTTPMiddleware):
+    """Ensure CORS headers are on every response (including 500)."""
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        if "access-control-allow-origin" not in [h.lower() for h in response.headers.keys()]:
+            origin = request.headers.get("origin", "")
+            if "*" in origins or not origins:
+                response.headers["Access-Control-Allow-Origin"] = "*"
+            elif origin and origin in origins:
+                response.headers["Access-Control-Allow-Origin"] = origin
+            elif origins:
+                response.headers["Access-Control-Allow-Origin"] = origins[0]
+        return response
+
+
+app.add_middleware(EnsureCORSHeadersMiddleware)
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")

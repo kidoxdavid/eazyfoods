@@ -30,9 +30,11 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         """Parsed CORS origins for middleware (comma-separated string -> list)."""
-        if not self.CORS_ORIGINS or self.CORS_ORIGINS.strip() == "":
+        raw = (self.CORS_ORIGINS or "").strip()
+        if not raw or raw == "*":
             return ["*"]
-        return [x.strip() for x in self.CORS_ORIGINS.split(",") if x.strip()] or ["*"]
+        origins = [x.strip() for x in raw.split(",") if x.strip()]
+        return origins if origins else ["*"]
     
     # File uploads
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB

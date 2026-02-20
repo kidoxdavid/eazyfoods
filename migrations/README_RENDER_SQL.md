@@ -2,7 +2,26 @@
 
 **Do not paste SQL into the API/backend service shell.** That shell is **bash** (Linux); it does not run SQL and will show errors like `bash: syntax error` or `ALTER: command not found`.
 
-## How to run the chef bank columns migration
+## Option 1: Run from the API shell (recommended)
+
+From the **Render Dashboard** open your **API/Backend** service → **Shell** tab. Then run (project root is usually `~/project/src` or the current directory):
+
+```bash
+cd ~/project/src 2>/dev/null || cd /opt/render/project/src 2>/dev/null || true
+python3 run_chef_bank_migration.py
+```
+
+If you're already in the project root, you can run only:
+
+```bash
+python3 run_chef_bank_migration.py
+```
+
+This script uses your app's `DATABASE_URL` and adds the chef bank columns. Safe to run multiple times.
+
+---
+
+## Option 2: Run SQL in the Postgres service
 
 1. In **Render Dashboard**, open your **PostgreSQL** service (the database), not the API/web service.
 2. Go to the **Connect** or **Info** tab and copy your connection details:

@@ -1,0 +1,24 @@
+# Run this in Render API service → Shell (bash)
+
+# Option A: If you are in project root (where app/ and run_chef_bank_migration.py are):
+python3 run_chef_bank_migration.py
+
+# Option B: If you need to cd first:
+cd ~/project/src 2>/dev/null || cd /opt/render/project/src 2>/dev/null || true
+python3 run_chef_bank_migration.py
+
+# Option C: One-liner (paste the whole block). Run from project root so "app" can be imported:
+python3 -c "
+import os, sys
+sys.path.insert(0, os.getcwd())
+from sqlalchemy import text
+from app.core.database import engine
+with engine.connect() as conn:
+    conn.execute(text('ALTER TABLE chefs ADD COLUMN IF NOT EXISTS bank_account_name VARCHAR(200), ADD COLUMN IF NOT EXISTS bank_account_number VARCHAR(50), ADD COLUMN IF NOT EXISTS bank_routing_number VARCHAR(50), ADD COLUMN IF NOT EXISTS bank_name VARCHAR(200)'))
+    conn.commit()
+print('Done.')
+"
+
+# On Render, set CORS_ORIGINS to include all frontend URLs, e.g.:
+# https://eazyfoods.ca,https://www.eazyfoods.ca,https://admin.eazyfoods.ca,https://vendor.eazyfoods.ca
+# (no spaces, comma-separated)
