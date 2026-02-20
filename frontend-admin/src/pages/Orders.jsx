@@ -9,10 +9,12 @@ const Orders = () => {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
+  const [orderTypeFilter, setOrderTypeFilter] = useState('all') // 'all' | 'vendor' | 'chef'
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [selectedOrders, setSelectedOrders] = useState(new Set())
   const [bulkAction, setBulkAction] = useState('')
+  const filteredOrders = orderTypeFilter === 'all' ? orders : orders.filter(o => (o.order_type || (o.vendor_id ? 'vendor' : 'chef')) === orderTypeFilter)
 
   useEffect(() => {
     fetchOrders()
@@ -41,11 +43,11 @@ const Orders = () => {
   }
 
   const handleSelectAll = () => {
-    if (!Array.isArray(orders)) return
-    if (selectedOrders.size === orders.length) {
+    if (!Array.isArray(filteredOrders)) return
+    if (selectedOrders.size === filteredOrders.length) {
       setSelectedOrders(new Set())
     } else {
-      setSelectedOrders(new Set(orders.map(o => o.id)))
+      setSelectedOrders(new Set(filteredOrders.map(o => o.id)))
     }
   }
 
@@ -82,12 +84,13 @@ const Orders = () => {
   }
 
   const handleExport = () => {
-    // Simple CSV export
-    if (!Array.isArray(orders)) return
-    const headers = ['Order #', 'Vendor', 'Customer', 'Status', 'Total', 'Date']
-    const rows = orders.map(o => [
+    // Simple CSV export (exports current pane: all, vendor, or chef)
+    if (!Array.isArray(filteredOrders)) return
+    const headers = ['Order #', 'Type', 'Vendor/Chef', 'Customer', 'Status', 'Total', 'Date']
+    const rows = filteredOrders.map(o => [
       o.order_number,
-      o.vendor_name || 'N/A',
+      o.order_type || (o.vendor_id ? 'vendor' : 'chef'),
+      o.vendor_name || o.chef_name || 'N/A',
       o.customer_name || 'N/A',
       o.status,
       `$${parseFloat(o.total_amount).toFixed(2)}`,
@@ -129,6 +132,31 @@ const Orders = () => {
           <Download className="h-4 w-4" />
           <span className="hidden sm:inline">Export CSV</span>
           <span className="sm:hidden">Export</span>
+        </button>
+      </div>
+
+      {/* Pane: Vendor vs Chef */}
+      <div className="flex gap-2 p-1 bg-gray-100 rounded-lg w-fit">
+        <button
+          type="button"
+          onClick={() => setOrderTypeFilter('all')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${orderTypeFilter === 'all' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
+        >
+          All Orders
+        </button>
+        <button
+          type="button"
+          onClick={() => setOrderTypeFilter('vendor')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${orderTypeFilter === 'vendor' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
+        >
+          Vendor Orders
+        </button>
+        <button
+          type="button"
+          onClick={() => setOrderTypeFilter('chef')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${orderTypeFilter === 'chef' ? 'bg-white shadow text-gray-900' : 'text-gray-600 hover:text-gray-900'}`}
+        >
+          Chef Orders
         </button>
       </div>
 
@@ -197,7 +225,7 @@ const Orders = () => {
                   onClick={handleSelectAll}
                   className="flex items-center"
                 >
-                  {selectedOrders.size === orders.length && orders.length > 0 ? (
+                  {selectedOrders.size === filteredOrders.length && filteredOrders.length > 0 ? (
                     <CheckSquare className="h-4 w-4 text-primary-600" />
                   ) : (
                     <Square className="h-4 w-4 text-gray-400" />
@@ -205,7 +233,7 @@ const Orders = () => {
                 </button>
               </th>
               <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
-              <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
+              <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor / Chef</th>
               <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
               <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
@@ -214,7 +242,7 @@ const Orders = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {Array.isArray(orders) && orders.map((order) => (
+            {Array.isArray(filteredOrders) && filteredOrders.map((order) => (
               <tr key={order.id} className={`hover:bg-gray-50 ${selectedOrders.has(order.id) ? 'bg-blue-50' : ''}`}>
                 <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                   <button
@@ -232,7 +260,7 @@ const Orders = () => {
                   <div className="text-sm font-medium text-gray-900">{order.order_number}</div>
                 </td>
                 <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">{order.vendor_name || 'N/A'}</div>
+                  <div className="text-sm text-gray-500">{order.vendor_name || order.chef_name || 'N/A'}</div>
                 </td>
                 <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-500">{order.customer_name || 'N/A'}</div>
@@ -281,8 +309,8 @@ const Orders = () => {
 
       {/* Orders Cards - Mobile */}
       <div className="md:hidden space-y-4">
-        {Array.isArray(orders) && orders.length > 0 ? (
-          orders.map((order) => (
+        {Array.isArray(filteredOrders) && filteredOrders.length > 0 ? (
+          filteredOrders.map((order) => (
             <div key={order.id} className={`bg-white rounded-lg shadow border border-gray-200 p-4 ${selectedOrders.has(order.id) ? 'border-blue-500 bg-blue-50' : ''}`}>
               <div className="space-y-3">
                 <div className="flex items-start justify-between">
@@ -301,7 +329,7 @@ const Orders = () => {
                       </button>
                       <h3 className="text-base font-semibold text-gray-900">{order.order_number}</h3>
                     </div>
-                    <p className="text-sm text-gray-500">Vendor: {order.vendor_name || 'N/A'}</p>
+                    <p className="text-sm text-gray-500">{order.order_type === 'chef' ? 'Chef' : 'Vendor'}: {order.vendor_name || order.chef_name || 'N/A'}</p>
                     <p className="text-sm text-gray-500">Customer: {order.customer_name || 'N/A'}</p>
                   </div>
                   <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${

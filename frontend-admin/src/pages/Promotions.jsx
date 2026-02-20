@@ -7,12 +7,13 @@ const Promotions = () => {
   const [promotions, setPromotions] = useState([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
+  const [sourceFilter, setSourceFilter] = useState('all') // 'all' | 'vendor' | 'chef'
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
   useEffect(() => {
     fetchPromotions()
-  }, [statusFilter, currentPage])
+  }, [statusFilter, sourceFilter, currentPage])
 
   const fetchPromotions = async () => {
     setLoading(true)
@@ -22,6 +23,7 @@ const Promotions = () => {
         limit: 20
       }
       if (statusFilter !== 'all') params.status_filter = statusFilter
+      if (sourceFilter !== 'all') params.source_type = sourceFilter
       
       const response = await api.get('/admin/promotions', { params })
       const promotionsData = Array.isArray(response.data) ? response.data : []
@@ -136,7 +138,30 @@ const Promotions = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
+      <div className="bg-white rounded-lg shadow border border-gray-200 p-4 flex flex-wrap items-center gap-3">
+        <div className="flex rounded-lg border border-gray-200 p-0.5 bg-gray-100">
+          <button
+            type="button"
+            onClick={() => setSourceFilter('all')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md ${sourceFilter === 'all' ? 'bg-white text-gray-900 shadow' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            onClick={() => setSourceFilter('vendor')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md ${sourceFilter === 'vendor' ? 'bg-white text-gray-900 shadow' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            Vendor
+          </button>
+          <button
+            type="button"
+            onClick={() => setSourceFilter('chef')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md ${sourceFilter === 'chef' ? 'bg-white text-gray-900 shadow' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            Chef
+          </button>
+        </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}

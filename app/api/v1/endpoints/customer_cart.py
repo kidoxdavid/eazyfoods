@@ -19,6 +19,19 @@ import uuid
 router = APIRouter()
 
 
+def _get_platform_delivery_fee(db: Session) -> Decimal:
+    """Get default delivery fee from admin orders settings."""
+    ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "orders").first()
+    if ps and isinstance(getattr(ps, "settings_data", None), dict):
+        fee = ps.settings_data.get("delivery_fee")
+        if fee is not None:
+            try:
+                return Decimal(str(fee))
+            except Exception:
+                pass
+    return Decimal("5.00")
+
+
 @router.post("/checkout", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_order(
     order_data: dict,
@@ -171,10 +184,12 @@ async def create_order(
                 elif coupon.discount_type == "fixed_amount":
                     vendor_discount = min(Decimal(str(coupon.discount_value)), subtotal)
                 elif coupon.discount_type == "free_shipping" and delivery_method == "delivery":
-                    vendor_discount = Decimal("5.00")  # Free shipping discount
+                    _platform_fee = _get_platform_delivery_fee(db)
+                    vendor_discount = _platform_fee  # Free shipping discount
         
         tax_amount = (subtotal - vendor_discount) * Decimal("0.08")  # 8% tax on discounted amount
-        shipping_amount = Decimal("5.00") if delivery_method == "delivery" else Decimal("0.00")
+        platform_delivery_fee = _get_platform_delivery_fee(db)
+        shipping_amount = platform_delivery_fee if delivery_method == "delivery" else Decimal("0.00")
         
         # Apply free shipping discount
         if coupon and coupon.discount_type == "free_shipping" and delivery_method == "delivery":
@@ -279,7 +294,8 @@ async def create_order(
         chef = chef_data["chef"]
         subtotal = sum(item["cuisine"].price * item["quantity"] for item in chef_data["items"])
         tax_amount = subtotal * Decimal("0.08")
-        shipping_amount = Decimal("5.00") if delivery_method == "delivery" else Decimal("0.00")
+        platform_delivery_fee = _get_platform_delivery_fee(db)
+        shipping_amount = platform_delivery_fee if delivery_method == "delivery" else Decimal("0.00")
         total_amount = subtotal + tax_amount + shipping_amount
         commission_rate = Decimal("0.00")
         commission_amount = Decimal("0.00")

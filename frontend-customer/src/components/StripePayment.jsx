@@ -102,9 +102,9 @@ const StripePayment = ({ amount, token: tokenProp, onSuccess, onError, onPayment
   const stripeLoadedRef = useRef(false)
   const intentFetchedRef = useRef(false)
 
-  // Load Stripe only once per mount – Stripe.js forbids changing the stripe prop after set
+  // Load Stripe only once per mount – Stripe.js forbids changing the stripe prop after set (token optional for guest checkout)
   useEffect(() => {
-    if (!amount || amount <= 0 || !token || stripeLoadedRef.current) return
+    if (!amount || amount <= 0 || stripeLoadedRef.current) return
     let cancelled = false
     const init = async () => {
       try {
@@ -131,14 +131,15 @@ const StripePayment = ({ amount, token: tokenProp, onSuccess, onError, onPayment
     }
     init()
     return () => { cancelled = true }
-  }, [amount, token])
+  }, [amount])
 
-  // Create payment intent only once per mount – clientSecret must not change after Elements is shown
+  // Create payment intent only once per mount – clientSecret must not change after Elements is shown (works for guest when backend allows optional auth)
   useEffect(() => {
-    if (!amount || amount <= 0 || !token || intentFetchedRef.current) return
+    if (!amount || amount <= 0 || intentFetchedRef.current) return
     setError(null)
     intentFetchedRef.current = true
-    api.post('/customer/payments/create-payment-intent', { total_amount: amount, gateway: 'stripe' }, { headers: { Authorization: `Bearer ${token}` } })
+    const headers = token ? { Authorization: `Bearer ${token}` } : {}
+    api.post('/customer/payments/create-payment-intent', { total_amount: amount, gateway: 'stripe' }, { headers })
       .then(res => {
         const secret = res.data?.client_secret
         if (secret) {
@@ -154,7 +155,7 @@ const StripePayment = ({ amount, token: tokenProp, onSuccess, onError, onPayment
         setError(msg)
         if (onError) onError(msg)
       })
-  }, [amount, token])
+  }, [amount])
 
   useEffect(() => {
     if (onCardReady) onCardReady(!!(clientSecret && stripePromise))

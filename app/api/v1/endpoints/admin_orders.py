@@ -11,6 +11,7 @@ from app.core.database import get_db
 from app.models.product import Product
 from app.models.vendor import Vendor
 from app.models.customer import Customer
+from app.models.chef import Chef
 # Import Order after Product and Vendor to ensure relationships work
 from app.models.order import Order, OrderItem
 from app.api.v1.dependencies import get_current_admin
@@ -47,14 +48,18 @@ async def get_all_orders(
         result = []
         for order in orders:
             try:
-                vendor = db.query(Vendor).filter(Vendor.id == order.vendor_id).first()
+                vendor = db.query(Vendor).filter(Vendor.id == order.vendor_id).first() if order.vendor_id else None
+                chef = db.query(Chef).filter(Chef.id == order.chef_id).first() if order.chef_id else None
                 customer = db.query(Customer).filter(Customer.id == order.customer_id).first() if order.customer_id else None
-                
+                order_type = "chef" if order.chef_id else "vendor"
                 result.append({
                     "id": str(order.id),
                     "order_number": order.order_number,
-                    "vendor_id": str(order.vendor_id),
+                    "order_type": order_type,
+                    "vendor_id": str(order.vendor_id) if order.vendor_id else None,
                     "vendor_name": vendor.business_name if vendor else None,
+                    "chef_id": str(order.chef_id) if order.chef_id else None,
+                    "chef_name": chef.chef_name or (f"{chef.first_name} {chef.last_name}" if chef else None),
                     "customer_id": str(order.customer_id) if order.customer_id else None,
                     "customer_name": f"{customer.first_name} {customer.last_name}" if customer else None,
                     "status": order.status,

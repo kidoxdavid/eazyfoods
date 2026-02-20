@@ -43,6 +43,7 @@ async def get_all_deliveries(
             "id": str(delivery.id),
             "order_id": str(delivery.order_id),
             "order_number": order.order_number if order else "N/A",
+            "delivery_method": order.delivery_method if order else None,
             "driver_id": str(delivery.driver_id),
             "driver_name": f"{delivery.driver.first_name} {delivery.driver.last_name}" if delivery.driver else "N/A",
             "status": delivery.status,

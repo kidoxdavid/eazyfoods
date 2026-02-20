@@ -8,8 +8,10 @@ const Deliveries = () => {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
+  const [methodFilter, setMethodFilter] = useState('all') // 'all' | 'delivery' | 'pickup'
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const filteredDeliveries = methodFilter === 'all' ? deliveries : deliveries.filter(d => (d.delivery_method || 'delivery') === methodFilter)
 
   useEffect(() => {
     fetchDeliveries()
@@ -47,14 +49,15 @@ const Deliveries = () => {
   }
 
   const handleExport = () => {
-    if (!Array.isArray(deliveries) || deliveries.length === 0) {
+    if (!Array.isArray(filteredDeliveries) || filteredDeliveries.length === 0) {
       alert('No deliveries to export')
       return
     }
     
-    const headers = ['Order #', 'Driver', 'Status', 'Pickup Time', 'Delivery Time', 'Distance (km)', 'Driver Earnings']
-    const rows = deliveries.map(delivery => [
+    const headers = ['Order #', 'Type', 'Driver', 'Status', 'Pickup Time', 'Delivery Time', 'Distance (km)', 'Driver Earnings']
+    const rows = filteredDeliveries.map(delivery => [
       delivery.order_number || 'N/A',
+      delivery.delivery_method || 'delivery',
       delivery.driver_name || 'N/A',
       delivery.status,
       delivery.actual_pickup_time ? new Date(delivery.actual_pickup_time).toLocaleString() : 'N/A',
@@ -140,7 +143,30 @@ const Deliveries = () => {
       )}
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 p-4">
+      <div className="bg-white rounded-lg shadow border border-gray-200 p-4 flex flex-wrap items-center gap-3">
+        <div className="flex rounded-lg border border-gray-200 p-0.5 bg-gray-100">
+          <button
+            type="button"
+            onClick={() => setMethodFilter('all')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md ${methodFilter === 'all' ? 'bg-white text-gray-900 shadow' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            onClick={() => setMethodFilter('delivery')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md ${methodFilter === 'delivery' ? 'bg-white text-gray-900 shadow' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            Delivery
+          </button>
+          <button
+            type="button"
+            onClick={() => setMethodFilter('pickup')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md ${methodFilter === 'pickup' ? 'bg-white text-gray-900 shadow' : 'text-gray-600 hover:text-gray-900'}`}
+          >
+            Pickup
+          </button>
+        </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -163,6 +189,7 @@ const Deliveries = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Driver</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pickup Time</th>
@@ -172,11 +199,14 @@ const Deliveries = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {Array.isArray(deliveries) && deliveries.length > 0 ? (
-                deliveries.map((delivery) => (
+              {Array.isArray(filteredDeliveries) && filteredDeliveries.length > 0 ? (
+                filteredDeliveries.map((delivery) => (
                   <tr key={delivery.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{delivery.order_number}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-gray-600 capitalize">{delivery.delivery_method || 'delivery'}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{delivery.driver_name}</div>
@@ -218,7 +248,7 @@ const Deliveries = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
                     No deliveries found
                   </td>
                 </tr>

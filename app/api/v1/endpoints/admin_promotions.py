@@ -22,13 +22,19 @@ async def get_all_promotions(
     skip: int = 0,
     limit: int = 50,
     status_filter: Optional[str] = None,
+    source_type: Optional[str] = None,
     vendor_id: Optional[str] = None,
     current_admin: dict = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    """Get all promotions across the platform"""
+    """Get all promotions across the platform. source_type: 'vendor' | 'chef' to filter by source."""
     query = db.query(Promotion)
     now = datetime.utcnow()
+    
+    if source_type == "vendor":
+        query = query.filter(Promotion.vendor_id.isnot(None))
+    elif source_type == "chef":
+        query = query.filter(Promotion.chef_id.isnot(None))
     
     if status_filter == "active":
         # Active promotions: is_active=True AND not expired

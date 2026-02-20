@@ -12,7 +12,7 @@ import json
 import stripe
 from app.core.database import get_db
 from app.core.config import settings
-from app.api.v1.dependencies import get_current_customer
+from app.api.v1.dependencies import get_current_customer, get_optional_customer
 from app.models.order import Order
 
 router = APIRouter()
@@ -47,7 +47,7 @@ async def get_payment_config(db: Session = Depends(get_db)):
 @router.post("/create-payment-intent")
 async def create_payment_intent(
     order_data: dict,
-    current_customer: dict = Depends(get_current_customer),
+    current_customer: Optional[dict] = Depends(get_optional_customer),
     db: Session = Depends(get_db)
 ):
     """
@@ -103,7 +103,7 @@ async def create_payment_intent(
         )
     
     try:
-        customer_id = UUID(current_customer["customer_id"])
+        customer_id = UUID(current_customer["customer_id"]) if current_customer else None
         amount = round(float(order_data.get("total_amount", 0)), 2)
         
         headers = {

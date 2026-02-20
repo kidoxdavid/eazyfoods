@@ -21,6 +21,7 @@ const Checkout = () => {
   const [paymentData, setPaymentData] = useState(null)
   const [processPaymentFn, setProcessPaymentFn] = useState(null)
   const [paymentConfig, setPaymentConfig] = useState({ stripe_enabled: true, payments_suspended: false })
+  const [defaultDeliveryFee, setDefaultDeliveryFee] = useState(5)
   const [selectedPaymentMethod] = useState('stripe')
   const [cardReady, setCardReady] = useState(false)
   const [guestInfo, setGuestInfo] = useState({ guest_email: '', guest_first_name: '', guest_last_name: '', guest_phone: '' })
@@ -58,6 +59,10 @@ const Checkout = () => {
         payments_suspended: !!d.payments_suspended
       })
     }).catch(() => setPaymentConfig({ stripe_enabled: true, payments_suspended: false }))
+    api.get('/customer/config').then(r => {
+      const fee = r.data?.default_delivery_fee
+      if (typeof fee === 'number' && fee >= 0) setDefaultDeliveryFee(fee)
+    }).catch(() => {})
   }, [])
 
   const handleCreateTestStripePayment = async () => {
@@ -268,7 +273,8 @@ const Checkout = () => {
 
   const subtotal = getCartTotal()
   const tax = subtotal * 0.08
-  const shipping = deliveryMethod === 'delivery' ? 5.00 : 0.00
+  const deliveryFeeAmount = (hasStoreItems && selectedStore?.delivery_fee != null) ? Number(selectedStore.delivery_fee) : defaultDeliveryFee
+  const shipping = deliveryMethod === 'delivery' ? deliveryFeeAmount : 0.00
   const total = subtotal + tax + shipping
 
   // When payments are suspended, card is not required; otherwise card must be ready
@@ -443,7 +449,7 @@ const Checkout = () => {
                   <Truck className="h-4 w-4 mr-2 text-primary-600" />
                   <div className="flex-1">
                     <p className="font-semibold text-sm">Delivery</p>
-                    <p className="text-xs text-gray-600">$5.00</p>
+                    <p className="text-xs text-gray-600">${deliveryFeeAmount.toFixed(2)}</p>
                   </div>
                 </label>
                 <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors ${

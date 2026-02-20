@@ -345,112 +345,108 @@ const Settings = () => {
 
   const renderGeneralSettings = () => (
     <div className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Platform Name</label>
-        <input
-          type="text"
-          value={generalSettings.platform_name}
-          onChange={(e) => setGeneralSettings({ ...generalSettings, platform_name: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
+      <section className="rounded-lg border border-gray-200 bg-gray-50/50 p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-gray-900">Platform</h3>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Platform Email</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Platform Name</label>
           <input
-            type="email"
-            value={generalSettings.platform_email}
-            onChange={(e) => setGeneralSettings({ ...generalSettings, platform_email: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            type="text"
+            value={generalSettings.platform_name}
+            onChange={(e) => setGeneralSettings({ ...generalSettings, platform_name: e.target.value })}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Platform Phone</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
+            <input
+              type="email"
+              value={generalSettings.platform_email}
+              onChange={(e) => setGeneralSettings({ ...generalSettings, platform_email: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
+            <input
+              type="tel"
+              value={generalSettings.platform_phone}
+              onChange={(e) => setGeneralSettings({ ...generalSettings, platform_phone: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer">
           <input
-            type="tel"
-            value={generalSettings.platform_phone}
-            onChange={(e) => setGeneralSettings({ ...generalSettings, platform_phone: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            type="checkbox"
+            checked={generalSettings.maintenance_mode}
+            onChange={(e) => setGeneralSettings({ ...generalSettings, maintenance_mode: e.target.checked })}
+            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
           />
-        </div>
-      </div>
-      <div className="grid grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
-          <select
-            value={generalSettings.timezone}
-            onChange={(e) => setGeneralSettings({ ...generalSettings, timezone: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="America/New_York">Eastern Time</option>
-            <option value="America/Chicago">Central Time</option>
-            <option value="America/Denver">Mountain Time</option>
-            <option value="America/Los_Angeles">Pacific Time</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
-          <select
-            value={generalSettings.currency}
-            onChange={(e) => setGeneralSettings({ ...generalSettings, currency: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="USD">USD ($)</option>
-            <option value="CAD">CAD ($)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="GBP">GBP (£)</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
-          <select
-            value={generalSettings.language}
-            onChange={(e) => setGeneralSettings({ ...generalSettings, language: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="en">English</option>
-            <option value="es">Spanish</option>
-            <option value="fr">French</option>
-          </select>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          checked={generalSettings.maintenance_mode}
-          onChange={(e) => setGeneralSettings({ ...generalSettings, maintenance_mode: e.target.checked })}
-          className="rounded border-gray-300"
-        />
-        <label className="text-sm text-gray-700">Enable Maintenance Mode</label>
-      </div>
+          <span className="text-sm text-gray-700">Enable Maintenance Mode</span>
+        </label>
+      </section>
 
-      {/* API Configuration Debug Section */}
-      <div className="mt-8 pt-6 border-t">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Database className="h-5 w-5" />
+      <section className="rounded-lg border border-gray-200 bg-gray-50/50 p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-gray-900">Regional</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Timezone</label>
+            <select
+              value={generalSettings.timezone}
+              onChange={(e) => setGeneralSettings({ ...generalSettings, timezone: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="America/New_York">Eastern Time</option>
+              <option value="America/Chicago">Central Time</option>
+              <option value="America/Denver">Mountain Time</option>
+              <option value="America/Los_Angeles">Pacific Time</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Currency</label>
+            <select
+              value={generalSettings.currency}
+              onChange={(e) => setGeneralSettings({ ...generalSettings, currency: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="USD">USD ($)</option>
+              <option value="CAD">CAD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Language</label>
+            <select
+              value={generalSettings.language}
+              onChange={(e) => setGeneralSettings({ ...generalSettings, language: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-amber-200 bg-amber-50/50 p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+          <Database className="h-4 w-4 text-amber-600" />
           API Configuration
         </h3>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-          <p className="text-sm text-yellow-800 mb-2">
-            <strong>Current API Base URL:</strong> {apiBaseURL}
-          </p>
-          <p className="text-xs text-yellow-700">
-            If data is not loading, check the browser console for API errors. 
-            You can reset the API URL to use the default proxy by clicking "Reset to Default" below.
-          </p>
-        </div>
-        <div className="flex gap-3">
+        <p className="text-xs text-gray-600">Current base URL: <code className="bg-white px-1.5 py-0.5 rounded">{apiBaseURL}</code></p>
+        <p className="text-xs text-gray-500">If data does not load, check the console and try resetting or changing the API URL.</p>
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => {
-              if (api.updateBaseURL) {
-                api.updateBaseURL(null)
-              } else {
-                localStorage.removeItem('API_BASE_URL')
-              }
+              if (api.updateBaseURL) api.updateBaseURL(null)
+              else localStorage.removeItem('API_BASE_URL')
               alert('API URL reset to default. Please refresh the page.')
               window.location.reload()
             }}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2 text-sm"
+            className="px-3 py-2 bg-gray-700 text-white text-sm rounded-lg hover:bg-gray-800 flex items-center gap-2"
           >
             <RefreshCw className="h-4 w-4" />
             Reset to Default
@@ -459,26 +455,19 @@ const Settings = () => {
             onClick={() => {
               const newURL = prompt('Enter new API Base URL (leave empty for default):', apiBaseURL)
               if (newURL !== null) {
-                if (api.updateBaseURL) {
-                  api.updateBaseURL(newURL || null)
-                } else {
-                  if (newURL) {
-                    localStorage.setItem('API_BASE_URL', newURL)
-                  } else {
-                    localStorage.removeItem('API_BASE_URL')
-                  }
-                }
+                if (api.updateBaseURL) api.updateBaseURL(newURL || null)
+                else newURL ? localStorage.setItem('API_BASE_URL', newURL) : localStorage.removeItem('API_BASE_URL')
                 alert('API URL updated. Please refresh the page.')
                 window.location.reload()
               }
             }}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2 text-sm"
+            className="px-3 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 flex items-center gap-2"
           >
             <Edit className="h-4 w-4" />
             Change API URL
           </button>
         </div>
-      </div>
+      </section>
     </div>
   )
 
@@ -1094,93 +1083,94 @@ const Settings = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-1">Manage platform settings and configuration</p>
+    <div className="min-h-screen bg-gray-50/60">
+      {/* Header */}
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Settings</h1>
+        <p className="text-gray-500 mt-1 text-sm sm:text-base">Manage platform configuration</p>
       </div>
 
-      {/* Master Data Export Section */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow border border-blue-200 p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-4">
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <Database className="h-6 w-6 text-blue-600" />
+      {/* Master Data Export - compact card */}
+      <div className="mb-6 sm:mb-8 rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 sm:p-5">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+              <Database className="h-5 w-5 text-blue-600" />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">Master Data Export</h3>
-              <p className="text-sm text-gray-600 mb-2">
-                Export all database data to a single CSV file. This includes vendors, customers, products, orders, reviews, 
-                support tickets, promotions, payouts, inventory, and all other data tables.
-              </p>
-              <p className="text-xs text-gray-500">
-                <strong>Note:</strong> All data is stored in the database. This export creates a complete backup of all tables.
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-gray-900">Master Data Export</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Export all tables (vendors, orders, products, etc.) to CSV. Creates a full backup.
               </p>
             </div>
           </div>
           <button
             onClick={handleMasterExport}
             disabled={exporting}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+            className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Download className="h-5 w-5" />
+            <Download className="h-4 w-4" />
             {exporting ? 'Exporting...' : 'Export All Data'}
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar Tabs */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+        {/* Sidebar */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow border border-gray-200 p-2 space-y-1">
+          <nav className="sticky top-4 rounded-xl border border-gray-200 bg-white shadow-sm p-1.5 space-y-0.5">
             {tabs.map((tab) => {
               const Icon = tab.icon
+              const isActive = activeTab === tab.id
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-primary-50 text-primary-700 font-medium'
-                      : 'text-gray-700 hover:bg-gray-100'
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-primary-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500'}`} />
                   <span>{tab.label}</span>
                 </button>
               )
             })}
-          </div>
+          </nav>
         </div>
 
-        {/* Settings Content */}
+        {/* Content */}
         <div className="lg:col-span-3">
-          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              {tabs.find(t => t.id === activeTab)?.label} Settings
-            </h2>
-            
-            {activeTab === 'general' && renderGeneralSettings()}
-            {activeTab === 'commission' && renderCommissionSettings()}
-            {activeTab === 'orders' && renderOrderSettings()}
-            {activeTab === 'payment' && renderPaymentSettings()}
-            {activeTab === 'notifications' && renderNotificationSettings()}
-            {activeTab === 'security' && renderSecuritySettings()}
-            {activeTab === 'vendor' && renderVendorSettings()}
-            {activeTab === 'customer' && renderCustomerSettings()}
+          <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {tabs.find(t => t.id === activeTab)?.label} Settings
+              </h2>
+            </div>
+            <div className="p-4 sm:p-6">
+              {activeTab === 'general' && renderGeneralSettings()}
+              {activeTab === 'commission' && renderCommissionSettings()}
+              {activeTab === 'orders' && renderOrderSettings()}
+              {activeTab === 'payment' && renderPaymentSettings()}
+              {activeTab === 'notifications' && renderNotificationSettings()}
+              {activeTab === 'security' && renderSecuritySettings()}
+              {activeTab === 'vendor' && renderVendorSettings()}
+              {activeTab === 'customer' && renderCustomerSettings()}
 
-            <div className="mt-8 pt-6 border-t flex items-center justify-between">
-              <p className="text-sm text-gray-500">
-                Settings are saved to your browser's local storage and will persist across sessions.
-              </p>
-              <button
-                onClick={() => handleSave(activeTab)}
-                disabled={saving}
-                className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2 disabled:opacity-50"
-              >
-                <Save className="h-4 w-4" />
-                {saving ? 'Saving...' : 'Save Settings'}
-              </button>
+              <div className="mt-8 pt-6 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <p className="text-xs sm:text-sm text-gray-500 order-2 sm:order-1">
+                  Changes are also stored in the database. Save to apply.
+                </p>
+                <button
+                  onClick={() => handleSave(activeTab)}
+                  disabled={saving}
+                  className="order-1 sm:order-2 flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                >
+                  <Save className="h-4 w-4" />
+                  {saving ? 'Saving...' : 'Save Settings'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

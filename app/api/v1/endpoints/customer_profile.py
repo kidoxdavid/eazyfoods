@@ -15,13 +15,21 @@ router = APIRouter()
 
 @router.get("/config")
 async def get_customer_public_config(db: Session = Depends(get_db)):
-    """Public config for customer app (e.g. allow_guest_checkout). No auth required."""
+    """Public config for customer app (allow_guest_checkout, default_delivery_fee). No auth required."""
     from app.models.platform_settings import PlatformSettings
-    ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "customer").first()
-    allow_guest = True
-    if ps and isinstance(getattr(ps, "settings_data", None), dict):
-        allow_guest = bool(ps.settings_data.get("allow_guest_checkout", True))
-    return {"allow_guest_checkout": allow_guest}
+    out = {"allow_guest_checkout": True, "default_delivery_fee": 5.0}
+    ps_customer = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "customer").first()
+    if ps_customer and isinstance(getattr(ps_customer, "settings_data", None), dict):
+        out["allow_guest_checkout"] = bool(ps_customer.settings_data.get("allow_guest_checkout", True))
+    ps_orders = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "orders").first()
+    if ps_orders and isinstance(getattr(ps_orders, "settings_data", None), dict):
+        fee = ps_orders.settings_data.get("delivery_fee")
+        if fee is not None:
+            try:
+                out["default_delivery_fee"] = float(fee)
+            except (TypeError, ValueError):
+                pass
+    return out
 
 
 @router.get("/me", response_model=CustomerResponse)
