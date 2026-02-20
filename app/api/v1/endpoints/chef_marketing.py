@@ -1,12 +1,14 @@
 """
 Chef marketing endpoints - chefs can create ads that require marketing approval
 """
+import stripe
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 from uuid import UUID
 from app.core.database import get_db
+from app.core.config import settings
 from app.models.marketing import Ad, Campaign
 from app.models.platform_settings import PlatformSettings
 from app.api.v1.dependencies import get_current_chef
@@ -58,7 +60,44 @@ async def get_chef_marketing_config(
     """Return config for chef marketing (ad payments suspended, placement pricing)."""
     suspended = _chef_ad_payments_suspended(db)
     placement_pricing = _get_ad_placement_pricing(db)
-    return {"ad_payments_suspended": suspended, "ad_placement_pricing": placement_pricing}
+    return {
+        "ad_payments_suspended": suspended,
+        "ad_placement_pricing": placement_pricing,
+        "stripe_publishable_key": settings.STRIPE_PUBLISHABLE_KEY or "",
+    }
+
+
+class CreateAdPaymentIntentRequest(BaseModel):
+    amount: float  # Ad cost in dollars (e.g. 25.00)
+
+
+@router.post("/create-ad-payment-intent", response_model=dict)
+async def create_chef_ad_payment_intent(
+    body: CreateAdPaymentIntentRequest,
+    current_chef: dict = Depends(get_current_chef),
+    db: Session = Depends(get_db),
+):
+    """Create a Stripe PaymentIntent for ad payment. Returns client_secret for Stripe Elements."""
+    if _chef_ad_payments_suspended(db):
+        raise HTTPException(status_code=400, detail="Ad payments are suspended; no payment required.")
+    if not settings.STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=503, detail="Stripe is not configured. Please contact support.")
+    amount_cents = int(round(float(body.amount) * 100))
+    if amount_cents <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than zero.")
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    try:
+        intent = stripe.PaymentIntent.create(
+            amount=amount_cents,
+            currency="cad",
+            automatic_payment_methods={"enabled": True},
+        )
+        return {
+            "client_secret": intent.client_secret,
+            "payment_intent_id": intent.id,
+        }
+    except stripe.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(getattr(e, "user_message", None) or str(e)))
 
 
 @router.get("/ads", response_model=List[dict])

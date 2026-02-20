@@ -1,7 +1,35 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { loadStripe } from '@stripe/stripe-js'
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import api, { resolveUploadUrl } from '../services/api'
 import { ArrowLeft, Save, Eye, Palette, Upload, X, Video, Image as ImageIcon } from 'lucide-react'
+
+/** Inner component that uses Stripe hooks and exposes confirmPayment for the parent form */
+function StripePaymentForm({ paymentIntentId, onConfirmRef }) {
+  const stripe = useStripe()
+  const elements = useElements()
+  const confirmFn = useCallback(async () => {
+    if (!stripe || !elements) return null
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: window.location.origin + '/ads', // fallback if redirect used
+      },
+    })
+    if (error) throw new Error(error.message || 'Payment failed')
+    return paymentIntentId
+  }, [stripe, elements, paymentIntentId])
+  useEffect(() => {
+    onConfirmRef(confirmFn)
+    return () => onConfirmRef(null)
+  }, [onConfirmRef, confirmFn])
+  return (
+    <div className="space-y-3">
+      <PaymentElement />
+    </div>
+  )
+}
 
 const AdDesigner = () => {
   const { id } = useParams()
@@ -40,12 +68,46 @@ const AdDesigner = () => {
   const DEFAULT_DURATION_PRICES = { day: 5, week: 25, '2weeks': 45, month: 80 }
   const [adPlacementPricing, setAdPlacementPricing] = useState({})
   const [adPaymentsSuspended, setAdPaymentsSuspended] = useState(false)
+  const [stripePublishableKey, setStripePublishableKey] = useState('')
+  const [stripeClientSecret, setStripeClientSecret] = useState('')
+  const [stripePaymentIntentId, setStripePaymentIntentId] = useState('')
+  const [stripeCreating, setStripeCreating] = useState(false)
+  const stripeConfirmRef = useRef(null)
+
   useEffect(() => {
     api.get('/vendor/marketing/config').then(r => {
       if (r.data && r.data.ad_placement_pricing) setAdPlacementPricing(r.data.ad_placement_pricing)
       setAdPaymentsSuspended(!!(r.data && r.data.ad_payments_suspended))
+      if (r.data && r.data.stripe_publishable_key) setStripePublishableKey(r.data.stripe_publishable_key)
     }).catch(() => {})
   }, [])
+
+  // Create Stripe PaymentIntent when duration is selected and payments not suspended
+  useEffect(() => {
+    if (isEdit || adPaymentsSuspended || !selectedDuration || !stripePublishableKey) {
+      setStripeClientSecret('')
+      setStripePaymentIntentId('')
+      return
+    }
+    let cancelled = false
+    setStripeCreating(true)
+    api.post('/vendor/marketing/create-ad-payment-intent', { amount: selectedDuration.cost })
+      .then(res => {
+        if (!cancelled && res.data && res.data.client_secret) {
+          setStripeClientSecret(res.data.client_secret)
+          setStripePaymentIntentId(res.data.payment_intent_id || '')
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setStripeClientSecret('')
+      })
+      .finally(() => { if (!cancelled) setStripeCreating(false) })
+    return () => { cancelled = true }
+  }, [isEdit, adPaymentsSuspended, selectedDuration?.value, selectedDuration?.cost, stripePublishableKey])
+
+  const stripePromise = useMemo(() => (stripePublishableKey ? loadStripe(stripePublishableKey) : null), [stripePublishableKey])
+  const paymentReady = adPaymentsSuspended || (stripeClientSecret && stripePaymentIntentId)
+
   const durationOptionsForPlacement = (placement) => {
     const prices = adPlacementPricing[placement] || DEFAULT_DURATION_PRICES
     return [
@@ -205,13 +267,20 @@ const AdDesigner = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Validate that either image_url or video_url is provided (and not just empty strings)
     const hasImage = formData.image_url && formData.image_url.trim() !== ''
     const hasVideo = formData.video_url && formData.video_url.trim() !== ''
-    
     if (!hasImage && !hasVideo) {
       alert('Please upload an image or video, or provide an image/video URL')
       return
+    }
+
+    if (!isEdit && !adPaymentsSuspended && stripeConfirmRef.current) {
+      try {
+        await stripeConfirmRef.current()
+      } catch (err) {
+        alert(err?.message || 'Payment failed. Please try again.')
+        return
+      }
     }
     
     setSaving(true)
@@ -231,10 +300,14 @@ const AdDesigner = () => {
           data.ad_duration = payment.ad_duration || 'day'
           data.ad_cost = 0
           data.payment_intent_id = null
+        } else if (stripePaymentIntentId) {
+          data.ad_duration = payment.ad_duration
+          data.ad_cost = selectedDuration?.cost ?? 0
+          data.payment_intent_id = stripePaymentIntentId
         } else if (selectedDuration) {
           data.ad_duration = payment.ad_duration
           data.ad_cost = selectedDuration.cost
-          data.payment_intent_id = `placeholder_${payment.card_last4}`
+          data.payment_intent_id = null
         }
       }
 
@@ -698,59 +771,37 @@ const AdDesigner = () => {
                 {adPaymentsSuspended ? (
                   <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">No payment required — ad payments are currently suspended. You can create ads for free.</p>
                 ) : (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Duration *</label>
-                    <select
-                      value={payment.ad_duration}
-                      onChange={(e) => setPayment({ ...payment, ad_duration: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                    >
-                      <option value="">Select duration</option>
-                      {DURATION_OPTIONS.map((d) => (
-                        <option key={d.value} value={d.value}>{d.label} — ${d.cost}</option>
-                      ))}
-                    </select>
-                  </div>
-                  {selectedDuration && (
-                    <p className="text-sm text-gray-600">Cost: ${selectedDuration.cost}</p>
-                  )}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Card number (last 4 digits) *</label>
-                    <input
-                      type="text"
-                      maxLength={4}
-                      value={payment.card_last4}
-                      onChange={(e) => setPayment({ ...payment, card_last4: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-                      placeholder="1234"
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
+                <>
+                  <div className="space-y-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Expiry (MM/YY) *</label>
-                      <input
-                        type="text"
-                        placeholder="MM/YY"
-                        maxLength={5}
-                        value={payment.card_expiry}
-                        onChange={(e) => setPayment({ ...payment, card_expiry: e.target.value })}
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Duration *</label>
+                      <select
+                        value={payment.ad_duration}
+                        onChange={(e) => setPayment({ ...payment, ad_duration: e.target.value })}
                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                      />
+                      >
+                        <option value="">Select duration</option>
+                        {DURATION_OPTIONS.map((d) => (
+                          <option key={d.value} value={d.value}>{d.label} — ${d.cost}</option>
+                        ))}
+                      </select>
                     </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">CVC *</label>
-                      <input
-                        type="text"
-                        maxLength={4}
-                        value={payment.card_cvc}
-                        onChange={(e) => setPayment({ ...payment, card_cvc: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-                        placeholder="123"
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
-                      />
-                    </div>
+                    {selectedDuration && (
+                      <p className="text-sm text-gray-600">Cost: ${selectedDuration.cost}</p>
+                    )}
                   </div>
-                </div>
+                  {stripePublishableKey && stripeClientSecret ? (
+                    stripeCreating ? (
+                      <p className="text-sm text-gray-500 mt-2">Preparing payment…</p>
+                    ) : (
+                      <Elements stripe={stripePromise} options={{ clientSecret: stripeClientSecret }}>
+                        <StripePaymentForm paymentIntentId={stripePaymentIntentId} onConfirmRef={(fn) => { stripeConfirmRef.current = fn }} />
+                      </Elements>
+                    )
+                  ) : stripePublishableKey && selectedDuration && !stripeCreating ? (
+                    <p className="text-sm text-amber-600 mt-2">Unable to load payment. Please refresh or try again.</p>
+                  ) : null}
+                </>
                 )}
               </div>
             )}
@@ -758,7 +809,7 @@ const AdDesigner = () => {
             <div className="mt-4 sm:mt-6">
               <button
                 type="submit"
-                disabled={saving || (!isEdit && !adPaymentsSuspended && !paymentFilled)}
+                disabled={saving || (!isEdit && !paymentReady)}
                 className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Save className="h-4 w-4" />
