@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider } from './contexts/AuthContext'
 import { CartProvider } from './contexts/CartContext'
@@ -36,10 +36,13 @@ import ChefDetail from './pages/ChefDetail'
 import Groceries from './pages/Groceries'
 import PrivateRoute from './components/PrivateRoute'
 import CheckoutRoute from './components/CheckoutRoute'
-import ForgotPassword from './pages/ForgotPassword'
-import ResetPassword from './pages/ResetPassword'
 
 const googleClientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || ''
+
+function ResetRedirect() {
+  const { search } = useLocation()
+  return <Navigate to={`/login${search}`} replace />
+}
 
 function App() {
   const app = (
@@ -60,8 +63,8 @@ function App() {
                             <Route path="/login" element={<Login />} />
                             <Route path="/signup" element={<Signup />} />
                             <Route path="/verify-email" element={<VerifyEmail />} />
-                            <Route path="/forgot-password" element={<ForgotPassword />} />
-                            <Route path="/reset-password" element={<ResetPassword />} />
+                            <Route path="/forgot-password" element={<Navigate to="/login?forgot=1" replace />} />
+                            <Route path="/reset-password" element={<ResetRedirect />} />
                             <Route path="/driver-signup" element={<DriverSignup />} />
                             <Route path="/become-a-driver" element={<BecomeADriver />} />
                             <Route path="/stores" element={<Stores />} />
@@ -99,8 +102,8 @@ function App() {
                             <Route path="/login" element={<Login />} />
                             <Route path="/signup" element={<Signup />} />
                             <Route path="/verify-email" element={<VerifyEmail />} />
-                            <Route path="/forgot-password" element={<ForgotPassword />} />
-                            <Route path="/reset-password" element={<ResetPassword />} />
+                            <Route path="/forgot-password" element={<Navigate to="/login?forgot=1" replace />} />
+                            <Route path="/reset-password" element={<ResetRedirect />} />
                             <Route path="/driver-signup" element={<DriverSignup />} />
                             <Route path="/become-a-driver" element={<BecomeADriver />} />
                             <Route path="/stores" element={<Stores />} />

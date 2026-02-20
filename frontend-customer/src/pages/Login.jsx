@@ -1,18 +1,36 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../contexts/AuthContext'
 import { LogIn, Eye, EyeOff } from 'lucide-react'
 
 const Login = () => {
+  const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [ForgotComponent, setForgotComponent] = useState(null)
+  const [ResetComponent, setResetComponent] = useState(null)
   const { login, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
   const googleClientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || ''
+
+  const showForgot = searchParams.get('forgot') === '1'
+  const resetToken = searchParams.get('token')
+
+  useEffect(() => {
+    if (showForgot && !ForgotComponent) {
+      import('./ForgotPassword').then((m) => setForgotComponent(() => m.default))
+    }
+  }, [showForgot, ForgotComponent])
+
+  useEffect(() => {
+    if (resetToken && !ResetComponent) {
+      import('./ResetPassword').then((m) => setResetComponent(() => m.default))
+    }
+  }, [resetToken, ResetComponent])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -27,6 +45,16 @@ const Login = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (showForgot && ForgotComponent) return <ForgotComponent />
+  if (resetToken && ResetComponent) return <ResetComponent />
+  if ((showForgot && !ForgotComponent) || (resetToken && !ResetComponent)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-nude-50 to-nude-100">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary-600 border-t-transparent" />
+      </div>
+    )
   }
 
   return (
