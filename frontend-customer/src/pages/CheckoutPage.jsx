@@ -1,7 +1,9 @@
 /**
  * New checkout page – no lazy(), no top-level Stripe imports.
- * Payment form is loaded via dynamic import in useEffect to avoid bundle initialization errors.
+ * Set STRIPE_DISCONNECTED = true to test: page loads with no Stripe. If it loads, issue is Stripe; if not, cause is elsewhere.
  */
+const STRIPE_DISCONNECTED = true // TODO: set false after testing
+
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
@@ -32,8 +34,9 @@ const CheckoutPage = () => {
     street_address: '', city: '', state: '', postal_code: '', country: 'Canada'
   })
 
-  // Load payment section only after mount (no Stripe in this chunk)
+  // Load payment section only when Stripe connected (when disconnected, this chunk is never loaded)
   useEffect(() => {
+    if (STRIPE_DISCONNECTED) return
     let cancelled = false
     import('../components/CheckoutPaymentSection').then((m) => {
       if (!cancelled) setPaymentSection(() => m.default)
@@ -300,7 +303,12 @@ const CheckoutPage = () => {
             <h2 className="text-base font-semibold mb-3 flex items-center">
               <CreditCard className="h-4 w-4 mr-2 text-primary-600" /> Payment
             </h2>
-            {PaymentSection && !paymentConfig.payments_suspended && (
+            {STRIPE_DISCONNECTED && (
+              <p className="text-sm text-amber-700 bg-amber-50 p-3 rounded border border-amber-200">
+                Stripe disconnected for testing – does the page load? If yes, the issue is Stripe-related.
+              </p>
+            )}
+            {!STRIPE_DISCONNECTED && PaymentSection && !paymentConfig.payments_suspended && (
               <PaymentSection
                 key={`pay-${total}`}
                 amount={total}
@@ -311,7 +319,7 @@ const CheckoutPage = () => {
                 onCardReady={handleCardReady}
               />
             )}
-            {paymentConfig.payments_suspended && (
+            {!STRIPE_DISCONNECTED && paymentConfig.payments_suspended && (
               <p className="text-sm text-gray-600">Pay on delivery or later.</p>
             )}
           </div>
