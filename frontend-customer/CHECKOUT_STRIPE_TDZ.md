@@ -2,30 +2,24 @@
 
 ## Cause
 
-The error comes from **Stripe** being loaded too early, in a way that triggers a **Temporal Dead Zone (TDZ)** in the bundled code. The minified name `Tt` is a variable or export inside Stripe’s (or a related) bundle.
+The error comes from **Stripe** being loaded too early, in a way that triggers a **Temporal Dead Zone (TDZ)** in the bundled code. The minified name `Tt` is a variable or export inside Stripe’s (or a related) bundle. Any time the Stripe npm packages (`@stripe/stripe-js`, `@stripe/react-stripe-js`) are included in a bundle that loads at app startup, this can happen.
 
-Two things were pulling Stripe into the initial load:
+## Fix applied (final)
 
-1. **`optimizeDeps.include`**  
-   Having `@stripe/stripe-js` and `@stripe/react-stripe-js` in `include` made Vite **pre-bundle** Stripe and wire it into the app’s dependency graph. That pre-bundle is loaded with the app and can run before other code is ready → TDZ.
+**CheckoutPaymentSection no longer uses the Stripe npm packages at all.** It loads Stripe only from the CDN:
 
-2. **`optimizeDeps` discovery (no exclude)**  
-   Even after removing Stripe from `include`, Vite still **discovers** dependencies by crawling the source. It sees `import('@stripe/stripe-js')` in `CheckoutPaymentSection.jsx` and can still pre-bundle Stripe. So Stripe had to be **explicitly excluded** so it is never pre-bundled and only loads when the dynamic `import()` runs on the checkout page.
+1. When the payment section mounts, it injects `<script src="https://js.stripe.com/v3/"></script>` (if not already present) and waits for `window.Stripe`.
+2. It uses `window.Stripe(publishableKey)` and the raw Stripe.js API (`stripe.elements()`, `elements.create('payment')`, `stripe.confirmPayment()`) to show the Payment Element and confirm payment.
+3. No file in the app imports `@stripe/stripe-js` or `@stripe/react-stripe-js` for checkout, so the bundler never includes Stripe in any chunk. The TDZ error cannot occur.
 
-## Fixes applied
+Additional safeguards in `vite.config.js`:
 
-- **`vite.config.js`**
-  - Stripe removed from `optimizeDeps.include`.
-  - Stripe added to `optimizeDeps.exclude`: `['@stripe/stripe-js', '@stripe/react-stripe-js']`.
-- **Checkout flow**
-  - New checkout page: `CheckoutPage.jsx` (no Stripe imports).
-  - New payment block: `CheckoutPaymentSection.jsx` (Stripe only via `import('@stripe/...')` inside `useEffect`).
-  - Route uses `CheckoutPage`; Stripe runs only after the payment section mounts and runs its effect.
+- Stripe removed from `optimizeDeps.include` and added to `optimizeDeps.exclude`.
 
-## After changing config
+## After deploy
 
-1. Clear Vite cache: `rm -rf node_modules/.vite`
-2. Restart dev server or run a fresh build
-3. Hard refresh the app in the browser (e.g. Cmd+Shift+R)
+1. Rebuild: `cd frontend-customer && npm run build`
+2. Redeploy the new build to eazyfoods.ca (or your host).
+3. Hard refresh the site (Cmd+Shift+R).
 
-If the error persists, ensure no other file in the app does a **top-level** or **eager** import of `@stripe/*` or of a component that imports Stripe (e.g. the old `Checkout.jsx` / `StripePayment.jsx` are not used by the route anymore).
+The old `Checkout.jsx`, `StripePayment.jsx`, and `TestStripeModal.jsx` still exist but are not used by the route; you can delete them to avoid confusion.
