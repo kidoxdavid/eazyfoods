@@ -32,8 +32,8 @@ const getApiOrigin = () => {
  */
 export const resolveImageUrl = (url, type) => {
   if (url == null || url === '') return ''
-  // Ensure we have a string (API might return objects like {url: "..."})
-  const urlStr = typeof url === 'string' ? url : (url?.url ?? '')
+  // Ensure we have a string (API might return objects like {url: "..."} or {image_url: "..."})
+  const urlStr = typeof url === 'string' ? url : (url?.url ?? url?.image_url ?? url?.src ?? '')
   if (!urlStr) return ''
 
   const apiOrigin = getApiOrigin()

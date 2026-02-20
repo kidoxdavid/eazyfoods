@@ -208,6 +208,14 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
       )}
     </div>
   )
+  // While loading and no ads yet, show stable empty shell to avoid flash when ads load (no default text that then gets replaced)
+  if (loading && !dismissed && ads.length === 0) {
+    return (
+      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden ${size === 'tall' ? 'py-4 sm:py-5' : ''}`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
+        <div className="max-w-7xl mx-auto w-full flex flex-col items-center justify-center text-center min-h-[100px]" />
+      </div>
+    )
+  }
   if (dismissed || ads.length === 0) {
     return (
       <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden ${size === 'tall' ? 'py-4 sm:py-5' : ''}`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

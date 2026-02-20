@@ -101,8 +101,8 @@ const MealDetail = () => {
         {/* Recipe Image - same as ProductDetail */}
         <div>
           <ProductImageGallery
-            images={[]}
-            mainImage={resolveImageUrl(recipe.image_url, 'recipe')}
+            images={recipe.images || []}
+            mainImage={recipe.image_url}
             productName={recipe.name}
             imageType="recipe"
           />

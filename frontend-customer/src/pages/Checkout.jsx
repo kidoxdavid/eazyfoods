@@ -39,6 +39,11 @@ const Checkout = () => {
   const [showRefreshBanner, setShowRefreshBanner] = useState(false)
   const [testStripeOpen, setTestStripeOpen] = useState(false)
   const [testStripeClientSecret, setTestStripeClientSecret] = useState(null)
+  const [paymentSectionMounted, setPaymentSectionMounted] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setPaymentSectionMounted(true), 150)
+    return () => clearTimeout(t)
+  }, [])
 
   useEffect(() => {
     fetchStores()
@@ -576,6 +581,7 @@ const Checkout = () => {
               </div>
 
               <div className="mt-3 pt-3 border-t border-gray-100">
+                {paymentSectionMounted && (
                 <Suspense fallback={<div className="py-6 text-center text-gray-500">Loading payment form…</div>}>
                   <StripePayment
                     key={`stripe-${total}`}
@@ -587,13 +593,16 @@ const Checkout = () => {
                     onCardReady={handleCardReady}
                   />
                 </Suspense>
+                )}
               </div>
             </div>
           </div>
 
+          {paymentSectionMounted && testStripeOpen && (
           <Suspense fallback={null}>
-          <TestStripeModal open={testStripeOpen} clientSecret={testStripeClientSecret} onClose={handleCloseTestStripe} />
-        </Suspense>
+            <TestStripeModal open={testStripeOpen} clientSecret={testStripeClientSecret} onClose={handleCloseTestStripe} />
+          </Suspense>
+          )}
 
           {/* Order Summary Sidebar */}
           <div className="lg:col-span-1">
