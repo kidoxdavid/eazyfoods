@@ -181,6 +181,79 @@ async def add_recipe_to_cart(
     }
 
 
+@router.get("/meal-plans/suggested", response_model=List[dict])
+async def get_suggested_meal_plans(
+    db: Session = Depends(get_db)
+):
+    """Suggest meal plans built from available recipes (e.g. breakfast week, easy dinners)."""
+    recipes = db.query(Recipe).filter(Recipe.is_active == True).order_by(Recipe.name).limit(50).all()
+    if not recipes:
+        return []
+    by_meal = {"breakfast": [], "lunch": [], "dinner": []}
+    for r in recipes:
+        mt = (r.meal_type or "dinner").lower()
+        if mt in by_meal:
+            by_meal[mt].append(r)
+    suggestions = []
+    # "7-Day Breakfast" – first 7 breakfast recipes
+    if len(by_meal["breakfast"]) >= 7:
+        meals = [
+            {"recipe_id": str(by_meal["breakfast"][i].id), "day_number": i + 1, "meal_type": "breakfast",
+             "recipe": {"id": str(by_meal["breakfast"][i].id), "name": by_meal["breakfast"][i].name, "image_url": by_meal["breakfast"][i].image_url, "meal_type": "breakfast"}}
+            for i in range(7)
+        ]
+        suggestions.append({
+            "id": "suggested-breakfast-week",
+            "name": "7-Day Breakfast Ideas",
+            "description": "A week of breakfast recipes from our collection.",
+            "plan_type": "one_week",
+            "image_url": by_meal["breakfast"][0].image_url if by_meal["breakfast"] else None,
+            "meal_count": 7,
+            "suggested": True,
+            "meals": meals
+        })
+    # "Easy Dinners" – up to 5 easy dinner recipes
+    easy_dinners = [r for r in recipes if (r.difficulty or "").lower() == "easy" and (r.meal_type or "").lower() == "dinner"][:5]
+    if not easy_dinners and by_meal["dinner"]:
+        easy_dinners = by_meal["dinner"][:5]
+    if easy_dinners:
+        meals = [
+            {"recipe_id": str(r.id), "day_number": i + 1, "meal_type": "dinner",
+             "recipe": {"id": str(r.id), "name": r.name, "image_url": r.image_url, "meal_type": "dinner"}}
+            for i, r in enumerate(easy_dinners)
+        ]
+        suggestions.append({
+            "id": "suggested-easy-dinners",
+            "name": "Easy Dinners (5 days)",
+            "description": "Simple dinner recipes for the week.",
+            "plan_type": "one_week",
+            "image_url": easy_dinners[0].image_url if easy_dinners else None,
+            "meal_count": len(meals),
+            "suggested": True,
+            "meals": meals
+        })
+    # "This week's picks" – mix of 7 recipes
+    mix = recipes[:7] if len(recipes) >= 7 else recipes
+    if mix:
+        meal_types = ["breakfast", "lunch", "dinner"]
+        meals = [
+            {"recipe_id": str(r.id), "day_number": (i % 7) + 1, "meal_type": (r.meal_type or meal_types[i % 3]).lower()[:10] or "dinner",
+             "recipe": {"id": str(r.id), "name": r.name, "image_url": r.image_url, "meal_type": r.meal_type or "dinner"}}
+            for i, r in enumerate(mix)
+        ]
+        suggestions.append({
+            "id": "suggested-week-picks",
+            "name": "This Week's Picks",
+            "description": "Curated recipes from our collection.",
+            "plan_type": "one_week",
+            "image_url": mix[0].image_url if mix else None,
+            "meal_count": len(meals),
+            "suggested": True,
+            "meals": meals
+        })
+    return suggestions
+
+
 @router.get("/meal-plans", response_model=List[dict])
 async def get_meal_plans(
     plan_type: Optional[str] = Query(None),
@@ -363,6 +436,59 @@ async def add_meal_plan_to_cart(
     return {
         "meal_plan_id": str(meal_plan.id),
         "meal_plan_name": meal_plan.name,
+        "household_size": household_size,
+        "items": cart_items
+    }
+
+
+@router.post("/meal-plans/add-to-cart-from-recipes")
+async def add_to_cart_from_recipes(
+    body: dict,
+    db: Session = Depends(get_db)
+):
+    """Build a meal plan from selected recipes and return cart items (no plan saved). Body: { meals: [{ recipe_id, day_number, meal_type }], household_size: 1 }."""
+    meals_data = body.get("meals") or []
+    household_size = max(1, min(10, body.get("household_size") or 1))
+    if not meals_data:
+        raise HTTPException(status_code=400, detail="meals array is required")
+    ingredient_map = {}
+    plan_name = body.get("name") or "My meal plan"
+    for entry in meals_data:
+        recipe_id = entry.get("recipe_id")
+        if not recipe_id:
+            continue
+        try:
+            recipe_uuid = UUID(recipe_id)
+        except (ValueError, TypeError):
+            continue
+        recipe = db.query(Recipe).options(
+            joinedload(Recipe.ingredients).joinedload(RecipeIngredient.product)
+        ).filter(Recipe.id == recipe_uuid, Recipe.is_active == True).first()
+        if not recipe:
+            continue
+        for ing in recipe.ingredients:
+            if not ing.product:
+                continue
+            product_id = str(ing.product_id)
+            if product_id not in ingredient_map:
+                ingredient_map[product_id] = {
+                    "product_id": product_id,
+                    "product_name": ing.product.name,
+                    "quantity": 0,
+                    "unit": ing.unit,
+                    "product": {
+                        "id": str(ing.product.id),
+                        "name": ing.product.name,
+                        "image_url": ing.product.image_url,
+                        "price": float(ing.product.price) if ing.product.price else 0,
+                        "stock_quantity": ing.product.stock_quantity,
+                        "unit": ing.product.unit
+                    }
+                }
+            ingredient_map[product_id]["quantity"] += float(ing.quantity) * household_size
+    cart_items = list(ingredient_map.values())
+    return {
+        "meal_plan_name": plan_name,
         "household_size": household_size,
         "items": cart_items
     }

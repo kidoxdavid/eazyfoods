@@ -86,7 +86,7 @@ const Analytics = () => {
   const fetchData = async () => {
     setLoading(true)
     try {
-      if (viewMode === 'overview') {
+      if (viewMode === 'overview' || viewMode === 'earnings') {
         const response = await api.get('/admin/analytics/overview', {
           params: {
             start_date: dateRange.start_date,
@@ -94,7 +94,8 @@ const Analytics = () => {
           }
         })
         setOverview(response.data)
-      } else if (viewMode === 'trends') {
+      }
+      if (viewMode === 'trends') {
         const response = await api.get('/admin/analytics/revenue', {
           params: {
             start_date: dateRange.start_date,
@@ -103,12 +104,14 @@ const Analytics = () => {
           }
         })
         setRevenueData(response.data)
-      } else if (viewMode === 'comparison') {
+      }
+      if (viewMode === 'comparison') {
         const response = await api.get('/admin/analytics/comparison', {
           params: comparisonRanges
         })
         setComparison(response.data)
-      } else if (viewMode === 'reports') {
+      }
+      if (viewMode === 'reports') {
         const response = await api.get('/admin/analytics/reports/sales', {
           params: dateRange
         })
@@ -118,9 +121,10 @@ const Analytics = () => {
       console.error('Failed to fetch analytics:', error)
       console.error('Error details:', error.response?.data)
       // Set default values to prevent crashes
-      if (viewMode === 'overview') {
+      if (viewMode === 'overview' || viewMode === 'earnings') {
         setOverview(null)
-      } else if (viewMode === 'trends') {
+      }
+      if (viewMode === 'trends') {
         setRevenueData(null)
       } else if (viewMode === 'comparison') {
         setComparison(null)
@@ -535,13 +539,13 @@ const Analytics = () => {
         </div>
       )}
 
-      {/* View Mode Tabs */}
-      <div className="bg-white rounded-lg shadow border border-gray-200 p-1 flex gap-1">
-        {['overview', 'trends', 'comparison', 'reports'].map((mode) => (
+      {/* View Mode Tabs - panes */}
+      <div className="bg-white rounded-lg shadow border border-gray-200 p-1 flex flex-wrap gap-1">
+        {['overview', 'earnings', 'trends', 'comparison', 'reports'].map((mode) => (
           <button
             key={mode}
             onClick={() => setViewMode(mode)}
-            className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+            className={`flex-1 min-w-0 px-3 py-2 rounded-lg font-medium transition-colors text-sm ${
               viewMode === mode
                 ? 'bg-primary-600 text-white'
                 : 'text-gray-700 hover:bg-gray-100'
@@ -962,6 +966,48 @@ const Analytics = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Earnings Pane */}
+      {viewMode === 'earnings' && overview && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Platform earnings</h2>
+            <p className="text-sm text-gray-500 mb-4">Commission / service fee collected from orders (delivered or picked up) in the selected period.</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-emerald-50 rounded-lg border border-emerald-200 p-4">
+                <p className="text-xs font-medium text-emerald-700 mb-1">Total earnings</p>
+                <p className="text-2xl font-bold text-emerald-900">
+                  ${(overview.platform_earnings?.total_earnings ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                <p className="text-xs font-medium text-gray-600 mb-1">Orders contributing</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {(overview.platform_earnings?.earnings_trends ?? []).reduce((s, t) => s + (t.orders || 0), 0)}
+                </p>
+              </div>
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                <p className="text-xs font-medium text-gray-600 mb-1">Days in range</p>
+                <p className="text-2xl font-bold text-gray-900">{(overview.platform_earnings?.earnings_trends ?? []).length}</p>
+              </div>
+            </div>
+            {Array.isArray(overview.platform_earnings?.earnings_trends) && overview.platform_earnings.earnings_trends.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Earnings by date</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={overview.platform_earnings.earnings_trends}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="date" stroke="#6b7280" fontSize={11} />
+                    <YAxis stroke="#6b7280" fontSize={11} />
+                    <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }} />
+                    <Bar dataKey="earnings" fill="#10B981" name="Earnings ($)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

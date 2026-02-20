@@ -7,9 +7,16 @@ import { formatDateTime } from '../utils/format'
 const Ads = () => {
   const [ads, setAds] = useState([])
   const [loading, setLoading] = useState(true)
+  const [adPaymentsSuspended, setAdPaymentsSuspended] = useState(false)
 
   useEffect(() => {
     fetchAds()
+  }, [])
+
+  useEffect(() => {
+    api.get('/vendor/marketing/config').then(r => {
+      setAdPaymentsSuspended(!!(r.data && r.data.ad_payments_suspended))
+    }).catch(() => setAdPaymentsSuspended(false))
   }, [])
 
   const fetchAds = async () => {
@@ -74,13 +81,23 @@ const Ads = () => {
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">My Ads</h1>
           <p className="text-xs sm:text-sm text-gray-600 mt-1">Create and manage your marketing ads</p>
         </div>
-        <Link
-          to="/ads/new"
-          className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2 text-sm sm:text-base"
-        >
-          <Plus className="h-4 w-4" />
-          Create Ad
-        </Link>
+        {adPaymentsSuspended ? (
+          <span
+            className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
+            title="Ad creation is currently suspended by the platform."
+          >
+            <Plus className="h-4 w-4" />
+            Create Ad
+          </span>
+        ) : (
+          <Link
+            to="/ads/new"
+            className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2 text-sm sm:text-base"
+          >
+            <Plus className="h-4 w-4" />
+            Create Ad
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">

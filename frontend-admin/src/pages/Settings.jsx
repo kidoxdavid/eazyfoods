@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
-import { Settings as SettingsIcon, Save, AlertCircle, DollarSign, ShoppingBag, Mail, Bell, Shield, Globe, CreditCard, Users, Package, Edit, Download, Database, RefreshCw } from 'lucide-react'
+import { Settings as SettingsIcon, Save, AlertCircle, DollarSign, ShoppingBag, Mail, Bell, Shield, Globe, CreditCard, Users, Package, Edit, Download, Database, RefreshCw, Megaphone } from 'lucide-react'
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('general')
@@ -111,6 +111,15 @@ const Settings = () => {
     referral_bonus: 10
   }))
 
+  const DEFAULT_AD_PLACEMENTS = [
+    'home_top_banner', 'home_bottom_banner', 'top_market_deals_top_banner', 'top_market_deals_bottom_banner',
+    'top_chef_deals_top_banner', 'top_chef_deals_bottom_banner', 'products_top_banner', 'products_bottom_banner',
+    'stores_top_banner', 'chefs_top_banner', 'meals_top_banner', 'cart_top_banner', 'orders_top_banner',
+    'profile_top_banner', 'about_top_banner', 'contact_top_banner', 'become_a_driver_top_banner'
+  ]
+  const DURATION_KEYS = ['day', 'week', '2weeks', 'month']
+  const [adSettings, setAdSettings] = useState(() => loadSettings('ad', { placement_pricing: {} }))
+
   // Load settings from backend on mount - defined after all state setters
   const loadSettingsFromBackend = async () => {
     setLoadingSettings(true)
@@ -150,6 +159,10 @@ const Settings = () => {
       if (allSettings.customer?.settings) {
         setCustomerSettings(allSettings.customer.settings)
         saveSettings('customer', allSettings.customer.settings)
+      }
+      if (allSettings.ad?.settings) {
+        setAdSettings(allSettings.ad.settings)
+        saveSettings('ad', allSettings.ad.settings)
       }
     } catch (error) {
       console.error('Failed to load settings from backend:', error)
@@ -235,6 +248,9 @@ const Settings = () => {
         case 'customer':
           settingsToSave = customerSettings
           break
+        case 'ad':
+          settingsToSave = adSettings
+          break
       }
       
       // Save to backend API
@@ -277,6 +293,9 @@ const Settings = () => {
                 break
               case 'customer':
                 setCustomerSettings(getResponse.data.settings)
+                break
+              case 'ad':
+                setAdSettings(getResponse.data.settings)
                 break
             }
             // Also update localStorage
@@ -340,7 +359,8 @@ const Settings = () => {
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'vendor', label: 'Vendor', icon: Users },
-    { id: 'customer', label: 'Customer', icon: Package }
+    { id: 'customer', label: 'Customer', icon: Package },
+    { id: 'ad', label: 'Ad', icon: Megaphone }
   ]
 
   const renderGeneralSettings = () => (
@@ -473,6 +493,59 @@ const Settings = () => {
 
   const renderCommissionSettings = () => (
     <div className="space-y-6">
+      <section className="rounded-lg border border-gray-200 bg-gray-50/50 p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-gray-900">Fee type</h3>
+        <p className="text-xs text-gray-600">Choose how the platform earns: commission (percentage of order) or service fee (fixed or % per order).</p>
+        <div className="flex gap-4">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="fee_type"
+              checked={(commissionSettings.fee_type || 'commission') === 'commission'}
+              onChange={() => setCommissionSettings({ ...commissionSettings, fee_type: 'commission' })}
+              className="text-primary-600"
+            />
+            <span className="text-sm">Commission (%)</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="fee_type"
+              checked={(commissionSettings.fee_type || 'commission') === 'service_fee'}
+              onChange={() => setCommissionSettings({ ...commissionSettings, fee_type: 'service_fee' })}
+              className="text-primary-600"
+            />
+            <span className="text-sm">Service fee</span>
+          </label>
+        </div>
+        {(commissionSettings.fee_type || 'commission') === 'service_fee' && (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Service fee amount ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={commissionSettings.service_fee_amount ?? ''}
+                onChange={(e) => setCommissionSettings({ ...commissionSettings, service_fee_amount: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Or service fee (%)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                value={commissionSettings.service_fee_percent ?? ''}
+                onChange={(e) => setCommissionSettings({ ...commissionSettings, service_fee_percent: parseFloat(e.target.value) || 0 })}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+        )}
+      </section>
       {/* Default Commission Settings */}
       <div className="border-b pb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Default Commission Settings</h3>
@@ -1068,6 +1141,53 @@ const Settings = () => {
     </div>
   )
 
+  const renderAdSettings = () => {
+    const pricing = adSettings.placement_pricing || {}
+    const setPlacementPrice = (placement, duration, value) => {
+      const next = { ...adSettings, placement_pricing: { ...pricing } }
+      if (!next.placement_pricing[placement]) next.placement_pricing[placement] = {}
+      next.placement_pricing[placement] = { ...next.placement_pricing[placement], [duration]: value === '' ? undefined : Number(value) }
+      setAdSettings(next)
+    }
+    return (
+      <div className="space-y-6">
+        <p className="text-sm text-gray-600">Set the price ($) for each page banner and duration. Vendors and chefs see these when creating ads.</p>
+        <div className="rounded-lg border border-gray-200 overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Placement</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">1 day ($)</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">1 week ($)</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">2 weeks ($)</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">1 month ($)</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {DEFAULT_AD_PLACEMENTS.map((placement) => (
+                <tr key={placement}>
+                  <td className="px-4 py-2 text-sm text-gray-700 whitespace-nowrap">{placement.replace(/_/g, ' ')}</td>
+                  {DURATION_KEYS.map((dur) => (
+                    <td key={dur} className="px-4 py-2">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={pricing[placement]?.[dur] ?? ''}
+                        onChange={(e) => setPlacementPrice(placement, dur, e.target.value)}
+                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
+
   const getCurrentSettings = () => {
     switch (activeTab) {
       case 'general': return generalSettings
@@ -1157,6 +1277,7 @@ const Settings = () => {
               {activeTab === 'security' && renderSecuritySettings()}
               {activeTab === 'vendor' && renderVendorSettings()}
               {activeTab === 'customer' && renderCustomerSettings()}
+              {activeTab === 'ad' && renderAdSettings()}
 
               <div className="mt-8 pt-6 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <p className="text-xs sm:text-sm text-gray-500 order-2 sm:order-1">

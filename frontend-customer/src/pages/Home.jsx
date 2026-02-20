@@ -489,13 +489,13 @@ const Home = () => {
                       <Link
                         key={category.id}
                         to={`/groceries?category_id=${category.id}`}
-                        className="group flex items-center p-4 bg-white rounded-xl border border-gray-200 hover:border-emerald-300 hover:shadow-lg transition-all duration-300 gap-4"
+                        className="group flex items-center p-4 bg-white rounded-xl border border-gray-200 hover:border-emerald-300 hover:shadow-lg transition-all duration-300 gap-4 h-20"
                       >
-                        <div className={`flex-shrink-0 w-14 h-14 ${bg} rounded-xl flex items-center justify-center`}>
+                        <div className={`flex-shrink-0 w-12 h-12 ${bg} rounded-xl flex items-center justify-center`}>
                           {useEmoji ? (
                             <span className="text-2xl" aria-hidden>{category.image_url}</span>
                           ) : (
-                            <CategoryIcon className="h-7 w-7 text-white" strokeWidth={2} />
+                            <CategoryIcon className="h-6 w-6 text-white" strokeWidth={2} />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">

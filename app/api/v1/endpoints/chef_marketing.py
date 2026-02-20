@@ -8,10 +8,17 @@ from datetime import datetime
 from uuid import UUID
 from app.core.database import get_db
 from app.models.marketing import Ad, Campaign
+from app.models.platform_settings import PlatformSettings
 from app.api.v1.dependencies import get_current_chef
 from pydantic import BaseModel
 
 router = APIRouter()
+
+
+def _chef_ad_payments_suspended(db: Session) -> bool:
+    ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "payment").first()
+    data = (ps.settings_data or {}) if ps else {}
+    return bool(data.get("suspend_chef_ad_payments"))
 
 
 class ChefAdCreate(BaseModel):
@@ -35,6 +42,23 @@ class ChefAdCreate(BaseModel):
     ad_duration: Optional[str] = None  # day, week, 2weeks, month
     ad_cost: Optional[float] = None
     payment_intent_id: Optional[str] = None
+
+
+def _get_ad_placement_pricing(db: Session) -> dict:
+    ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "ad").first()
+    data = (ps.settings_data or {}) if ps else {}
+    return data.get("placement_pricing") or {}
+
+
+@router.get("/config", response_model=dict)
+async def get_chef_marketing_config(
+    current_chef: dict = Depends(get_current_chef),
+    db: Session = Depends(get_db)
+):
+    """Return config for chef marketing (ad payments suspended, placement pricing)."""
+    suspended = _chef_ad_payments_suspended(db)
+    placement_pricing = _get_ad_placement_pricing(db)
+    return {"ad_payments_suspended": suspended, "ad_placement_pricing": placement_pricing}
 
 
 @router.get("/ads", response_model=List[dict])
@@ -93,6 +117,11 @@ async def create_chef_ad(
     db: Session = Depends(get_db)
 ):
     """Create a new ad (requires marketing approval)"""
+    if _chef_ad_payments_suspended(db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Ad creation is currently suspended by the platform. Please try again later."
+        )
     chef_id = UUID(current_chef["chef_id"])
     
     # Verify campaign belongs to chef if provided

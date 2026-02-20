@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { Utensils, Clock, Users, Search, Filter, ChefHat, Calendar, Sparkles, TrendingUp } from 'lucide-react'
+import { Utensils, Clock, Users, Search, Filter, ChefHat, Calendar, Sparkles, TrendingUp, Plus, ShoppingCart } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import { ProductCardSkeleton } from '../components/SkeletonLoader'
 import { resolveImageUrl } from '../utils/imageUtils'
+import { useCart } from '../contexts/CartContext'
 
 const Meals = () => {
+  const navigate = useNavigate()
+  const { addToCart } = useCart()
   const [recipes, setRecipes] = useState([])
   const [mealPlans, setMealPlans] = useState([])
+  const [suggestedPlans, setSuggestedPlans] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('recipes') // 'recipes' or 'meal-plans'
   const [filters, setFilters] = useState({
@@ -17,14 +21,33 @@ const Meals = () => {
     difficulty: ''
   })
   const [planTypeFilter, setPlanTypeFilter] = useState('all')
+  const [buildPlanOpen, setBuildPlanOpen] = useState(false)
+  const [buildPlanType, setBuildPlanType] = useState('one_week')
+  const [buildSlots, setBuildSlots] = useState([]) // [{ day_number, meal_type, recipe_id }]
+  const [addingSuggested, setAddingSuggested] = useState(null)
+  const [addingBuild, setAddingBuild] = useState(false)
 
   useEffect(() => {
     if (activeTab === 'recipes') {
       fetchRecipes()
     } else {
       fetchMealPlans()
+      fetchSuggested()
     }
   }, [filters, planTypeFilter, activeTab])
+
+  useEffect(() => {
+    if (buildPlanOpen && recipes.length === 0) fetchRecipes()
+  }, [buildPlanOpen])
+
+  const fetchSuggested = async () => {
+    try {
+      const res = await api.get('/customer/recipes/meal-plans/suggested')
+      setSuggestedPlans(Array.isArray(res.data) ? res.data : [])
+    } catch {
+      setSuggestedPlans([])
+    }
+  }
 
   const fetchRecipes = async () => {
     setLoading(true)
@@ -75,6 +98,70 @@ const Meals = () => {
       hard: 'bg-red-500 text-white'
     }
     return colors[difficulty] || 'bg-gray-100 text-gray-800'
+  }
+
+  const handleSuggestedAddToCart = async (plan, householdSize = 1) => {
+    if (!plan.meals?.length) return
+    setAddingSuggested(plan.id)
+    try {
+      const res = await api.post('/customer/recipes/meal-plans/add-to-cart-from-recipes', {
+        name: plan.name,
+        meals: plan.meals.map(m => ({ recipe_id: m.recipe_id, day_number: m.day_number, meal_type: m.meal_type || 'dinner' })),
+        household_size: householdSize
+      })
+      const items = res.data?.items || []
+      for (const item of items) {
+        const product = { ...item.product, quantity: item.quantity }
+        addToCart(product, item.quantity)
+      }
+      alert(`Added ${items.length} ingredient(s) to cart for ${plan.name}.`)
+      navigate('/cart')
+    } catch (e) {
+      alert(e.response?.data?.detail || 'Failed to add to cart.')
+    } finally {
+      setAddingSuggested(null)
+    }
+  }
+
+  const handleBuildPlanAddToCart = async () => {
+    const meals = buildSlots.filter(s => s.recipe_id).map(s => ({ recipe_id: s.recipe_id, day_number: s.day_number, meal_type: s.meal_type }))
+    if (!meals.length) {
+      alert('Select at least one recipe.')
+      return
+    }
+    setAddingBuild(true)
+    try {
+      const res = await api.post('/customer/recipes/meal-plans/add-to-cart-from-recipes', {
+        name: 'My meal plan',
+        meals,
+        household_size: 1
+      })
+      const items = res.data?.items || []
+      for (const item of items) {
+        const product = { ...item.product, quantity: item.quantity }
+        addToCart(product, item.quantity)
+      }
+      alert(`Added ${items.length} ingredient(s) to cart.`)
+      setBuildPlanOpen(false)
+      setBuildSlots([])
+      navigate('/cart')
+    } catch (e) {
+      alert(e.response?.data?.detail || 'Failed to add to cart.')
+    } finally {
+      setAddingBuild(false)
+    }
+  }
+
+  const makeBuildSlots = (planType) => {
+    const days = planType === 'one_day' ? 1 : 7
+    const types = ['breakfast', 'lunch', 'dinner']
+    const slots = []
+    for (let d = 1; d <= days; d++) {
+      for (const t of types) {
+        slots.push({ day_number: d, meal_type: t, recipe_id: '' })
+      }
+    }
+    return slots
   }
 
   if (loading) {
@@ -205,7 +292,7 @@ const Meals = () => {
         )}
 
         {activeTab === 'meal-plans' && (
-          <div className="mb-4 bg-white rounded-lg shadow-md p-3 sm:p-4 border border-gray-200">
+          <div className="mb-4 bg-white rounded-lg shadow-md p-3 sm:p-4 border border-gray-200 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Filter className="h-4 w-4 text-gray-500" />
               <span className="text-sm font-semibold text-gray-700">Filter:</span>
@@ -219,6 +306,72 @@ const Meals = () => {
                 <option value="one_week">1 Week Plans</option>
                 <option value="one_month">1 Month Plans</option>
               </select>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setBuildPlanOpen(true); setBuildPlanType('one_week'); setBuildSlots(makeBuildSlots('one_week')); }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-semibold"
+            >
+              <Plus className="h-4 w-4" />
+              Build your plan
+            </button>
+          </div>
+        )}
+
+        {/* Build your plan modal */}
+        {buildPlanOpen && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 flex items-start justify-center p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-8 max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="p-4 border-b flex justify-between items-center">
+                <h3 className="text-lg font-bold text-gray-900">Build your meal plan</h3>
+                <button type="button" onClick={() => setBuildPlanOpen(false)} className="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+              </div>
+              <div className="p-4 overflow-y-auto flex-1">
+                <p className="text-sm text-gray-600 mb-3">Select recipes for each slot. Ingredients will be added to your cart.</p>
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Plan length</label>
+                  <select
+                    value={buildPlanType}
+                    onChange={(e) => { const v = e.target.value; setBuildPlanType(v); setBuildSlots(makeBuildSlots(v)); }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  >
+                    <option value="one_day">1 Day (3 meals)</option>
+                    <option value="one_week">1 Week (21 meals)</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  {buildSlots.map((slot, idx) => (
+                    <div key={idx} className="flex flex-wrap items-center gap-2 text-sm">
+                      <span className="w-20 font-medium">Day {slot.day_number}</span>
+                      <span className="w-20 capitalize text-gray-600">{slot.meal_type}</span>
+                      <select
+                        value={slot.recipe_id}
+                        onChange={(e) => {
+                          const next = [...buildSlots]
+                          next[idx] = { ...slot, recipe_id: e.target.value }
+                          setBuildSlots(next)
+                        }}
+                        className="flex-1 min-w-[180px] px-2 py-1.5 border border-gray-300 rounded-lg"
+                      >
+                        <option value="">— Select recipe —</option>
+                        {recipes.filter(r => (r.meal_type || 'dinner') === slot.meal_type).length
+                          ? recipes.filter(r => (r.meal_type || 'dinner') === slot.meal_type).map(r => (
+                              <option key={r.id} value={r.id}>{r.name}</option>
+                            ))
+                          : recipes.map(r => (<option key={r.id} value={r.id}>{r.name}</option>))
+                        }
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="p-4 border-t flex justify-end gap-2">
+                <button type="button" onClick={() => setBuildPlanOpen(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700">Cancel</button>
+                <button type="button" onClick={handleBuildPlanAddToCart} disabled={addingBuild} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4" />
+                  {addingBuild ? 'Adding…' : 'Add to cart'}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -338,10 +491,53 @@ const Meals = () => {
           </>
         )}
 
+        {/* Suggested for you */}
+        {activeTab === 'meal-plans' && suggestedPlans.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary-600" />
+              Suggested for you
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">Meal plans built from our recipes. Add all ingredients to cart in one click.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {suggestedPlans.map((plan) => (
+                <div key={plan.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-amber-50 to-primary-50">
+                    {plan.image_url ? (
+                      <img src={resolveImageUrl(plan.image_url)} alt={plan.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Calendar className="h-12 w-12 text-primary-300" />
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2">
+                      <span className="px-2 py-1 bg-primary-600 text-white text-xs font-bold rounded-full">Suggested</span>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <h4 className="font-bold text-gray-900 mb-1">{plan.name}</h4>
+                    {plan.description && <p className="text-sm text-gray-600 mb-3 line-clamp-2">{plan.description}</p>}
+                    <p className="text-xs text-gray-500 mb-3">{plan.meal_count} meals</p>
+                    <button
+                      type="button"
+                      onClick={() => handleSuggestedAddToCart(plan, 1)}
+                      disabled={addingSuggested === plan.id}
+                      className="w-full flex items-center justify-center gap-2 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-semibold disabled:opacity-50"
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                      {addingSuggested === plan.id ? 'Adding…' : 'Add to cart'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Meal Plans Grid */}
         {activeTab === 'meal-plans' && (
           <>
-            {mealPlans.length === 0 ? (
+            {mealPlans.length === 0 && suggestedPlans.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg shadow-md border border-gray-200">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
                   <Calendar className="h-8 w-8 text-primary-600" />
@@ -355,7 +551,7 @@ const Meals = () => {
                   Clear Filters
                 </button>
               </div>
-            ) : (
+            ) : mealPlans.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-4 sm:gap-6">
                 {mealPlans.map((plan) => (
                   <Link
@@ -418,7 +614,7 @@ const Meals = () => {
                   </Link>
                 ))}
               </div>
-            )}
+            ) : null}
           </>
         )}
       </div>

@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import { MapPin, CreditCard, Truck, Lock, ChefHat } from 'lucide-react'
-import StripePayment from '../components/StripePayment'
 import TestStripeModal, { TEST_AMOUNT } from '../components/TestStripeModal'
+
+const StripePayment = lazy(() => import('../components/StripePayment'))
 
 const Checkout = () => {
   const { cart, getCartTotal, clearCart } = useCart()
@@ -572,15 +573,17 @@ const Checkout = () => {
               </div>
 
               <div className="mt-3 pt-3 border-t border-gray-100">
-                <StripePayment
-                  key={`stripe-${total}`}
-                  amount={total}
-                  token={token}
-                  onSuccess={handlePaymentSuccess}
-                  onError={handlePaymentError}
-                  onPaymentReady={handlePaymentReady}
-                  onCardReady={handleCardReady}
-                />
+                <Suspense fallback={<div className="py-6 text-center text-gray-500">Loading payment form…</div>}>
+                  <StripePayment
+                    key={`stripe-${total}`}
+                    amount={total}
+                    token={token}
+                    onSuccess={handlePaymentSuccess}
+                    onError={handlePaymentError}
+                    onPaymentReady={handlePaymentReady}
+                    onCardReady={handleCardReady}
+                  />
+                </Suspense>
               </div>
             </div>
           </div>

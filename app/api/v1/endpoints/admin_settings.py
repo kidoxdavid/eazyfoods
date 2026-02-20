@@ -57,7 +57,7 @@ async def update_settings(
     admin_id = UUID(current_admin["admin_id"])
     
     # Validate setting type
-    valid_types = ['general', 'commission', 'orders', 'payment', 'notifications', 'security', 'vendor', 'customer']
+    valid_types = ['general', 'commission', 'orders', 'payment', 'notifications', 'security', 'vendor', 'customer', 'ad']
     if setting_type not in valid_types:
         raise HTTPException(status_code=400, detail=f"Invalid setting type. Must be one of: {', '.join(valid_types)}")
     
@@ -104,7 +104,7 @@ async def get_all_settings(
         }
     
     # Include defaults for missing types
-    valid_types = ['general', 'commission', 'orders', 'payment', 'notifications', 'security', 'vendor', 'customer']
+    valid_types = ['general', 'commission', 'orders', 'payment', 'notifications', 'security', 'vendor', 'customer', 'ad']
     for setting_type in valid_types:
         if setting_type not in result:
             result[setting_type] = {
@@ -128,10 +128,13 @@ def get_default_settings(setting_type: str) -> dict:
             'maintenance_mode': False
         },
         'commission': {
+            'fee_type': 'commission',
             'default_commission_rate': 15,
             'min_commission_rate': 5,
             'max_commission_rate': 30,
-            'commission_calculation': 'percentage'
+            'commission_calculation': 'percentage',
+            'service_fee_amount': 0,
+            'service_fee_percent': 0
         },
         'orders': {
             'min_order_amount': 10,
@@ -180,6 +183,27 @@ def get_default_settings(setting_type: str) -> dict:
             'loyalty_points_enabled': False,
             'points_per_dollar': 1,
             'referral_bonus': 10
+        },
+        'ad': {
+            'placement_pricing': {
+                'home_top_banner': {'day': 8, 'week': 35, '2weeks': 65, 'month': 120},
+                'home_bottom_banner': {'day': 5, 'week': 22, '2weeks': 40, 'month': 75},
+                'top_market_deals_top_banner': {'day': 6, 'week': 28, '2weeks': 52, 'month': 95},
+                'top_market_deals_bottom_banner': {'day': 4, 'week': 18, '2weeks': 32, 'month': 60},
+                'top_chef_deals_top_banner': {'day': 6, 'week': 28, '2weeks': 52, 'month': 95},
+                'top_chef_deals_bottom_banner': {'day': 4, 'week': 18, '2weeks': 32, 'month': 60},
+                'products_top_banner': {'day': 5, 'week': 22, '2weeks': 40, 'month': 75},
+                'products_bottom_banner': {'day': 4, 'week': 18, '2weeks': 32, 'month': 60},
+                'stores_top_banner': {'day': 4, 'week': 18, '2weeks': 32, 'month': 60},
+                'chefs_top_banner': {'day': 4, 'week': 18, '2weeks': 32, 'month': 60},
+                'meals_top_banner': {'day': 4, 'week': 18, '2weeks': 32, 'month': 60},
+                'cart_top_banner': {'day': 5, 'week': 22, '2weeks': 40, 'month': 75},
+                'orders_top_banner': {'day': 4, 'week': 18, '2weeks': 32, 'month': 60},
+                'profile_top_banner': {'day': 4, 'week': 18, '2weeks': 32, 'month': 60},
+                'about_top_banner': {'day': 3, 'week': 12, '2weeks': 22, 'month': 45},
+                'contact_top_banner': {'day': 3, 'week': 12, '2weeks': 22, 'month': 45},
+                'become_a_driver_top_banner': {'day': 3, 'week': 12, '2weeks': 22, 'month': 45}
+            }
         }
     }
     

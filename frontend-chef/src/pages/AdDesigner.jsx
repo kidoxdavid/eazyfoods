@@ -37,12 +37,23 @@ const AdDesigner = () => {
     }
   })
 
-  const DURATION_OPTIONS = [
-    { value: 'day', label: '1 day', cost: 10 },
-    { value: 'week', label: '1 week', cost: 50 },
-    { value: '2weeks', label: '2 weeks', cost: 90 },
-    { value: 'month', label: '1 month', cost: 150 }
-  ]
+  const DEFAULT_DURATION_PRICES = { day: 5, week: 25, '2weeks': 45, month: 80 }
+  const [adPlacementPricing, setAdPlacementPricing] = useState({})
+  useEffect(() => {
+    api.get('/chef/marketing/config').then(r => {
+      if (r.data && r.data.ad_placement_pricing) setAdPlacementPricing(r.data.ad_placement_pricing)
+    }).catch(() => {})
+  }, [])
+  const durationOptionsForPlacement = (placement) => {
+    const prices = adPlacementPricing[placement] || DEFAULT_DURATION_PRICES
+    return [
+      { value: 'day', label: '1 day', cost: prices.day ?? DEFAULT_DURATION_PRICES.day },
+      { value: 'week', label: '1 week', cost: prices.week ?? DEFAULT_DURATION_PRICES.week },
+      { value: '2weeks', label: '2 weeks', cost: prices['2weeks'] ?? DEFAULT_DURATION_PRICES['2weeks'] },
+      { value: 'month', label: '1 month', cost: prices.month ?? DEFAULT_DURATION_PRICES.month }
+    ]
+  }
+  const DURATION_OPTIONS = durationOptionsForPlacement(formData.placement)
   const [payment, setPayment] = useState({
     ad_duration: '',
     card_last4: '',
@@ -364,6 +375,10 @@ const AdDesigner = () => {
                     <optgroup label="Top Market Deals Page">
                       <option value="top_market_deals_top_banner">Top Market Deals Top Banner</option>
                       <option value="top_market_deals_bottom_banner">Top Market Deals Bottom Banner</option>
+                    </optgroup>
+                    <optgroup label="Top Chef Deals Page">
+                      <option value="top_chef_deals_top_banner">Top Chef Deals Top Banner</option>
+                      <option value="top_chef_deals_bottom_banner">Top Chef Deals Bottom Banner</option>
                     </optgroup>
                     <optgroup label="Checkout Page">
                       <option value="checkout_top_banner">Checkout Top Banner</option>

@@ -9,10 +9,17 @@ from uuid import UUID
 from app.core.database import get_db
 from app.core.config import resolve_upload_url
 from app.models.marketing import Ad, Campaign
+from app.models.platform_settings import PlatformSettings
 from app.api.v1.dependencies import get_current_vendor
 from pydantic import BaseModel
 
 router = APIRouter()
+
+
+def _vendor_ad_payments_suspended(db: Session) -> bool:
+    ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "payment").first()
+    data = (ps.settings_data or {}) if ps else {}
+    return bool(data.get("suspend_vendor_ad_payments"))
 
 
 class VendorAdCreate(BaseModel):
@@ -36,6 +43,23 @@ class VendorAdCreate(BaseModel):
     ad_duration: Optional[str] = None  # day, week, 2weeks, month
     ad_cost: Optional[float] = None
     payment_intent_id: Optional[str] = None
+
+
+def _get_ad_placement_pricing(db: Session) -> dict:
+    ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "ad").first()
+    data = (ps.settings_data or {}) if ps else {}
+    return data.get("placement_pricing") or {}
+
+
+@router.get("/config", response_model=dict)
+async def get_vendor_marketing_config(
+    current_vendor: dict = Depends(get_current_vendor),
+    db: Session = Depends(get_db)
+):
+    """Return config for vendor marketing (ad payments suspended, placement pricing)."""
+    suspended = _vendor_ad_payments_suspended(db)
+    placement_pricing = _get_ad_placement_pricing(db)
+    return {"ad_payments_suspended": suspended, "ad_placement_pricing": placement_pricing}
 
 
 @router.get("/ads", response_model=List[dict])
@@ -96,6 +120,11 @@ async def create_vendor_ad(
     db: Session = Depends(get_db)
 ):
     """Create a new ad (requires admin approval)"""
+    if _vendor_ad_payments_suspended(db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Ad creation is currently suspended by the platform. Please try again later."
+        )
     vendor_id = UUID(current_vendor["vendor_id"])
     
     # Verify campaign belongs to vendor if provided

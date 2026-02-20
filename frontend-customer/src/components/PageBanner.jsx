@@ -119,6 +119,16 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
         const allowed = new Set([placement, ...(LEGACY_PLACEMENTS[placement] || [])])
         adsData = allAds.filter(ad => ad && (!ad.placement || allowed.has(ad.placement)))
       }
+      // Replicate home behaviour on other pages: if still no ads, show home-top/home-bottom ads so banners are never empty
+      if (adsData.length === 0 && placement !== 'home_top_banner' && placement !== 'home_bottom_banner') {
+        for (const p of ['home_top_banner', 'home_banner', 'home_bottom_banner']) {
+          const res = await api.get('/customer/marketing/ads', { params: { placement: p, status: 'active', approval_status: 'approved', ...(selectedCity && selectedCity !== 'All' ? { city: selectedCity } : {}) } })
+          const data = (res && res.data && Array.isArray(res.data)) ? res.data : []
+          const seen = new Set(adsData.map(a => a.id))
+          data.forEach(ad => { if (ad && ad.id && !seen.has(ad.id)) { seen.add(ad.id); adsData.push(ad) } })
+          if (adsData.length > 0) break
+        }
+      }
 
       // Filter by date and sort by priority
       const now = new Date()

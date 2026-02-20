@@ -279,6 +279,22 @@ async def get_analytics_overview(
         Ad.ad_cost.isnot(None)
     ).scalar() or 0
     
+    # Platform earnings (commission from vendor/chef orders)
+    total_platform_earnings = db.query(func.coalesce(func.sum(Order.commission_amount), 0)).filter(
+        Order.created_at >= start_dt,
+        Order.created_at <= end_dt,
+        Order.status.in_(["delivered", "picked_up"])
+    ).scalar() or 0
+    earnings_by_date = db.query(
+        func.date(Order.created_at).label('date'),
+        func.sum(Order.commission_amount).label('earnings'),
+        func.count(Order.id).label('orders')
+    ).filter(
+        Order.created_at >= start_dt,
+        Order.created_at <= end_dt,
+        Order.status.in_(["delivered", "picked_up"])
+    ).group_by(func.date(Order.created_at)).order_by(func.date(Order.created_at)).all()
+    
     return {
         "revenue_trends": [
             {
@@ -362,6 +378,13 @@ async def get_analytics_overview(
             "total_vendor_signups": total_vendor_signups,
             "total_admin_signups": total_admin_signups,
             "total_driver_signups": total_driver_signups
+        },
+        "platform_earnings": {
+            "total_earnings": float(total_platform_earnings),
+            "earnings_trends": [
+                {"date": str(e.date), "earnings": float(e.earnings or 0), "orders": e.orders}
+                for e in earnings_by_date
+            ]
         },
         "user_metrics": {
             "active_customers": active_customers,
