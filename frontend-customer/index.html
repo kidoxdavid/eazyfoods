@@ -10,6 +10,8 @@
     <title>eazyfoods - Authentic African Groceries</title>
   </head>
   <body>
+    <!-- iOS Safari: orange strip only in the status bar / safe area; theme-color colors the system status bar -->
+    <div id="status-bar-safe-area" style="position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:#ff6b35;z-index:9999;pointer-events:none;"></div>
     <div id="root"></div>
     <script type="module" src="/src/entry.jsx"></script>
   </body>
