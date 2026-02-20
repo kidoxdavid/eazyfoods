@@ -6,7 +6,8 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     force: true, // Force re-optimization on startup
-    include: ['react', 'react-dom', 'react-router-dom', 'axios', '@react-google-maps/api']
+    include: ['react', 'react-dom', 'react-router-dom', 'axios', '@react-google-maps/api'],
+    exclude: ['@stripe/stripe-js', '@stripe/react-stripe-js']
   },
   server: {
     port: 3003,
@@ -46,7 +47,10 @@ export default defineConfig({
         // Add hash to filenames for cache busting
         entryFileNames: 'assets/[name].[hash].js',
         chunkFileNames: 'assets/[name].[hash].js',
-        assetFileNames: 'assets/[name].[hash].[ext]'
+        assetFileNames: 'assets/[name].[hash].[ext]',
+        manualChunks(id) {
+          if (id.includes('node_modules/@stripe')) return 'stripe'
+        }
       }
     }
   }

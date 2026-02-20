@@ -1,139 +1,156 @@
 import { useState, useEffect, useRef } from 'react'
-import { loadStripe } from '@stripe/stripe-js'
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { CheckCircle } from 'lucide-react'
 import api from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 
-const StripePaymentForm = ({ amount, token, clientSecret, onSuccess, onError, onPaymentReady }) => {
-  const stripe = useStripe()
-  const elements = useElements()
-  const [processing, setProcessing] = useState(false)
-  const [paymentComplete, setPaymentComplete] = useState(false)
-  const [error, setError] = useState(null)
-  const processRef = useRef(null)
-
-  const processPayment = async () => {
-    if (!stripe || !elements) {
-      return { success: false, error: 'Stripe is not loaded yet.' }
-    }
-    setProcessing(true)
-    setError(null)
-    try {
-      const { error: confirmError } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: window.location.origin + '/orders',
-          payment_method_data: {}
-        },
-        redirect: 'if_required'
-      })
-      if (confirmError) {
-        const msg = confirmError.message || 'Payment failed.'
-        setError(msg)
-        setProcessing(false)
-        return { success: false, error: msg }
-      }
-      const clientSecretForId = clientSecret
-      const piId = clientSecretForId ? clientSecretForId.split('_secret_')[0] : null
-      if (!piId) {
-        setProcessing(false)
-        return { success: false, error: 'Could not get payment result.' }
-      }
-      setPaymentComplete(true)
-      const data = { transaction_id: piId, payment_intent_id: piId, payment_method: 'stripe' }
-      onSuccess(data)
-      setProcessing(false)
-      return { success: true, data }
-    } catch (err) {
-      const msg = err.message || 'Payment failed.'
-      setError(msg)
-      setProcessing(false)
-      return { success: false, error: msg }
-    }
-  }
-
-  useEffect(() => {
-    if (stripe && elements && onPaymentReady) {
-      processRef.current = processPayment
-      onPaymentReady(() => processRef.current?.() ?? Promise.resolve({ success: false, error: 'Not ready.' }))
-    }
-  }, [stripe, elements, onPaymentReady])
-
-  return (
-    <div className="space-y-4">
-      <div className="p-4 border border-gray-300 rounded-lg bg-white min-h-[280px]">
-        <p className="text-sm text-gray-600 mb-3">
-          Enter your card details below. Payment is secure via Stripe.
-        </p>
-        <div className="min-h-[220px]" id="stripe-payment-element">
-          <PaymentElement
-            options={{ layout: 'tabs' }}
-            onReady={() => onPaymentReady?.(() => processRef.current?.() ?? Promise.resolve({ success: false, error: 'Not ready.' }))}
-          />
-        </div>
-      </div>
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-700 text-sm">{error}</p>
-        </div>
-      )}
-      {processing && (
-        <div className="flex items-center justify-center p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <span className="text-blue-800 text-sm">Processing payment…</span>
-        </div>
-      )}
-      {paymentComplete && (
-        <div className="flex items-center justify-center p-3 bg-green-50 border border-green-200 rounded-lg">
-          <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
-          <span className="text-green-800 text-sm font-semibold">Payment successful</span>
-        </div>
-      )}
-    </div>
-  )
-}
-
+/**
+ * Load Stripe only via dynamic import inside useEffect to avoid "Cannot access 'Tt' before initialization"
+ * when the chunk is evaluated. No top-level @stripe imports.
+ */
 const StripePayment = ({ amount, token: tokenProp, onSuccess, onError, onPaymentReady, onCardReady }) => {
   const { token: authToken } = useAuth()
   const token = authToken ?? tokenProp ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null)
   const [clientSecret, setClientSecret] = useState(null)
-  const [stripePromise, setStripePromise] = useState(null)
+  const [StripeRoot, setStripeRoot] = useState(null)
   const [error, setError] = useState(null)
   const stripeLoadedRef = useRef(false)
   const intentFetchedRef = useRef(false)
 
-  // Load Stripe only once per mount – Stripe.js forbids changing the stripe prop after set (token optional for guest checkout)
   useEffect(() => {
     if (!amount || amount <= 0 || stripeLoadedRef.current) return
     let cancelled = false
-    const init = async () => {
+    stripeLoadedRef.current = true
+    ;(async () => {
       try {
-        const configRes = await api.get('/customer/payments/config')
-        const key = configRes.data?.stripe_publishable_key
-        if (!key) {
-          setError('Stripe is not configured. Add STRIPE_PUBLISHABLE_KEY to .env.')
-          return
-        }
+        const [stripeJs, reactStripeJs] = await Promise.all([
+          import('@stripe/stripe-js'),
+          import('@stripe/react-stripe-js')
+        ])
         if (cancelled) return
-        stripeLoadedRef.current = true
-        const stripe = await loadStripe(key)
-        if (!cancelled && stripe) setStripePromise(stripe)
-        else if (!stripe) {
-          stripeLoadedRef.current = false
-          setError('Could not load Stripe. Check your publishable key.')
+        const { loadStripe } = stripeJs
+        const { Elements, PaymentElement, useStripe, useElements } = reactStripeJs
+
+        const StripePaymentFormInner = (props) => {
+          const stripe = useStripe()
+          const elements = useElements()
+          const [processing, setProcessing] = useState(false)
+          const [paymentComplete, setPaymentComplete] = useState(false)
+          const [err, setErr] = useState(null)
+          const processRef = useRef(null)
+
+          const processPayment = async () => {
+            if (!stripe || !elements) return { success: false, error: 'Stripe is not loaded yet.' }
+            setProcessing(true)
+            setErr(null)
+            try {
+              const { error: confirmError } = await stripe.confirmPayment({
+                elements,
+                confirmParams: { return_url: window.location.origin + '/orders', payment_method_data: {} },
+                redirect: 'if_required'
+              })
+              if (confirmError) {
+                setErr(confirmError.message || 'Payment failed.')
+                setProcessing(false)
+                return { success: false, error: confirmError.message }
+              }
+              const piId = (props.clientSecret || '').split('_secret_')[0] || null
+              if (!piId) {
+                setProcessing(false)
+                return { success: false, error: 'Could not get payment result.' }
+              }
+              setPaymentComplete(true)
+              props.onSuccess({ transaction_id: piId, payment_intent_id: piId, payment_method: 'stripe' })
+              setProcessing(false)
+              return { success: true }
+            } catch (e) {
+              const msg = e.message || 'Payment failed.'
+              setErr(msg)
+              setProcessing(false)
+              return { success: false, error: msg }
+            }
+          }
+
+          useEffect(() => {
+            if (stripe && elements && props.onPaymentReady) {
+              processRef.current = processPayment
+              props.onPaymentReady(() => processRef.current?.() ?? Promise.resolve({ success: false, error: 'Not ready.' }))
+            }
+          }, [stripe, elements, props.onPaymentReady])
+
+          return (
+            <div className="space-y-4">
+              <div className="p-4 border border-gray-300 rounded-lg bg-white min-h-[280px]">
+                <p className="text-sm text-gray-600 mb-3">Enter your card details below. Payment is secure via Stripe.</p>
+                <div className="min-h-[220px]" id="stripe-payment-element">
+                  <PaymentElement
+                    options={{ layout: 'tabs' }}
+                    onReady={() => props.onPaymentReady?.(() => processRef.current?.() ?? Promise.resolve({ success: false, error: 'Not ready.' }))}
+                  />
+                </div>
+              </div>
+              {err && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 text-sm">{err}</p>
+                </div>
+              )}
+              {processing && (
+                <div className="flex items-center justify-center p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <span className="text-blue-800 text-sm">Processing payment…</span>
+                </div>
+              )}
+              {paymentComplete && (
+                <div className="flex items-center justify-center p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                  <span className="text-green-800 text-sm font-semibold">Payment successful</span>
+                </div>
+              )}
+            </div>
+          )
         }
+
+        const StripeRootWrapper = (wrapperProps) => {
+          const [stripePromise, setStripePromise] = useState(null)
+          useEffect(() => {
+            let c = false
+            api.get('/customer/payments/config')
+              .then(r => r.data?.stripe_publishable_key)
+              .then(key => key ? loadStripe(key) : null)
+              .then(stripe => { if (!c && stripe) setStripePromise(stripe) })
+              .catch(() => { if (!c) setStripeRoot(null) })
+            return () => { c = true }
+          }, [])
+          if (!stripePromise) {
+            return (
+              <div className="text-center py-6 px-4 bg-gray-50 rounded-lg border border-gray-200 min-h-[120px] flex flex-col items-center justify-center">
+                <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full mb-3" />
+                <p className="text-gray-600 font-medium">Loading Stripe…</p>
+              </div>
+            )
+          }
+          const options = { clientSecret: wrapperProps.clientSecret, appearance: { theme: 'stripe' } }
+          return (
+            <Elements stripe={stripePromise} options={options}>
+              <StripePaymentFormInner
+                clientSecret={wrapperProps.clientSecret}
+                onSuccess={wrapperProps.onSuccess}
+                onError={wrapperProps.onError}
+                onPaymentReady={wrapperProps.onPaymentReady}
+              />
+            </Elements>
+          )
+        }
+
+        setStripeRoot(() => StripeRootWrapper)
       } catch (e) {
         if (!cancelled) {
           stripeLoadedRef.current = false
-          setError('Could not load payment config. Is the backend running?')
+          setError('Could not load payment form. Please refresh.')
         }
       }
-    }
-    init()
+    })()
     return () => { cancelled = true }
   }, [amount])
 
-  // Create payment intent only once per mount – clientSecret must not change after Elements is shown (works for guest when backend allows optional auth)
   useEffect(() => {
     if (!amount || amount <= 0 || intentFetchedRef.current) return
     setError(null)
@@ -142,24 +159,22 @@ const StripePayment = ({ amount, token: tokenProp, onSuccess, onError, onPayment
     api.post('/customer/payments/create-payment-intent', { total_amount: amount, gateway: 'stripe' }, { headers })
       .then(res => {
         const secret = res.data?.client_secret
-        if (secret) {
-          setClientSecret(secret)
-        } else {
+        if (secret) setClientSecret(secret)
+        else {
           intentFetchedRef.current = false
           setError('Payment setup failed. Please try again.')
         }
       })
       .catch(err => {
         intentFetchedRef.current = false
-        const msg = err.response?.data?.detail || 'Failed to initialize payment.'
-        setError(msg)
-        if (onError) onError(msg)
+        setError(err.response?.data?.detail || 'Failed to initialize payment.')
+        if (onError) onError(err.response?.data?.detail)
       })
-  }, [amount])
+  }, [amount, token, onError])
 
   useEffect(() => {
-    if (onCardReady) onCardReady(!!(clientSecret && stripePromise))
-  }, [clientSecret, stripePromise, onCardReady])
+    if (onCardReady) onCardReady(!!(clientSecret && StripeRoot))
+  }, [clientSecret, StripeRoot, onCardReady])
 
   if (error && !clientSecret) {
     return (
@@ -169,32 +184,32 @@ const StripePayment = ({ amount, token: tokenProp, onSuccess, onError, onPayment
     )
   }
 
-  if (!clientSecret || !stripePromise) {
+  if (!clientSecret) {
     return (
       <div className="text-center py-6 px-4 bg-gray-50 rounded-lg border border-gray-200 min-h-[120px] flex flex-col items-center justify-center">
-        <svg className="animate-spin h-8 w-8 text-primary-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-        </svg>
+        <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full mb-3" />
         <p className="text-gray-600 font-medium">Loading Stripe…</p>
         <p className="text-gray-500 text-sm mt-1">Preparing secure payment form</p>
       </div>
     )
   }
 
-  const options = { clientSecret, appearance: { theme: 'stripe' } }
+  if (!StripeRoot) {
+    return (
+      <div className="text-center py-6 px-4 bg-gray-50 rounded-lg border border-gray-200 min-h-[120px] flex flex-col items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full mb-3" />
+        <p className="text-gray-600 font-medium">Loading Stripe…</p>
+      </div>
+    )
+  }
 
   return (
-    <Elements stripe={stripePromise} options={options}>
-      <StripePaymentForm
-        amount={amount}
-        token={token}
-        clientSecret={clientSecret}
-        onSuccess={onSuccess}
-        onError={onError}
-        onPaymentReady={onPaymentReady}
-      />
-    </Elements>
+    <StripeRoot
+      clientSecret={clientSecret}
+      onSuccess={onSuccess}
+      onError={onError}
+      onPaymentReady={onPaymentReady}
+    />
   )
 }
 
