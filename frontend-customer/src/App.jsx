@@ -36,10 +36,10 @@ import Chefs from './pages/Chefs'
 import ChefDetail from './pages/ChefDetail'
 import Groceries from './pages/Groceries'
 import PrivateRoute from './components/PrivateRoute'
+import CheckoutRoute from './components/CheckoutRoute'
 
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
-const CheckoutRoute = lazy(() => import('./components/CheckoutRoute'))
 
 const googleClientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || ''
 
@@ -81,7 +81,7 @@ function App() {
                             <Route path="/chefs" element={<Chefs />} />
                             <Route path="/chefs/:id" element={<ChefDetail />} />
                             <Route path="/cart" element={<Cart />} />
-                            <Route path="/checkout" element={<Suspense fallback={<div className="min-h-[40vh] flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-2 border-primary-600 border-t-transparent" /></div>}><CheckoutRoute /></Suspense>} />
+                            <Route path="/checkout" element={<CheckoutRoute />} />
                             <Route path="/order-confirmation" element={<OrderConfirmation />} />
                             <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
                             <Route path="/orders/:id" element={<PrivateRoute><OrderDetail /></PrivateRoute>} />
@@ -120,7 +120,7 @@ function App() {
                             <Route path="/chefs" element={<Chefs />} />
                             <Route path="/chefs/:id" element={<ChefDetail />} />
                             <Route path="/cart" element={<Cart />} />
-                            <Route path="/checkout" element={<Suspense fallback={<div className="min-h-[40vh] flex items-center justify-center"><div className="animate-spin rounded-full h-10 w-10 border-2 border-primary-600 border-t-transparent" /></div>}><CheckoutRoute /></Suspense>} />
+                            <Route path="/checkout" element={<CheckoutRoute />} />
                             <Route path="/order-confirmation" element={<OrderConfirmation />} />
                             <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
                             <Route path="/orders/:id" element={<PrivateRoute><OrderDetail /></PrivateRoute>} />
