@@ -34,7 +34,7 @@ const CheckoutRoute = () => {
   useEffect(() => {
     if (!shouldShowCheckout || CheckoutComponent || checkoutLoadError) return
     let cancelled = false
-    import('../pages/Checkout')
+    import('../pages/CheckoutPage')
       .then((m) => {
         if (!cancelled) setCheckoutComponent(() => m.default)
       })
