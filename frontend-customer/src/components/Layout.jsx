@@ -214,10 +214,10 @@ const Layout = ({ children }) => {
         </div>
       </aside>
 
-      {/* Main Content Wrapper: header stays fixed at top, main scrolls */}
+      {/* Main Content Wrapper: header fixed at top (non-scrollable), main scrolls below */}
       <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-x-hidden">
-        {/* Orange strip - fixed at top so it does not scroll */}
-        <header className="flex-shrink-0 z-50 w-full shadow-lg backdrop-blur-sm bg-opacity-95" style={{ backgroundColor: '#ff6b35', position: 'sticky', top: 0 }} role="banner">
+        {/* Orange strip - fixed so it never scrolls; stays in place */}
+        <header className="flex-shrink-0 z-50 w-full shadow-lg backdrop-blur-sm bg-opacity-95 left-0 right-0 top-0" style={{ backgroundColor: '#ff6b35', position: 'fixed' }} role="banner">
           <div className="w-full px-2 sm:px-4 lg:px-8">
             {/* Mobile Layout - Stacked */}
             <div className="md:hidden">
@@ -536,10 +536,13 @@ const Layout = ({ children }) => {
           )}
         </header>
 
+        {/* Spacer so content starts below the fixed header (header height ~56px) */}
+        <div className="flex-shrink-0 h-14" aria-hidden="true" />
+
         {/* Breadcrumbs */}
         <Breadcrumbs />
 
-        {/* Main Content - scrollable so orange header stays stuck at top */}
+        {/* Main Content - scrollable below fixed orange header */}
         <main className="flex-1 w-full min-h-0 overflow-y-auto">{children}</main>
 
         {/* Bottom Banner - Shows ads when available, else Driver Signup default */}

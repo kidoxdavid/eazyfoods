@@ -197,17 +197,21 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
   const bannerMinHeight = size === 'tall' ? '200px' : '240px'
 
   // Show default banner only when dismissed or no ads (keep showing existing ads while refetching)
+  // Use same centered layout from first paint to avoid left-then-center flash on load
+  const defaultBannerInner = (
+    <div className="max-w-7xl mx-auto w-full flex flex-col items-center justify-center text-center">
+      {defaultContent || (
+        <>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2">{title}</h1>
+          {subtitle && <p className="text-white/90 text-sm sm:text-base">{subtitle}</p>}
+        </>
+      )}
+    </div>
+  )
   if (dismissed || ads.length === 0) {
     return (
-      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden ${size === 'tall' ? 'py-4 sm:py-5' : ''}`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'flex', alignItems: 'center' }}>
-        <div className="max-w-7xl mx-auto w-full">
-          {defaultContent || (
-            <>
-              <h1 className="text-3xl sm:text-4xl font-bold mb-2">{title}</h1>
-              {subtitle && <p className="text-white/90 text-sm sm:text-base">{subtitle}</p>}
-            </>
-          )}
-        </div>
+      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden ${size === 'tall' ? 'py-4 sm:py-5' : ''}`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {defaultBannerInner}
       </div>
     )
   }
@@ -218,15 +222,8 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
   
   if (!currentAd) {
     return (
-      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden ${size === 'tall' ? 'py-4 sm:py-5' : ''}`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'flex', alignItems: 'center' }}>
-        <div className="max-w-7xl mx-auto w-full">
-          {defaultContent || (
-            <>
-              <h1 className="text-3xl sm:text-4xl font-bold mb-2">{title}</h1>
-              {subtitle && <p className="text-white/90 text-sm sm:text-base">{subtitle}</p>}
-            </>
-          )}
-        </div>
+      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden ${size === 'tall' ? 'py-4 sm:py-5' : ''}`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {defaultBannerInner}
       </div>
     )
   }

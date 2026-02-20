@@ -575,7 +575,7 @@ const Home = () => {
                   <Link
                     key={item.region}
                     to={`/stores?region=${encodeURIComponent(item.region)}${selectedCity && selectedCity !== 'All' ? `&city=${encodeURIComponent(selectedCity)}` : ''}`}
-                    className="group relative flex items-center overflow-hidden rounded-xl border border-gray-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 bg-white h-20"
+                    className="group relative flex items-center overflow-hidden rounded-xl border border-gray-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 bg-white min-h-20"
                   >
                     {/* Subtle background gradient */}
                     <div className={`absolute inset-0 bg-gradient-to-br ${item.bgGradient} opacity-30 group-hover:opacity-50 transition-opacity duration-300`}></div>
@@ -605,7 +605,7 @@ const Home = () => {
                             {item.region}
                           </h3>
                         </div>
-                        <p className="text-xs text-gray-600">{item.description}</p>
+                        <p className="text-xs text-gray-600 line-clamp-2">{item.description}</p>
                       </div>
                       
                       {/* Icon and arrow */}
