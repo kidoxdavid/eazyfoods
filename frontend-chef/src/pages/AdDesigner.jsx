@@ -79,6 +79,24 @@ const AdDesigner = () => {
     }).catch(() => {})
   }, [])
 
+  const durationOptionsForPlacement = (placement) => {
+    const prices = adPlacementPricing[placement] || DEFAULT_DURATION_PRICES
+    return [
+      { value: 'day', label: '1 day', cost: prices.day ?? DEFAULT_DURATION_PRICES.day },
+      { value: 'week', label: '1 week', cost: prices.week ?? DEFAULT_DURATION_PRICES.week },
+      { value: '2weeks', label: '2 weeks', cost: prices['2weeks'] ?? DEFAULT_DURATION_PRICES['2weeks'] },
+      { value: 'month', label: '1 month', cost: prices.month ?? DEFAULT_DURATION_PRICES.month }
+    ]
+  }
+  const DURATION_OPTIONS = durationOptionsForPlacement(formData.placement)
+  const [payment, setPayment] = useState({
+    ad_duration: '',
+    card_last4: '',
+    card_expiry: '',
+    card_cvc: ''
+  })
+  const selectedDuration = DURATION_OPTIONS.find(d => d.value === payment.ad_duration)
+
   useEffect(() => {
     if (isEdit || adPaymentsSuspended || !selectedDuration || !stripePublishableKey) {
       setStripeClientSecret('')
@@ -101,23 +119,6 @@ const AdDesigner = () => {
 
   const stripePromise = useMemo(() => (stripePublishableKey ? loadStripe(stripePublishableKey) : null), [stripePublishableKey])
   const paymentReady = adPaymentsSuspended || (stripeClientSecret && stripePaymentIntentId)
-  const durationOptionsForPlacement = (placement) => {
-    const prices = adPlacementPricing[placement] || DEFAULT_DURATION_PRICES
-    return [
-      { value: 'day', label: '1 day', cost: prices.day ?? DEFAULT_DURATION_PRICES.day },
-      { value: 'week', label: '1 week', cost: prices.week ?? DEFAULT_DURATION_PRICES.week },
-      { value: '2weeks', label: '2 weeks', cost: prices['2weeks'] ?? DEFAULT_DURATION_PRICES['2weeks'] },
-      { value: 'month', label: '1 month', cost: prices.month ?? DEFAULT_DURATION_PRICES.month }
-    ]
-  }
-  const DURATION_OPTIONS = durationOptionsForPlacement(formData.placement)
-  const [payment, setPayment] = useState({
-    ad_duration: '',
-    card_last4: '',
-    card_expiry: '',
-    card_cvc: ''
-  })
-  const selectedDuration = DURATION_OPTIONS.find(d => d.value === payment.ad_duration)
   const paymentFilled = !!(payment.ad_duration && payment.card_last4?.replace(/\D/g, '').length >= 4 && payment.card_expiry && payment.card_cvc?.replace(/\D/g, '').length >= 3)
 
   useEffect(() => {
