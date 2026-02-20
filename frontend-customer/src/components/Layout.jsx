@@ -2,9 +2,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useCart } from '../contexts/CartContext'
 import { ShoppingCart, User, LogOut, Search, Home, Store, Package, ShoppingBag, Settings, Menu, X, Utensils, MapPin, Info, Mail, Zap, ChefHat, Truck, DollarSign, Clock, ArrowRight } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import Breadcrumbs from './Breadcrumbs'
-import PageBanner from './PageBanner'
+
+const PageBanner = lazy(() => import('./PageBanner'))
 import { useLocation as useLocationContext } from '../contexts/LocationContext'
 import AnimatedCartIcon from './AnimatedCartIcon'
 import CartPreview from './CartPreview'
@@ -633,12 +634,14 @@ const Layout = ({ children }) => {
             </div>
           )
           return (
-            <PageBanner
-              placement={placement}
-              defaultContent={driverSignupContent}
-              variant="primary"
-              size="tall"
-            />
+            <Suspense fallback={<div className="min-h-[120px] bg-primary-900/30" aria-hidden="true" />}>
+              <PageBanner
+                placement={placement}
+                defaultContent={driverSignupContent}
+                variant="primary"
+                size="tall"
+              />
+            </Suspense>
           )
         })()}
 
