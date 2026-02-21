@@ -210,13 +210,15 @@ const ProductDetail = () => {
           </div>
 
           <SocialProof productId={product.id} product={product} />
-          <div className="flex flex-wrap gap-2">
-            <PromotionalBadges
-              freeShipping={price > 50}
-              buy2Get1={product.promotions?.some(p => p.name?.toLowerCase().includes('buy 2'))}
-              bundleDeal={product.promotions?.some(p => p.name?.toLowerCase().includes('bundle'))}
-            />
-          </div>
+          {!showReviewForm && (
+            <div className="flex flex-wrap gap-2">
+              <PromotionalBadges
+                freeShipping={price > 50}
+                buy2Get1={product.promotions?.some(p => p.name?.toLowerCase().includes('buy 2'))}
+                bundleDeal={product.promotions?.some(p => p.name?.toLowerCase().includes('bundle'))}
+              />
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-600 py-3 px-4 rounded-xl bg-gray-50 border border-gray-100">
             {product.unit && <span>Unit: <strong className="text-gray-800">{product.unit}</strong></span>}
@@ -253,10 +255,12 @@ const ProductDetail = () => {
           </div>
           <SuccessCheckmark show={showSuccessCheckmark} onComplete={() => setShowSuccessCheckmark(false)} />
 
-          <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
-            <TrustBadges showSecurePayment showFreeReturns showVerified={product.vendor?.is_verified} vendor={product.vendor} />
-            <div className="mt-3"><PaymentIcons /></div>
-          </div>
+          {!showReviewForm && (
+            <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
+              <TrustBadges showSecurePayment showFreeReturns showVerified={product.vendor?.is_verified} vendor={product.vendor} />
+              <div className="mt-3"><PaymentIcons /></div>
+            </div>
+          )}
         </div>
       </div>
 

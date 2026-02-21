@@ -229,12 +229,12 @@ const Layout = ({ children }) => {
       {/* Main Content Wrapper: header fixed at top (non-scrollable), main scrolls below */}
       <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-x-hidden">
         {/* Orange strip - fixed so it never scrolls; stays in place */}
-        <header className="flex-shrink-0 z-50 w-full shadow-lg backdrop-blur-sm bg-opacity-95 left-0 right-0 top-0" style={{ backgroundColor: '#ff6b35', position: 'fixed', paddingTop: 'env(safe-area-inset-top, 44px)' }} role="banner">
+        <header className="flex-shrink-0 z-50 w-full shadow-lg backdrop-blur-sm bg-opacity-95 left-0 right-0 top-0" style={{ backgroundColor: '#ff6b35', position: 'fixed', paddingTop: 'env(safe-area-inset-top, 6px)' }} role="banner">
           <div className="w-full px-2 sm:px-4 lg:px-8">
             {/* Mobile Layout - Stacked */}
             <div className="md:hidden">
               {/* Top Row: Menu, Search, Cart */}
-              <div className="flex items-center py-1.5 gap-2">
+              <div className="flex items-center py-1 gap-2">
                 {/* Hamburger Menu */}
                 <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -383,7 +383,7 @@ const Layout = ({ children }) => {
             </div>
 
             {/* Desktop Layout */}
-            <div className="hidden md:flex items-center py-1.5 gap-4">
+            <div className="hidden md:flex items-center py-1 gap-4">
               {/* Hamburger Menu - Left */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -589,8 +589,8 @@ const Layout = ({ children }) => {
           )}
         </header>
 
-        {/* Spacer so content starts below the fixed header (header + safe area) */}
-        <div className="flex-shrink-0 h-14 min-h-[3.5rem]" style={{ paddingTop: 'env(safe-area-inset-top, 44px)' }} aria-hidden="true" />
+        {/* Spacer so content starts below the fixed header */}
+        <div className="flex-shrink-0 h-11 min-h-[2.75rem]" style={{ paddingTop: 'env(safe-area-inset-top, 6px)' }} aria-hidden="true" />
 
         {/* Breadcrumbs */}
         <Breadcrumbs />

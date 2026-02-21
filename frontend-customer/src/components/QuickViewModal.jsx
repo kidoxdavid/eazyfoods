@@ -45,9 +45,9 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/70 backdrop-blur-sm"
       onClick={onClose}
     >
-      {/* Desktop: bold split layout — image panel left, content right */}
+      {/* Desktop: bold split layout — image panel left, content right; Mobile: smaller modal, rounded, bigger image */}
       <div
-        className="relative w-full max-h-[85vh] overflow-hidden flex flex-col md:flex-row rounded-none md:rounded-3xl shadow-2xl max-w-[95vw] sm:max-w-[90vw] md:max-w-4xl lg:max-w-5xl bg-white border-0 md:border-4 md:border-primary-500/20"
+        className="relative w-full max-h-[85vh] md:max-h-[85vh] overflow-hidden flex flex-col md:flex-row rounded-2xl md:rounded-3xl shadow-2xl max-w-[min(92vw,22rem)] sm:max-w-sm md:max-w-4xl lg:max-w-5xl bg-white border-0 md:border-4 md:border-primary-500/20"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Accent strip — top on mobile, left on desktop */}
@@ -86,9 +86,9 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
           )}
         </div>
 
-        {/* Mobile: small image block */}
-        <div className="md:hidden flex-shrink-0 bg-gray-100 p-4 flex items-center justify-center">
-          <div className="relative w-32 h-32 rounded-2xl overflow-hidden bg-white shadow-inner">
+        {/* Mobile: bigger image, compact modal */}
+        <div className="md:hidden flex-shrink-0 bg-gray-100 px-3 pt-3 pb-2 flex items-center justify-center">
+          <div className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-2xl overflow-hidden bg-white shadow-inner flex-shrink-0">
             {product.image_url ? (
               <img
                 src={resolveImageUrl(product.image_url)}
@@ -105,21 +105,21 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
             )}
             <div className="qv-fallback absolute inset-0 hidden bg-gray-200 items-center justify-center text-gray-500 text-xs">No Image</div>
             {compareAt && (
-              <span className="absolute top-1 left-1 px-2 py-0.5 rounded bg-red-500 text-white text-xs font-bold">−{discountPct}%</span>
+              <span className="absolute top-1 left-1 px-2 py-0.5 rounded-lg bg-red-500 text-white text-xs font-bold">−{discountPct}%</span>
             )}
           </div>
         </div>
 
         {/* Right: content */}
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          <div className="flex items-start justify-between p-4 md:p-6 pb-0">
-            <div className="md:hidden">
-              <h2 className="text-lg font-bold text-gray-900 line-clamp-2 pr-8">{product.name}</h2>
+          <div className="flex items-start justify-between px-3 pt-2 pb-0 md:p-6 md:pt-6 md:pb-0">
+            <div className="md:hidden flex-1 min-w-0">
+              <h2 className="text-base font-bold text-gray-900 line-clamp-2 pr-10">{product.name}</h2>
               {product.vendor && <p className="text-xs text-gray-500 mt-0.5">Sold by {product.vendor.business_name}</p>}
             </div>
             <button
               onClick={onClose}
-              className="absolute top-3 right-3 md:top-4 md:right-4 p-2 rounded-full bg-black/10 hover:bg-black/20 text-gray-700 transition-colors z-10"
+              className="absolute top-2 right-2 md:top-4 md:right-4 p-1.5 md:p-2 rounded-full bg-black/10 hover:bg-black/20 text-gray-700 transition-colors z-10"
               type="button"
               aria-label="Close"
             >
@@ -127,7 +127,7 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
             </button>
           </div>
 
-          <div className="px-4 md:px-6 pb-4 md:pb-6 flex-1 flex flex-col">
+          <div className="px-3 pb-3 md:px-6 md:pb-6 flex-1 flex flex-col">
             <p className="text-[10px] md:text-xs font-semibold uppercase tracking-widest text-primary-600 mb-2">Quick look</p>
             <div className="flex flex-wrap items-baseline gap-2 mb-3">
               <span className="text-2xl md:text-3xl font-extrabold text-gray-900">${price.toFixed(2)}</span>
