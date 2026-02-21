@@ -308,23 +308,27 @@ const Layout = ({ children }) => {
                         {profileDropdownOpen && (
                           <>
                             <div className="fixed inset-0 z-40" onClick={() => setProfileDropdownOpen(false)} aria-hidden="true" />
-                            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden py-2">
-                              <p className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
-                                Hello, {user?.first_name || user?.email || 'User'}
-                              </p>
+                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden ring-1 ring-black/5">
+                              <div className="p-4 bg-gradient-to-br from-primary-50 to-primary-100/50 border-b border-gray-100">
+                                <p className="text-sm font-semibold text-gray-900 truncate">
+                                  {user?.first_name || user?.email?.split('@')[0] || 'User'}
+                                </p>
+                                <p className="text-xs text-gray-500 truncate mt-0.5">{user?.email}</p>
+                              </div>
                               <Link
                                 to="/profile"
-                                onClick={() => { setProfileDropdownOpen(false) }}
-                                className="block px-4 py-3 text-gray-700 hover:bg-gray-50 font-medium"
+                                onClick={() => setProfileDropdownOpen(false)}
+                                className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary-50/50 font-medium transition-colors"
                               >
+                                <User className="h-4 w-4 text-primary-600 flex-shrink-0" />
                                 Profile
                               </Link>
                               <button
                                 onClick={() => { handleLogout(); setProfileDropdownOpen(false) }}
-                                className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 flex items-center gap-2 font-medium"
+                                className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-red-50 font-medium transition-colors border-t border-gray-100"
                                 type="button"
                               >
-                                <LogOut className="h-4 w-4" />
+                                <LogOut className="h-4 w-4 text-red-500 flex-shrink-0" />
                                 Log out
                               </button>
                             </div>
@@ -456,23 +460,27 @@ const Layout = ({ children }) => {
                       {profileDropdownOpen && (
                         <>
                           <div className="fixed inset-0 z-40" onClick={() => setProfileDropdownOpen(false)} aria-hidden="true" />
-                          <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden py-2">
-                            <p className="px-4 py-2 text-sm text-gray-500 border-b border-gray-100">
-                              Hello, {user?.first_name || user?.email || 'User'}
-                            </p>
+                          <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden ring-1 ring-black/5">
+                            <div className="p-4 bg-gradient-to-br from-primary-50 to-primary-100/50 border-b border-gray-100">
+                              <p className="text-sm font-semibold text-gray-900 truncate">
+                                {user?.first_name || user?.email?.split('@')[0] || 'User'}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate mt-0.5">{user?.email}</p>
+                            </div>
                             <Link
                               to="/profile"
                               onClick={() => setProfileDropdownOpen(false)}
-                              className="block px-4 py-3 text-gray-700 hover:bg-gray-50 font-medium"
+                              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary-50/50 font-medium transition-colors"
                             >
+                              <User className="h-4 w-4 text-primary-600 flex-shrink-0" />
                               Profile
                             </Link>
                             <button
                               onClick={() => { handleLogout(); setProfileDropdownOpen(false) }}
-                              className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 flex items-center gap-2 font-medium"
+                              className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-red-50 font-medium transition-colors border-t border-gray-100"
                               type="button"
                             >
-                              <LogOut className="h-4 w-4" />
+                              <LogOut className="h-4 w-4 text-red-500 flex-shrink-0" />
                               Log out
                             </button>
                           </div>
@@ -581,6 +589,8 @@ const Layout = ({ children }) => {
             '/checkout': 'checkout_bottom_banner'
           }
           const placement = pathToPlacement[location.pathname] || (location.pathname.startsWith('/products') ? 'products_bottom_banner' : 'home_bottom_banner')
+          const isDealsPage = location.pathname === '/top-chef-deals' || location.pathname === '/top-market-deals'
+          const bottomBannerVariant = isDealsPage ? 'orange' : 'primary'
           const driverSignupContent = (
             <div className="relative max-w-7xl mx-auto w-full py-4 sm:py-5 px-2 sm:px-4">
               <div className="flex flex-col lg:flex-row items-center justify-between gap-3 sm:gap-4 lg:gap-8">
@@ -638,7 +648,7 @@ const Layout = ({ children }) => {
               <PageBanner
                 placement={placement}
                 defaultContent={driverSignupContent}
-                variant="primary"
+                variant={bottomBannerVariant}
                 size="tall"
               />
             </Suspense>

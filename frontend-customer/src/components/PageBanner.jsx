@@ -191,8 +191,10 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
     }
   }
 
-  // Same green+orange mix for all banners (primary = green, via orange)
-  const defaultBannerClass = 'bg-gradient-to-r from-primary-600 via-orange-600 to-primary-700'
+  // primary = green only; orange = current orange/green mix (for top chef & top market deals only)
+  const defaultBannerClass = variant === 'orange'
+    ? 'bg-gradient-to-r from-primary-600 via-orange-600 to-primary-700'
+    : 'bg-gradient-to-r from-primary-600 to-primary-700'
   const bannerHeight = size === 'tall' ? 'auto' : '240px'
   const bannerMinHeight = size === 'tall' ? '200px' : '240px'
 
@@ -257,7 +259,7 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
   return (
     <div 
       ref={bannerRef}
-      className="relative w-full bg-gradient-to-r from-primary-600 via-orange-600 to-primary-700 text-white overflow-hidden mb-6" 
+      className={`relative w-full text-white overflow-hidden mb-6 ${variant === 'orange' ? 'bg-gradient-to-r from-primary-600 via-orange-600 to-primary-700' : 'bg-gradient-to-r from-primary-600 to-primary-700'}`} 
       style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'block', width: '100%', position: 'relative', zIndex: 1 }}
     >
       {/* Dismiss button */}

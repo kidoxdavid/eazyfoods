@@ -245,6 +245,10 @@ const AdDesigner = () => {
                       <option value="top_market_deals_top_banner">Top Market Deals Top Banner</option>
                       <option value="top_market_deals_bottom_banner">Top Market Deals Bottom Banner</option>
                     </optgroup>
+                    <optgroup label="Top Chef Deals Page">
+                      <option value="top_chef_deals_top_banner">Top Chef Deals Top Banner</option>
+                      <option value="top_chef_deals_bottom_banner">Top Chef Deals Bottom Banner</option>
+                    </optgroup>
                     <optgroup label="Checkout Page">
                       <option value="checkout_top_banner">Checkout Top Banner</option>
                       <option value="checkout_bottom_banner">Checkout Bottom Banner</option>

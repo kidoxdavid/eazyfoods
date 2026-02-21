@@ -20,10 +20,12 @@ const Orders = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
+  // Date filter: show orders from this date onwards (optional)
+  const [fromDate, setFromDate] = useState('')
 
   useEffect(() => {
     fetchOrders()
-  }, [tab, statusFilter])
+  }, [tab, statusFilter, fromDate])
 
   useEffect(() => {
     const onRefresh = () => fetchOrders()
@@ -61,6 +63,7 @@ const Orders = () => {
       const params = {}
       // Delivery tab: fetch all and filter by displayStatus client-side so we can filter by driver statuses (awaiting_driver, in_transit, etc.)
       if (tab === TAB_PICKUP && statusFilter !== 'all') params.status = statusFilter
+      if (fromDate) params.start_date = fromDate
       const response = await api.get('/orders/', { params })
       const all = Array.isArray(response.data) ? response.data : []
       setAllOrders(all)
@@ -136,6 +139,24 @@ const Orders = () => {
         <p className="text-xs sm:text-sm text-gray-600 mt-1">
           {tab === TAB_PICKUP ? 'Pickup orders — same statuses until Ready, then Complete' : 'Delivery orders — status matches Driver portal (awaiting driver → accepted → picked up → in transit → delivered)'}
         </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">From date:</label>
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+          />
+          {fromDate && (
+            <button
+              type="button"
+              onClick={() => setFromDate('')}
+              className="text-sm text-primary-600 hover:underline"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Pickup | Delivery tabs */}

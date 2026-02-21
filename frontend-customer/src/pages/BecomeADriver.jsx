@@ -41,7 +41,7 @@ const BecomeADriver = () => {
         title="Become a Delivery Driver"
         subtitle="Join the eazyfoods driver network. Flexible hours, competitive pay, simple signup."
         placement="become_a_driver_top_banner"
-        variant="orange"
+        variant="primary"
         defaultContent={
           <div className="text-center w-full">
             <div className="flex items-center justify-center gap-3 mb-2">

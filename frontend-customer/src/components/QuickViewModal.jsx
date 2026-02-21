@@ -51,13 +51,13 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-t-2xl sm:rounded-lg max-w-4xl w-full max-h-[85vh] sm:max-h-[90vh] overflow-y-auto flex flex-col"
+        className="bg-white rounded-t-2xl sm:rounded-lg max-w-4xl w-full max-h-[75vh] sm:max-h-[90vh] overflow-y-auto flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button - Mobile optimized */}
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-600 z-20 bg-white rounded-full p-1.5 sm:p-2 shadow-lg sm:shadow-sm"
+          className="absolute top-1.5 right-1.5 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-600 z-20 bg-white rounded-full p-1 sm:p-2 shadow-lg sm:shadow-sm"
           type="button"
           aria-label="Close"
         >
@@ -66,13 +66,13 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
 
         <div className="flex flex-col md:flex-row">
           {/* Product Image - compact on mobile */}
-          <div className="w-full md:w-1/2 p-2 sm:p-4 md:p-6">
+          <div className="w-full md:w-1/2 p-2 sm:p-4 md:p-6 min-w-0">
             <div className="relative">
               {product.image_url ? (
                 <img
                   src={resolveImageUrl(product.image_url)}
                   alt={product.name}
-                  className="w-full h-36 sm:h-64 md:h-96 object-cover rounded-lg"
+                  className="w-full h-28 sm:h-64 md:h-96 object-cover rounded-lg"
                   onError={(e) => {
                     console.error('[QuickViewModal] Image failed to load:', product.image_url)
                     e.target.style.display = 'none'
@@ -83,7 +83,7 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
                   }}
                 />
               ) : (
-                <div className="w-full h-36 sm:h-64 md:h-96 bg-gray-200 rounded-lg flex items-center justify-center">
+                <div className="w-full h-28 sm:h-64 md:h-96 bg-gray-200 rounded-lg flex items-center justify-center">
                   <span className="text-gray-400 text-xs sm:text-sm md:text-base">No Image</span>
                 </div>
               )}
@@ -94,9 +94,9 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
           </div>
 
           {/* Product Details - compact on mobile */}
-          <div className="w-full md:w-1/2 p-2 sm:p-4 md:p-6 relative">
-            <div className="pr-7 sm:pr-12">
-              <h2 className="text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2 pr-5">{product.name}</h2>
+          <div className="w-full md:w-1/2 p-2 sm:p-4 md:p-6 relative min-w-0">
+            <div className="pr-6 sm:pr-12">
+              <h2 className="text-sm sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2 pr-5 line-clamp-2">{product.name}</h2>
               
               {product.vendor && (
                 <p className="text-xs sm:text-sm md:text-base text-gray-600 mb-1 sm:mb-3 md:mb-4">Sold by {product.vendor.business_name}</p>

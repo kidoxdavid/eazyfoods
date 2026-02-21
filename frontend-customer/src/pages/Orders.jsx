@@ -141,7 +141,7 @@ const Orders = () => {
           }
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-8 sm:pb-12">
 
         {error ? (
           <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-200">
@@ -167,31 +167,31 @@ const Orders = () => {
             </Link>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {orders.map((order) => (
               <Link
                 key={order.id}
                 to={`/orders/${order.id}`}
                 className="bg-white rounded-xl shadow-md border border-gray-200 hover:shadow-xl transition-all duration-300 block overflow-hidden group"
               >
-                <div className="p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-primary-50 rounded-lg">
-                          <Package className="h-5 w-5 text-primary-600" />
+                <div className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                        <div className="p-1.5 sm:p-2 bg-primary-50 rounded-lg flex-shrink-0">
+                          <Package className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
                         </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-900">
+                        <div className="min-w-0">
+                          <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">
                             Order #{order.order_number}
                           </h3>
-                          <p className="text-sm text-gray-500 mt-0.5">
+                          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
                             {formatDateTime(order.created_at)}
                           </p>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-4 ml-11 flex-wrap">
+                      <div className="flex items-center gap-2 sm:gap-4 ml-0 sm:ml-11 flex-wrap">
                         <span className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 ${getStatusColor(order.status)}`} style={getStatusTextColor(order.status)}>
                           {getStatusIcon(order.status)}
                           <span className="capitalize">{order.status.replace('_', ' ')}</span>
@@ -221,11 +221,11 @@ const Orders = () => {
                       </div>
                     </div>
                     
-                    <div className="text-right sm:ml-4">
-                      <p className="text-2xl font-bold text-gray-900 mb-1">
+                    <div className="text-left sm:text-right sm:ml-4 flex-shrink-0">
+                      <p className="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5 sm:mb-1">
                         ${parseFloat(order.total_amount).toFixed(2)}
                       </p>
-                      <p className="text-xs text-gray-500">Total Amount</p>
+                      <p className="text-xs text-gray-500">Total</p>
                     </div>
                   </div>
                 </div>

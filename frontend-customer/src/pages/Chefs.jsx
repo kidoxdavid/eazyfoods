@@ -107,10 +107,10 @@ const Chefs = () => {
         }
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-6">
         {/* Filters - Compact */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-3 sm:mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Search</label>
               <input
@@ -173,7 +173,7 @@ const Chefs = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 sm:gap-6">
             {chefs.map((chef) => (
               <Link
                 key={chef.id}
@@ -196,9 +196,9 @@ const Chefs = () => {
                   )}
                 </div>
                 
-                <div className="p-4">
+                <div className="p-3 sm:p-4">
                   {/* Chef Name */}
-                  <h3 className="text-base font-bold text-gray-900 mb-2 line-clamp-2 leading-tight">
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-1.5 sm:mb-2 line-clamp-2 leading-tight">
                     {chef.chef_name}
                   </h3>
                   
