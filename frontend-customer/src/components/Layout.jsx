@@ -310,7 +310,7 @@ const Layout = ({ children }) => {
                       <div className="relative">
                         <button
                           onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setCartPreviewOpen(false) }}
-                          className="p-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center"
+                          className="p-2 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
                           type="button"
                           aria-label="Profile menu"
                         >
@@ -318,8 +318,8 @@ const Layout = ({ children }) => {
                             const AvatarIcon = getAvatarIcon(avatarKey)
                             const { bg, text } = getAvatarStyle(avatarKey)
                             return (
-                              <span className={`inline-flex rounded-full p-1 ${bg} ${text}`}>
-                                <AvatarIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                              <span className={`inline-flex rounded-full h-5 w-5 sm:h-6 sm:w-6 items-center justify-center flex-shrink-0 ${bg} ${text}`}>
+                                <AvatarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                               </span>
                             )
                           })()}
@@ -464,10 +464,10 @@ const Layout = ({ children }) => {
                         onClose={() => setCartPreviewOpen(false)}
                       />
                     </div>
-                    <div className="relative flex-shrink-0">
+                    <div className="relative flex-shrink-0 flex items-center">
                       <button
                         onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setCartPreviewOpen(false) }}
-                        className="p-3 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center gap-2"
+                        className="p-2 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center gap-2 min-h-0 h-9 w-9 sm:h-10 sm:w-10 lg:w-auto lg:min-w-0 lg:pl-2 lg:pr-3 lg:py-2"
                         type="button"
                         aria-label="Profile menu"
                       >
@@ -475,8 +475,8 @@ const Layout = ({ children }) => {
                           const AvatarIcon = getAvatarIcon(avatarKey)
                           const { bg, text } = getAvatarStyle(avatarKey)
                           return (
-                            <span className={`inline-flex rounded-full p-1.5 flex-shrink-0 ${bg} ${text}`}>
-                              <AvatarIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                            <span className={`inline-flex rounded-full h-5 w-5 sm:h-6 sm:w-6 items-center justify-center flex-shrink-0 ${bg} ${text}`}>
+                              <AvatarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             </span>
                           )
                         })()}
@@ -742,10 +742,10 @@ const Layout = ({ children }) => {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowLocationModal(false)}>
             <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
               <h2 className="text-xl font-bold mb-1">Select location</h2>
-              <p className="text-sm text-gray-500 mb-4">Choose province, then city</p>
+              <p className="text-sm text-gray-500 mb-4">Step 1: Province → Step 2: City (all Canadian provinces and major cities)</p>
               <div className="flex-1 min-h-0 overflow-y-auto space-y-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Province</h3>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Step 1 — Province</h3>
                   <div className="space-y-1">
                     <button
                       onClick={() => {
@@ -781,7 +781,7 @@ const Layout = ({ children }) => {
                 </div>
                 {selectedProvince && (
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-2">City in {selectedProvince}</h3>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Step 2 — City in {selectedProvince}</h3>
                     <div className="space-y-1">
                       <button
                         onClick={() => {

@@ -193,10 +193,10 @@ const Profile = () => {
           <div className="lg:col-span-1">
             <div className="card p-3 sm:p-4 lg:p-5">
               <div className="flex items-center gap-3 sm:block sm:text-center mb-3 sm:mb-4 lg:mb-6">
-                <div className={`w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-24 flex-shrink-0 rounded-full flex items-center justify-center ${getAvatarStyle(avatarIconKey).bg} ${getAvatarStyle(avatarIconKey).text}`}>
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 flex-shrink-0 rounded-full flex items-center justify-center ${getAvatarStyle(avatarIconKey).bg} ${getAvatarStyle(avatarIconKey).text}`}>
                   {(() => {
                     const Icon = getAvatarIcon(avatarIconKey)
-                    return <Icon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-12 lg:w-12" />
+                    return <Icon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10" />
                   })()}
                 </div>
                 <div className="min-w-0 flex-1 sm:flex-none">
@@ -206,30 +206,7 @@ const Profile = () => {
                   <p className="text-xs sm:text-sm text-gray-600 break-all line-clamp-2 sm:line-clamp-none">{profile?.email}</p>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2 mb-1.5 sm:text-center">Profile icon</p>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center">
-                {Object.entries(AVATAR_ICONS).map(([key, { Icon, label, bg, text }]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => {
-                      setAvatarIconKey(key)
-                      localStorage.setItem(AVATAR_ICON_KEY, key)
-                      window.dispatchEvent(new CustomEvent('avatar-updated', { detail: { key } }))
-                    }}
-                    className={`p-1.5 rounded-xl border-2 transition-all ${
-                      avatarIconKey === key
-                        ? 'border-primary-600 ring-2 ring-primary-200'
-                        : 'border-gray-200 hover:border-primary-300'
-                    } ${bg} ${text}`}
-                    title={label}
-                    aria-label={`Choose ${label} avatar`}
-                  >
-                    <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                  </button>
-                ))}
-              </div>
-              <nav className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide lg:flex-col lg:space-y-2 lg:overflow-visible mt-3 sm:mt-4">
+              <nav className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide lg:flex-col lg:space-y-2 lg:overflow-visible">
                 {['overview', 'addresses', 'orders', 'settings'].map((tab) => (
                   <button
                     key={tab}
@@ -552,6 +529,32 @@ const Profile = () => {
             {/* Settings Tab */}
             {activeTab === 'settings' && (
               <div className="space-y-6">
+                <div className="card">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Profile icon</h3>
+                  <p className="text-sm text-gray-500 mb-4">Choose a picture or cartoon-style icon for your profile. It will appear in the header and sidebar.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(AVATAR_ICONS).map(([key, { Icon, label, bg, text }]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => {
+                          setAvatarIconKey(key)
+                          localStorage.setItem(AVATAR_ICON_KEY, key)
+                          window.dispatchEvent(new CustomEvent('avatar-updated', { detail: { key } }))
+                        }}
+                        className={`p-2 rounded-xl border-2 transition-all ${
+                          avatarIconKey === key
+                            ? 'border-primary-600 ring-2 ring-primary-200'
+                            : 'border-gray-200 hover:border-primary-300'
+                        } ${bg} ${text}`}
+                        title={label}
+                        aria-label={`Choose ${label} avatar`}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="card">
                   <h3 className="text-xl font-bold text-gray-900 mb-6">Account Settings</h3>
                   <div className="space-y-4">

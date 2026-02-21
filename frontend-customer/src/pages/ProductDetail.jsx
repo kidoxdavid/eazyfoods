@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import api from '../services/api'
 import { ShoppingCart, Star, Minus, Plus, MessageSquare } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
@@ -164,10 +164,17 @@ const ProductDetail = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-start">
-        {/* Product Images - sticky, card style */}
-        <div className="lg:sticky lg:top-4">
-          <div className="rounded-2xl overflow-hidden bg-white border border-gray-200/80 shadow-lg shadow-gray-200/50">
+      {/* Breadcrumb */}
+      <nav className="text-xs sm:text-sm text-gray-500 mb-4 flex items-center gap-1.5 flex-wrap">
+        <Link to="/groceries" className="hover:text-primary-600">Groceries</Link>
+        <span>/</span>
+        <span className="text-gray-900 font-medium truncate max-w-[180px] sm:max-w-none">{product.name}</span>
+      </nav>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        {/* Image - larger, hero feel */}
+        <div className="lg:col-span-6 lg:sticky lg:top-4">
+          <div className="rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-xl aspect-square max-w-lg mx-auto lg:max-w-none">
             <ProductImageGallery
               images={product.images || []}
               mainImage={product.image_url}
@@ -177,32 +184,31 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Product Info - clean card layout */}
-        <div className="space-y-5 sm:space-y-6">
-          <div>
-            {product.vendor && (
-              <p className="text-xs sm:text-sm text-gray-500 mb-1.5">
-                Sold by <span className="font-semibold text-gray-700">{product.vendor.business_name}</span>
-                {product.vendor.average_rating != null && (
-                  <span className="ml-2 inline-flex items-center gap-0.5 text-amber-600">
-                    <Star className="h-3.5 w-3.5 fill-current" />
-                    {product.vendor.average_rating.toFixed(1)} ({product.vendor.total_reviews ?? 0})
-                  </span>
-                )}
-              </p>
-            )}
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight tracking-tight">{product.name}</h1>
-          </div>
+        {/* Info column */}
+        <div className="lg:col-span-6 space-y-6">
+          {product.vendor && (
+            <p className="text-sm text-gray-500">
+              Sold by <span className="font-semibold text-gray-800">{product.vendor.business_name}</span>
+              {product.vendor.average_rating != null && (
+                <span className="ml-2 inline-flex items-center gap-0.5 text-amber-600">
+                  <Star className="h-4 w-4 fill-current" />
+                  {product.vendor.average_rating.toFixed(1)} ({product.vendor.total_reviews ?? 0} reviews)
+                </span>
+              )}
+            </p>
+          )}
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight">{product.name}</h1>
 
           <div className="flex flex-wrap items-baseline gap-3">
-            <span className="text-2xl sm:text-3xl font-bold text-primary-600">${price.toFixed(2)}</span>
+            <span className="text-3xl sm:text-4xl font-extrabold text-primary-600">${price.toFixed(2)}</span>
             {product.compare_at_price != null && product.compare_at_price > price && (
               <>
-                <span className="text-base text-gray-500 line-through">${product.compare_at_price.toFixed(2)}</span>
+                <span className="text-lg text-gray-500 line-through">${product.compare_at_price.toFixed(2)}</span>
                 <AnimatedDiscount discount={Math.round(((product.compare_at_price - price) / product.compare_at_price) * 100)} size="md" />
               </>
             )}
           </div>
+
           <SocialProof productId={product.id} product={product} />
           <div className="flex flex-wrap gap-2">
             <PromotionalBadges
@@ -212,18 +218,11 @@ const ProductDetail = () => {
             />
           </div>
 
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 py-2 border-y border-gray-100">
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-600 py-3 px-4 rounded-xl bg-gray-50 border border-gray-100">
             {product.unit && <span>Unit: <strong className="text-gray-800">{product.unit}</strong></span>}
             {product.weight_kg != null && <span>Weight: <strong className="text-gray-800">{product.weight_kg} kg</strong></span>}
             <span>Stock: <strong className={stockQuantity > 0 ? 'text-green-600' : 'text-red-600'}>{stockQuantity > 0 ? `${stockQuantity} available` : 'Out of stock'}</strong></span>
           </div>
-
-          {product.description && (
-            <div className="bg-gray-50/80 rounded-xl p-4">
-              <h2 className="text-sm font-semibold text-gray-900 mb-2">Description</h2>
-              <p className="text-gray-600 whitespace-pre-line text-sm leading-relaxed">{product.description}</p>
-            </div>
-          )}
 
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden bg-white">
@@ -254,12 +253,22 @@ const ProductDetail = () => {
           </div>
           <SuccessCheckmark show={showSuccessCheckmark} onComplete={() => setShowSuccessCheckmark(false)} />
 
-          <div className="pt-4 border-t border-gray-100 rounded-xl bg-gray-50/50 p-4">
+          <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
             <TrustBadges showSecurePayment showFreeReturns showVerified={product.vendor?.is_verified} vendor={product.vendor} />
             <div className="mt-3"><PaymentIcons /></div>
           </div>
         </div>
       </div>
+
+      {/* Description - full width section */}
+      {product.description && (
+        <section className="mt-8 lg:mt-10">
+          <h2 className="text-lg font-bold text-gray-900 mb-3">Description</h2>
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
+            <p className="text-gray-600 whitespace-pre-line leading-relaxed">{product.description}</p>
+          </div>
+        </section>
+      )}
 
       {/* Sticky Add to Cart Button (Mobile) */}
       <StickyAddToCart
@@ -271,7 +280,7 @@ const ProductDetail = () => {
       />
 
       {/* Reviews Section */}
-      <div className="mt-6 sm:mt-8">
+      <section className="mt-8 lg:mt-10" aria-label="Customer reviews">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-gray-900">Customer Reviews</h2>
@@ -297,7 +306,7 @@ const ProductDetail = () => {
 
         {/* Review Form */}
         {showReviewForm && (
-          <div className="card mb-4 sm:mb-6 p-4 sm:p-6">
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm mb-4 sm:mb-6 p-4 sm:p-6">
             <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Write a Review</h3>
             <form onSubmit={handleSubmitReview}>
               <div className="mb-3 sm:mb-4">
@@ -356,7 +365,7 @@ const ProductDetail = () => {
 
         {/* Reviews List */}
         {reviews.length === 0 ? (
-          <div className="card text-center py-12">
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm text-center py-12 px-4">
             <Star className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 mb-4">No reviews yet</p>
             {token && !showReviewForm && (
@@ -369,9 +378,9 @@ const ProductDetail = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {reviews.map((review) => (
-              <div key={review.id} className="card">
+              <div key={review.id} className="rounded-2xl border border-gray-200 bg-white shadow-sm p-4 sm:p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center space-x-1">
@@ -412,23 +421,23 @@ const ProductDetail = () => {
             ))}
           </div>
         )}
-      </div>
+      </section>
 
       {/* You May Also Like */}
       {product && (
-        <div className="mt-12">
+        <section className="mt-10 lg:mt-12" aria-label="You may also like">
           <YouMayAlsoLike
             productId={product.id}
             categoryId={product.category_id || product.category?.id}
             maxItems={4}
           />
-        </div>
+        </section>
       )}
 
       {/* Recently Viewed */}
-      <div className="mt-8">
+      <section className="mt-8 lg:mt-10" aria-label="Recently viewed">
         <RecentlyViewed maxItems={5} />
-      </div>
+      </section>
     </div>
   )
 }
