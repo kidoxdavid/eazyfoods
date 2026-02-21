@@ -143,23 +143,25 @@ const Orders = () => {
         <p className="text-xs sm:text-sm text-gray-600 mt-1">
           {tab === TAB_PICKUP ? 'Pickup orders — same statuses until Ready, then Complete' : 'Delivery orders — status matches Driver portal (awaiting driver → accepted → picked up → in transit → delivered)'}
         </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">From date:</label>
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-          />
-          {fromDate && (
-            <button
-              type="button"
-              onClick={() => setFromDate('')}
-              className="text-sm text-primary-600 hover:underline"
-            >
-              Clear
-            </button>
-          )}
+        <div className="mt-3 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2">
+          <label className="text-sm font-medium text-gray-700 shrink-0">From date:</label>
+          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:max-w-[12rem]">
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="flex-1 min-w-0 w-full sm:w-auto px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            />
+            {fromDate && (
+              <button
+                type="button"
+                onClick={() => setFromDate('')}
+                className="text-sm text-primary-600 hover:underline whitespace-nowrap shrink-0"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

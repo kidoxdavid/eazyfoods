@@ -86,11 +86,11 @@ const Layout = ({ children }) => {
       >
         <div className="flex flex-col h-full">
           {/* Logo / header - same as vendor: enough height and padding so not compressed */}
-          <div className="flex items-center justify-between min-h-[4rem] py-4 px-4 sm:px-6 border-b border-gray-200 bg-gradient-to-r from-primary-600 to-primary-700 shrink-0" style={{ paddingTop: 'env(safe-area-inset-top, 44px)' }}>
-            <h1 className="text-lg sm:text-xl font-bold text-white truncate">eazyfoods Chef</h1>
+          <div className="relative flex items-center justify-center min-h-[4rem] py-4 px-4 sm:px-6 border-b border-gray-200 bg-gradient-to-r from-primary-600 to-primary-700 shrink-0" style={{ paddingTop: 'env(safe-area-inset-top, 44px)', paddingBottom: '1rem' }}>
+            <h1 className="text-lg sm:text-xl font-bold text-white truncate text-center">eazyfoods Chef</h1>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden text-white hover:text-gray-200 p-1 rounded-md transition-colors"
+              className="absolute right-2 top-[50%] -translate-y-1/2 lg:hidden text-white hover:text-gray-200 p-1 rounded-md transition-colors w-8 h-8 flex items-center justify-center"
               aria-label="Close menu"
             >
               <X className="h-5 w-5 sm:h-6 sm:w-6" />

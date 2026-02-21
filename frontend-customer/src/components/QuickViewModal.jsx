@@ -51,7 +51,7 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
       onClick={onClose}
     >
       <div
-        className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-h-[85vh] overflow-y-auto flex flex-col mx-auto max-w-lg md:max-w-md"
+        className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-h-[85vh] overflow-y-auto flex flex-col mx-auto max-w-[88vw] sm:max-w-md md:max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}

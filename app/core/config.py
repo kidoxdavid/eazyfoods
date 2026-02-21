@@ -22,8 +22,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
     # CORS: in production set env CORS_ORIGINS to comma-separated frontend URLs, e.g.:
-    #   CORS_ORIGINS=https://eazyfoods.ca,https://vendor.eazyfoods.ca,https://admin.eazyfoods.ca,https://customer.eazyfoods.ca
-    # Use "*" to allow all origins (allow_credentials will be False). Must include eazyfoods.ca for customer Google sign-in.
+    #   CORS_ORIGINS=https://eazyfoods.ca,https://vendor.eazyfoods.ca,https://admin.eazyfoods.ca,https://marketing.eazyfoods.ca
+    # Use "*" to allow all origins (allow_credentials will be False). Must include marketing.eazyfoods.ca for marketing portal.
     # Stored as str so Render/env never triggers JSON parse; use cors_origins_list in app.
     CORS_ORIGINS: str = "*"
 

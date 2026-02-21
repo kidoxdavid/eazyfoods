@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../contexts/AuthContext'
 import { UserPlus, Eye, EyeOff } from 'lucide-react'
+import { AVATAR_ICONS, AVATAR_ICON_KEY, getAvatarIcon } from '../constants/avatarIcons'
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [avatarIconKey, setAvatarIconKey] = useState(() => localStorage.getItem(AVATAR_ICON_KEY) || 'user')
   const { signup, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
   const googleClientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || ''
@@ -29,6 +31,7 @@ const Signup = () => {
 
     try {
       await signup(formData)
+      localStorage.setItem(AVATAR_ICON_KEY, avatarIconKey)
       setSignupSuccess(true)
     } catch (err) {
       const status = err.response?.status
@@ -64,6 +67,31 @@ const Signup = () => {
         <div className="text-center">
           <h1 className="text-3xl font-bold text-primary-600 mb-2">eazyfoods</h1>
           <h2 className="text-xl text-gray-600">Create Your Account</h2>
+          <p className="text-sm text-gray-500 mt-2">Choose a profile icon</p>
+          <div className="flex flex-wrap justify-center gap-2 mt-3">
+            {Object.entries(AVATAR_ICONS).map(([key, { Icon, label }]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setAvatarIconKey(key)}
+                className={`p-2 rounded-full border-2 transition-colors ${
+                  avatarIconKey === key
+                    ? 'border-primary-600 bg-primary-50 text-primary-600'
+                    : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-primary-300'
+                }`}
+                title={label}
+                aria-label={`Choose ${label}`}
+              >
+                <Icon className="h-5 w-5" />
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary-600 text-white">
+            {(() => {
+              const Icon = getAvatarIcon(avatarIconKey)
+              return <Icon className="h-6 w-6" />
+            })()}
+          </div>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>

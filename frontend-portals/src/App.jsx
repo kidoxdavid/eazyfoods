@@ -5,7 +5,6 @@ import {
   ChefHat,
   Truck,
   ArrowRight,
-  Briefcase,
   Mail,
   Sparkles,
 } from 'lucide-react'
@@ -80,9 +79,9 @@ export default function App() {
           <nav className="flex items-center gap-4 text-sm">
             <a href="#portals" className="text-gray-400 hover:text-white transition-colors">Portals</a>
             <a href="#about" className="text-gray-400 hover:text-white transition-colors">About</a>
-            <a href="#careers" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1.5">
-              <Briefcase className="w-4 h-4" />
-              Careers
+            <a href="#contact" className="text-gray-400 hover:text-white transition-colors flex items-center gap-1.5">
+              <Mail className="w-4 h-4" />
+              Contact
             </a>
           </nav>
         </div>
@@ -93,13 +92,13 @@ export default function App() {
         <div className="max-w-3xl mx-auto px-4 sm:px-5 py-6 sm:py-8">
           <div className="flex items-center gap-2 text-primary-500/80 mb-2">
             <Sparkles className="w-4 h-4" />
-            <span className="text-xs font-medium uppercase tracking-wider">Portals</span>
+            <span className="text-xs font-medium uppercase tracking-wider">Welcome</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-            eazyfoods Portals
+            Sign in to your portal
           </h1>
           <p className="text-gray-400 text-sm max-w-lg mt-1.5">
-            Sign in to the portal that matches your role. Shop on the main site at eazyfoods.ca.
+            Shop on the main site at eazyfoods.ca. Vendors, chefs, and drivers use the links below.
           </p>
         </div>
       </section>
@@ -107,7 +106,7 @@ export default function App() {
       {/* Portals - compact grid */}
       <section id="portals" className="flex-1">
         <div className="max-w-3xl mx-auto px-4 sm:px-5 py-6 sm:py-8">
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Choose your portal</h2>
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Sign in to your portal</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {portals.map(({ key, title, description, icon: Icon, bgLight, iconColor }) => (
               <a
@@ -152,18 +151,17 @@ export default function App() {
         <div className="max-w-3xl mx-auto px-4 sm:px-5 py-5 sm:py-6">
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
             <Briefcase className="w-4 h-4 text-primary-500" />
-            Careers at eazyfoods
+            Get in touch
           </h2>
           <p className="text-gray-400 text-sm max-w-xl mb-3 leading-relaxed">
-            We’re a small team. When we hire, we look for people in areas like data &amp; analytics, customer experience, and operations.
+            We’re a small team. Have questions? We are here to help.
           </p>
-          <div className="inline-flex items-center gap-2 rounded-lg bg-gray-800/60 border border-gray-700/80 px-4 py-3 text-sm text-gray-300">
-            <span className="text-gray-500">There are no open roles at the moment.</span>
-            <span>Check back later — we’d love to hear from you.</span>
+          <p className="text-xs text-gray-500">
+            <a href="mailto:support@eazyfoods.ca" className="text-primary-500 hover:text-primary-400">support@eazyfoods.ca</a>
+          </p>
+          <div className="hidden" aria-hidden="true">
+            <span className="sr-only">Check back later — we’d love to hear from you.</span>
           </div>
-          <p className="text-xs text-gray-500 mt-3">
-            Questions? <a href="mailto:careers@eazyfoods.ca" className="text-primary-500 hover:text-primary-400">careers@eazyfoods.ca</a>
-          </p>
         </div>
       </section>
 

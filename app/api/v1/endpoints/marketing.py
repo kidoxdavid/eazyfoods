@@ -721,6 +721,36 @@ async def create_email_template(
 
 
 # Analytics Endpoints
+def _safe_marketing_analytics_response():
+    """Return a safe empty structure when analytics query fails (e.g. missing table)."""
+    return {
+        "total_impressions": 0,
+        "total_clicks": 0,
+        "total_conversions": 0,
+        "total_revenue": 0.0,
+        "total_cost": 0.0,
+        "ctr": 0.0,
+        "conversion_rate": 0.0,
+        "roi": 0.0,
+        "cpa": 0.0,
+        "cpc": 0.0,
+        "cpm": 0.0,
+        "time_series": [],
+        "campaign_breakdown": [],
+        "ad_breakdown": [],
+        "email_breakdown": [],
+        "meal_plans": {"total": 0, "live": 0, "draft": 0, "revenue": 0.0, "orders": 0, "breakdown_by_type": [], "popular_plans": []},
+        "recipes": {"total": 0, "active": 0, "inactive": 0, "breakdown_by_meal_type": [], "breakdown_by_difficulty": [], "popular_recipes": []},
+        "orders": {"total_orders": 0, "completed_orders": 0, "total_revenue": 0.0, "average_order_value": 0.0, "orders_by_status": {}},
+        "customers": {"total_customers": 0, "active_customers": 0, "new_customers": 0, "repeat_customers": 0},
+        "vendors": {"total_vendors": 0, "active_vendors": 0, "new_vendors": 0},
+        "products": {"total_products": 0, "active_products": 0, "top_selling_products": []},
+        "reviews": {"total_reviews": 0, "average_rating": 0.0, "rating_distribution": {}},
+        "promotions": {"total_promotions": 0, "active_promotions": 0},
+        "drivers": {"total_drivers": 0, "active_drivers": 0},
+    }
+
+
 @router.get("/analytics", response_model=dict)
 async def get_marketing_analytics(
     start_date: Optional[date] = None,
@@ -730,27 +760,32 @@ async def get_marketing_analytics(
     current_admin: dict = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    """Get comprehensive marketing analytics"""
-    # Default date range: last 30 days
-    if not start_date:
-        start_date = date.today() - timedelta(days=30)
-    if not end_date:
-        end_date = date.today()
-    
-    start_dt = datetime.combine(start_date, datetime.min.time())
-    end_dt = datetime.combine(end_date, datetime.max.time())
-    
-    # Base analytics query
-    analytics_query = db.query(CampaignAnalytics).filter(
-        CampaignAnalytics.date >= start_dt,
-        CampaignAnalytics.date <= end_dt
-    )
-    
-    if campaign_id:
-        analytics_query = analytics_query.filter(CampaignAnalytics.campaign_id == UUID(campaign_id))
-    
-    analytics = analytics_query.all()
-    
+    """Get comprehensive marketing analytics. Returns empty structure on any error (avoids 500 for CORS)."""
+    try:
+        # Default date range: last 30 days
+        if not start_date:
+            start_date = date.today() - timedelta(days=30)
+        if not end_date:
+            end_date = date.today()
+
+        start_dt = datetime.combine(start_date, datetime.min.time())
+        end_dt = datetime.combine(end_date, datetime.max.time())
+    except Exception as e:
+        print(f"Marketing analytics date error: {e}")
+        return _safe_marketing_analytics_response()
+
+    try:
+        analytics_query = db.query(CampaignAnalytics).filter(
+            CampaignAnalytics.date >= start_dt,
+            CampaignAnalytics.date <= end_dt
+        )
+        if campaign_id:
+            analytics_query = analytics_query.filter(CampaignAnalytics.campaign_id == UUID(campaign_id))
+        analytics = analytics_query.all()
+    except Exception as e:
+        print(f"Marketing analytics query error: {e}")
+        return _safe_marketing_analytics_response()
+
     # Aggregate totals from CampaignAnalytics
     total_impressions = sum(a.impressions for a in analytics)
     total_clicks = sum(a.clicks for a in analytics)

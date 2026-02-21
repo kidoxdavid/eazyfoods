@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useLocation } from '../contexts/LocationContext'
 import api from '../services/api'
 import { User, Mail, Phone, MapPin, Edit, Plus, Trash2, Package, CreditCard, Settings, Eye, EyeOff, Sparkles, TrendingUp, Users as UsersIcon } from 'lucide-react'
+import { AVATAR_ICONS, AVATAR_ICON_KEY, getAvatarIcon } from '../constants/avatarIcons'
 import PrivateRoute from '../components/PrivateRoute'
 import PageBanner from '../components/PageBanner'
 import { PageSkeleton } from '../components/SkeletonLoader'
@@ -37,6 +38,7 @@ const Profile = () => {
   const [editingPhone, setEditingPhone] = useState(false)
   const [phoneValue, setPhoneValue] = useState('')
   const [phoneSaving, setPhoneSaving] = useState(false)
+  const [avatarIconKey, setAvatarIconKey] = useState(() => localStorage.getItem(AVATAR_ICON_KEY) || 'user')
 
   useEffect(() => {
     if (token) {
@@ -192,7 +194,10 @@ const Profile = () => {
             <div className="card p-3 sm:p-4 lg:p-5">
               <div className="flex items-center gap-3 sm:block sm:text-center mb-3 sm:mb-4 lg:mb-6">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-24 flex-shrink-0 bg-primary-600 rounded-full flex items-center justify-center">
-                  <User className="h-6 w-6 sm:h-8 sm:w-8 lg:h-12 lg:w-12 text-white" />
+                  {(() => {
+                    const Icon = getAvatarIcon(avatarIconKey)
+                    return <Icon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-12 lg:w-12 text-white" />
+                  })()}
                 </div>
                 <div className="min-w-0 flex-1 sm:flex-none">
                   <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 truncate sm:truncate-none">
@@ -201,7 +206,29 @@ const Profile = () => {
                   <p className="text-xs sm:text-sm text-gray-600 break-all line-clamp-2 sm:line-clamp-none">{profile?.email}</p>
                 </div>
               </div>
-              <nav className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide lg:flex-col lg:space-y-2 lg:overflow-visible">
+              <p className="text-xs text-gray-500 mt-2 mb-1.5 sm:text-center">Profile icon</p>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center">
+                {Object.entries(AVATAR_ICONS).map(([key, { Icon, label }]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      setAvatarIconKey(key)
+                      localStorage.setItem(AVATAR_ICON_KEY, key)
+                    }}
+                    className={`p-1.5 rounded-lg border-2 transition-colors ${
+                      avatarIconKey === key
+                        ? 'border-primary-600 bg-primary-50 text-primary-600'
+                        : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-primary-300'
+                    }`}
+                    title={label}
+                    aria-label={`Choose ${label} avatar`}
+                  >
+                    <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </button>
+                ))}
+              </div>
+              <nav className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide lg:flex-col lg:space-y-2 lg:overflow-visible mt-3 sm:mt-4">
                 {['overview', 'addresses', 'orders', 'settings'].map((tab) => (
                   <button
                     key={tab}

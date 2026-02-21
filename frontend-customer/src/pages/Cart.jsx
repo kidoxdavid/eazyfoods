@@ -172,12 +172,12 @@ const Cart = () => {
             return (
             <div key={item.id} className="card flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-3 sm:p-4">
               <Link to={itemLink} className="flex-shrink-0 w-full sm:w-auto">
-                <div className="w-full sm:w-24 h-28 sm:h-24 bg-gray-200 rounded-lg overflow-hidden">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
                   {item.image_url ? (
                     <img
                       src={resolveImageUrl(item.image_url)}
                       alt={item.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                       onError={(e) => {
                         console.error('[Cart] Image failed to load:', item.image_url)
                         e.target.style.display = 'none'
