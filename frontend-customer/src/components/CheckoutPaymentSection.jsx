@@ -77,8 +77,16 @@ function CheckoutPaymentSection({ amount, token, onSuccess, onError, onPaymentRe
         elementsRef.current = elements
 
         const paymentElement = elements.create('payment', { layout: 'tabs' })
-        if (!containerRef.current) return
-        paymentElement.mount(containerRef.current)
+        const container = containerRef.current
+        if (!container) {
+          setStatus('error')
+          setMessage('Payment container not ready.')
+          return
+        }
+        // Wait for next paint so container is in layout (Stripe needs a visible node)
+        await new Promise((r) => requestAnimationFrame(r))
+        if (cancelled) return
+        paymentElement.mount(container)
         if (cancelled) return
 
         setStatus('ready')
@@ -149,20 +157,19 @@ function CheckoutPaymentSection({ amount, token, onSuccess, onError, onPaymentRe
     )
   }
 
-  if (status === 'loading') {
-    return (
-      <div className="py-6 text-center text-gray-500">
-        <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full mx-auto mb-2" />
-        Loading Stripe…
-      </div>
-    )
-  }
-
+  // Always render the mount container so ref is in DOM when async init runs (otherwise mount() has nowhere to attach)
   return (
     <div className="space-y-4">
       <div className="p-4 border border-gray-300 rounded-lg bg-white min-h-[220px]">
         <p className="text-sm text-gray-600 mb-3">Enter your card details. Payment is secure via Stripe.</p>
-        <div ref={containerRef} className="min-h-[180px]" />
+        <div ref={containerRef} className="min-h-[180px] relative">
+          {status === 'loading' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 text-gray-500">
+              <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full mb-2" />
+              Loading Stripe…
+            </div>
+          )}
+        </div>
       </div>
       {message && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{message}</div>}
       {processing && <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">Processing…</div>}
