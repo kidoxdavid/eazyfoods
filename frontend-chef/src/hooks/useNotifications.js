@@ -6,9 +6,11 @@ export const useNotifications = () => {
 
   const fetchCount = async () => {
     try {
-      const res = await api.get('/chef/orders/', { params: { status: 'new', limit: 500 } })
+      const res = await api.get('/chef/orders/', { params: { limit: 500 } })
       const list = Array.isArray(res.data) ? res.data : []
-      setOrdersCount(list.length)
+      const FINAL_STATUSES = ['picked_up', 'delivered', 'cancelled']
+      const nonFinal = list.filter(o => !FINAL_STATUSES.includes((o.status || '').toLowerCase()))
+      setOrdersCount(nonFinal.length)
     } catch (error) {
       console.error('Failed to fetch chef order notifications:', error)
     }

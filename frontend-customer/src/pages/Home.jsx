@@ -349,7 +349,7 @@ const Home = () => {
             <p className="text-xs sm:text-sm md:text-base mb-3 sm:mb-4 text-white/90">Authentic African Groceries Delivered to Your Doorstep</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
               <Link to="/stores" className="inline-block bg-white text-primary-600 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold hover:bg-nude-100 transition-colors text-xs sm:text-sm">Browse Stores</Link>
-              <Link to="/groceries" className="inline-block bg-white/90 text-primary-600 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold hover:bg-white transition-colors text-xs sm:text-sm">Shop All Groceries</Link>
+              <Link to="/groceries" className="inline-block bg-[#ff6b35] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold hover:bg-[#e55a2b] transition-colors text-xs sm:text-sm border border-white/30">Shop All Groceries</Link>
             </div>
           </div>
         }

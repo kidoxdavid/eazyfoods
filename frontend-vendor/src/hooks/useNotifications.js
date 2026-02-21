@@ -5,7 +5,9 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState({
     orders: 0,
     reviews: 0,
-    support: 0
+    support: 0,
+    pickupCount: 0,
+    deliveryCount: 0
   })
   const [loading, setLoading] = useState(true)
 
@@ -23,16 +25,26 @@ export const useNotifications = () => {
   const fetchNotifications = async () => {
     try {
       let ordersCount = 0
+      let pickupCount = 0
+      let deliveryCount = 0
       let reviewsCount = 0
       let supportCount = 0
       
-      // Fetch new orders (status 'new' = just placed, need vendor attention)
+      // Count orders that are not yet in a final status (badge stays until pickup/delivery complete)
+      const FINAL_STATUSES = ['picked_up', 'delivered', 'cancelled']
+      const isFinal = (order) => {
+        const status = (order.delivery_status || order.status || '').toLowerCase()
+        return FINAL_STATUSES.includes(status)
+      }
       try {
         const ordersRes = await api.get('/orders/', { params: { limit: 1000 } })
-        const newOrders = Array.isArray(ordersRes.data) ? ordersRes.data.filter(order => 
-          order.status === 'new'
-        ) : []
-        ordersCount = newOrders.length
+        const orders = Array.isArray(ordersRes.data) ? ordersRes.data : []
+        const nonFinal = orders.filter(o => !isFinal(o))
+        const pickupNonFinal = nonFinal.filter(o => (o.delivery_method && String(o.delivery_method).toLowerCase()) === 'pickup')
+        const deliveryNonFinal = nonFinal.filter(o => (o.delivery_method && String(o.delivery_method).toLowerCase()) === 'delivery')
+        ordersCount = nonFinal.length
+        pickupCount = pickupNonFinal.length
+        deliveryCount = deliveryNonFinal.length
       } catch (error) {
         console.error('Failed to fetch orders notifications:', error)
       }
@@ -60,7 +72,9 @@ export const useNotifications = () => {
       setNotifications({
         orders: ordersCount,
         reviews: reviewsCount,
-        support: supportCount
+        support: supportCount,
+        pickupCount,
+        deliveryCount
       })
     } catch (error) {
       console.error('Failed to fetch notifications:', error)

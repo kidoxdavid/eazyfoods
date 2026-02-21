@@ -4,11 +4,15 @@ import api from '../services/api'
 import { ShoppingCart, Eye, Search, X } from 'lucide-react'
 import { formatCurrency, formatDateTime } from '../utils/format'
 import Pagination from '../components/Pagination'
+import { useNotifications } from '../hooks/useNotifications'
 
 const TAB_PICKUP = 'pickup'
 const TAB_DELIVERY = 'delivery'
 
 const Orders = () => {
+  const { notifications } = useNotifications()
+  const pickupBadge = notifications.pickupCount ?? 0
+  const deliveryBadge = notifications.deliveryCount ?? 0
   const [searchParams] = useSearchParams()
   const tabParam = searchParams.get('tab')
   const statusParam = searchParams.get('status')
@@ -164,20 +168,30 @@ const Orders = () => {
         <button
           type="button"
           onClick={() => setTabAndUrl(TAB_PICKUP)}
-          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px flex items-center gap-1.5 ${
             tab === TAB_PICKUP ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
           Pickup
+          {pickupBadge > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-primary-600 text-white text-xs font-semibold">
+              {pickupBadge > 99 ? '99+' : pickupBadge}
+            </span>
+          )}
         </button>
         <button
           type="button"
           onClick={() => setTabAndUrl(TAB_DELIVERY)}
-          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
+          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px flex items-center gap-1.5 ${
             tab === TAB_DELIVERY ? 'border-primary-600 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
           Delivery
+          {deliveryBadge > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-primary-600 text-white text-xs font-semibold">
+              {deliveryBadge > 99 ? '99+' : deliveryBadge}
+            </span>
+          )}
         </button>
       </div>
 
