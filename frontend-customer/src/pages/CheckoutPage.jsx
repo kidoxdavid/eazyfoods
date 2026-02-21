@@ -1,8 +1,8 @@
 /**
  * New checkout page – no lazy(), no top-level Stripe imports.
- * Set STRIPE_DISCONNECTED = true to test: page loads with no Stripe. If it loads, issue is Stripe; if not, cause is elsewhere.
+ * Payment uses CheckoutPaymentSection (Stripe via CDN only, no npm packages in bundle).
  */
-const STRIPE_DISCONNECTED = true // TODO: set false after testing
+const STRIPE_DISCONNECTED = false
 
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -303,12 +303,7 @@ const CheckoutPage = () => {
             <h2 className="text-base font-semibold mb-3 flex items-center">
               <CreditCard className="h-4 w-4 mr-2 text-primary-600" /> Payment
             </h2>
-            {STRIPE_DISCONNECTED && (
-              <p className="text-sm text-amber-700 bg-amber-50 p-3 rounded border border-amber-200">
-                Stripe disconnected for testing – does the page load? If yes, the issue is Stripe-related.
-              </p>
-            )}
-            {!STRIPE_DISCONNECTED && PaymentSection && !paymentConfig.payments_suspended && (
+            {PaymentSection && !paymentConfig.payments_suspended && (
               <PaymentSection
                 key={`pay-${total}`}
                 amount={total}
@@ -319,7 +314,7 @@ const CheckoutPage = () => {
                 onCardReady={handleCardReady}
               />
             )}
-            {!STRIPE_DISCONNECTED && paymentConfig.payments_suspended && (
+            {paymentConfig.payments_suspended && (
               <p className="text-sm text-gray-600">Pay on delivery or later.</p>
             )}
           </div>
