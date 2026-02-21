@@ -192,7 +192,7 @@ const Orders = () => {
                       </div>
                       
                       <div className="flex items-center gap-1 sm:gap-3 ml-0 sm:ml-9 flex-wrap">
-                        <span className={`px-2 py-1 rounded-md text-[10px] sm:text-xs font-semibold flex items-center gap-1 ${getStatusColor(order.status)}`} style={getStatusTextColor(order.status)}>
+                        <span className={`hidden sm:inline-flex px-2 py-1 rounded-md text-[10px] sm:text-xs font-semibold items-center gap-1 ${getStatusColor(order.status)}`} style={getStatusTextColor(order.status)}>
                           {getStatusIcon(order.status)}
                           <span className="capitalize">{order.status.replace('_', ' ')}</span>
                         </span>
@@ -221,11 +221,15 @@ const Orders = () => {
                       </div>
                     </div>
                     
-                    <div className="text-left sm:text-right sm:ml-4 flex-shrink-0">
+                    <div className="text-right sm:ml-4 flex-shrink-0 flex flex-col items-end justify-center">
                       <p className="text-base sm:text-xl font-bold text-gray-900">
                         ${parseFloat(order.total_amount).toFixed(2)}
                       </p>
                       <p className="text-[10px] sm:text-xs text-gray-500">Total</p>
+                      <span className={`sm:hidden mt-1 px-2 py-1 rounded-md text-[10px] font-semibold flex items-center gap-1 ${getStatusColor(order.status)}`} style={getStatusTextColor(order.status)}>
+                        {getStatusIcon(order.status)}
+                        <span className="capitalize">{order.status.replace('_', ' ')}</span>
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -7,9 +7,11 @@ import Breadcrumbs from './Breadcrumbs'
 
 const PageBanner = lazy(() => import('./PageBanner'))
 import { useLocation as useLocationContext } from '../contexts/LocationContext'
+import { CANADA_PROVINCES, getCitiesForProvince } from '../constants/canadaLocations'
 import AnimatedCartIcon from './AnimatedCartIcon'
 import CartPreview from './CartPreview'
 import SearchAutocomplete from './SearchAutocomplete'
+import { getAvatarIcon, getAvatarStyle, AVATAR_ICON_KEY } from '../constants/avatarIcons'
 
 const Layout = ({ children }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -19,8 +21,14 @@ const Layout = ({ children }) => {
   const [showLocationModal, setShowLocationModal] = useState(false)
   const [cartPreviewOpen, setCartPreviewOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
+  const [avatarKey, setAvatarKey] = useState(() => localStorage.getItem(AVATAR_ICON_KEY) || 'user')
   const location = useLocation()
   const navigate = useNavigate()
+  useEffect(() => {
+    const onAvatarUpdated = (e) => setAvatarKey((e && e.detail && e.detail.key) || localStorage.getItem(AVATAR_ICON_KEY) || 'user')
+    window.addEventListener('avatar-updated', onAvatarUpdated)
+    return () => window.removeEventListener('avatar-updated', onAvatarUpdated)
+  }, [])
   
   // Access contexts without destructuring to prevent errors
   const authContext = useAuth()
@@ -35,9 +43,9 @@ const Layout = ({ children }) => {
   const deliveryAddress = (locationContext && locationContext.deliveryAddress) ? locationContext.deliveryAddress : null
   const updateAddress = (locationContext && locationContext.updateAddress) ? locationContext.updateAddress : (() => {})
   const selectedCity = (locationContext && locationContext.selectedCity) ? locationContext.selectedCity : 'All'
+  const selectedProvince = (locationContext && locationContext.selectedProvince) ? locationContext.selectedProvince : ''
   const updateCity = (locationContext && locationContext.updateCity) ? locationContext.updateCity : (() => {})
-  
-  const availableLocations = ['All', 'Calgary', 'Edmonton', 'Red Deer']
+  const updateProvince = (locationContext && locationContext.updateProvince) ? locationContext.updateProvince : (() => {})
   
   // Initialize city from context (which reads from localStorage)
   useEffect(() => {
@@ -189,11 +197,14 @@ const Layout = ({ children }) => {
           </nav>
 
           {/* User Section */}
-          {token && (
+          {token && (() => {
+            const AvatarIcon = getAvatarIcon(avatarKey)
+            const { bg, text } = getAvatarStyle(avatarKey)
+            return (
             <div className="p-4 border-t border-primary-200 bg-gradient-to-b from-white to-primary-50">
               <div className="flex items-center space-x-3 mb-3 p-3 bg-gradient-to-r from-primary-100 to-white rounded-xl shadow-sm">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-r from-primary-600 to-primary-700 flex items-center justify-center">
-                  <User className="h-5 w-5 text-white" />
+                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${bg} ${text}`}>
+                  <AvatarIcon className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">
@@ -211,7 +222,7 @@ const Layout = ({ children }) => {
                 <span>Logout</span>
               </button>
             </div>
-          )}
+          )})()}
         </div>
       </aside>
 
@@ -279,7 +290,7 @@ const Layout = ({ children }) => {
                     aria-label="Change location"
                   >
                     <MapPin className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
-                    <span className="text-sm font-medium truncate max-w-[60px] sm:max-w-[80px]">{selectedCity || 'All'}</span>
+                    <span className="text-sm font-medium truncate max-w-[60px] sm:max-w-[80px]">{selectedProvince && selectedCity !== 'All' ? `${selectedCity}` : selectedCity || 'All'}</span>
                   </button>
                   {token ? (
                     <>
@@ -303,7 +314,15 @@ const Layout = ({ children }) => {
                           type="button"
                           aria-label="Profile menu"
                         >
-                          <User className="h-5 w-5 sm:h-6 sm:w-6" />
+                          {(() => {
+                            const AvatarIcon = getAvatarIcon(avatarKey)
+                            const { bg, text } = getAvatarStyle(avatarKey)
+                            return (
+                              <span className={`inline-flex rounded-full p-1 ${bg} ${text}`}>
+                                <AvatarIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                              </span>
+                            )
+                          })()}
                         </button>
                         {profileDropdownOpen && (
                           <>
@@ -426,7 +445,7 @@ const Layout = ({ children }) => {
                   type="button"
                 >
                   <MapPin className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-sm font-medium truncate max-w-[90px]">{selectedCity || 'All'}</span>
+                  <span className="text-sm font-medium truncate max-w-[90px]">{selectedProvince && selectedCity !== 'All' ? `${selectedCity}, ${selectedProvince}` : selectedCity || 'All'}</span>
                   <span className="text-sm font-medium underline decoration-white/70 underline-offset-2">Change</span>
                 </button>
 
@@ -452,7 +471,15 @@ const Layout = ({ children }) => {
                         type="button"
                         aria-label="Profile menu"
                       >
-                        <User className="h-5 w-5 flex-shrink-0" />
+                        {(() => {
+                          const AvatarIcon = getAvatarIcon(avatarKey)
+                          const { bg, text } = getAvatarStyle(avatarKey)
+                          return (
+                            <span className={`inline-flex rounded-full p-1.5 flex-shrink-0 ${bg} ${text}`}>
+                              <AvatarIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                            </span>
+                          )
+                        })()}
                         <span className="hidden lg:inline text-sm font-medium truncate max-w-[120px]">
                           Hello, {user?.first_name || user?.email?.split('@')[0] || 'User'}
                         </span>
@@ -710,36 +737,91 @@ const Layout = ({ children }) => {
           </div>
         </footer>
 
-        {/* Location Selection Modal */}
+        {/* Location Selection Modal - Province then City */}
         {showLocationModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowLocationModal(false)}>
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-              <h2 className="text-xl font-bold mb-4">Select Your Location</h2>
-              <div className="space-y-2">
-                {availableLocations.map((loc) => (
-                  <button
-                    key={loc}
-                    onClick={() => {
-                      updateCity(loc)
-                      if (loc !== 'All') {
-                        updateAddress({ address: loc }, { lat: 0, lng: 0 })
-                      }
-                      setShowLocationModal(false)
-                      // Reload the page to apply city filter
-                      window.location.reload()
-                    }}
-                    className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${
-                      selectedCity === loc
-                        ? 'border-primary-600 bg-primary-50 text-primary-700 font-semibold'
-                        : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
-                    }`}
-                    type="button"
-                  >
-                    {loc}
-                  </button>
-                ))}
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowLocationModal(false)}>
+            <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+              <h2 className="text-xl font-bold mb-1">Select location</h2>
+              <p className="text-sm text-gray-500 mb-4">Choose province, then city</p>
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Province</h3>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => {
+                        updateProvince('')
+                        updateCity('All')
+                        setShowLocationModal(false)
+                        window.location.reload()
+                      }}
+                      className={`w-full text-left px-4 py-2.5 rounded-lg border-2 transition-all text-sm ${
+                        !selectedProvince && selectedCity === 'All'
+                          ? 'border-primary-600 bg-primary-50 text-primary-700 font-semibold'
+                          : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                      }`}
+                      type="button"
+                    >
+                      All Canada
+                    </button>
+                    {CANADA_PROVINCES.map((prov) => (
+                      <button
+                        key={prov}
+                        onClick={() => updateProvince(prov)}
+                        className={`w-full text-left px-4 py-2.5 rounded-lg border-2 transition-all text-sm ${
+                          selectedProvince === prov
+                            ? 'border-primary-600 bg-primary-50 text-primary-700 font-semibold'
+                            : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                        }`}
+                        type="button"
+                      >
+                        {prov}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {selectedProvince && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">City in {selectedProvince}</h3>
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => {
+                          updateCity('All')
+                          setShowLocationModal(false)
+                          window.location.reload()
+                        }}
+                        className={`w-full text-left px-4 py-2.5 rounded-lg border-2 transition-all text-sm ${
+                          selectedCity === 'All'
+                            ? 'border-primary-600 bg-primary-50 text-primary-700 font-semibold'
+                            : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                        }`}
+                        type="button"
+                      >
+                        All cities
+                      </button>
+                      {getCitiesForProvince(selectedProvince).map((city) => (
+                        <button
+                          key={city}
+                          onClick={() => {
+                            updateCity(city)
+                            updateAddress({ address: `${city}, ${selectedProvince}` }, { lat: 0, lng: 0 })
+                            setShowLocationModal(false)
+                            window.location.reload()
+                          }}
+                          className={`w-full text-left px-4 py-2.5 rounded-lg border-2 transition-all text-sm ${
+                            selectedCity === city
+                              ? 'border-primary-600 bg-primary-50 text-primary-700 font-semibold'
+                              : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                          }`}
+                          type="button"
+                        >
+                          {city}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="flex justify-end mt-4">
+              <div className="flex justify-end pt-4 border-t border-gray-100 mt-4">
                 <button
                   type="button"
                   onClick={() => setShowLocationModal(false)}

@@ -159,6 +159,7 @@ class DeliveryStatusUpdate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     notes: Optional[str] = None
+    delivery_photo_url: Optional[str] = None  # Proof of delivery image URL (required when status=delivered)
 
 
 class LocationUpdate(BaseModel):

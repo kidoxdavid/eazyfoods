@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.api.v1.dependencies import get_current_vendor, get_current_chef, get_current_admin
+from app.api.v1.dependencies import get_current_vendor, get_current_chef, get_current_admin, get_current_driver
 from app.core.config import settings
 from app.core.s3 import is_s3_configured, upload_to_s3
 import os
@@ -395,6 +395,39 @@ async def upload_driver_document(
     unique_filename = f"{uuid.uuid4()}{file_ext}"
     try:
         file_url = _save_file(file_content, "driver_documents", unique_filename, file.content_type)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save file: {str(e)}",
+        )
+    return {"url": file_url, "filename": unique_filename, "size": len(file_content)}
+
+
+@router.post("/delivery-proof", response_model=dict)
+async def upload_delivery_proof(
+    file: UploadFile = File(...),
+    current_driver: dict = Depends(get_current_driver),
+):
+    """Upload proof-of-delivery photo (driver only). Returns URL to pass when marking delivery as delivered."""
+    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid file type. Allowed: JPEG, PNG, WebP, GIF",
+        )
+    file_content = await file.read()
+    max_size = 5 * 1024 * 1024  # 5MB
+    if len(file_content) > max_size:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File too large. Maximum 5MB.",
+        )
+    file_ext = Path(file.filename).suffix or ".jpg"
+    if file_ext.lower() not in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+        file_ext = ".jpg"
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    try:
+        file_url = _save_file(file_content, "delivery_proof", unique_filename, file.content_type)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

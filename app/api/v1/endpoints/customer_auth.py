@@ -201,10 +201,8 @@ async def forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get
     customer = db.query(Customer).filter(Customer.email == body.email.strip().lower()).first()
     if customer and customer.password_hash:
         token = create_password_reset_token(customer.email)
-        # TODO: send email with reset link (e.g. https://eazyfoods.ca/reset-password?token=...)
-        # from app.core.email import send_password_reset_email
-        # await send_password_reset_email(customer.email, token)
-        pass
+        from app.core.email import send_password_reset_email
+        send_password_reset_email(customer.email, token, portal="customer")
     return {"message": "If an account exists with this email, you will receive a password reset link."}
 
 

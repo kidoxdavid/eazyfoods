@@ -129,7 +129,8 @@ class Delivery(Base):
     # Notes
     driver_notes = Column(Text)
     customer_notes = Column(Text)
-    
+    delivery_photo_url = Column(String(512))  # Proof of delivery image URL
+
     # Rating
     customer_rating = Column(Integer)  # 1-5
     customer_feedback = Column(Text)

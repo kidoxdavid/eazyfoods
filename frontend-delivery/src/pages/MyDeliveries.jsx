@@ -1,13 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { Package, MapPin, Clock, CheckCircle, Navigation } from 'lucide-react'
+import { Package, MapPin, Clock, CheckCircle, Navigation, Camera, X } from 'lucide-react'
 import SortableTable from '../components/SortableTable'
 
 const MyDeliveries = () => {
   const navigate = useNavigate()
   const [deliveries, setDeliveries] = useState([])
   const [loading, setLoading] = useState(true)
+  const [deliverModal, setDeliverModal] = useState(null) // { deliveryId, row }
+  const [photoFile, setPhotoFile] = useState(null)
+  const [photoPreview, setPhotoPreview] = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     fetchDeliveries()
@@ -25,7 +30,65 @@ const MyDeliveries = () => {
     }
   }
 
+  const handleMarkDeliveredClick = (row) => {
+    setDeliverModal({ deliveryId: row.id, row })
+    setPhotoFile(null)
+    setPhotoPreview(null)
+  }
+
+  const onFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file (JPEG, PNG, WebP, or GIF).')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be under 5MB.')
+      return
+    }
+    setPhotoFile(file)
+    const reader = new FileReader()
+    reader.onload = () => setPhotoPreview(reader.result)
+    reader.readAsDataURL(file)
+  }
+
+  const confirmDelivered = async () => {
+    if (!deliverModal) return
+    if (!photoFile) {
+      alert('Please take or upload a photo of the delivery as evidence.')
+      return
+    }
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', photoFile)
+      const uploadRes = await api.post('/uploads/delivery-proof', formData)
+      const deliveryPhotoUrl = uploadRes.data?.url
+      if (!deliveryPhotoUrl) throw new Error('Upload did not return URL')
+      await api.put(`/driver/deliveries/${deliverModal.deliveryId}/status`, {
+        status: 'delivered',
+        delivery_photo_url: deliveryPhotoUrl
+      })
+      window.dispatchEvent(new CustomEvent('refresh-notifications'))
+      alert('Delivery marked as delivered. Thank you!')
+      setDeliverModal(null)
+      setPhotoFile(null)
+      setPhotoPreview(null)
+      fetchDeliveries()
+    } catch (error) {
+      alert(error.response?.data?.detail || error.message || 'Failed to update. Please try again.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const handleUpdateStatus = async (deliveryId, status) => {
+    if (status === 'delivered') {
+      const row = deliveries.find(d => d.id === deliveryId)
+      if (row) handleMarkDeliveredClick(row)
+      return
+    }
     try {
       await api.put(`/driver/deliveries/${deliveryId}/status`, { status })
       window.dispatchEvent(new CustomEvent('refresh-notifications'))
@@ -118,8 +181,9 @@ const MyDeliveries = () => {
           {row.status === 'in_transit' && (
             <button
               onClick={() => handleUpdateStatus(row.id, 'delivered')}
-              className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+              className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 flex items-center gap-1"
             >
+              <CheckCircle className="h-3 w-3" />
               Mark Delivered
             </button>
           )}
@@ -151,6 +215,71 @@ const MyDeliveries = () => {
       ) : (
         <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
           <SortableTable columns={columns} data={deliveries} />
+        </div>
+      )}
+
+      {/* Mark as delivered – photo evidence modal */}
+      {deliverModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !uploading && setDeliverModal(null)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Proof of delivery</h3>
+              <button type="button" onClick={() => !uploading && setDeliverModal(null)} className="p-1 text-gray-500 hover:text-gray-700">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Take or upload a photo of the delivery at the customer&apos;s location as evidence.
+            </p>
+            <div className="space-y-4">
+              {photoPreview ? (
+                <div className="relative rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                  <img src={photoPreview} alt="Delivery proof" className="w-full h-48 object-contain" />
+                  <button
+                    type="button"
+                    onClick={() => { setPhotoFile(null); setPhotoPreview(null) }}
+                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-primary-500 hover:bg-primary-50/30 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={onFileChange}
+                  />
+                  <Camera className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-700">Tap to take photo or choose image</p>
+                  <p className="text-xs text-gray-500 mt-1">JPEG, PNG, WebP or GIF, max 5MB</p>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => !uploading && setDeliverModal(null)}
+                  className="flex-1 py-2.5 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDelivered}
+                  disabled={!photoFile || uploading}
+                  className="flex-1 py-2.5 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {uploading ? 'Uploading…' : 'Confirm delivered'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

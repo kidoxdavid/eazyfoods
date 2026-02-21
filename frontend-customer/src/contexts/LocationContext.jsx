@@ -19,9 +19,13 @@ export const LocationProvider = ({ children }) => {
     const saved = localStorage.getItem('coordinates')
     return saved ? JSON.parse(saved) : null
   })
+  const [selectedProvince, setSelectedProvince] = useState(() => {
+    const saved = localStorage.getItem('selectedProvince')
+    return saved || ''
+  })
   const [selectedCity, setSelectedCity] = useState(() => {
     const saved = localStorage.getItem('selectedCity')
-    return saved || 'All' // Default to 'All' to show all stores/products
+    return saved || 'All'
   })
 
   useEffect(() => {
@@ -48,6 +52,14 @@ export const LocationProvider = ({ children }) => {
     }
   }, [selectedCity])
 
+  useEffect(() => {
+    if (selectedProvince) {
+      localStorage.setItem('selectedProvince', selectedProvince)
+    } else {
+      localStorage.removeItem('selectedProvince')
+    }
+  }, [selectedProvince])
+
   const updateAddress = (address, coords = null) => {
     setDeliveryAddress(address)
     if (coords) {
@@ -59,12 +71,18 @@ export const LocationProvider = ({ children }) => {
     setSelectedCity(city)
   }
 
+  const updateProvince = (province) => {
+    setSelectedProvince(province || '')
+  }
+
   const value = {
     deliveryAddress,
     coordinates,
     selectedCity,
+    selectedProvince,
     updateAddress,
     updateCity,
+    updateProvince,
   }
 
   return <LocationContext.Provider value={value}>{children}</LocationContext.Provider>

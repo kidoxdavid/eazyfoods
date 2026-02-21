@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Mail,
   Sparkles,
+  Briefcase,
 } from 'lucide-react'
 
 const defaultPorts = {

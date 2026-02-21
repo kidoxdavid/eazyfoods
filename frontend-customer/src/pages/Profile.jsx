@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useLocation } from '../contexts/LocationContext'
 import api from '../services/api'
 import { User, Mail, Phone, MapPin, Edit, Plus, Trash2, Package, CreditCard, Settings, Eye, EyeOff, Sparkles, TrendingUp, Users as UsersIcon } from 'lucide-react'
-import { AVATAR_ICONS, AVATAR_ICON_KEY, getAvatarIcon } from '../constants/avatarIcons'
+import { AVATAR_ICONS, AVATAR_ICON_KEY, getAvatarIcon, getAvatarStyle } from '../constants/avatarIcons'
 import PrivateRoute from '../components/PrivateRoute'
 import PageBanner from '../components/PageBanner'
 import { PageSkeleton } from '../components/SkeletonLoader'
@@ -193,10 +193,10 @@ const Profile = () => {
           <div className="lg:col-span-1">
             <div className="card p-3 sm:p-4 lg:p-5">
               <div className="flex items-center gap-3 sm:block sm:text-center mb-3 sm:mb-4 lg:mb-6">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-24 flex-shrink-0 bg-primary-600 rounded-full flex items-center justify-center">
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-24 flex-shrink-0 rounded-full flex items-center justify-center ${getAvatarStyle(avatarIconKey).bg} ${getAvatarStyle(avatarIconKey).text}`}>
                   {(() => {
                     const Icon = getAvatarIcon(avatarIconKey)
-                    return <Icon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-12 lg:w-12 text-white" />
+                    return <Icon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-12 lg:w-12" />
                   })()}
                 </div>
                 <div className="min-w-0 flex-1 sm:flex-none">
@@ -208,19 +208,20 @@ const Profile = () => {
               </div>
               <p className="text-xs text-gray-500 mt-2 mb-1.5 sm:text-center">Profile icon</p>
               <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center">
-                {Object.entries(AVATAR_ICONS).map(([key, { Icon, label }]) => (
+                {Object.entries(AVATAR_ICONS).map(([key, { Icon, label, bg, text }]) => (
                   <button
                     key={key}
                     type="button"
                     onClick={() => {
                       setAvatarIconKey(key)
                       localStorage.setItem(AVATAR_ICON_KEY, key)
+                      window.dispatchEvent(new CustomEvent('avatar-updated', { detail: { key } }))
                     }}
-                    className={`p-1.5 rounded-lg border-2 transition-colors ${
+                    className={`p-1.5 rounded-xl border-2 transition-all ${
                       avatarIconKey === key
-                        ? 'border-primary-600 bg-primary-50 text-primary-600'
-                        : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-primary-300'
-                    }`}
+                        ? 'border-primary-600 ring-2 ring-primary-200'
+                        : 'border-gray-200 hover:border-primary-300'
+                    } ${bg} ${text}`}
                     title={label}
                     aria-label={`Choose ${label} avatar`}
                   >

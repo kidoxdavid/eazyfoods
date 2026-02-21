@@ -3,7 +3,9 @@ import api from '../services/api'
 
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState({
-    availableDeliveries: 0
+    availableDeliveries: 0,
+    activeDeliveries: 0,
+    unreadRatings: 0
   })
   const [loading, setLoading] = useState(true)
 
@@ -20,12 +22,23 @@ export const useNotifications = () => {
 
   const fetchNotifications = async () => {
     try {
-      // Fetch available deliveries
-      const deliveriesRes = await api.get('/driver/available-orders')
-      const availableDeliveries = Array.isArray(deliveriesRes.data) ? deliveriesRes.data : []
+      const [availableRes, myDeliveriesRes, ratingsRes] = await Promise.all([
+        api.get('/driver/available-orders').catch(() => ({ data: [] })),
+        api.get('/driver/deliveries').catch(() => ({ data: [] })),
+        api.get('/driver/ratings').catch(() => ({ data: { ratings: [] } }))
+      ])
+      const availableDeliveries = Array.isArray(availableRes.data) ? availableRes.data : []
+      const myDeliveries = Array.isArray(myDeliveriesRes.data) ? myDeliveriesRes.data : []
+      const activeDeliveries = myDeliveries.filter(
+        (d) => d.status && !['delivered', 'cancelled'].includes(d.status)
+      ).length
+      const ratingsData = ratingsRes.data?.ratings ?? (Array.isArray(ratingsRes.data) ? ratingsRes.data : [])
+      const unreadRatings = Array.isArray(ratingsData) ? ratingsData.length : 0
 
       setNotifications({
-        availableDeliveries: availableDeliveries.length
+        availableDeliveries: availableDeliveries.length,
+        activeDeliveries,
+        unreadRatings
       })
     } catch (error) {
       console.error('Failed to fetch notifications:', error)

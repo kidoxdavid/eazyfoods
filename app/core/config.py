@@ -68,6 +68,15 @@ class Settings(BaseSettings):
     # Debug
     DEBUG: bool = False
 
+    # Email (for password reset, etc.). If not set, reset links are logged only.
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM_EMAIL: Optional[str] = None
+    # Base URL for customer password reset link (e.g. https://eazyfoods.ca or http://localhost:5173)
+    CUSTOMER_RESET_PASSWORD_BASE_URL: Optional[str] = None
+
     # Admin/Marketing: set to False to disable public signup (invite-only)
     ADMIN_SIGNUP_ENABLED: bool = True
 

@@ -164,10 +164,10 @@ const ProductDetail = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-start">
-        {/* Product Images - sticky on desktop for better space use */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-start">
+        {/* Product Images - sticky, card style */}
         <div className="lg:sticky lg:top-4">
-          <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 shadow-sm">
+          <div className="rounded-2xl overflow-hidden bg-white border border-gray-200/80 shadow-lg shadow-gray-200/50">
             <ProductImageGallery
               images={product.images || []}
               mainImage={product.image_url}
@@ -177,28 +177,28 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Product Info - compact card feel */}
-        <div className="space-y-4 sm:space-y-5">
+        {/* Product Info - clean card layout */}
+        <div className="space-y-5 sm:space-y-6">
           <div>
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-1 sm:mb-2 leading-tight">{product.name}</h1>
             {product.vendor && (
-              <p className="text-xs sm:text-sm text-gray-600">
-                Sold by <span className="font-semibold text-gray-800">{product.vendor.business_name}</span>
+              <p className="text-xs sm:text-sm text-gray-500 mb-1.5">
+                Sold by <span className="font-semibold text-gray-700">{product.vendor.business_name}</span>
                 {product.vendor.average_rating != null && (
-                  <span className="ml-2 inline-flex items-center gap-0.5">
-                    <Star className="h-3.5 w-3.5 text-yellow-400 fill-current" />
+                  <span className="ml-2 inline-flex items-center gap-0.5 text-amber-600">
+                    <Star className="h-3.5 w-3.5 fill-current" />
                     {product.vendor.average_rating.toFixed(1)} ({product.vendor.total_reviews ?? 0})
                   </span>
                 )}
               </p>
             )}
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight tracking-tight">{product.name}</h1>
           </div>
 
-          <div className="flex flex-wrap items-baseline gap-2 sm:gap-3">
-            <span className="text-xl sm:text-2xl font-bold text-gray-900">${price.toFixed(2)}</span>
+          <div className="flex flex-wrap items-baseline gap-3">
+            <span className="text-2xl sm:text-3xl font-bold text-primary-600">${price.toFixed(2)}</span>
             {product.compare_at_price != null && product.compare_at_price > price && (
               <>
-                <span className="text-sm sm:text-base text-gray-500 line-through">${product.compare_at_price.toFixed(2)}</span>
+                <span className="text-base text-gray-500 line-through">${product.compare_at_price.toFixed(2)}</span>
                 <AnimatedDiscount discount={Math.round(((product.compare_at_price - price) / product.compare_at_price) * 100)} size="md" />
               </>
             )}
@@ -212,22 +212,22 @@ const ProductDetail = () => {
             />
           </div>
 
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm text-gray-600">
-            {product.unit && <span>Unit: <strong>{product.unit}</strong></span>}
-            {product.weight_kg != null && <span>Weight: <strong>{product.weight_kg} kg</strong></span>}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 py-2 border-y border-gray-100">
+            {product.unit && <span>Unit: <strong className="text-gray-800">{product.unit}</strong></span>}
+            {product.weight_kg != null && <span>Weight: <strong className="text-gray-800">{product.weight_kg} kg</strong></span>}
             <span>Stock: <strong className={stockQuantity > 0 ? 'text-green-600' : 'text-red-600'}>{stockQuantity > 0 ? `${stockQuantity} available` : 'Out of stock'}</strong></span>
           </div>
 
           {product.description && (
-            <div>
-              <h2 className="text-sm font-semibold text-gray-900 mb-1">Description</h2>
-              <p className="text-gray-600 whitespace-pre-line text-xs sm:text-sm leading-relaxed line-clamp-4 sm:line-clamp-none">{product.description}</p>
+            <div className="bg-gray-50/80 rounded-xl p-4">
+              <h2 className="text-sm font-semibold text-gray-900 mb-2">Description</h2>
+              <p className="text-gray-600 whitespace-pre-line text-sm leading-relaxed">{product.description}</p>
             </div>
           )}
 
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
-              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 sm:p-2.5 hover:bg-gray-100 touch-manipulation" aria-label="Decrease">
+            <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden bg-white">
+              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-3 hover:bg-gray-100 touch-manipulation" aria-label="Decrease">
                 <Minus className="h-4 w-4" />
               </button>
               <input
@@ -236,16 +236,16 @@ const ProductDetail = () => {
                 max={stockQuantity}
                 value={quantity}
                 onChange={(e) => setQuantity(Math.max(1, Math.min(stockQuantity, parseInt(e.target.value) || 1)))}
-                className="w-12 sm:w-14 text-center border-x border-gray-300 py-2 text-sm"
+                className="w-14 text-center border-x-2 border-gray-200 py-2.5 text-sm font-medium"
               />
-              <button onClick={() => setQuantity(Math.min(stockQuantity, quantity + 1))} className="p-2 sm:p-2.5 hover:bg-gray-100 touch-manipulation" aria-label="Increase">
+              <button onClick={() => setQuantity(Math.min(stockQuantity, quantity + 1))} className="p-3 hover:bg-gray-100 touch-manipulation" aria-label="Increase">
                 <Plus className="h-4 w-4" />
               </button>
             </div>
             <AnimatedButton
               onClick={handleAddToCart}
               disabled={stockQuantity === 0}
-              className="flex-1 min-w-[140px] text-sm"
+              className="flex-1 min-w-[160px] text-sm py-3 rounded-xl"
               variant="primary"
             >
               <ShoppingCart className="h-4 w-4" />
@@ -254,9 +254,9 @@ const ProductDetail = () => {
           </div>
           <SuccessCheckmark show={showSuccessCheckmark} onComplete={() => setShowSuccessCheckmark(false)} />
 
-          <div className="pt-2 border-t border-gray-100">
+          <div className="pt-4 border-t border-gray-100 rounded-xl bg-gray-50/50 p-4">
             <TrustBadges showSecurePayment showFreeReturns showVerified={product.vendor?.is_verified} vendor={product.vendor} />
-            <div className="mt-2"><PaymentIcons /></div>
+            <div className="mt-3"><PaymentIcons /></div>
           </div>
         </div>
       </div>

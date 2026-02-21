@@ -20,11 +20,11 @@ const Layout = () => {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Available Deliveries', href: '/available-deliveries', icon: MapPin, badge: notifications.availableDeliveries },
-    { name: 'My Deliveries', href: '/my-deliveries', icon: Package },
+    { name: 'My Deliveries', href: '/my-deliveries', icon: Package, badge: notifications.activeDeliveries },
     { name: 'Delivery History', href: '/delivery-history', icon: History },
     { name: 'Earnings', href: '/earnings', icon: DollarSign },
     { name: 'Performance', href: '/performance', icon: BarChart3 },
-    { name: 'Ratings & Reviews', href: '/ratings', icon: Star },
+    { name: 'Ratings & Reviews', href: '/ratings', icon: Star, badge: notifications.unreadRatings },
     { name: 'Support', href: '/support', icon: MessageSquare },
     { name: 'Chat', href: '/chat', icon: MessageCircle },
     { name: 'Profile', href: '/profile', icon: User },
@@ -126,15 +126,14 @@ const Layout = () => {
             <div className="flex-1" />
             <div className="flex items-center space-x-2 sm:space-x-4">
               {driver && (
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-xs sm:text-sm text-gray-600">Available:</span>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <span className="text-xs sm:text-sm font-medium text-gray-600">Available</span>
                   <button
                     onClick={async () => {
                       try {
                         await api.put('/driver/availability', null, {
                           params: { is_available: !driver.is_available }
                         })
-                        // Refresh driver data to update the UI
                         await refreshDriver()
                       } catch (error) {
                         console.error('Failed to update availability:', error)
@@ -142,17 +141,17 @@ const Layout = () => {
                         alert(`Failed to update availability: ${errorMessage}`)
                       }
                     }}
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-2 p-2 sm:p-2.5 rounded-lg border-2 border-gray-200 hover:border-green-300 hover:bg-green-50/50 transition-colors min-w-[4.5rem] sm:min-w-[5rem] justify-center"
                   >
                     {driver.is_available ? (
                       <>
-                        <ToggleRight className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-                        <span className="text-xs sm:text-sm text-green-600">On</span>
+                        <ToggleRight className="h-6 w-6 sm:h-7 sm:w-7 text-green-600 flex-shrink-0" />
+                        <span className="text-sm sm:text-base font-semibold text-green-600">On</span>
                       </>
                     ) : (
                       <>
-                        <ToggleLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-                        <span className="text-xs sm:text-sm text-gray-400">Off</span>
+                        <ToggleLeft className="h-6 w-6 sm:h-7 sm:w-7 text-gray-400 flex-shrink-0" />
+                        <span className="text-sm sm:text-base font-semibold text-gray-500">Off</span>
                       </>
                     )}
                   </button>

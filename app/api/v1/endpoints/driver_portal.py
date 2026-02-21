@@ -714,6 +714,8 @@ async def update_delivery_status(
     elif status_data.status == "delivered" and not delivery.delivered_at:
         delivery.delivered_at = datetime.utcnow()
         delivery.actual_delivery_time = datetime.utcnow()
+        if getattr(status_data, "delivery_photo_url", None):
+            delivery.delivery_photo_url = status_data.delivery_photo_url
         # Update order status
         order = db.query(Order).filter(Order.id == delivery.order_id).first()
         if order:

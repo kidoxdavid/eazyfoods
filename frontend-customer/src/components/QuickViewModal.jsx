@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, ShoppingCart, Plus, Minus, Star } from 'lucide-react'
+import { X, ShoppingCart, Plus, Minus, Star, ExternalLink } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
 import { useToast } from '../contexts/ToastContext'
 import { Link } from 'react-router-dom'
@@ -7,10 +7,8 @@ import { resolveImageUrl } from '../utils/imageUtils'
 
 const QuickViewModal = ({ product, isOpen, onClose }) => {
   const [quantity, setQuantity] = useState(1)
-  // Access contexts without destructuring to prevent errors
   const cartContext = useCart()
   const toastContext = useToast()
-  
   const addToCart = (cartContext && cartContext.addToCart) ? cartContext.addToCart : (() => {})
   const showSuccessToast = (toastContext && toastContext.success) ? toastContext.success : (() => {})
 
@@ -21,9 +19,7 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
     } else {
       document.body.classList.remove('modal-open')
     }
-    return () => {
-      document.body.classList.remove('modal-open')
-    }
+    return () => document.body.classList.remove('modal-open')
   }, [isOpen])
 
   if (!isOpen || !product) return null
@@ -34,157 +30,138 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
   }
 
   const increaseQuantity = () => {
-    if (quantity < product.stock_quantity) {
-      setQuantity(quantity + 1)
-    }
+    if (quantity < product.stock_quantity) setQuantity(quantity + 1)
+  }
+  const decreaseQuantity = () => {
+    if (quantity > 1) setQuantity(quantity - 1)
   }
 
-  const decreaseQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1)
-    }
-  }
+  const price = Number(product.price) ?? 0
+  const compareAt = product.compare_at_price != null && product.compare_at_price > price
+  const discountPct = compareAt ? Math.round(((product.compare_at_price - price) / product.compare_at_price) * 100) : 0
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 sm:p-6 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-md"
       onClick={onClose}
     >
       <div
-        className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-h-[85vh] overflow-y-auto flex flex-col mx-auto max-w-[88vw] sm:max-w-md md:max-w-md"
+        className="relative bg-white rounded-2xl shadow-2xl w-full overflow-hidden flex flex-col max-h-[75vh] sm:max-h-[80vh] md:max-h-[85vh] max-w-[95vw] sm:max-w-[90vw] md:max-w-2xl lg:max-w-3xl border-0"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 z-20 bg-white rounded-full p-2 shadow-md"
-          type="button"
-          aria-label="Close"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        {/* Desktop: elegant bar with close */}
+        <div className="flex items-center justify-between flex-shrink-0 px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+          <span className="text-xs font-medium uppercase tracking-wider text-gray-500">Quick view</span>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            type="button"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
-        <div className="flex flex-col md:flex-row">
-          {/* Product Image - squared so full image shows */}
-          <div className="w-full md:w-2/5 p-4 md:p-6 min-w-0 flex-shrink-0">
-            <div className="relative aspect-square w-full max-w-xs mx-auto">
+        <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
+          {/* Image - compact on mobile, prominent on desktop */}
+          <div className="relative w-full md:w-2/5 flex-shrink-0 bg-gray-50 flex items-center justify-center p-4 md:p-6">
+            <div className="relative aspect-square w-full max-w-[200px] sm:max-w-[240px] md:max-w-none rounded-xl overflow-hidden bg-white shadow-inner">
               {product.image_url ? (
                 <img
                   src={resolveImageUrl(product.image_url)}
                   alt={product.name}
-                  className="w-full h-full object-contain rounded-lg bg-gray-50"
+                  className="w-full h-full object-contain"
                   onError={(e) => {
-                    console.error('[QuickViewModal] Image failed to load:', product.image_url)
                     e.target.style.display = 'none'
-                    const fallback = e.target.parentElement.querySelector('.image-fallback')
-                    if (fallback) {
-                      fallback.style.display = 'flex'
-                    }
+                    const fallback = e.target.parentElement?.querySelector('.image-fallback')
+                    if (fallback) fallback.style.display = 'flex'
                   }}
                 />
               ) : (
-                <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
-                  <span className="text-gray-400 text-sm">No Image</span>
-                </div>
+                <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">No Image</div>
               )}
-              <div className="image-fallback absolute inset-0 w-full h-full bg-gray-100 rounded-lg flex items-center justify-center hidden">
-                <span className="text-gray-400 text-sm">No Image</span>
-              </div>
+              <div className="image-fallback absolute inset-0 hidden items-center justify-center bg-gray-100 text-gray-400 text-sm">No Image</div>
+              {compareAt && (
+                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-red-500 text-white text-xs font-bold shadow">
+                  -{discountPct}%
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Product Details */}
-          <div className="w-full md:w-3/5 p-4 md:p-6 relative min-w-0">
-            <div className="pr-6 sm:pr-12">
-              <h2 className="text-sm sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2 pr-5 line-clamp-2">{product.name}</h2>
-              
-              {product.vendor && (
-                <p className="text-xs sm:text-sm md:text-base text-gray-600 mb-1 sm:mb-3 md:mb-4">Sold by {product.vendor.business_name}</p>
+          {/* Content */}
+          <div className="flex-1 flex flex-col min-w-0 p-4 md:p-6 overflow-y-auto">
+            {product.vendor && (
+              <p className="text-xs text-gray-500 mb-1">Sold by {product.vendor.business_name}</p>
+            )}
+            <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-2 line-clamp-2 pr-8">{product.name}</h2>
+
+            <div className="flex flex-wrap items-baseline gap-2 mb-3">
+              <span className="text-xl md:text-2xl font-bold text-primary-600">${price.toFixed(2)}</span>
+              {compareAt && (
+                <>
+                  <span className="text-sm text-gray-500 line-through">${product.compare_at_price.toFixed(2)}</span>
+                  <span className="text-xs font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Save {discountPct}%</span>
+                </>
               )}
+            </div>
 
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 md:gap-4 mb-2 sm:mb-4">
-                <span className="text-lg sm:text-2xl md:text-3xl font-bold text-primary-600">
-                  ${product.price.toFixed(2)}
-                </span>
-                {product.compare_at_price && product.compare_at_price > product.price && (
-                  <>
-                    <span className="text-base sm:text-lg md:text-xl text-gray-500 line-through">
-                      ${product.compare_at_price.toFixed(2)}
-                    </span>
-                    <span className="bg-red-100 text-red-800 text-[10px] sm:text-xs md:text-sm font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
-                      {Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)}% OFF
-                    </span>
-                  </>
-                )}
-              </div>
+            {product.description && (
+              <p className="text-sm text-gray-600 mb-4 line-clamp-3">{product.description}</p>
+            )}
 
-              {product.description && (
-                <p className="text-xs sm:text-sm md:text-base text-gray-700 mb-2 sm:mb-4 md:mb-6 line-clamp-2 sm:line-clamp-4 md:line-clamp-none">{product.description}</p>
-              )}
+            <div className="flex flex-wrap gap-3 text-xs text-gray-600 mb-4">
+              <span>Unit: <strong>{product.unit || 'piece'}</strong></span>
+              <span className={product.stock_quantity > 10 ? 'text-green-600' : product.stock_quantity > 0 ? 'text-amber-600' : 'text-red-600'}>
+                {product.stock_quantity > 0 ? `${product.stock_quantity} in stock` : 'Out of stock'}
+              </span>
+            </div>
 
-              <div className="space-y-1 sm:space-y-2 md:space-y-4 mb-2 sm:mb-4 md:mb-6">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] sm:text-xs md:text-sm font-medium text-gray-700">Unit:</span>
-                  <span className="text-[10px] sm:text-xs md:text-sm text-gray-600">{product.unit || 'piece'}</span>
+            {product.stock_quantity > 0 && (
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-sm font-medium text-gray-700">Qty</span>
+                <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                  <button
+                    onClick={decreaseQuantity}
+                    disabled={quantity <= 1}
+                    className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    type="button"
+                    aria-label="Decrease"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="px-4 py-2 min-w-[2.5rem] text-center font-medium">{quantity}</span>
+                  <button
+                    onClick={increaseQuantity}
+                    disabled={quantity >= product.stock_quantity}
+                    className="p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    type="button"
+                    aria-label="Increase"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] sm:text-xs md:text-sm font-medium text-gray-700">Stock:</span>
-                  <span className={`text-[10px] sm:text-xs md:text-sm font-semibold ${
-                    product.stock_quantity > 10 ? 'text-green-600' : 
-                    product.stock_quantity > 0 ? 'text-orange-600' : 'text-red-600'
-                  }`}>
-                    {product.stock_quantity > 0 ? `${product.stock_quantity} available` : 'Out of Stock'}
-                  </span>
-                </div>
               </div>
+            )}
 
-              {/* Quantity Selector */}
-              {product.stock_quantity > 0 && (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 md:gap-4 mb-2 sm:mb-5 md:mb-6">
-                  <span className="text-[10px] sm:text-xs md:text-sm font-medium text-gray-700">Quantity:</span>
-                  <div className="flex items-center space-x-1 sm:space-x-2 border border-gray-300 rounded-lg w-fit">
-                    <button
-                      onClick={decreaseQuantity}
-                      disabled={quantity <= 1}
-                      className="p-1 sm:p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-                      type="button"
-                      aria-label="Decrease quantity"
-                    >
-                      <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </button>
-                    <span className="px-1.5 sm:px-3 md:px-4 py-1 sm:py-2 font-medium text-xs sm:text-sm md:text-base min-w-[2rem] sm:min-w-[3rem] text-center">{quantity}</span>
-                    <button
-                      onClick={increaseQuantity}
-                      disabled={quantity >= product.stock_quantity}
-                      className="p-1 sm:p-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-                      type="button"
-                      aria-label="Increase quantity"
-                    >
-                      <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex flex-col gap-1.5 sm:gap-3 md:gap-4 pb-1 sm:pb-0">
-                <button
-                  onClick={handleAddToCart}
-                  disabled={product.stock_quantity === 0}
-                  className="w-full btn-primary flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed py-2 sm:py-3 text-xs sm:text-base touch-manipulation"
-                  type="button"
-                >
-                  <ShoppingCart className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
-                  <span>{product.stock_quantity > 0 ? 'Add to Cart' : 'Out of Stock'}</span>
-                </button>
-                <Link
-                  to={`/products/${product.id}`}
-                  className="w-full btn-secondary flex items-center justify-center space-x-2 py-2 sm:py-3 text-xs sm:text-base touch-manipulation"
-                  onClick={onClose}
-                >
-                  <span>View Details</span>
-                </Link>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-2 mt-auto pt-2">
+              <button
+                onClick={handleAddToCart}
+                disabled={product.stock_quantity === 0}
+                className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                type="button"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {product.stock_quantity > 0 ? 'Add to cart' : 'Out of stock'}
+              </button>
+              <Link
+                to={`/products/${product.id}`}
+                onClick={onClose}
+                className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:border-primary-500 hover:text-primary-600 hover:bg-primary-50/50 transition-colors"
+              >
+                View details
+                <ExternalLink className="h-4 w-4" />
+              </Link>
             </div>
           </div>
         </div>
@@ -194,4 +171,3 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
 }
 
 export default QuickViewModal
-
