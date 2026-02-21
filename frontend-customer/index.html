@@ -12,17 +12,27 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>eazyfoods - Authentic African Groceries</title>
     <style>
-      /* Orange only in status bar / safe area; no extra height so we don't cut into header */
+      /* Orange in status bar; use 44px fallback when safe-area is 0 so strip always shows on iOS */
       html {
-        background: linear-gradient(to bottom, #ff6b35 0, #ff6b35 env(safe-area-inset-top, 0px), #f9fafb env(safe-area-inset-top, 0px));
+        background: linear-gradient(to bottom, #ff6b35 0, #ff6b35 env(safe-area-inset-top, 44px), #f9fafb env(safe-area-inset-top, 44px));
         background-attachment: fixed;
       }
       body { margin: 0; background: transparent; }
+      #status-bar-safe-area {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: env(safe-area-inset-top, 44px);
+        background: #ff6b35;
+        z-index: 9999;
+        pointer-events: none;
+      }
     </style>
   </head>
   <body>
-    <!-- Orange strip: only the status bar / safe area height, never extends into header -->
-    <div id="status-bar-safe-area" style="position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top, 0px);background:#ff6b35;z-index:9999;pointer-events:none;"></div>
+    <!-- Orange strip fills status bar; 44px fallback when safe-area not reported (iOS Safari) -->
+    <div id="status-bar-safe-area"></div>
     <div id="root"></div>
     <script>
       (function() {
