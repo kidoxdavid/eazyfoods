@@ -203,6 +203,7 @@ async def get_customer_order(
                 "estimated_delivery_time": et.isoformat() if et else None,
                 "actual_delivery_time": at.isoformat() if at else None,
                 "current_eta_minutes": getattr(delivery, "current_eta_minutes", None),
+                "delivery_photo_url": getattr(delivery, "delivery_photo_url", None),
             }
     except Exception:
         delivery_info = None

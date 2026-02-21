@@ -129,8 +129,6 @@ const Cart = () => {
     )
   }
 
-  const [cartPane, setCartPane] = useState('cart') // 'cart' | 'saved'
-
   return (
     <div className="w-full">
       <PageBanner
@@ -166,84 +164,14 @@ const Cart = () => {
         }
       />
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-4 sm:pb-8">
-        {/* Tabs: Cart | Saved for later */}
-        <div className="flex border-b border-gray-200 mb-4 sm:mb-6">
-          <button
-            type="button"
-            onClick={() => setCartPane('cart')}
-            className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${
-              cartPane === 'cart'
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Cart ({cart.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setCartPane('saved')}
-            className={`px-4 py-3 text-sm font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${
-              cartPane === 'saved'
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <BookmarkCheck className="h-4 w-4" />
-            Saved for later ({saved.length})
-          </button>
-        </div>
-
+        {/* Two panes: Cart (left) | Saved for later (right) on desktop; stacked on mobile */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-        <div className="lg:col-span-2 space-y-2 sm:space-y-4">
-          {cartPane === 'saved' ? (
-            /* Saved for later – separate pane */
-            <div className="card p-4 sm:p-5">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <BookmarkCheck className="h-5 w-5 text-primary-600" />
-                Saved for later ({saved.length})
-              </h3>
-              {saved.length === 0 ? (
-                <p className="text-gray-500 py-8 text-center">No items saved. Add items from your cart to save them for later.</p>
-              ) : (
-                <div className="space-y-3">
-                  {saved.map((item) => {
-                    const itemLink = item.chef_id ? `/chefs/${item.chef_id}` : `/products/${item.id}`
-                    return (
-                      <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                        <Link to={itemLink} className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 bg-gray-200 rounded-lg overflow-hidden">
-                          {item.image_url ? (
-                            <img src={resolveImageUrl(item.image_url)} alt={item.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Image</div>
-                          )}
-                        </Link>
-                        <div className="flex-1 min-w-0">
-                          <Link to={itemLink} className="font-medium text-gray-900 text-sm sm:text-base line-clamp-2 hover:text-primary-600">{item.name}</Link>
-                          <p className="text-sm font-bold text-primary-600">${(item.price || 0).toFixed(2)}</p>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <button
-                            onClick={() => moveToCart(item.id, addToCart)}
-                            className="px-3 py-1.5 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700"
-                          >
-                            Move to cart
-                          </button>
-                          <button
-                            onClick={() => { removeFromSaveForLater(item.id); showInfoToast('Removed from saved') }}
-                            className="p-1.5 text-gray-400 hover:text-red-600"
-                            title="Remove"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          ) : (
-          <>
+          {/* Pane 1: Your cart */}
+          <div className="lg:col-span-1 space-y-2 sm:space-y-4">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-primary-600" />
+              Your cart ({cart.length})
+            </h2>
           {cart.map((item) => {
             const itemLink = item.chef_id ? `/chefs/${item.chef_id}` : `/products/${item.id}`
             return (
@@ -323,8 +251,8 @@ const Cart = () => {
             </div>
           )})}
 
-          {/* Compare with another store */}
-          {cartPane === 'cart' && compareData?.alternate_store && (
+          {/* Compare with another store (inside cart pane) */}
+          {compareData?.alternate_store && (
             <div className="card p-4 sm:p-5 border-2 border-primary-200 bg-primary-50/30">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
                 <ArrowRightLeft className="h-5 w-5 text-primary-600" />
@@ -355,10 +283,59 @@ const Cart = () => {
               </div>
             </div>
           )}
-        </div>
+          </div>
+
+          {/* Pane 2: Saved for later */}
+          <div className="lg:col-span-1 space-y-2 sm:space-y-4">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+              <BookmarkCheck className="h-5 w-5 text-primary-600" />
+              Saved for later ({saved.length})
+            </h2>
+            <div className="card p-4 sm:p-5 min-h-[200px]">
+              {saved.length === 0 ? (
+                <p className="text-gray-500 py-6 text-center text-sm">No items saved. Use the bookmark on any cart item to save it for later.</p>
+              ) : (
+                <div className="space-y-3">
+                  {saved.map((item) => {
+                    const itemLink = item.chef_id ? `/chefs/${item.chef_id}` : `/products/${item.id}`
+                    return (
+                      <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                        <Link to={itemLink} className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 bg-gray-200 rounded-lg overflow-hidden">
+                          {item.image_url ? (
+                            <img src={resolveImageUrl(item.image_url)} alt={item.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Image</div>
+                          )}
+                        </Link>
+                        <div className="flex-1 min-w-0">
+                          <Link to={itemLink} className="font-medium text-gray-900 text-sm sm:text-base line-clamp-2 hover:text-primary-600">{item.name}</Link>
+                          <p className="text-sm font-bold text-primary-600">${(item.price || 0).toFixed(2)}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => moveToCart(item.id, addToCart)}
+                            className="px-3 py-1.5 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700"
+                          >
+                            Move to cart
+                          </button>
+                          <button
+                            onClick={() => { removeFromSaveForLater(item.id); showInfoToast('Removed from saved') }}
+                            className="p-1.5 text-gray-400 hover:text-red-600"
+                            title="Remove"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
 
         <div className="lg:col-span-1">
-          <div className={`card sticky top-4 lg:top-24 p-4 sm:p-5 ${cartPane === 'saved' ? 'opacity-90' : ''}`}>
+          <div className="card sticky top-4 lg:top-24 p-4 sm:p-5">
             <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Order Summary</h2>
             <div className="space-y-2 sm:space-y-4 mb-4 sm:mb-6">
               <div className="flex justify-between">

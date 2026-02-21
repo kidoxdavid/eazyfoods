@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import api from '../services/api'
-import { Package, MapPin, Clock, CheckCircle, Star, Truck, User, Phone, Car } from 'lucide-react'
+import { Package, MapPin, Clock, CheckCircle, Star, Truck, User, Phone, Car, Camera } from 'lucide-react'
 import { formatDateTime } from '../utils/format'
+import { resolveImageUrl } from '../utils/imageUtils'
 import PrivateRoute from '../components/PrivateRoute'
 import DeliveryTracker from '../components/DeliveryTracker'
 import { OrderDetailSkeleton } from '../components/SkeletonLoader'
@@ -252,6 +253,27 @@ const OrderDetail = () => {
                     <div className="flex items-center gap-1.5 text-gray-600">
                       <Clock className="h-3.5 w-3.5 flex-shrink-0" />
                       <span>Delivered {formatDateTime(order.delivery.actual_delivery_time)}</span>
+                    </div>
+                  )}
+                  {order.delivery.status === 'delivered' && order.delivery.delivery_photo_url && (
+                    <div className="mt-3 pt-3 border-t border-gray-100">
+                      <p className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                        <Camera className="h-3.5 w-3.5" />
+                        Proof of delivery
+                      </p>
+                      <a
+                        href={resolveImageUrl(order.delivery.delivery_photo_url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block rounded-lg overflow-hidden border border-gray-200 bg-gray-50 max-w-[200px] hover:opacity-90 transition-opacity"
+                      >
+                        <img
+                          src={resolveImageUrl(order.delivery.delivery_photo_url)}
+                          alt="Delivery proof"
+                          className="w-full h-auto object-cover max-h-48"
+                        />
+                      </a>
+                      <p className="text-[10px] text-gray-500 mt-1">Photo taken by driver at delivery</p>
                     </div>
                   )}
                 </div>
