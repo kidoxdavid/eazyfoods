@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../contexts/CartContext'
+import { useSaveForLater } from '../contexts/SaveForLaterContext'
 import { useToast } from '../contexts/ToastContext'
-import { Minus, Plus, Trash2, ShoppingCart, Sparkles, TrendingUp, Users, ArrowRightLeft } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingCart, Sparkles, TrendingUp, Users, ArrowRightLeft, Bookmark, BookmarkCheck } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import { resolveImageUrl } from '../utils/imageUtils'
 import EmptyState from '../components/EmptyState'
@@ -10,9 +11,16 @@ import api from '../services/api'
 
 const Cart = () => {
   const { cart, updateQuantity, removeFromCart, getCartTotal, clearCart, addToCart } = useCart()
+  const { saved, addToSaveForLater, removeFromSaveForLater, moveToCart } = useSaveForLater()
   const { success: showSuccessToast, info: showInfoToast, error: showErrorToast } = useToast()
   const navigate = useNavigate()
   const [compareData, setCompareData] = useState(null)
+
+  const handleSaveForLater = (item) => {
+    addToSaveForLater(item, item.quantity)
+    removeFromCart(item.id)
+    showSuccessToast(`${item.name} saved for later`)
+  }
 
   // Check if product items are from multiple stores (chef items don't have store_id)
   const getStoreIds = () => {
@@ -212,6 +220,13 @@ const Cart = () => {
                   </button>
                 </div>
                 <button
+                  onClick={() => handleSaveForLater(item)}
+                  className="p-1.5 sm:p-2 text-gray-500 hover:text-primary-600"
+                  title="Save for later"
+                >
+                  <Bookmark className="h-4 w-4 sm:h-5 sm:w-5" />
+                </button>
+                <button
                   onClick={() => handleRemoveFromCart(item.id)}
                   className="p-1.5 sm:p-2 text-red-600 hover:text-red-700"
                 >
@@ -230,6 +245,51 @@ const Cart = () => {
               </div>
             </div>
           )})}
+
+          {/* Saved for later */}
+          {saved.length > 0 && (
+            <div className="card p-4 sm:p-5 border border-gray-200">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <BookmarkCheck className="h-5 w-5 text-primary-600" />
+                Saved for later ({saved.length})
+              </h3>
+              <div className="space-y-3">
+                {saved.map((item) => {
+                  const itemLink = item.chef_id ? `/chefs/${item.chef_id}` : `/products/${item.id}`
+                  return (
+                    <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
+                      <Link to={itemLink} className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 bg-gray-200 rounded-lg overflow-hidden">
+                        {item.image_url ? (
+                          <img src={resolveImageUrl(item.image_url)} alt={item.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Image</div>
+                        )}
+                      </Link>
+                      <div className="flex-1 min-w-0">
+                        <Link to={itemLink} className="font-medium text-gray-900 text-sm sm:text-base line-clamp-2 hover:text-primary-600">{item.name}</Link>
+                        <p className="text-sm font-bold text-primary-600">${(item.price || 0).toFixed(2)}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => moveToCart(item.id, addToCart)}
+                          className="px-3 py-1.5 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700"
+                        >
+                          Move to cart
+                        </button>
+                        <button
+                          onClick={() => { removeFromSaveForLater(item.id); showInfoToast('Removed from saved') }}
+                          className="p-1.5 text-gray-400 hover:text-red-600"
+                          title="Remove"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Compare with another store */}
           {compareData?.alternate_store && (

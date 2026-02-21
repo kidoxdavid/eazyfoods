@@ -96,23 +96,23 @@ const MealDetail = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-12">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-12">
-        {/* Recipe Image - same as ProductDetail */}
-        <div>
-          <ProductImageGallery
-            images={recipe.images || []}
-            mainImage={recipe.image_url}
-            productName={recipe.name}
-            imageType="recipe"
-          />
+    <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-start">
+        <div className="lg:sticky lg:top-4">
+          <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 shadow-sm">
+            <ProductImageGallery
+              images={recipe.images || []}
+              mainImage={recipe.image_url}
+              productName={recipe.name}
+              imageType="recipe"
+            />
+          </div>
         </div>
 
-        {/* Recipe Info - same structure as ProductDetail */}
-        <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">{recipe.name}</h1>
+        <div className="space-y-4 sm:space-y-5">
+          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 leading-tight">{recipe.name}</h1>
 
-          <div className="mb-3 sm:mb-4 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {recipe.meal_type && (
               <span className={`px-2 py-0.5 rounded text-xs font-medium ${getMealTypeColor(recipe.meal_type)}`}>
                 {recipe.meal_type}
@@ -128,65 +128,47 @@ const MealDetail = () => {
             )}
           </div>
 
-          <div className="mb-4 sm:mb-6 flex flex-wrap items-center gap-4 text-xs sm:text-sm text-gray-600">
+          <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm text-gray-600">
             {recipe.prep_time_minutes != null && (
-              <span className="flex items-center gap-1">
-                <Clock className="h-4 w-4" /> Prep {recipe.prep_time_minutes}m
-              </span>
+              <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> Prep {recipe.prep_time_minutes}m</span>
             )}
             {recipe.cook_time_minutes != null && (
-              <span className="flex items-center gap-1">
-                <Clock className="h-4 w-4" /> Cook {recipe.cook_time_minutes}m
-              </span>
+              <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> Cook {recipe.cook_time_minutes}m</span>
             )}
-            <span className="flex items-center gap-1">
-              <Users className="h-4 w-4" /> Serves {recipe.servings || 1}
-            </span>
+            <span className="flex items-center gap-1"><Users className="h-4 w-4" /> Serves {recipe.servings || 1}</span>
           </div>
 
           {recipe.description && (
-            <div className="mb-4 sm:mb-6">
-              <h2 className="text-base sm:text-lg lg:text-xl font-semibold mb-1.5 sm:mb-2">Description</h2>
-              <p className="text-gray-600 whitespace-pre-line text-xs sm:text-sm lg:text-base xl:text-lg leading-relaxed">{recipe.description}</p>
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900 mb-1">Description</h2>
+              <p className="text-gray-600 whitespace-pre-line text-xs sm:text-sm leading-relaxed line-clamp-4 sm:line-clamp-none">{recipe.description}</p>
             </div>
           )}
 
-          {/* Servings Selector - same as Quantity in ProductDetail */}
-          <div className="mb-4 sm:mb-6">
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Servings</label>
-            <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
-              <button
-                onClick={() => setHouseholdSize(Math.max(1, householdSize - 1))}
-                className="p-1.5 sm:p-2 lg:p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 touch-manipulation"
-              >
-                <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
-              </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+              <label className="sr-only">Servings</label>
+              <button onClick={() => setHouseholdSize(Math.max(1, householdSize - 1))} className="p-2 sm:p-2.5 hover:bg-gray-100 touch-manipulation"><Minus className="h-4 w-4" /></button>
               <input
                 type="number"
-                min="1"
-                max="10"
+                min={1}
+                max={10}
                 value={householdSize}
                 onChange={(e) => setHouseholdSize(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-                className="w-14 sm:w-16 lg:w-20 text-center border border-gray-300 rounded-lg py-1.5 sm:py-2 text-xs sm:text-sm lg:text-base"
+                className="w-12 sm:w-14 text-center border-x border-gray-300 py-2 text-sm"
               />
-              <button
-                onClick={() => setHouseholdSize(Math.min(10, householdSize + 1))}
-                className="p-1.5 sm:p-2 lg:p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 touch-manipulation"
-              >
-                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
-              </button>
+              <button onClick={() => setHouseholdSize(Math.min(10, householdSize + 1))} className="p-2 sm:p-2.5 hover:bg-gray-100 touch-manipulation"><Plus className="h-4 w-4" /></button>
             </div>
+            <AnimatedButton
+              onClick={handleAddToCart}
+              disabled={addingToCart || !recipe.ingredients?.length}
+              className="flex-1 min-w-[140px] text-sm"
+              variant="primary"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              <span>{addingToCart ? 'Adding...' : 'Add Ingredients to Cart'}</span>
+            </AnimatedButton>
           </div>
-
-          <AnimatedButton
-            onClick={handleAddToCart}
-            disabled={addingToCart || !recipe.ingredients?.length}
-            className="w-full mb-3 sm:mb-4 text-sm sm:text-base"
-            variant="primary"
-          >
-            <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span>{addingToCart ? 'Adding...' : `Add Ingredients to Cart`}</span>
-          </AnimatedButton>
 
           <SuccessCheckmark
             show={showSuccessCheckmark}

@@ -252,7 +252,7 @@ const Signup = () => {
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <Truck className="h-16 w-16 text-primary-600 mx-auto mb-4" />
-          <h1 className="text-4xl font-bold text-primary-600 mb-2">Become a Driver</h1>
+          <h1 className="text-4xl font-bold text-primary-600 mb-2">eazydrive</h1>
           <p className="text-gray-600">Join eazyfoods as a delivery driver</p>
         </div>
 

@@ -84,6 +84,18 @@ const ProductImageGallery = ({ images, productName, mainImage, imageType = 'prod
 
   const handleImageLoad = () => {
     setImageLoaded(true)
+    setImageError(false)
+  }
+
+  // Retry loading once on error (handles transient failures / CORS timing)
+  const handleImageError = () => {
+    if (retryKey === 0) {
+      setRetryKey(1)
+      setImageError(false)
+    } else {
+      setImageError(true)
+      setImageLoaded(true)
+    }
   }
 
   const nextImage = () => {
@@ -152,13 +164,8 @@ const ProductImageGallery = ({ images, productName, mainImage, imageType = 'prod
               onLoad={handleImageLoad}
               loading="lazy"
               onError={(e) => {
-                if (retryKey === 0) {
-                  setRetryKey(1)
-                } else {
-                  setImageError(true)
-                  setImageLoaded(true)
-                }
                 e.target.style.display = 'none'
+                handleImageError()
               }}
               style={
                 isZoomed && imageLoaded

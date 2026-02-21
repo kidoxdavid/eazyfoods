@@ -459,9 +459,9 @@ const AdDesigner = () => {
                       <option value="checkout_top_banner">Checkout Top Banner</option>
                       <option value="checkout_bottom_banner">Checkout Bottom Banner</option>
                     </optgroup>
-                    <optgroup label="Become a Driver Page">
-                      <option value="become_a_driver_top_banner">Become a Driver Top Banner</option>
-                      <option value="become_a_driver_bottom_banner">Become a Driver Bottom Banner</option>
+                    <optgroup label="eazydrive Page">
+                      <option value="become_a_driver_top_banner">eazydrive Top Banner</option>
+                      <option value="become_a_driver_bottom_banner">eazydrive Bottom Banner</option>
                     </optgroup>
                   </select>
                 </div>

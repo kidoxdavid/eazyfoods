@@ -163,138 +163,101 @@ const ProductDetail = () => {
   const stockQuantity = product.stock_quantity != null ? Number(product.stock_quantity) : 0
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-12">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-12">
-        {/* Product Images */}
-        <div>
-          <ProductImageGallery
-            images={product.images || []}
-            mainImage={product.image_url}
-            productName={product.name}
-            imageType="product"
-          />
+    <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-start">
+        {/* Product Images - sticky on desktop for better space use */}
+        <div className="lg:sticky lg:top-4">
+          <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 shadow-sm">
+            <ProductImageGallery
+              images={product.images || []}
+              mainImage={product.image_url}
+              productName={product.name}
+              imageType="product"
+            />
+          </div>
         </div>
 
-        {/* Product Info */}
-        <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">{product.name}</h1>
-          
-          {product.vendor && (
-            <div className="mb-3 sm:mb-4">
-              <p className="text-xs sm:text-sm text-gray-600">Sold by: <span className="font-semibold">{product.vendor.business_name}</span></p>
-              {product.vendor.average_rating && (
-                <div className="flex items-center space-x-1 mt-1">
-                  <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 fill-current" />
-                  <span className="text-xs sm:text-sm text-gray-600">
-                    {product.vendor.average_rating.toFixed(1)} ({product.vendor.total_reviews ?? 0} reviews)
+        {/* Product Info - compact card feel */}
+        <div className="space-y-4 sm:space-y-5">
+          <div>
+            <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 mb-1 sm:mb-2 leading-tight">{product.name}</h1>
+            {product.vendor && (
+              <p className="text-xs sm:text-sm text-gray-600">
+                Sold by <span className="font-semibold text-gray-800">{product.vendor.business_name}</span>
+                {product.vendor.average_rating != null && (
+                  <span className="ml-2 inline-flex items-center gap-0.5">
+                    <Star className="h-3.5 w-3.5 text-yellow-400 fill-current" />
+                    {product.vendor.average_rating.toFixed(1)} ({product.vendor.total_reviews ?? 0})
                   </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="mb-4 sm:mb-6">
-            <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 flex-wrap mb-2 sm:mb-3">
-              <p className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900">${price.toFixed(2)}</p>
-              {product.compare_at_price && (
-                <>
-                  <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-500 line-through">
-                    ${product.compare_at_price.toFixed(2)}
-                  </p>
-                  {product.compare_at_price > price && (
-                    <AnimatedDiscount 
-                      discount={Math.round(((product.compare_at_price - price) / product.compare_at_price) * 100)} 
-                      size="md"
-                    />
-                  )}
-                </>
-              )}
-            </div>
-            {/* Social Proof */}
-            <SocialProof productId={product.id} product={product} />
-            {/* Promotional Badges */}
-            <div className="mt-3">
-              <PromotionalBadges 
-                freeShipping={price > 50}
-                buy2Get1={product.promotions?.some(p => p.name?.toLowerCase().includes('buy 2'))}
-                bundleDeal={product.promotions?.some(p => p.name?.toLowerCase().includes('bundle'))}
-              />
-            </div>
+                )}
+              </p>
+            )}
           </div>
 
-          {/* Trust Badges and Payment Icons */}
-          <div className="mb-6 space-y-3">
-            <TrustBadges 
-              showSecurePayment={true}
-              showFreeReturns={true}
-              showVerified={product.vendor?.is_verified}
-              vendor={product.vendor}
+          <div className="flex flex-wrap items-baseline gap-2 sm:gap-3">
+            <span className="text-xl sm:text-2xl font-bold text-gray-900">${price.toFixed(2)}</span>
+            {product.compare_at_price != null && product.compare_at_price > price && (
+              <>
+                <span className="text-sm sm:text-base text-gray-500 line-through">${product.compare_at_price.toFixed(2)}</span>
+                <AnimatedDiscount discount={Math.round(((product.compare_at_price - price) / product.compare_at_price) * 100)} size="md" />
+              </>
+            )}
+          </div>
+          <SocialProof productId={product.id} product={product} />
+          <div className="flex flex-wrap gap-2">
+            <PromotionalBadges
+              freeShipping={price > 50}
+              buy2Get1={product.promotions?.some(p => p.name?.toLowerCase().includes('buy 2'))}
+              bundleDeal={product.promotions?.some(p => p.name?.toLowerCase().includes('bundle'))}
             />
-            <PaymentIcons />
+          </div>
+
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm text-gray-600">
+            {product.unit && <span>Unit: <strong>{product.unit}</strong></span>}
+            {product.weight_kg != null && <span>Weight: <strong>{product.weight_kg} kg</strong></span>}
+            <span>Stock: <strong className={stockQuantity > 0 ? 'text-green-600' : 'text-red-600'}>{stockQuantity > 0 ? `${stockQuantity} available` : 'Out of stock'}</strong></span>
           </div>
 
           {product.description && (
-            <div className="mb-4 sm:mb-6">
-              <h2 className="text-base sm:text-lg lg:text-xl font-semibold mb-1.5 sm:mb-2">Description</h2>
-              <p className="text-gray-600 whitespace-pre-line text-xs sm:text-sm lg:text-base xl:text-lg leading-relaxed">{product.description}</p>
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900 mb-1">Description</h2>
+              <p className="text-gray-600 whitespace-pre-line text-xs sm:text-sm leading-relaxed line-clamp-4 sm:line-clamp-none">{product.description}</p>
             </div>
           )}
 
-          <div className="mb-4 sm:mb-6 space-y-1.5 sm:space-y-2">
-            {product.unit && (
-              <p className="text-xs sm:text-sm text-gray-600">Unit: <span className="font-medium">{product.unit}</span></p>
-            )}
-            {product.weight_kg && (
-              <p className="text-xs sm:text-sm text-gray-600">Weight: <span className="font-medium">{product.weight_kg} kg</span></p>
-            )}
-            <p className="text-xs sm:text-sm text-gray-600">
-              Stock: <span className={`font-medium ${stockQuantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {stockQuantity > 0 ? `${stockQuantity} available` : 'Out of stock'}
-              </span>
-            </p>
-          </div>
-
-          {/* Quantity Selector */}
-          <div className="mb-4 sm:mb-6">
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Quantity</label>
-            <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
-              <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="p-1.5 sm:p-2 lg:p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 touch-manipulation"
-              >
-                <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 sm:p-2.5 hover:bg-gray-100 touch-manipulation" aria-label="Decrease">
+                <Minus className="h-4 w-4" />
               </button>
               <input
                 type="number"
-                min="1"
+                min={1}
                 max={stockQuantity}
                 value={quantity}
                 onChange={(e) => setQuantity(Math.max(1, Math.min(stockQuantity, parseInt(e.target.value) || 1)))}
-                className="w-14 sm:w-16 lg:w-20 text-center border border-gray-300 rounded-lg py-1.5 sm:py-2 text-xs sm:text-sm lg:text-base"
+                className="w-12 sm:w-14 text-center border-x border-gray-300 py-2 text-sm"
               />
-              <button
-                onClick={() => setQuantity(Math.min(stockQuantity, quantity + 1))}
-                className="p-1.5 sm:p-2 lg:p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 touch-manipulation"
-              >
-                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
+              <button onClick={() => setQuantity(Math.min(stockQuantity, quantity + 1))} className="p-2 sm:p-2.5 hover:bg-gray-100 touch-manipulation" aria-label="Increase">
+                <Plus className="h-4 w-4" />
               </button>
             </div>
+            <AnimatedButton
+              onClick={handleAddToCart}
+              disabled={stockQuantity === 0}
+              className="flex-1 min-w-[140px] text-sm"
+              variant="primary"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              <span>Add to Cart</span>
+            </AnimatedButton>
           </div>
+          <SuccessCheckmark show={showSuccessCheckmark} onComplete={() => setShowSuccessCheckmark(false)} />
 
-          <AnimatedButton
-            onClick={handleAddToCart}
-            disabled={stockQuantity === 0}
-            className="w-full mb-3 sm:mb-4 text-sm sm:text-base"
-            variant="primary"
-          >
-            <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span>Add to Cart</span>
-          </AnimatedButton>
-          
-          <SuccessCheckmark 
-            show={showSuccessCheckmark} 
-            onComplete={() => setShowSuccessCheckmark(false)}
-          />
+          <div className="pt-2 border-t border-gray-100">
+            <TrustBadges showSecurePayment showFreeReturns showVerified={product.vendor?.is_verified} vendor={product.vendor} />
+            <div className="mt-2"><PaymentIcons /></div>
+          </div>
         </div>
       </div>
 
@@ -308,10 +271,10 @@ const ProductDetail = () => {
       />
 
       {/* Reviews Section */}
-      <div className="mt-8 sm:mt-12">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="mt-6 sm:mt-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Customer Reviews</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Customer Reviews</h2>
             {reviews.length > 0 && (
               <div className="flex items-center space-x-2 mt-2 flex-wrap">
                 {renderStars(Math.round(averageRating))}

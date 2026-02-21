@@ -337,7 +337,7 @@ const Home = () => {
   }
 
   return (
-    <div className="w-full relative" style={{ display: 'block', width: '100%' }}>
+    <div className="w-full relative animate-fadeIn" style={{ display: 'block', width: '100%' }}>
       {/* Hero Section - same PageBanner as other pages for consistent load (no flash) */}
       <PageBanner
         title="Welcome to eazyfoods"
@@ -348,8 +348,8 @@ const Home = () => {
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">Welcome to eazyfoods</h1>
             <p className="text-xs sm:text-sm md:text-base mb-3 sm:mb-4 text-white/90">Authentic African Groceries Delivered to Your Doorstep</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
-              <Link to="/stores" className="inline-block bg-white text-primary-600 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold hover:bg-nude-100 transition-colors text-xs sm:text-sm">Browse Stores</Link>
-              <Link to="/groceries" className="inline-block bg-[#ff6b35] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold hover:bg-[#e55a2b] transition-colors text-xs sm:text-sm border border-white/30">Shop All Groceries</Link>
+              <Link to="/stores" className="inline-block bg-white text-primary-600 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold hover:bg-nude-100 hover:scale-105 active:scale-100 transition-all duration-200 text-xs sm:text-sm">Browse Stores</Link>
+              <Link to="/groceries" className="inline-block bg-[#ff6b35] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold hover:bg-[#e55a2b] hover:scale-105 active:scale-100 transition-all duration-200 text-xs sm:text-sm border border-white/30">Shop All Groceries</Link>
             </div>
           </div>
         }
@@ -755,23 +755,27 @@ const Home = () => {
                               {isStoreOpen(store.operating_hours) ? 'Open' : 'Closed'}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {store.average_rating && (
-                              <div className="flex items-center space-x-0.5">
-                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                                <span className="text-xs font-semibold text-gray-900">{store.average_rating.toFixed(1)}</span>
+                          <div className="flex items-center justify-between gap-2 w-full">
+                            <div className="flex items-center gap-2 min-w-0 flex-shrink">
+                              {store.average_rating && (
+                                <div className="flex items-center space-x-0.5">
+                                  <Star className="h-3 w-3 text-yellow-400 fill-current flex-shrink-0" />
+                                  <span className="text-xs font-semibold text-gray-900">{store.average_rating.toFixed(1)}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1 min-w-0">
+                                <MapPin className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                                <p className="text-xs text-gray-600 truncate">{store.city}</p>
                               </div>
-                            )}
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3 text-gray-400" />
-                              <p className="text-xs text-gray-600 truncate">{store.city}</p>
                             </div>
-                            {!isStoreOpen(store.operating_hours) && getNextOpeningTime(store.operating_hours) && (
-                              <p className="text-xs text-blue-600 font-medium truncate">{getNextOpeningTime(store.operating_hours)}</p>
-                            )}
-                            {store.distance_km && (
-                              <p className="text-xs text-blue-600 font-semibold ml-auto">{store.distance_km} km</p>
-                            )}
+                            <div className="flex items-center gap-1.5 flex-shrink-0 justify-end">
+                              {!isStoreOpen(store.operating_hours) && getNextOpeningTime(store.operating_hours) && (
+                                <p className="text-xs text-blue-600 font-medium text-right">{getNextOpeningTime(store.operating_hours)}</p>
+                              )}
+                              {store.distance_km && (
+                                <p className="text-xs text-blue-600 font-semibold">{store.distance_km} km</p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -861,37 +865,37 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Why Choose Us */}
-      <section className="py-12 bg-gray-50">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Why Choose eazyfoods?</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            <div className="text-center">
-              <div className="bg-nude-200 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="h-8 w-8 text-primary-600" />
+      {/* Why Choose Us - compact */}
+      <section className="py-6 sm:py-8 bg-gradient-to-b from-gray-50 to-white">
+        <div className="w-full px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 text-center">Why Choose eazyfoods?</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+            <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl bg-white/80 border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-100 hover:-translate-y-0.5 transition-all duration-200 animate-slideIn" style={{ animationDelay: '0ms' }}>
+              <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Fresh Groceries</h3>
-              <p className="text-gray-600">
-                We source the freshest African groceries directly from trusted suppliers
-              </p>
+              <div className="min-w-0">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-0.5">Fresh Groceries</h3>
+                <p className="text-xs sm:text-sm text-gray-600 leading-snug">Freshest African groceries from trusted suppliers.</p>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="bg-nude-200 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <ShoppingCart className="h-8 w-8 text-primary-600" />
+            <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl bg-white/80 border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-100 hover:-translate-y-0.5 transition-all duration-200 animate-slideIn" style={{ animationDelay: '80ms' }}>
+              <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+                <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Fast Delivery</h3>
-              <p className="text-gray-600">
-                Quick and reliable delivery to your doorstep, wherever you are
-              </p>
+              <div className="min-w-0">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-0.5">Fast Delivery</h3>
+                <p className="text-xs sm:text-sm text-gray-600 leading-snug">Quick, reliable delivery to your doorstep.</p>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="bg-nude-200 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Star className="h-8 w-8 text-primary-600" />
+            <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl bg-white/80 border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-100 hover:-translate-y-0.5 transition-all duration-200 animate-slideIn" style={{ animationDelay: '160ms' }}>
+              <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+                <Star className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Quality Guaranteed</h3>
-              <p className="text-gray-600">
-                We guarantee the quality of all our products or your money back
-              </p>
+              <div className="min-w-0">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-0.5">Quality Guaranteed</h3>
+                <p className="text-xs sm:text-sm text-gray-600 leading-snug">Quality guaranteed or your money back.</p>
+              </div>
             </div>
           </div>
         </div>

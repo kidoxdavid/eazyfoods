@@ -185,74 +185,48 @@ const Profile = () => {
           }
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 sm:pb-12">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8">
-          {/* Sidebar */}
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-4 sm:pb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
+          {/* Sidebar - mobile: compact horizontal nav; desktop: vertical */}
           <div className="lg:col-span-1">
-            <div className="card">
-              <div className="text-center mb-4 sm:mb-6">
-                <div className="w-16 h-16 sm:w-20 sm:h-24 bg-primary-600 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                  <User className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-white" />
+            <div className="card p-3 sm:p-4 lg:p-5">
+              <div className="flex items-center gap-3 sm:block sm:text-center mb-3 sm:mb-4 lg:mb-6">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-24 flex-shrink-0 bg-primary-600 rounded-full flex items-center justify-center">
+                  <User className="h-6 w-6 sm:h-8 sm:w-8 lg:h-12 lg:w-12 text-white" />
                 </div>
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                  {profile?.first_name} {profile?.last_name}
-                </h2>
-                <p className="text-sm sm:text-base text-gray-600 break-all">{profile?.email}</p>
+                <div className="min-w-0 flex-1 sm:flex-none">
+                  <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 truncate sm:truncate-none">
+                    {profile?.first_name} {profile?.last_name}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-gray-600 break-all line-clamp-2 sm:line-clamp-none">{profile?.email}</p>
+                </div>
               </div>
-              
-              <nav className="space-y-2">
-                <button
-                  onClick={() => setActiveTab('overview')}
-                  className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-                    activeTab === 'overview'
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Overview
-                </button>
-                <button
-                  onClick={() => setActiveTab('addresses')}
-                  className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-                    activeTab === 'addresses'
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Addresses
-                </button>
-                <button
-                  onClick={() => setActiveTab('orders')}
-                  className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-                    activeTab === 'orders'
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Order History
-                </button>
-                <button
-                  onClick={() => setActiveTab('settings')}
-                  className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-                    activeTab === 'settings'
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  Settings
-                </button>
+              <nav className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide lg:flex-col lg:space-y-2 lg:overflow-visible">
+                {['overview', 'addresses', 'orders', 'settings'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`flex-shrink-0 px-3 py-2 rounded-lg text-sm font-medium transition-colors lg:w-full lg:text-left ${
+                      activeTab === tab
+                        ? 'bg-primary-100 text-primary-700'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {tab === 'overview' ? 'Overview' : tab === 'addresses' ? 'Addresses' : tab === 'orders' ? 'Order History' : 'Settings'}
+                  </button>
+                ))}
               </nav>
             </div>
           </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 min-w-0">
             {/* Overview Tab */}
             {activeTab === 'overview' && (
-              <div className="space-y-6">
-                <div className="card">
-                  <h3 className="text-xl font-bold text-gray-900 mb-6">Account Information</h3>
-                  <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-6">
+                <div className="card p-3 sm:p-4 lg:p-6">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-6">Account Information</h3>
+                  <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-center space-x-4">
                       <Mail className="h-5 w-5 text-gray-400" />
                       <div>
@@ -302,26 +276,26 @@ const Profile = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="card text-center">
-                    <Package className="h-8 w-8 text-primary-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
-                    <p className="text-gray-600">Total Orders</p>
+                <div className="grid grid-cols-3 gap-2 sm:gap-6">
+                  <div className="card text-center p-3 sm:p-4">
+                    <Package className="h-6 w-6 sm:h-8 sm:w-8 text-primary-600 mx-auto mb-1 sm:mb-2" />
+                    <p className="text-lg sm:text-2xl font-bold text-gray-900">{orders.length}</p>
+                    <p className="text-xs sm:text-base text-gray-600">Orders</p>
                   </div>
-                  <div className="card text-center">
-                    <MapPin className="h-8 w-8 text-primary-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-gray-900">{addresses.length}</p>
-                    <p className="text-gray-600">Saved Addresses</p>
+                  <div className="card text-center p-3 sm:p-4">
+                    <MapPin className="h-6 w-6 sm:h-8 sm:w-8 text-primary-600 mx-auto mb-1 sm:mb-2" />
+                    <p className="text-lg sm:text-2xl font-bold text-gray-900">{addresses.length}</p>
+                    <p className="text-xs sm:text-base text-gray-600">Addresses</p>
                   </div>
-                  <div className="card text-center">
-                    <CreditCard className="h-8 w-8 text-primary-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-gray-900">0</p>
-                    <p className="text-gray-600">Payment Methods</p>
+                  <div className="card text-center p-3 sm:p-4">
+                    <CreditCard className="h-6 w-6 sm:h-8 sm:w-8 text-primary-600 mx-auto mb-1 sm:mb-2" />
+                    <p className="text-lg sm:text-2xl font-bold text-gray-900">0</p>
+                    <p className="text-xs sm:text-base text-gray-600">Payment</p>
                   </div>
                 </div>
 
-                <div className="card">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Recent Orders</h3>
+                <div className="card p-3 sm:p-4 lg:p-6">
+                  <h3 className="text-base sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Recent Orders</h3>
                   {orders.length === 0 ? (
                     <p className="text-gray-600">No orders yet</p>
                   ) : (

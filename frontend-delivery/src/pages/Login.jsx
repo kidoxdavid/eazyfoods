@@ -98,7 +98,7 @@ const Login = () => {
         <p className="mt-6 text-center text-sm text-gray-600">
           Don't have an account?{' '}
           <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-medium">
-            Sign up to become a driver
+            Sign up for eazydrive
           </Link>
         </p>
       </div>

@@ -15,7 +15,7 @@ const segmentNameMap = {
   'top-chef-deals': { name: 'Top Chef Deals', icon: ChefHat },
   'about': { name: 'About', icon: Info },
   'contact': { name: 'Contact Us', icon: Mail },
-  'become-a-driver': { name: 'Become a Driver', icon: Truck }
+  'become-a-driver': { name: 'eazydrive', icon: Truck }
 }
 
 const Breadcrumbs = () => {

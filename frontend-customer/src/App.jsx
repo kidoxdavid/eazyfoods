@@ -5,6 +5,7 @@ import { CartProvider } from './contexts/CartContext'
 import { LocationProvider } from './contexts/LocationContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { RecentlyViewedProvider } from './contexts/RecentlyViewedContext'
+import { SaveForLaterProvider } from './contexts/SaveForLaterContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import Layout from './components/Layout'
 import Chatbot from './components/Chatbot'
@@ -50,6 +51,7 @@ function App() {
       <ErrorBoundary>
         <AuthProvider>
           <CartProvider>
+            <SaveForLaterProvider>
             <LocationProvider>
               <ToastProvider>
                 <RecentlyViewedProvider>
@@ -135,6 +137,7 @@ function App() {
                 </RecentlyViewedProvider>
               </ToastProvider>
             </LocationProvider>
+            </SaveForLaterProvider>
           </CartProvider>
         </AuthProvider>
       </ErrorBoundary>
