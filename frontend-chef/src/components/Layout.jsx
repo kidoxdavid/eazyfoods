@@ -85,8 +85,8 @@ const Layout = ({ children }) => {
         }`}
       >
         <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6 border-b border-gray-200 bg-gradient-to-r from-primary-600 to-primary-700" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          {/* Logo / header - same as vendor: enough height and padding so not compressed */}
+          <div className="flex items-center justify-between min-h-[4rem] py-4 px-4 sm:px-6 border-b border-gray-200 bg-gradient-to-r from-primary-600 to-primary-700 shrink-0" style={{ paddingTop: 'env(safe-area-inset-top, 44px)' }}>
             <h1 className="text-lg sm:text-xl font-bold text-white truncate">eazyfoods Chef</h1>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -97,8 +97,8 @@ const Layout = ({ children }) => {
             </button>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
+          {/* Navigation - scroll so user section stays visible */}
+          <nav className="flex-1 px-2 sm:px-4 py-4 sm:py-6 space-y-1 overflow-y-auto min-h-0">
             {navigation.map((item) => {
               const Icon = item.icon
               return (
@@ -106,14 +106,16 @@ const Layout = ({ children }) => {
                   key={item.name}
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                  className={`flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive(item.href)
-                      ? 'bg-primary-50 text-primary-700'
+                      ? 'bg-primary-50 text-primary-700 shadow-sm'
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
-                  <span className="truncate flex-1">{item.name}</span>
+                  <div className="flex items-center min-w-0 flex-1">
+                    <Icon className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                    <span className="truncate">{item.name}</span>
+                  </div>
                   {item.badge > 0 && (
                     <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] text-center animate-pulse flex-shrink-0">
                       {item.badge > 99 ? '99+' : item.badge}
@@ -124,22 +126,24 @@ const Layout = ({ children }) => {
             })}
           </nav>
 
-          {/* User section */}
-          <div className="p-4 border-t">
-            <div className="flex items-center px-4 py-2 mb-2">
-              <User className="h-5 w-5 text-gray-500 mr-3" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+          {/* User section - match vendor: always visible at bottom, clear Logout */}
+          <div className="p-3 sm:p-4 border-t border-gray-200 bg-gray-50 shrink-0">
+            <div className="flex items-center px-3 sm:px-4 py-2 mb-2">
+              <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />
+              </div>
+              <div className="flex-1 min-w-0 ml-2 sm:ml-3">
+                <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                   {user?.chef_name || 'Chef'}
                 </p>
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 truncate">{user?.email}</p>
               </div>
             </div>
             <button
               onClick={handleLogout}
-              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center justify-center w-full px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-200 rounded-lg transition-colors font-medium"
             >
-              <LogOut className="h-5 w-5 mr-3" />
+              <LogOut className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
               Logout
             </button>
           </div>
@@ -149,7 +153,7 @@ const Layout = ({ children }) => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <header className="bg-white shadow-sm sticky top-0 z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <header className="bg-white shadow-sm sticky top-0 z-10" style={{ paddingTop: 'env(safe-area-inset-top, 44px)' }}>
           <div className="flex items-center justify-between h-14 sm:h-16 px-3 sm:px-4 lg:px-6">
             <button
               onClick={() => setSidebarOpen(true)}
