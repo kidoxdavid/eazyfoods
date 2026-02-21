@@ -157,19 +157,18 @@ function CheckoutPaymentSection({ amount, token, onSuccess, onError, onPaymentRe
     )
   }
 
-  // Always render the mount container so ref is in DOM when async init runs (otherwise mount() has nowhere to attach)
+  // Stripe requires an empty mount node (no child nodes). Use a sibling overlay for loading so we never put children in the mount div.
   return (
     <div className="space-y-4">
-      <div className="p-4 border border-gray-300 rounded-lg bg-white min-h-[220px]">
+      <div className="p-4 border border-gray-300 rounded-lg bg-white min-h-[220px] relative">
         <p className="text-sm text-gray-600 mb-3">Enter your card details. Payment is secure via Stripe.</p>
-        <div ref={containerRef} className="min-h-[180px] relative">
-          {status === 'loading' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 text-gray-500">
-              <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full mb-2" />
-              Loading Stripe…
-            </div>
-          )}
-        </div>
+        <div ref={containerRef} className="min-h-[180px]" />
+        {status === 'loading' && (
+          <div className="absolute inset-0 top-12 left-4 right-4 bottom-0 flex flex-col items-center justify-center bg-white/90 text-gray-500 rounded border border-gray-200">
+            <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full mb-2" />
+            Loading Stripe…
+          </div>
+        )}
       </div>
       {message && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{message}</div>}
       {processing && <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">Processing…</div>}
