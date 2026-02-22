@@ -42,10 +42,21 @@ const Signup = () => {
     }
   }
 
+  const getErrorMessage = (err) => {
+    if (!err || typeof err !== 'object') return 'Signup failed. Please try again.'
+    const detail = err.response?.data?.detail
+    if (Array.isArray(detail)) {
+      return detail.map((d) => (typeof d === 'object' && d?.msg) ? d.msg : String(d)).join('. ') || 'Signup failed. Please try again.'
+    }
+    if (typeof detail === 'string') return detail
+    const msg = err.response?.data?.message || err.message
+    return typeof msg === 'string' ? msg : 'Signup failed. Please try again.'
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    
+
     if (formData.cuisines.length === 0) {
       setError('Please add at least one cuisine type')
       return
@@ -57,22 +68,34 @@ const Signup = () => {
 
     setLoading(true)
     try {
-      let payload = { ...formData }
-      const fd1 = new FormData(); fd1.append('file', doc1File)
-      const fd2 = new FormData(); fd2.append('file', doc2File)
-      const fd3 = new FormData(); fd3.append('file', doc3File)
-      const [r1, r2, r3] = await Promise.all([
-        api.post('/uploads/chef-documents', fd1),
-        api.post('/uploads/chef-documents', fd2),
-        api.post('/uploads/chef-documents', fd3)
-      ])
-      if (r1.data?.url) payload.government_id_url = r1.data.url
-      if (r2.data?.url) payload.chef_certification_url = r2.data.url
-      if (r3.data?.url) payload.business_permit_url = r3.data.url
+      const payload = { ...formData }
+      const fd1 = new FormData()
+      fd1.append('file', doc1File)
+      const fd2 = new FormData()
+      fd2.append('file', doc2File)
+      const fd3 = new FormData()
+      fd3.append('file', doc3File)
+
+      try {
+        const [r1, r2, r3] = await Promise.all([
+          api.post('/uploads/chef-documents', fd1),
+          api.post('/uploads/chef-documents', fd2),
+          api.post('/uploads/chef-documents', fd3)
+        ])
+        if (r1?.data?.url) payload.government_id_url = r1.data.url
+        if (r2?.data?.url) payload.chef_certification_url = r2.data.url
+        if (r3?.data?.url) payload.business_permit_url = r3.data.url
+      } catch (uploadErr) {
+        setError(getErrorMessage(uploadErr) || 'Document upload failed. Please check your files and try again.')
+        setLoading(false)
+        return
+      }
+
       await signup(payload)
+      setLoading(false)
       navigate('/login', { state: { message: 'Account created successfully! Please wait for admin verification.' } })
     } catch (err) {
-      setError(err.response?.data?.detail || 'Signup failed. Please try again.')
+      setError(getErrorMessage(err))
     } finally {
       setLoading(false)
     }

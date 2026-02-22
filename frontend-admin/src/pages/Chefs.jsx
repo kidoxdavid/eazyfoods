@@ -8,7 +8,7 @@ const Chefs = () => {
   const [chefs, setChefs] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('pending')
 
   useEffect(() => {
     fetchChefs()
