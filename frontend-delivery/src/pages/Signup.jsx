@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import api from '../services/api'
 import { Truck, Mail, Phone, Lock, MapPin, Car, Eye, EyeOff, FileText, Upload } from 'lucide-react'
@@ -137,6 +137,15 @@ const Signup = () => {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [requireDocs, setRequireDocs] = useState(true)
+
+  useEffect(() => {
+    api.get('/config/signup-documentation').then((r) => {
+      if (r.data && typeof r.data.require_driver_docs === 'boolean') {
+        setRequireDocs(r.data.require_driver_docs)
+      }
+    }).catch(() => {})
+  }, [])
 
   const uploadDocument = async (file) => {
     const fd = new FormData()
@@ -151,20 +160,36 @@ const Signup = () => {
     setLoading(true)
 
     try {
-      // Upload documents first
-      if (!docFiles.driver_license || !docFiles.vehicle_registration || !docFiles.insurance) {
-        throw new Error('Please upload driver licence, insurance, and vehicle registration documents.')
-      }
-      if (!formData.driver_license_validity || !formData.vehicle_registration_validity || !formData.insurance_validity) {
-        throw new Error('Please enter validity dates for all documents.')
-      }
-      const [licenceUrl, regUrl, insUrl] = await Promise.all([
-        uploadDocument(docFiles.driver_license),
-        uploadDocument(docFiles.vehicle_registration),
-        uploadDocument(docFiles.insurance)
-      ])
-      if (!licenceUrl || !regUrl || !insUrl) {
-        throw new Error('Failed to upload one or more documents. Please try again.')
+      let licenceUrl = null
+      let regUrl = null
+      let insUrl = null
+      if (requireDocs) {
+        if (!docFiles.driver_license || !docFiles.vehicle_registration || !docFiles.insurance) {
+          throw new Error('Please upload driver licence, insurance, and vehicle registration documents.')
+        }
+        if (!formData.driver_license_validity || !formData.vehicle_registration_validity || !formData.insurance_validity) {
+          throw new Error('Please enter validity dates for all documents.')
+        }
+        const urls = await Promise.all([
+          uploadDocument(docFiles.driver_license),
+          uploadDocument(docFiles.vehicle_registration),
+          uploadDocument(docFiles.insurance)
+        ])
+        licenceUrl = urls[0]
+        regUrl = urls[1]
+        insUrl = urls[2]
+        if (!licenceUrl || !regUrl || !insUrl) {
+          throw new Error('Failed to upload one or more documents. Please try again.')
+        }
+      } else if (docFiles.driver_license || docFiles.vehicle_registration || docFiles.insurance) {
+        const urls = await Promise.all([
+          docFiles.driver_license ? uploadDocument(docFiles.driver_license) : Promise.resolve(null),
+          docFiles.vehicle_registration ? uploadDocument(docFiles.vehicle_registration) : Promise.resolve(null),
+          docFiles.insurance ? uploadDocument(docFiles.insurance) : Promise.resolve(null)
+        ])
+        licenceUrl = urls[0]
+        regUrl = urls[1]
+        insUrl = urls[2]
       }
 
       // Clean up form data - remove empty strings and undefined values for optional fields
@@ -224,13 +249,13 @@ const Signup = () => {
         cleanedData.preferred_delivery_zones = [formData.delivery_zone]
       }
 
-      cleanedData.driver_license_url = licenceUrl
-      cleanedData.driver_license_validity = formData.driver_license_validity
-      cleanedData.vehicle_registration_url = regUrl
-      cleanedData.vehicle_registration_validity = formData.vehicle_registration_validity
-      cleanedData.insurance_document_url = insUrl
-      cleanedData.insurance_validity = formData.insurance_validity
-      
+      if (licenceUrl) cleanedData.driver_license_url = licenceUrl
+      if (formData.driver_license_validity) cleanedData.driver_license_validity = formData.driver_license_validity
+      if (regUrl) cleanedData.vehicle_registration_url = regUrl
+      if (formData.vehicle_registration_validity) cleanedData.vehicle_registration_validity = formData.vehicle_registration_validity
+      if (insUrl) cleanedData.insurance_document_url = insUrl
+      if (formData.insurance_validity) cleanedData.insurance_validity = formData.insurance_validity
+
       console.log('Submitting driver signup with data:', cleanedData)
       const response = await api.post('/driver/auth/signup', cleanedData)
       alert('Driver application submitted successfully! You will be notified once your application is reviewed.')

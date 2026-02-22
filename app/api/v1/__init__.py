@@ -3,7 +3,7 @@ API v1 routes
 """
 from fastapi import APIRouter
 from app.api.v1.endpoints import (
-    auth, vendors, products, orders, inventory, payouts, dashboard,
+    auth, vendors, products, orders, inventory, payouts, dashboard, config,
     support, reviews, promotions, staff, analytics, upload, vendor_deliveries, vendor_marketing, vendor_stores,
     customer_auth, customer_products, customer_orders, customer_stores, customer_cart, customer_profile, customer_recipes, customer_reviews, customer_promotions, customer_chat, customer_deliveries, customer_support, customer_marketing, customer_chefs,
     driver_auth, driver_portal, delivery_tracking,
@@ -24,6 +24,7 @@ api_router.include_router(products.router, prefix="/products", tags=["Products"]
 api_router.include_router(orders.router, prefix="/orders", tags=["Orders"])
 api_router.include_router(inventory.router, prefix="/inventory", tags=["Inventory"])
 api_router.include_router(barcode.router, prefix="/barcode", tags=["Barcode"])
+api_router.include_router(config.router, prefix="/config", tags=["Config"])
 api_router.include_router(payouts.router, prefix="/payouts", tags=["Payouts"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 api_router.include_router(support.router, prefix="/support", tags=["Support"])

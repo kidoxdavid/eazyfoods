@@ -32,6 +32,7 @@ import MarketingAds from './pages/MarketingAds'
 import MarketingBudgets from './pages/MarketingBudgets'
 import Barcode from './pages/Barcode'
 import Chat from './pages/Chat'
+import Documentation from './pages/Documentation'
 import Layout from './components/Layout'
 import './index.css'
 
@@ -91,6 +92,7 @@ function AppRoutes() {
         <Route path="chat" element={<Chat />} />
         <Route path="activity" element={<ActivityLogs />} />
         <Route path="admin-users" element={<AdminUsers />} />
+        <Route path="documentation" element={<Documentation />} />
         <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>

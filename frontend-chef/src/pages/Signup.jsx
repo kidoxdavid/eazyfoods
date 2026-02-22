@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { UserPlus, Eye, EyeOff } from 'lucide-react'
@@ -27,8 +27,17 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [requireDocs, setRequireDocs] = useState(true)
   const { signup } = useAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    api.get('/config/signup-documentation').then((r) => {
+      if (r.data && typeof r.data.require_chef_docs === 'boolean') {
+        setRequireDocs(r.data.require_chef_docs)
+      }
+    }).catch(() => {})
+  }, [])
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -62,7 +71,7 @@ const Signup = () => {
       setError('Please add at least one cuisine type')
       return
     }
-    if (!doc1File || !doc2File || !doc3File) {
+    if (requireDocs && (!doc1File || !doc2File || !doc3File)) {
       setError('All three documents are required: Government ID, Chef Certification, and Business Permit.')
       return
     }
@@ -70,26 +79,27 @@ const Signup = () => {
     setLoading(true)
     try {
       const payload = { ...formData }
-      const fd1 = new FormData()
-      fd1.append('file', doc1File)
-      const fd2 = new FormData()
-      fd2.append('file', doc2File)
-      const fd3 = new FormData()
-      fd3.append('file', doc3File)
-
-      try {
-        const [r1, r2, r3] = await Promise.all([
-          api.post('/uploads/chef-documents', fd1),
-          api.post('/uploads/chef-documents', fd2),
-          api.post('/uploads/chef-documents', fd3)
-        ])
-        if (r1?.data?.url) payload.government_id_url = r1.data.url
-        if (r2?.data?.url) payload.chef_certification_url = r2.data.url
-        if (r3?.data?.url) payload.business_permit_url = r3.data.url
-      } catch (uploadErr) {
-        setError(getErrorMessage(uploadErr) || 'Document upload failed. Please check your files and try again.')
-        setLoading(false)
-        return
+      if (doc1File || doc2File || doc3File) {
+        try {
+          const fd1 = new FormData()
+          if (doc1File) fd1.append('file', doc1File)
+          const fd2 = new FormData()
+          if (doc2File) fd2.append('file', doc2File)
+          const fd3 = new FormData()
+          if (doc3File) fd3.append('file', doc3File)
+          const [r1, r2, r3] = await Promise.all([
+            doc1File ? api.post('/uploads/chef-documents', fd1) : Promise.resolve({ data: {} }),
+            doc2File ? api.post('/uploads/chef-documents', fd2) : Promise.resolve({ data: {} }),
+            doc3File ? api.post('/uploads/chef-documents', fd3) : Promise.resolve({ data: {} })
+          ])
+          if (r1?.data?.url) payload.government_id_url = r1.data.url
+          if (r2?.data?.url) payload.chef_certification_url = r2.data.url
+          if (r3?.data?.url) payload.business_permit_url = r3.data.url
+        } catch (uploadErr) {
+          setError(getErrorMessage(uploadErr) || 'Document upload failed. Please check your files and try again.')
+          setLoading(false)
+          return
+        }
       }
 
       await signup(payload)
@@ -259,7 +269,7 @@ const Signup = () => {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Document 1: Government ID *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Document 1: Government ID {requireDocs ? '*' : '(optional)'}</label>
               <input
                 type="file"
                 accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"
@@ -268,7 +278,7 @@ const Signup = () => {
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Document 2: Chef Certification *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Document 2: Chef Certification {requireDocs ? '*' : '(optional)'}</label>
               <input
                 type="file"
                 accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"
@@ -277,7 +287,7 @@ const Signup = () => {
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Document 3: Business Permit *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Document 3: Business Permit {requireDocs ? '*' : '(optional)'}</label>
               <input
                 type="file"
                 accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"

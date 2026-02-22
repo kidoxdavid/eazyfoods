@@ -4,7 +4,7 @@ import { useNotifications } from '../hooks/useNotifications'
 import { 
   LayoutDashboard, Store, Users, User, Package, ShoppingBag, 
   LogOut, Menu, X, BarChart3, Settings, MessageSquare, MessageCircle, Star,
-  Tag, Activity, Shield, Truck, MapPin, Megaphone, ScanLine, ChefHat
+  Tag, Activity, Shield, Truck, MapPin, Megaphone, ScanLine, ChefHat, FileText
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -39,6 +39,7 @@ const Layout = () => {
     { name: 'Chat', href: '/chat', icon: MessageCircle },
     { name: 'Activity Logs', href: '/activity', icon: Activity },
     { name: 'Admin Users', href: '/admin-users', icon: Shield },
+    { name: 'Documentation', href: '/documentation', icon: FileText },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
 

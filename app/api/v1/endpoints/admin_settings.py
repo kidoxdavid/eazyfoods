@@ -57,7 +57,7 @@ async def update_settings(
     admin_id = UUID(current_admin["admin_id"])
     
     # Validate setting type
-    valid_types = ['general', 'commission', 'orders', 'payment', 'notifications', 'security', 'vendor', 'customer', 'ad']
+    valid_types = ['general', 'commission', 'orders', 'payment', 'notifications', 'security', 'vendor', 'customer', 'ad', 'documentation']
     if setting_type not in valid_types:
         raise HTTPException(status_code=400, detail=f"Invalid setting type. Must be one of: {', '.join(valid_types)}")
     
@@ -104,7 +104,7 @@ async def get_all_settings(
         }
     
     # Include defaults for missing types
-    valid_types = ['general', 'commission', 'orders', 'payment', 'notifications', 'security', 'vendor', 'customer', 'ad']
+    valid_types = ['general', 'commission', 'orders', 'payment', 'notifications', 'security', 'vendor', 'customer', 'ad', 'documentation']
     for setting_type in valid_types:
         if setting_type not in result:
             result[setting_type] = {
@@ -183,6 +183,11 @@ def get_default_settings(setting_type: str) -> dict:
             'loyalty_points_enabled': False,
             'points_per_dollar': 1,
             'referral_bonus': 10
+        },
+        'documentation': {
+            'require_vendor_docs': True,
+            'require_driver_docs': True,
+            'require_chef_docs': True
         },
         'ad': {
             'placement_pricing': {

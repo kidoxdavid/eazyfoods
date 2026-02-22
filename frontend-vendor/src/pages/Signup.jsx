@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
@@ -31,8 +31,17 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [requireDocs, setRequireDocs] = useState(true)
   const { signup } = useAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    api.get('/config/signup-documentation').then((r) => {
+      if (r.data && typeof r.data.require_vendor_docs === 'boolean') {
+        setRequireDocs(r.data.require_vendor_docs)
+      }
+    }).catch(() => {})
+  }, [])
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -46,7 +55,7 @@ const Signup = () => {
       setError('Please select at least one African region.')
       return
     }
-    if (!doc1File || !doc2File || !doc3File) {
+    if (requireDocs && (!doc1File || !doc2File || !doc3File)) {
       setError('All three documents are required: Government ID, Business Registration, and Tax Permit.')
       return
     }
@@ -54,17 +63,19 @@ const Signup = () => {
 
     try {
       let payload = { ...formData }
-      const fd1 = new FormData(); fd1.append('file', doc1File)
-      const fd2 = new FormData(); fd2.append('file', doc2File)
-      const fd3 = new FormData(); fd3.append('file', doc3File)
-      const [r1, r2, r3] = await Promise.all([
-        api.post('/uploads/vendor-documents', fd1),
-        api.post('/uploads/vendor-documents', fd2),
-        api.post('/uploads/vendor-documents', fd3)
-      ])
-      if (r1.data?.url) payload.government_id_url = r1.data.url
-      if (r2.data?.url) payload.business_registration_url = r2.data.url
-      if (r3.data?.url) payload.tax_permit_url = r3.data.url
+      if (doc1File || doc2File || doc3File) {
+        const fd1 = new FormData(); if (doc1File) fd1.append('file', doc1File)
+        const fd2 = new FormData(); if (doc2File) fd2.append('file', doc2File)
+        const fd3 = new FormData(); if (doc3File) fd3.append('file', doc3File)
+        const [r1, r2, r3] = await Promise.all([
+          doc1File ? api.post('/uploads/vendor-documents', fd1) : Promise.resolve({ data: {} }),
+          doc2File ? api.post('/uploads/vendor-documents', fd2) : Promise.resolve({ data: {} }),
+          doc3File ? api.post('/uploads/vendor-documents', fd3) : Promise.resolve({ data: {} })
+        ])
+        if (r1.data?.url) payload.government_id_url = r1.data.url
+        if (r2.data?.url) payload.business_registration_url = r2.data.url
+        if (r3.data?.url) payload.tax_permit_url = r3.data.url
+      }
       await signup(payload)
       navigate('/login', { state: { message: 'Account created successfully! Please login.' } })
     } catch (err) {
@@ -269,7 +280,7 @@ const Signup = () => {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Document 1: Government ID *</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Document 1: Government ID {requireDocs ? '*' : '(optional)'}</label>
               <input
                 type="file"
                 accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"
@@ -278,7 +289,7 @@ const Signup = () => {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Document 2: Business Registration *</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Document 2: Business Registration {requireDocs ? '*' : '(optional)'}</label>
               <input
                 type="file"
                 accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"
@@ -287,14 +298,14 @@ const Signup = () => {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Document 3: Tax Permit *</label>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Document 3: Tax Permit {requireDocs ? '*' : '(optional)'}</label>
               <input
                 type="file"
                 accept=".jpg,.jpeg,.png,.webp,.gif,.pdf"
                 onChange={(e) => setDoc3File(e.target.files?.[0] || null)}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
               />
-              <p className="text-xs text-gray-500 mt-1">All three documents required (JPEG, PNG, PDF – max 5MB each)</p>
+              <p className="text-xs text-gray-500 mt-1">{requireDocs ? 'All three documents required (JPEG, PNG, PDF – max 5MB each)' : 'Documents optional for testing (JPEG, PNG, PDF – max 5MB each)'}</p>
             </div>
 
             <div>
