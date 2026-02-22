@@ -174,24 +174,29 @@ const Orders = () => {
                 to={`/orders/${order.id}`}
                 className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 block overflow-hidden group"
               >
-                <div className="p-2.5 sm:p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4">
+                <div className="p-2 sm:p-4">
+                  <div className="flex items-start justify-between gap-2 sm:gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
-                        <div className="p-1 sm:p-1.5 bg-primary-50 rounded-md flex-shrink-0">
-                          <Package className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-primary-600" />
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <div className="p-1 sm:p-1.5 bg-primary-50 rounded-md flex-shrink-0">
+                            <Package className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-primary-600" />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="text-xs sm:text-base font-bold text-gray-900 truncate">
+                              Order #{order.order_number}
+                            </h3>
+                            <p className="text-[10px] sm:text-xs text-gray-500">
+                              {formatDateTime(order.created_at)}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <h3 className="text-xs sm:text-base font-bold text-gray-900 truncate">
-                            Order #{order.order_number}
-                          </h3>
-                          <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">
-                            {formatDateTime(order.created_at)}
-                          </p>
-                        </div>
+                        <span className={`sm:hidden ml-auto shrink-0 px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-0.5 ${getStatusColor(order.status)}`} style={getStatusTextColor(order.status)}>
+                          {getStatusIcon(order.status)}
+                          <span className="capitalize">{order.status.replace('_', ' ')}</span>
+                        </span>
                       </div>
-                      
-                      <div className="flex items-center gap-1 sm:gap-3 ml-0 sm:ml-9 flex-wrap">
+                      <div className="flex items-center gap-1 sm:gap-3 mt-1 sm:mt-1.5 ml-0 sm:ml-9 flex-wrap">
                         <span className={`hidden sm:inline-flex px-2 py-1 rounded-md text-[10px] sm:text-xs font-semibold items-center gap-1 ${getStatusColor(order.status)}`} style={getStatusTextColor(order.status)}>
                           {getStatusIcon(order.status)}
                           <span className="capitalize">{order.status.replace('_', ' ')}</span>
@@ -220,16 +225,11 @@ const Orders = () => {
                         )}
                       </div>
                     </div>
-                    
-                    <div className="text-right sm:ml-4 flex-shrink-0 flex flex-col items-end justify-start sm:justify-center">
-                      <p className="text-base sm:text-xl font-bold text-gray-900">
+                    <div className="text-right flex-shrink-0 flex flex-col items-end justify-start">
+                      <p className="text-sm sm:text-xl font-bold text-gray-900 leading-tight">
                         ${parseFloat(order.total_amount).toFixed(2)}
                       </p>
                       <p className="text-[10px] sm:text-xs text-gray-500">Total</p>
-                      <span className={`sm:hidden mt-1 px-2 py-1 rounded-md text-[10px] font-semibold flex items-center gap-1 ${getStatusColor(order.status)}`} style={getStatusTextColor(order.status)}>
-                        {getStatusIcon(order.status)}
-                        <span className="capitalize">{order.status.replace('_', ' ')}</span>
-                      </span>
                     </div>
                   </div>
                 </div>
