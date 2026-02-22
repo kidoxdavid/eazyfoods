@@ -229,20 +229,20 @@ const Layout = ({ children }) => {
       {/* Main Content Wrapper: header fixed at top (non-scrollable), main scrolls below */}
       <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-x-hidden">
         {/* Orange strip - fixed so it never scrolls; stays in place */}
-        <header className="flex-shrink-0 z-50 w-full shadow-lg backdrop-blur-sm bg-opacity-95 left-0 right-0 top-0" style={{ backgroundColor: '#ff6b35', position: 'fixed', paddingTop: 'env(safe-area-inset-top, 6px)' }} role="banner">
+        <header className="flex-shrink-0 z-50 w-full shadow-lg backdrop-blur-sm bg-opacity-95 left-0 right-0 top-0" style={{ backgroundColor: '#ff6b35', position: 'fixed', paddingTop: 'env(safe-area-inset-top, 4px)', paddingBottom: '6px' }} role="banner">
           <div className="w-full px-2 sm:px-4 lg:px-8">
             {/* Mobile Layout - Stacked */}
             <div className="md:hidden">
-              {/* Top Row: Menu, Search, Cart */}
-              <div className="flex items-center py-1 gap-2">
+              {/* Top Row: Menu, Search, Cart - compact for thinner bar */}
+              <div className="flex items-center py-0.5 gap-1.5">
                 {/* Hamburger Menu */}
                 <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="p-2 text-white hover:text-gray-100 transition-colors flex-shrink-0 z-10"
+                  className="p-1.5 text-white hover:text-gray-100 transition-colors flex-shrink-0 z-10"
                   type="button"
                   aria-label="Toggle menu"
                 >
-                  {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                  {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
                 </button>
 
                 {/* Search Bar - Takes remaining space */}
@@ -261,9 +261,9 @@ const Layout = ({ children }) => {
                       onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
                       onKeyPress={handleSearchKeyPress}
                       placeholder="Search for groceries..."
-                      className="w-full pl-8 pr-8 py-1.5 border border-white/30 bg-white/90 rounded-lg focus:ring-2 focus:ring-white focus:border-white focus:bg-white text-gray-900 placeholder-gray-500 text-sm"
+                      className="w-full pl-7 pr-7 py-1 border border-white/30 bg-white/90 rounded-md focus:ring-2 focus:ring-white focus:border-white focus:bg-white text-gray-900 placeholder-gray-500 text-xs"
                     />
-                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
                   </div>
                   <SearchAutocomplete
                     query={searchQuery}
@@ -282,22 +282,22 @@ const Layout = ({ children }) => {
                 </form>
 
                 {/* Right Icons */}
-                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                   <button
                     onClick={() => setShowLocationModal(true)}
-                    className="flex items-center gap-1.5 px-2.5 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all"
+                    className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all"
                     type="button"
                     aria-label="Change location"
                   >
-                    <MapPin className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
-                    <span className="text-sm font-medium truncate max-w-[60px] sm:max-w-[80px]">{selectedProvince && selectedCity !== 'All' ? `${selectedCity}` : selectedCity || 'All'}</span>
+                    <MapPin className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                    <span className="text-xs font-medium truncate max-w-[56px] sm:max-w-[72px]">{selectedProvince && selectedCity !== 'All' ? `${selectedCity}` : selectedCity || 'All'}</span>
                   </button>
                   {token ? (
                     <>
                       <div className="relative">
                         <button
                           onClick={() => setCartPreviewOpen(!cartPreviewOpen)}
-                          className="p-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all"
+                          className="p-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all"
                           type="button"
                         >
                           <AnimatedCartIcon />
@@ -310,7 +310,7 @@ const Layout = ({ children }) => {
                       <div className="relative">
                         <button
                           onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setCartPreviewOpen(false) }}
-                          className="p-2 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
+                          className="p-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0"
                           type="button"
                           aria-label="Profile menu"
                         >
@@ -318,8 +318,8 @@ const Layout = ({ children }) => {
                             const AvatarIcon = getAvatarIcon(avatarKey)
                             const { bg, text } = getAvatarStyle(avatarKey)
                             return (
-                              <span className={`inline-flex rounded-full h-5 w-5 sm:h-6 sm:w-6 items-center justify-center flex-shrink-0 ${bg} ${text}`}>
-                                <AvatarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                              <span className={`inline-flex rounded-full h-4 w-4 sm:h-5 sm:w-5 items-center justify-center flex-shrink-0 ${bg} ${text}`}>
+                                <AvatarIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                               </span>
                             )
                           })()}
@@ -382,16 +382,16 @@ const Layout = ({ children }) => {
               </div>
             </div>
 
-            {/* Desktop Layout */}
-            <div className="hidden md:flex items-center py-1 gap-4">
+            {/* Desktop Layout - compact for thinner bar */}
+            <div className="hidden md:flex items-center py-0.5 gap-3">
               {/* Hamburger Menu - Left */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 text-white hover:text-gray-100 transition-colors flex-shrink-0"
+                className="p-1.5 text-white hover:text-gray-100 transition-colors flex-shrink-0"
                 type="button"
                 aria-label="Toggle menu"
               >
-                {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
 
               {/* Search Bar - Centered */}
@@ -410,9 +410,9 @@ const Layout = ({ children }) => {
                     onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
                     onKeyPress={handleSearchKeyPress}
                     placeholder="Search for products..."
-                    className="w-full pl-10 pr-20 py-2 border border-white/30 bg-white/90 rounded-lg focus:ring-2 focus:ring-white focus:border-white focus:bg-white text-gray-900 placeholder-gray-500"
+                    className="w-full pl-10 pr-20 py-1.5 border border-white/30 bg-white/90 rounded-lg focus:ring-2 focus:ring-white focus:border-white focus:bg-white text-gray-900 placeholder-gray-500 text-sm"
                   />
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                   <button
                     type="submit"
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary-600 hover:text-primary-700 font-medium text-sm px-2 py-1"
@@ -437,16 +437,16 @@ const Layout = ({ children }) => {
               </form>
 
               {/* Right Menu - Location, Cart, User */}
-              <div className="flex items-center gap-3 flex-shrink-0 ml-auto">
+              <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
                 {/* Location Selector */}
                 <button
                   onClick={() => setShowLocationModal(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all min-w-0"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all min-w-0"
                   type="button"
                 >
-                  <MapPin className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-sm font-medium truncate max-w-[90px]">{selectedProvince && selectedCity !== 'All' ? `${selectedCity}, ${selectedProvince}` : selectedCity || 'All'}</span>
-                  <span className="text-sm font-medium underline decoration-white/70 underline-offset-2">Change</span>
+                  <MapPin className="h-4 w-4 flex-shrink-0" />
+                  <span className="text-xs font-medium truncate max-w-[90px]">{selectedProvince && selectedCity !== 'All' ? `${selectedCity}, ${selectedProvince}` : selectedCity || 'All'}</span>
+                  <span className="text-xs font-medium underline decoration-white/70 underline-offset-2">Change</span>
                 </button>
 
                 {token ? (
@@ -454,7 +454,7 @@ const Layout = ({ children }) => {
                     <div className="relative">
                       <button
                         onClick={() => setCartPreviewOpen(!cartPreviewOpen)}
-                        className="p-3 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex-shrink-0"
+                        className="p-2 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex-shrink-0"
                         type="button"
                       >
                         <AnimatedCartIcon />
@@ -467,7 +467,7 @@ const Layout = ({ children }) => {
                     <div className="relative flex-shrink-0 flex items-center">
                       <button
                         onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setCartPreviewOpen(false) }}
-                        className="p-2 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center gap-2 min-h-0 h-9 w-9 sm:h-10 sm:w-10 lg:w-auto lg:min-w-0 lg:pl-2 lg:pr-3 lg:py-2"
+                        className="p-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center gap-1.5 min-h-0 h-8 w-8 sm:h-8 sm:w-8 lg:w-auto lg:min-w-0 lg:pl-2 lg:pr-2.5 lg:py-1.5"
                         type="button"
                         aria-label="Profile menu"
                       >
@@ -475,12 +475,12 @@ const Layout = ({ children }) => {
                           const AvatarIcon = getAvatarIcon(avatarKey)
                           const { bg, text } = getAvatarStyle(avatarKey)
                           return (
-                            <span className={`inline-flex rounded-full h-5 w-5 sm:h-6 sm:w-6 items-center justify-center flex-shrink-0 ${bg} ${text}`}>
-                              <AvatarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            <span className={`inline-flex rounded-full h-4 w-4 sm:h-5 sm:w-5 items-center justify-center flex-shrink-0 ${bg} ${text}`}>
+                              <AvatarIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                             </span>
                           )
                         })()}
-                        <span className="hidden lg:inline text-sm font-medium truncate max-w-[120px]">
+                        <span className="hidden lg:inline text-xs font-medium truncate max-w-[100px]">
                           Hello, {user?.first_name || user?.email?.split('@')[0] || 'User'}
                         </span>
                       </button>
@@ -589,8 +589,8 @@ const Layout = ({ children }) => {
           )}
         </header>
 
-        {/* Spacer so content starts below the fixed header */}
-        <div className="flex-shrink-0 h-11 min-h-[2.75rem]" style={{ paddingTop: 'env(safe-area-inset-top, 6px)' }} aria-hidden="true" />
+        {/* Spacer so content starts below the fixed header (slim bar) */}
+        <div className="flex-shrink-0 h-9 min-h-[2.25rem]" style={{ paddingTop: 'env(safe-area-inset-top, 4px)' }} aria-hidden="true" />
 
         {/* Breadcrumbs */}
         <Breadcrumbs />

@@ -204,6 +204,13 @@ const Profile = () => {
                     {profile?.first_name} {profile?.last_name}
                   </h2>
                   <p className="text-xs sm:text-sm text-gray-600 break-all line-clamp-2 sm:line-clamp-none">{profile?.email}</p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('settings')}
+                    className="mt-1 text-xs text-primary-600 hover:text-primary-700 hover:underline font-medium"
+                  >
+                    Change profile icon in Settings →
+                  </button>
                 </div>
               </div>
               <nav className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide lg:flex-col lg:space-y-2 lg:overflow-visible">
