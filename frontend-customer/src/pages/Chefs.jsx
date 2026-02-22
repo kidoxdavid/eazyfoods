@@ -20,6 +20,15 @@ const Chefs = () => {
   const { selectedCity } = useLocation()
   const [cuisines, setCuisines] = useState([])
 
+  // Keep filters in sync with URL when user navigates back/forward
+  useEffect(() => {
+    setFilters({
+      cuisine: searchParams.get('cuisine') || '',
+      search: searchParams.get('search') || '',
+      min_rating: searchParams.get('min_rating') || ''
+    })
+  }, [searchParams])
+
   useEffect(() => {
     fetchChefs()
   }, [filters, selectedCity])

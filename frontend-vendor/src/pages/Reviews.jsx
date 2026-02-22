@@ -15,6 +15,13 @@ const Reviews = () => {
     fetchData()
   }, [ratingFilter])
 
+  // Mark all reviews as read when vendor opens this page (clears notification badge)
+  useEffect(() => {
+    api.put('/reviews/mark-read').then(() => {
+      window.dispatchEvent(new Event('refresh-notifications'))
+    }).catch(() => {})
+  }, [])
+
   const fetchData = async () => {
     try {
       const [reviewsRes, statsRes] = await Promise.all([
@@ -32,16 +39,23 @@ const Reviews = () => {
 
   const handleRespond = async (reviewId) => {
     if (!responseText.trim()) return
-    
+
     try {
-      await api.put(`/reviews/${reviewId}/respond`, { vendor_response: responseText })
-      alert('Response submitted successfully!')
-      setSelectedReview(null)
-      setResponseText('')
-      fetchData()
+      const response = await api.put(`/reviews/${reviewId}/respond`, { vendor_response: responseText })
+      const isSuccess = response && response.status >= 200 && response.status < 300
+      if (isSuccess) {
+        alert('Response submitted successfully!')
+        setSelectedReview(null)
+        setResponseText('')
+        fetchData()
+      } else {
+        alert(response?.data?.detail || 'Failed to submit response. Please try again.')
+      }
     } catch (error) {
       console.error('Failed to submit response:', error)
-      alert(error.response?.data?.detail || 'Failed to submit response. Please try again.')
+      const detail = error.response?.data?.detail
+      const msg = Array.isArray(detail) ? detail.map((d) => d.msg || d.loc).join(', ') : (detail || 'Failed to submit response. Please try again.')
+      alert(msg)
     }
   }
 

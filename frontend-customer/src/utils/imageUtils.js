@@ -38,9 +38,20 @@ export const resolveImageUrl = (url, type) => {
 
   const apiOrigin = getApiOrigin()
 
-  // If it's already an absolute URL, return as-is (backend may return full URLs when API_PUBLIC_URL set)
+  // If it's already an absolute URL, fix when API returns localhost but app is on different origin (e.g. production)
   if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) {
-    return urlStr
+    try {
+      const u = new URL(urlStr)
+      const isLocalhost = u.hostname === 'localhost' || u.hostname === '127.0.0.1'
+      const currentOrigin = typeof window !== 'undefined' && window.location?.origin
+      if (isLocalhost && currentOrigin && !currentOrigin.includes('localhost') && apiOrigin) {
+        const pathPart = u.pathname + u.search
+        return `${apiOrigin}${pathPart}`
+      }
+      return urlStr
+    } catch {
+      return urlStr
+    }
   }
   
   // For relative paths, ensure they're properly formatted for proxy

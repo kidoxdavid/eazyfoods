@@ -28,6 +28,8 @@ class Review(Base):
     vendor_response_at = Column(DateTime)
     responded_by = Column(UUID(as_uuid=True), ForeignKey("vendor_users.id"))
     
+    # Vendor has seen this review (clears notification badge when Reviews page is opened)
+    is_read = Column(Boolean, default=False)
     # Moderation
     is_reported = Column(Boolean, default=False)
     report_reason = Column(Text)

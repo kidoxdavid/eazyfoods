@@ -19,6 +19,8 @@ const Layout = ({ children }) => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [showLocationModal, setShowLocationModal] = useState(false)
+  const [locationProvOpen, setLocationProvOpen] = useState(false)
+  const [locationCityOpen, setLocationCityOpen] = useState(false)
   const [cartPreviewOpen, setCartPreviewOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
   const [avatarKey, setAvatarKey] = useState(() => localStorage.getItem(AVATAR_ICON_KEY) || 'user')
@@ -229,20 +231,20 @@ const Layout = ({ children }) => {
       {/* Main Content Wrapper: header fixed at top (non-scrollable), main scrolls below */}
       <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-x-hidden">
         {/* Orange strip - fixed so it never scrolls; stays in place */}
-        <header className="flex-shrink-0 z-50 w-full shadow-lg backdrop-blur-sm bg-opacity-95 left-0 right-0 top-0" style={{ backgroundColor: '#ff6b35', position: 'fixed', paddingTop: 'env(safe-area-inset-top, 4px)', paddingBottom: '6px' }} role="banner">
+        <header className="flex-shrink-0 z-50 w-full shadow-lg backdrop-blur-sm bg-opacity-95 left-0 right-0 top-0" style={{ backgroundColor: '#ff6b35', position: 'fixed', paddingTop: 'env(safe-area-inset-top, 44px)' }} role="banner">
           <div className="w-full px-2 sm:px-4 lg:px-8">
             {/* Mobile Layout - Stacked */}
             <div className="md:hidden">
-              {/* Top Row: Menu, Search, Cart - compact for thinner bar */}
-              <div className="flex items-center py-0.5 gap-1.5">
+              {/* Top Row: Menu, Search, Cart */}
+              <div className="flex items-center py-1.5 gap-2">
                 {/* Hamburger Menu */}
                 <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="p-1.5 text-white hover:text-gray-100 transition-colors flex-shrink-0 z-10"
+                  className="p-2 text-white hover:text-gray-100 transition-colors flex-shrink-0 z-10"
                   type="button"
                   aria-label="Toggle menu"
                 >
-                  {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                  {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </button>
 
                 {/* Search Bar - Takes remaining space */}
@@ -261,9 +263,9 @@ const Layout = ({ children }) => {
                       onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
                       onKeyPress={handleSearchKeyPress}
                       placeholder="Search for groceries..."
-                      className="w-full pl-7 pr-7 py-1 border border-white/30 bg-white/90 rounded-md focus:ring-2 focus:ring-white focus:border-white focus:bg-white text-gray-900 placeholder-gray-500 text-xs"
+                      className="w-full pl-8 pr-8 py-1.5 border border-white/30 bg-white/90 rounded-lg focus:ring-2 focus:ring-white focus:border-white focus:bg-white text-gray-900 placeholder-gray-500 text-sm"
                     />
-                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                   </div>
                   <SearchAutocomplete
                     query={searchQuery}
@@ -282,22 +284,22 @@ const Layout = ({ children }) => {
                 </form>
 
                 {/* Right Icons */}
-                <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                   <button
                     onClick={() => setShowLocationModal(true)}
-                    className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all"
+                    className="flex items-center gap-1.5 px-2.5 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all"
                     type="button"
                     aria-label="Change location"
                   >
-                    <MapPin className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                    <span className="text-xs font-medium truncate max-w-[56px] sm:max-w-[72px]">{selectedProvince && selectedCity !== 'All' ? `${selectedCity}` : selectedCity || 'All'}</span>
+                    <MapPin className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+                    <span className="text-sm font-medium truncate max-w-[60px] sm:max-w-[80px]">{selectedProvince && selectedCity !== 'All' ? `${selectedCity}` : selectedCity || 'All'}</span>
                   </button>
                   {token ? (
                     <>
                       <div className="relative">
                         <button
                           onClick={() => setCartPreviewOpen(!cartPreviewOpen)}
-                          className="p-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all"
+                          className="p-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all"
                           type="button"
                         >
                           <AnimatedCartIcon />
@@ -310,7 +312,7 @@ const Layout = ({ children }) => {
                       <div className="relative">
                         <button
                           onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setCartPreviewOpen(false) }}
-                          className="p-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0"
+                          className="p-2 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
                           type="button"
                           aria-label="Profile menu"
                         >
@@ -318,8 +320,8 @@ const Layout = ({ children }) => {
                             const AvatarIcon = getAvatarIcon(avatarKey)
                             const { bg, text } = getAvatarStyle(avatarKey)
                             return (
-                              <span className={`inline-flex rounded-full h-4 w-4 sm:h-5 sm:w-5 items-center justify-center flex-shrink-0 ${bg} ${text}`}>
-                                <AvatarIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                              <span className={`inline-flex rounded-full h-5 w-5 sm:h-6 sm:w-6 items-center justify-center flex-shrink-0 ${bg} ${text}`}>
+                                <AvatarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                               </span>
                             )
                           })()}
@@ -382,16 +384,16 @@ const Layout = ({ children }) => {
               </div>
             </div>
 
-            {/* Desktop Layout - compact for thinner bar */}
-            <div className="hidden md:flex items-center py-0.5 gap-3">
+            {/* Desktop Layout */}
+            <div className="hidden md:flex items-center py-1.5 gap-4">
               {/* Hamburger Menu - Left */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-1.5 text-white hover:text-gray-100 transition-colors flex-shrink-0"
+                className="p-2 text-white hover:text-gray-100 transition-colors flex-shrink-0"
                 type="button"
                 aria-label="Toggle menu"
               >
-                {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
 
               {/* Search Bar - Centered */}
@@ -410,9 +412,9 @@ const Layout = ({ children }) => {
                     onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
                     onKeyPress={handleSearchKeyPress}
                     placeholder="Search for products..."
-                    className="w-full pl-10 pr-20 py-1.5 border border-white/30 bg-white/90 rounded-lg focus:ring-2 focus:ring-white focus:border-white focus:bg-white text-gray-900 placeholder-gray-500 text-sm"
+                    className="w-full pl-10 pr-20 py-2 border border-white/30 bg-white/90 rounded-lg focus:ring-2 focus:ring-white focus:border-white focus:bg-white text-gray-900 placeholder-gray-500"
                   />
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                   <button
                     type="submit"
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary-600 hover:text-primary-700 font-medium text-sm px-2 py-1"
@@ -437,16 +439,16 @@ const Layout = ({ children }) => {
               </form>
 
               {/* Right Menu - Location, Cart, User */}
-              <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+              <div className="flex items-center gap-3 flex-shrink-0 ml-auto">
                 {/* Location Selector */}
                 <button
                   onClick={() => setShowLocationModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all min-w-0"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all min-w-0"
                   type="button"
                 >
-                  <MapPin className="h-4 w-4 flex-shrink-0" />
-                  <span className="text-xs font-medium truncate max-w-[90px]">{selectedProvince && selectedCity !== 'All' ? `${selectedCity}, ${selectedProvince}` : selectedCity || 'All'}</span>
-                  <span className="text-xs font-medium underline decoration-white/70 underline-offset-2">Change</span>
+                  <MapPin className="h-5 w-5 flex-shrink-0" />
+                  <span className="text-sm font-medium truncate max-w-[90px]">{selectedProvince && selectedCity !== 'All' ? `${selectedCity}, ${selectedProvince}` : selectedCity || 'All'}</span>
+                  <span className="text-sm font-medium underline decoration-white/70 underline-offset-2">Change</span>
                 </button>
 
                 {token ? (
@@ -454,7 +456,7 @@ const Layout = ({ children }) => {
                     <div className="relative">
                       <button
                         onClick={() => setCartPreviewOpen(!cartPreviewOpen)}
-                        className="p-2 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex-shrink-0"
+                        className="p-3 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex-shrink-0"
                         type="button"
                       >
                         <AnimatedCartIcon />
@@ -467,7 +469,7 @@ const Layout = ({ children }) => {
                     <div className="relative flex-shrink-0 flex items-center">
                       <button
                         onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setCartPreviewOpen(false) }}
-                        className="p-1.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center gap-1.5 min-h-0 h-8 w-8 sm:h-8 sm:w-8 lg:w-auto lg:min-w-0 lg:pl-2 lg:pr-2.5 lg:py-1.5"
+                        className="p-2 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center gap-2 min-h-0 h-9 w-9 sm:h-10 sm:w-10 lg:w-auto lg:min-w-0 lg:pl-2 lg:pr-3 lg:py-2"
                         type="button"
                         aria-label="Profile menu"
                       >
@@ -475,12 +477,12 @@ const Layout = ({ children }) => {
                           const AvatarIcon = getAvatarIcon(avatarKey)
                           const { bg, text } = getAvatarStyle(avatarKey)
                           return (
-                            <span className={`inline-flex rounded-full h-4 w-4 sm:h-5 sm:w-5 items-center justify-center flex-shrink-0 ${bg} ${text}`}>
-                              <AvatarIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <span className={`inline-flex rounded-full h-5 w-5 sm:h-6 sm:w-6 items-center justify-center flex-shrink-0 ${bg} ${text}`}>
+                              <AvatarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             </span>
                           )
                         })()}
-                        <span className="hidden lg:inline text-xs font-medium truncate max-w-[100px]">
+                        <span className="hidden lg:inline text-sm font-medium truncate max-w-[120px]">
                           Hello, {user?.first_name || user?.email?.split('@')[0] || 'User'}
                         </span>
                       </button>
@@ -589,8 +591,8 @@ const Layout = ({ children }) => {
           )}
         </header>
 
-        {/* Spacer so content starts below the fixed header (slim bar) */}
-        <div className="flex-shrink-0 h-9 min-h-[2.25rem]" style={{ paddingTop: 'env(safe-area-inset-top, 4px)' }} aria-hidden="true" />
+        {/* Spacer so content starts below the fixed header */}
+        <div className="flex-shrink-0 h-14 min-h-[3.5rem]" style={{ paddingTop: 'env(safe-area-inset-top, 44px)' }} aria-hidden="true" />
 
         {/* Breadcrumbs */}
         <Breadcrumbs />
@@ -737,98 +739,56 @@ const Layout = ({ children }) => {
           </div>
         </footer>
 
-        {/* Location Selection Modal - Province then City */}
+        {/* Location Selection Modal - Province then City (dropdown popups) */}
         {showLocationModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowLocationModal(false)}>
-            <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-              <h2 className="text-xl font-bold mb-1">Select location</h2>
-              <p className="text-sm text-gray-500 mb-4">Step 1: Province → Step 2: City (all Canadian provinces and major cities)</p>
-              <div className="flex-1 min-h-0 overflow-y-auto space-y-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Step 1 — Province</h3>
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => {
-                        updateProvince('')
-                        updateCity('All')
-                        setShowLocationModal(false)
-                        window.location.reload()
-                      }}
-                      className={`w-full text-left px-4 py-2.5 rounded-lg border-2 transition-all text-sm ${
-                        !selectedProvince && selectedCity === 'All'
-                          ? 'border-primary-600 bg-primary-50 text-primary-700 font-semibold'
-                          : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
-                      }`}
-                      type="button"
-                    >
-                      All Canada
-                    </button>
-                    {CANADA_PROVINCES.map((prov) => (
-                      <button
-                        key={prov}
-                        onClick={() => updateProvince(prov)}
-                        className={`w-full text-left px-4 py-2.5 rounded-lg border-2 transition-all text-sm ${
-                          selectedProvince === prov
-                            ? 'border-primary-600 bg-primary-50 text-primary-700 font-semibold'
-                            : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
-                        }`}
-                        type="button"
-                      >
-                        {prov}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {selectedProvince && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Step 2 — City in {selectedProvince}</h3>
-                    <div className="space-y-1">
-                      <button
-                        onClick={() => {
-                          updateCity('All')
-                          setShowLocationModal(false)
-                          window.location.reload()
-                        }}
-                        className={`w-full text-left px-4 py-2.5 rounded-lg border-2 transition-all text-sm ${
-                          selectedCity === 'All'
-                            ? 'border-primary-600 bg-primary-50 text-primary-700 font-semibold'
-                            : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
-                        }`}
-                        type="button"
-                      >
-                        All cities
-                      </button>
-                      {getCitiesForProvince(selectedProvince).map((city) => (
-                        <button
-                          key={city}
-                          onClick={() => {
-                            updateCity(city)
-                            updateAddress({ address: `${city}, ${selectedProvince}` }, { lat: 0, lng: 0 })
-                            setShowLocationModal(false)
-                            window.location.reload()
-                          }}
-                          className={`w-full text-left px-4 py-2.5 rounded-lg border-2 transition-all text-sm ${
-                            selectedCity === city
-                              ? 'border-primary-600 bg-primary-50 text-primary-700 font-semibold'
-                              : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
-                          }`}
-                          type="button"
-                        >
-                          {city}
-                        </button>
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => { setShowLocationModal(false); setLocationProvOpen(false); setLocationCityOpen(false) }}>
+            <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+              <h2 className="text-lg font-bold mb-3">Select location</h2>
+              <p className="text-xs text-gray-500 mb-4">Choose province, then city.</p>
+              <div className="space-y-3">
+                <div className="relative">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Province</label>
+                  <button
+                    type="button"
+                    onClick={() => { setLocationCityOpen(false); setLocationProvOpen(!locationProvOpen) }}
+                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg border-2 border-gray-200 hover:border-primary-300 text-left text-sm"
+                  >
+                    <span>{selectedProvince || 'Select province'}</span>
+                    <span className="text-gray-400">{locationProvOpen ? '▲' : '▼'}</span>
+                  </button>
+                  {locationProvOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border-2 border-gray-200 bg-white shadow-lg z-10">
+                      <button type="button" onClick={() => { updateProvince(''); updateCity('All'); setLocationProvOpen(false); setShowLocationModal(false); window.location.reload() }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-primary-50 border-b border-gray-100">All Canada</button>
+                      {CANADA_PROVINCES.map((prov) => (
+                        <button key={prov} type="button" onClick={() => { updateProvince(prov); setLocationProvOpen(false) }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-primary-50 border-b border-gray-100 last:border-0">{prov}</button>
                       ))}
                     </div>
+                  )}
+                </div>
+                {selectedProvince && (
+                  <div className="relative">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">City</label>
+                    <button
+                      type="button"
+                      onClick={() => { setLocationProvOpen(false); setLocationCityOpen(!locationCityOpen) }}
+                      className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg border-2 border-gray-200 hover:border-primary-300 text-left text-sm"
+                    >
+                      <span>{selectedCity || 'Select city'}</span>
+                      <span className="text-gray-400">{locationCityOpen ? '▲' : '▼'}</span>
+                    </button>
+                    {locationCityOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border-2 border-gray-200 bg-white shadow-lg z-10">
+                        <button type="button" onClick={() => { updateCity('All'); setLocationCityOpen(false); setShowLocationModal(false); window.location.reload() }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-primary-50 border-b border-gray-100">All cities</button>
+                        {getCitiesForProvince(selectedProvince).map((city) => (
+                          <button key={city} type="button" onClick={() => { updateCity(city); updateAddress({ address: `${city}, ${selectedProvince}` }, { lat: 0, lng: 0 }); setLocationCityOpen(false); setShowLocationModal(false); window.location.reload() }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-primary-50 border-b border-gray-100 last:border-0">{city}</button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-              <div className="flex justify-end pt-4 border-t border-gray-100 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowLocationModal(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
+              <div className="flex justify-end pt-4 mt-4 border-t border-gray-100">
+                <button type="button" onClick={() => { setShowLocationModal(false); setLocationProvOpen(false); setLocationCityOpen(false) }} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Cancel</button>
               </div>
             </div>
           </div>

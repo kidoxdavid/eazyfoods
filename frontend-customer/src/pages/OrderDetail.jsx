@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link, useLocation } from 'react-router-dom'
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { Package, MapPin, Clock, CheckCircle, Star, Truck, User, Phone, Car, Camera } from 'lucide-react'
+import { useCart } from '../contexts/CartContext'
+import { Package, MapPin, Clock, CheckCircle, Star, Truck, User, Phone, Car, Camera, ShoppingCart } from 'lucide-react'
 import { formatDateTime } from '../utils/format'
 import { resolveImageUrl } from '../utils/imageUtils'
 import PrivateRoute from '../components/PrivateRoute'
@@ -11,12 +12,15 @@ import { OrderDetailSkeleton } from '../components/SkeletonLoader'
 const OrderDetail = () => {
   const { id } = useParams()
   const location = useLocation()
+  const navigate = useNavigate()
+  const { addToCart } = useCart()
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showRatingForm, setShowRatingForm] = useState(false)
   const [rating, setRating] = useState(5)
   const [feedback, setFeedback] = useState('')
   const [submittingRating, setSubmittingRating] = useState(false)
+  const [rebuying, setRebuying] = useState(false)
 
   useEffect(() => {
     fetchOrder()
@@ -71,6 +75,41 @@ const OrderDetail = () => {
         onClick={interactive && onChange ? () => onChange(i + 1) : undefined}
       />
     ))
+  }
+
+  const handleRebuy = async () => {
+    if (!order?.items?.length) return
+    const itemsWithProduct = order.items.filter((item) => item.product_id)
+    if (!itemsWithProduct.length) {
+      alert('No products in this order can be reordered.')
+      return
+    }
+    setRebuying(true)
+    try {
+      const productIds = [...new Set(itemsWithProduct.map((i) => i.product_id))]
+      const products = await Promise.all(
+        productIds.map((pid) => api.get(`/customer/products/${pid}`).then((r) => r.data))
+      )
+      const productMap = Object.fromEntries(products.map((p) => [p.id, p]))
+      let added = 0
+      for (const item of itemsWithProduct) {
+        const product = productMap[item.product_id]
+        if (product) {
+          addToCart(product, item.quantity, false)
+          added += 1
+        }
+      }
+      if (added > 0) {
+        navigate('/cart')
+      } else {
+        alert('Could not add items to cart. Some products may no longer be available.')
+      }
+    } catch (err) {
+      console.error('Rebuy failed:', err)
+      alert('Could not add items to cart. Please try again.')
+    } finally {
+      setRebuying(false)
+    }
   }
 
   const getStatusSteps = (status) => {
@@ -128,9 +167,20 @@ const OrderDetail = () => {
           </div>
         )}
         
-        <Link to="/orders" className="text-primary-600 hover:text-primary-700 mb-3 inline-block text-sm">
-          ← Back to Orders
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <Link to="/orders" className="text-primary-600 hover:text-primary-700 inline-block text-sm">
+            ← Back to Orders
+          </Link>
+          <button
+            type="button"
+            onClick={handleRebuy}
+            disabled={rebuying || !order.items?.length}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            {rebuying ? 'Adding…' : 'Rebuy order'}
+          </button>
+        </div>
 
         <div className="mb-4">
           <h1 className="text-lg sm:text-xl font-bold text-gray-900">

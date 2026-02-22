@@ -63,10 +63,25 @@ async def get_reviews(
             "vendor_response_at": review.vendor_response_at,
             "created_at": review.created_at,
             "customer_name": customer_name,
-            "product_name": product_name  # Add product name for vendor view
+            "product_name": product_name,
+            "is_read": getattr(review, "is_read", False),
         })
     
     return reviews_list
+
+
+@router.put("/mark-read", response_model=dict)
+async def mark_reviews_read(
+    current_vendor: dict = Depends(get_current_vendor),
+    db: Session = Depends(get_db)
+):
+    """Mark all reviews for this vendor as read (clears notification badge when Reviews page is opened)."""
+    from uuid import UUID
+    count = db.query(Review).filter(
+        Review.vendor_id == UUID(current_vendor["vendor_id"])
+    ).update({"is_read": True})
+    db.commit()
+    return {"marked": count}
 
 
 @router.get("/{review_id}", response_model=ReviewResponse)

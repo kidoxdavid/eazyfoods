@@ -33,7 +33,7 @@ const Breadcrumbs = () => {
   const buildPath = (index) => '/' + segments.slice(0, index + 1).join('/')
 
   return (
-    <nav className="w-full px-4 sm:px-6 lg:px-8 py-3 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200 shadow-sm">
+    <nav className="w-full px-4 sm:px-6 lg:px-8 py-1.5 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200 shadow-sm">
       <ol className="flex flex-wrap items-center gap-2 text-sm">
         <li>
           <Link 

@@ -666,36 +666,6 @@ const AdDesigner = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Display Duration (seconds)</label>
-                  <input
-                    type="number"
-                    min="3"
-                    max="30"
-                    value={formData.slideshow_duration}
-                    onChange={(e) => setFormData({ ...formData, slideshow_duration: parseInt(e.target.value) || 5 })}
-                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg"
-                    placeholder="5"
-                  />
-                  <p className="mt-1 text-[10px] sm:text-xs text-gray-500">How long this ad shows before switching (3-30 seconds)</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Transition Style</label>
-                  <select
-                    value={formData.transition_style}
-                    onChange={(e) => setFormData({ ...formData, transition_style: e.target.value })}
-                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg"
-                  >
-                    <option value="fade">Fade</option>
-                    <option value="slide">Slide</option>
-                    <option value="none">None (Instant)</option>
-                  </select>
-                  <p className="mt-1 text-[10px] sm:text-xs text-gray-500">How the ad transitions to the next one</p>
-                </div>
-              </div>
-
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Priority</label>
                 <input
