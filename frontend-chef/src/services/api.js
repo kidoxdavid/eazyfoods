@@ -49,7 +49,10 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
-  
+  // Let browser set Content-Type (with boundary) for FormData; default application/json breaks file uploads
+  if (config.data && typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    delete config.headers['Content-Type']
+  }
   // Log request for debugging
   console.log('[Chef API Request]', {
     method: config.method?.toUpperCase(),
