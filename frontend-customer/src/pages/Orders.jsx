@@ -221,7 +221,7 @@ const Orders = () => {
                       </div>
                     </div>
                     
-                    <div className="text-right sm:ml-4 flex-shrink-0 flex flex-col items-end justify-center">
+                    <div className="text-right sm:ml-4 flex-shrink-0 flex flex-col items-end justify-start sm:justify-center">
                       <p className="text-base sm:text-xl font-bold text-gray-900">
                         ${parseFloat(order.total_amount).toFixed(2)}
                       </p>

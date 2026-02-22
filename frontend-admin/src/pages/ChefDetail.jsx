@@ -145,40 +145,59 @@ const ChefDetail = () => {
             </div>
           </div>
 
-          {/* Documents */}
-          {(chef.government_id_url || chef.chef_certification_url) && (
+          {/* Documents (all three, like driver view) */}
+          {(chef.government_id_url || chef.chef_certification_url || chef.business_permit_url) && (
             <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Documents
+                Documents for Verification
               </h2>
-              <div className="space-y-3">
-                {chef.government_id_url && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">License / ID Document</label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="text-sm font-medium text-gray-700 mb-1">Government ID</div>
+                  {chef.government_id_url ? (
                     <button
                       type="button"
                       onClick={() => setDocViewUrl(resolveDocUrl(chef.government_id_url))}
-                      className="mt-1 text-sm text-blue-600 hover:underline flex items-center gap-1"
+                      className="text-sm text-blue-600 hover:underline flex items-center gap-1"
                     >
                       <Eye className="h-4 w-4" />
                       View document
                     </button>
-                  </div>
-                )}
-                {chef.chef_certification_url && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Chef Certification</label>
+                  ) : (
+                    <p className="text-sm text-gray-500">Not uploaded</p>
+                  )}
+                </div>
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="text-sm font-medium text-gray-700 mb-1">Chef Certification</div>
+                  {chef.chef_certification_url ? (
                     <button
                       type="button"
                       onClick={() => setDocViewUrl(resolveDocUrl(chef.chef_certification_url))}
-                      className="mt-1 text-sm text-blue-600 hover:underline flex items-center gap-1"
+                      className="text-sm text-blue-600 hover:underline flex items-center gap-1"
                     >
                       <Eye className="h-4 w-4" />
                       View document
                     </button>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-sm text-gray-500">Not uploaded</p>
+                  )}
+                </div>
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="text-sm font-medium text-gray-700 mb-1">Business Permit</div>
+                  {chef.business_permit_url ? (
+                    <button
+                      type="button"
+                      onClick={() => setDocViewUrl(resolveDocUrl(chef.business_permit_url))}
+                      className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                    >
+                      <Eye className="h-4 w-4" />
+                      View document
+                    </button>
+                  ) : (
+                    <p className="text-sm text-gray-500">Not uploaded</p>
+                  )}
+                </div>
               </div>
             </div>
           )}

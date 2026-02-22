@@ -45,9 +45,9 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/70 backdrop-blur-sm"
       onClick={onClose}
     >
-      {/* Desktop: bold split layout — image panel left, content right; Mobile: smaller modal, rounded, bigger image */}
+      {/* Desktop: bold split layout — image panel left, content right; Mobile: smaller modal, image ~50% of space */}
       <div
-        className="relative w-full max-h-[85vh] md:max-h-[85vh] overflow-hidden flex flex-col md:flex-row rounded-2xl md:rounded-3xl shadow-2xl max-w-[min(92vw,22rem)] sm:max-w-sm md:max-w-4xl lg:max-w-5xl bg-white border-0 md:border-4 md:border-primary-500/20"
+        className="relative w-full max-h-[80vh] md:max-h-[85vh] overflow-hidden flex flex-col md:flex-row rounded-2xl md:rounded-3xl shadow-2xl max-w-[min(90vw,18rem)] sm:max-w-[20rem] md:max-w-4xl lg:max-w-5xl bg-white border-0 md:border-4 md:border-primary-500/20"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Accent strip — top on mobile, left on desktop */}
@@ -86,27 +86,29 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
           )}
         </div>
 
-        {/* Mobile: bigger image, compact modal */}
-        <div className="md:hidden flex-shrink-0 bg-gray-100 px-3 pt-3 pb-2 flex items-center justify-center">
-          <div className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-2xl overflow-hidden bg-white shadow-inner flex-shrink-0">
-            {product.image_url ? (
-              <img
-                src={resolveImageUrl(product.image_url)}
-                alt={product.name}
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  e.target.style.display = 'none'
-                  const fallback = e.target.parentElement?.querySelector('.qv-fallback')
-                  if (fallback) fallback.style.display = 'flex'
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Image</div>
-            )}
-            <div className="qv-fallback absolute inset-0 hidden bg-gray-200 items-center justify-center text-gray-500 text-xs">No Image</div>
-            {compareAt && (
-              <span className="absolute top-1 left-1 px-2 py-0.5 rounded-lg bg-red-500 text-white text-xs font-bold">−{discountPct}%</span>
-            )}
+        {/* Mobile: image takes ~50% of modal, rest is content */}
+        <div className="md:hidden flex flex-col flex-1 min-h-0 max-h-[80vh]">
+          <div className="flex-[1] min-h-0 flex-shrink-0 bg-gray-100 px-3 pt-3 pb-2 flex items-center justify-center">
+            <div className="relative w-full aspect-square max-w-[12rem] rounded-2xl overflow-hidden bg-white shadow-inner">
+              {product.image_url ? (
+                <img
+                  src={resolveImageUrl(product.image_url)}
+                  alt={product.name}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    e.target.style.display = 'none'
+                    const fallback = e.target.parentElement?.querySelector('.qv-fallback')
+                    if (fallback) fallback.style.display = 'flex'
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Image</div>
+              )}
+              <div className="qv-fallback absolute inset-0 hidden bg-gray-200 items-center justify-center text-gray-500 text-xs">No Image</div>
+              {compareAt && (
+                <span className="absolute top-1 left-1 px-2 py-0.5 rounded-lg bg-red-500 text-white text-xs font-bold">−{discountPct}%</span>
+              )}
+            </div>
           </div>
         </div>
 

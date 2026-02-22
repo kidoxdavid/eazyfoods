@@ -15,14 +15,18 @@ const Documentation = () => {
   const { user } = useAuth()
   const [docViewUrl, setDocViewUrl] = useState(null)
 
-  const docUrl = user?.government_id_url || user?.chef_certification_url
-  const docLabel = user?.government_id_url ? 'License / ID Document' : 'Chef Certification'
+  const docs = [
+    { label: 'Government ID', url: user?.government_id_url },
+    { label: 'Chef Certification', url: user?.chef_certification_url },
+    { label: 'Business Permit', url: user?.business_permit_url }
+  ].filter((d) => d.url)
+  const hasAnyDoc = docs.length > 0
 
   return (
     <div className="space-y-4 sm:space-y-6 px-0">
       <div>
         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Documentation</h1>
-        <p className="text-gray-600 mt-1 text-sm sm:text-base">View your submitted verification document (read-only)</p>
+        <p className="text-gray-600 mt-1 text-sm sm:text-base">View your submitted verification documents (read-only)</p>
       </div>
 
       <div className="bg-white rounded-lg shadow border border-gray-200 p-4 sm:p-6">
@@ -30,21 +34,25 @@ const Documentation = () => {
           <FileText className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
           Documents for Verification
         </h2>
-        {docUrl ? (
-          <div className="border border-gray-200 rounded-lg p-3 sm:p-4">
-            <div className="text-sm font-medium text-gray-700 mb-1">{docLabel}</div>
-            <button
-              type="button"
-              onClick={() => setDocViewUrl(resolveDocUrl(docUrl))}
-              className="text-sm text-blue-600 hover:underline flex items-center gap-1 mt-1"
-            >
-              <Eye className="h-4 w-4 flex-shrink-0" />
-              View document
-            </button>
-            <p className="text-xs text-gray-500 mt-2">Documents cannot be deleted. Contact support if you need to update.</p>
+        {hasAnyDoc ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {docs.map(({ label, url }) => (
+              <div key={label} className="border border-gray-200 rounded-lg p-3 sm:p-4">
+                <div className="text-sm font-medium text-gray-700 mb-1">{label}</div>
+                <button
+                  type="button"
+                  onClick={() => setDocViewUrl(resolveDocUrl(url))}
+                  className="text-sm text-blue-600 hover:underline flex items-center gap-1 mt-1"
+                >
+                  <Eye className="h-4 w-4 flex-shrink-0" />
+                  View document
+                </button>
+              </div>
+            ))}
+            <p className="text-xs text-gray-500 col-span-full mt-2">Documents cannot be deleted. Contact support if you need to update.</p>
           </div>
         ) : (
-          <p className="text-gray-500 text-sm sm:text-base">No document on file. Submit your verification document during signup or contact support.</p>
+          <p className="text-gray-500 text-sm sm:text-base">No documents on file. Submit your verification documents during signup or contact support.</p>
         )}
       </div>
 

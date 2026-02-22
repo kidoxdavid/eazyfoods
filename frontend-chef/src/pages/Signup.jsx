@@ -34,12 +34,13 @@ const Signup = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  const toggleCuisine = (cuisine) => {
-    if (formData.cuisines.includes(cuisine)) {
-      setFormData({ ...formData, cuisines: formData.cuisines.filter(c => c !== cuisine) })
-    } else {
+  const addCuisine = (cuisine) => {
+    if (cuisine && !formData.cuisines.includes(cuisine)) {
       setFormData({ ...formData, cuisines: [...formData.cuisines, cuisine] })
     }
+  }
+  const removeCuisine = (cuisine) => {
+    setFormData({ ...formData, cuisines: formData.cuisines.filter(c => c !== cuisine) })
   }
 
   const getErrorMessage = (err) => {
@@ -299,25 +300,40 @@ const Signup = () => {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Cuisines *</label>
-              <p className="text-xs text-gray-500 mb-2">Select all cuisines you specialize in</p>
-              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-gray-200 rounded-lg">
-                {AFRICAN_CUISINE_TYPES.map((cuisine) => (
-                  <button
-                    key={cuisine}
-                    type="button"
-                    onClick={() => toggleCuisine(cuisine)}
-                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                      formData.cuisines.includes(cuisine)
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {cuisine}
-                  </button>
+              <p className="text-xs text-gray-500 mb-2">Select cuisines you specialize in (add at least one)</p>
+              <select
+                value=""
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v) addCuisine(v)
+                  e.target.value = ''
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="">Select a cuisine to add...</option>
+                {AFRICAN_CUISINE_TYPES.filter((c) => !formData.cuisines.includes(c)).map((type) => (
+                  <option key={type} value={type}>{type}</option>
                 ))}
-              </div>
+              </select>
               {formData.cuisines.length > 0 && (
-                <p className="text-xs text-primary-600 mt-1">Selected: {formData.cuisines.join(', ')}</p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.cuisines.map((cuisine) => (
+                    <span
+                      key={cuisine}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-100 text-primary-700 rounded-full text-sm"
+                    >
+                      {cuisine}
+                      <button
+                        type="button"
+                        onClick={() => removeCuisine(cuisine)}
+                        className="hover:text-primary-900 font-bold"
+                        aria-label={`Remove ${cuisine}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
           </div>
