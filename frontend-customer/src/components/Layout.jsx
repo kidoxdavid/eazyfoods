@@ -2,7 +2,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useCart } from '../contexts/CartContext'
 import { ShoppingCart, User, LogOut, Search, Home, Store, Package, ShoppingBag, Settings, Menu, X, Utensils, MapPin, Info, Mail, Zap, ChefHat, Truck, DollarSign, Clock, ArrowRight } from 'lucide-react'
-import { useState, useEffect, useRef, lazy, Suspense, createPortal } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import { createPortal } from 'react-dom'
 import Breadcrumbs from './Breadcrumbs'
 
 const PageBanner = lazy(() => import('./PageBanner'))
