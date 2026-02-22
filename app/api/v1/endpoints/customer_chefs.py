@@ -35,18 +35,21 @@ async def get_chefs(
     if city and city.strip() and city.strip().lower() != 'all':
         query = query.filter(func.lower(Chef.city).ilike(f"%{city.strip().lower()}%"))
     
-    # Filter by cuisine
-    if cuisine:
-        query = query.filter(Chef.cuisines.contains([cuisine]))
+    # Filter by cuisine (cuisines is ARRAY; handle None safely)
+    if cuisine and cuisine.strip():
+        query = query.filter(
+            Chef.cuisines.isnot(None),
+            Chef.cuisines.contains([cuisine.strip()])
+        )
     
     # Search
-    if search:
-        search_term = f"%{search}%"
+    if search and search.strip():
+        search_term = f"%{search.strip()}%"
         query = query.filter(
             or_(
                 Chef.chef_name.ilike(search_term),
                 Chef.bio.ilike(search_term),
-                func.array_to_string(Chef.cuisines, ',').ilike(search_term)
+                func.coalesce(func.array_to_string(Chef.cuisines, ','), '').ilike(search_term)
             )
         )
     

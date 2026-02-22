@@ -1,14 +1,18 @@
 """
 FastAPI application entry point
 """
+import logging
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
+from starlette.responses import JSONResponse
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.api.v1 import api_router
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # Import all models to ensure SQLAlchemy relationships are resolved
 from app.models import vendor, customer, product, order, admin, inventory, payout, promotion, recipe, review, support, driver, chef, cuisine
@@ -57,6 +61,31 @@ class EnsureCORSHeadersMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(EnsureCORSHeadersMiddleware)
+
+
+def _cors_headers(origin: str) -> dict:
+    """Build CORS headers for a response."""
+    if "*" in origins or not origins:
+        return {"Access-Control-Allow-Origin": "*"}
+    if origin and origin in origins:
+        return {"Access-Control-Allow-Origin": origin}
+    if origins:
+        return {"Access-Control-Allow-Origin": origins[0]}
+    return {"Access-Control-Allow-Origin": "*"}
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Ensure 500 and other unhandled errors still return CORS headers so the frontend sees the real error."""
+    logger.exception("Unhandled exception: %s", exc)
+    origin = request.headers.get("origin", "")
+    headers = _cors_headers(origin)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+        headers=headers,
+    )
+
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
