@@ -26,9 +26,16 @@ const Layout = ({ children }) => {
   const [searchFocused, setSearchFocused] = useState(false)
   const profileButtonRef = useRef(null)
   const [profileDropdownPosition, setProfileDropdownPosition] = useState({ top: 0, right: 0 })
+  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches)
   const [avatarKey, setAvatarKey] = useState(() => localStorage.getItem(AVATAR_ICON_KEY) || 'user')
   const location = useLocation()
   const navigate = useNavigate()
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1024px)')
+    const handler = () => setIsDesktop(mql.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [])
   useEffect(() => {
     const onAvatarUpdated = (e) => setAvatarKey((e && e.detail && e.detail.key) || localStorage.getItem(AVATAR_ICON_KEY) || 'user')
     window.addEventListener('avatar-updated', onAvatarUpdated)
@@ -329,7 +336,7 @@ const Layout = ({ children }) => {
                             )
                           })()}
                         </button>
-                        {profileDropdownOpen && (
+                        {profileDropdownOpen && !isDesktop && (
                           <>
                             <div className="fixed inset-0 z-40" onClick={() => setProfileDropdownOpen(false)} aria-hidden="true" />
                             <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden ring-1 ring-black/5">
@@ -497,7 +504,7 @@ const Layout = ({ children }) => {
                           Hello, {user?.first_name || user?.email?.split('@')[0] || 'User'}
                         </span>
                       </button>
-                      {profileDropdownOpen && (
+                      {profileDropdownOpen && isDesktop && (
                         <>
                           <div className="fixed inset-0 z-[9998]" onClick={() => setProfileDropdownOpen(false)} aria-hidden="true" />
                           {createPortal(
