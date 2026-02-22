@@ -84,6 +84,15 @@ const TopMarketDeals = () => {
   const fetchDeals = async () => {
     setLoading(true)
     try {
+      if (selectedCity && selectedCity !== 'All') {
+        const storesRes = await api.get('/customer/stores/', { params: { city: selectedCity } })
+        const storesList = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
+        if (storesList.length === 0) {
+          setProducts([])
+          setLoading(false)
+          return
+        }
+      }
       const params = { 
         discounted: true,
         limit: 100,

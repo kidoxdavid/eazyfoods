@@ -205,8 +205,8 @@ const Layout = ({ children }) => {
             return (
             <div className="p-4 border-t border-primary-200 bg-gradient-to-b from-white to-primary-50">
               <div className="flex items-center space-x-3 mb-3 p-3 bg-gradient-to-r from-primary-100 to-white rounded-xl shadow-sm">
-                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${bg} ${text}`}>
-                  <AvatarIcon className="h-5 w-5" />
+                <div className={`h-10 w-10 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 ${bg} ${text}`}>
+                  <AvatarIcon className="h-6 w-6" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">
@@ -312,7 +312,7 @@ const Layout = ({ children }) => {
                       <div className="relative">
                         <button
                           onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setCartPreviewOpen(false) }}
-                          className="p-2 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
+                          className="rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 overflow-hidden p-0"
                           type="button"
                           aria-label="Profile menu"
                         >
@@ -320,8 +320,8 @@ const Layout = ({ children }) => {
                             const AvatarIcon = getAvatarIcon(avatarKey)
                             const { bg, text } = getAvatarStyle(avatarKey)
                             return (
-                              <span className={`inline-flex rounded-full h-5 w-5 sm:h-6 sm:w-6 items-center justify-center flex-shrink-0 ${bg} ${text}`}>
-                                <AvatarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                              <span className={`inline-flex rounded-full w-full h-full items-center justify-center flex-shrink-0 ${bg} ${text}`}>
+                                <AvatarIcon className="h-5 w-5 sm:h-6 sm:w-6" />
                               </span>
                             )
                           })()}
@@ -469,7 +469,7 @@ const Layout = ({ children }) => {
                     <div className="relative flex-shrink-0 flex items-center">
                       <button
                         onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setCartPreviewOpen(false) }}
-                        className="p-2 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center gap-2 min-h-0 h-9 w-9 sm:h-10 sm:w-10 lg:w-auto lg:min-w-0 lg:pl-2 lg:pr-3 lg:py-2"
+                        className="rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center gap-2 min-h-0 h-9 w-9 sm:h-10 sm:w-10 lg:w-auto lg:min-w-0 lg:pl-2 lg:pr-3 lg:py-2 overflow-hidden p-0 lg:p-2"
                         type="button"
                         aria-label="Profile menu"
                       >
@@ -477,8 +477,8 @@ const Layout = ({ children }) => {
                           const AvatarIcon = getAvatarIcon(avatarKey)
                           const { bg, text } = getAvatarStyle(avatarKey)
                           return (
-                            <span className={`inline-flex rounded-full h-5 w-5 sm:h-6 sm:w-6 items-center justify-center flex-shrink-0 ${bg} ${text}`}>
-                              <AvatarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            <span className={`inline-flex rounded-full h-9 w-9 sm:h-10 sm:w-10 lg:h-8 lg:w-8 items-center justify-center flex-shrink-0 ${bg} ${text}`}>
+                              <AvatarIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-4 lg:w-4" />
                             </span>
                           )
                         })()}

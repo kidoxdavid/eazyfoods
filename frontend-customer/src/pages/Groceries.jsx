@@ -81,6 +81,14 @@ const Groceries = () => {
 
   const fetchCategories = async () => {
     try {
+      if (selectedCity && selectedCity !== 'All') {
+        const storesRes = await api.get('/customer/stores/', { params: { city: selectedCity } })
+        const storesList = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
+        if (storesList.length === 0) {
+          setCategories([])
+          return
+        }
+      }
       const params = selectedCity && selectedCity !== 'All' ? { city: selectedCity } : {}
       const response = await api.get('/customer/categories', { params })
       const categoriesData = Array.isArray(response.data) ? response.data : (response.data?.categories || [])
@@ -94,6 +102,20 @@ const Groceries = () => {
   const fetchProducts = async () => {
     setLoading(true)
     try {
+      // When a specific city is selected, ensure that city has stores; otherwise show empty
+      if (selectedCity && selectedCity !== 'All') {
+        const storesRes = await api.get('/customer/stores/', { params: { city: selectedCity } })
+        const storesList = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
+        if (storesList.length === 0) {
+          setProducts([])
+          setTotalProducts(0)
+          setTotalPages(1)
+          setCategories([])
+          setLoading(false)
+          return
+        }
+      }
+
       const params = {
         skip: (currentPage - 1) * itemsPerPage,
         limit: itemsPerPage
@@ -484,7 +506,11 @@ const Groceries = () => {
           <div className="text-center py-12">
             <Package className="h-16 w-16 text-gray-300 mx-auto mb-3" />
             <h2 className="text-xl font-bold text-gray-900 mb-1">No groceries found</h2>
-            <p className="text-sm text-gray-600 mb-4">Try adjusting your filters or search terms</p>
+            <p className="text-sm text-gray-600 mb-4">
+              {selectedCity && selectedCity !== 'All'
+                ? `No stores in ${selectedCity} yet. Change your location (e.g. to "All") to see groceries.`
+                : 'Try adjusting your filters or search terms'}
+            </p>
             {(categoryFilter || searchQuery || featuredFilter || priceMin || priceMax) && (
               <button
                 onClick={clearAllFilters}

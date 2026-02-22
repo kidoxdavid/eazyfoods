@@ -243,18 +243,37 @@ const Home = () => {
       })
       
       const categoriesData = Array.isArray(categoriesRes.data) ? categoriesRes.data : (categoriesRes.data?.categories || categoriesRes.data || [])
-      const storesData = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
+      let storesData = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
       const promotionsData = Array.isArray(promotionsRes.data) ? promotionsRes.data : []
-      const chefsData = Array.isArray(chefsRes.data) ? chefsRes.data : (chefsRes.data?.chefs || chefsRes.data || [])
-      
-      setNewProducts(newProductsData)
-      setDiscountedProducts(discountedProductsData)
-      setLowStockProducts(lowStockProductsData)
-      setAllProducts(allProductsData)
-      setCategories(categoriesData)
-      setNearbyStores(storesData)
-      setPromotions(promotionsData)
-      setChefs(chefsData)
+      let chefsData = Array.isArray(chefsRes.data) ? chefsRes.data : (chefsRes.data?.chefs || chefsRes.data || [])
+
+      // When a specific city is selected and that city has no stores, show empty everywhere
+      if (selectedCity && selectedCity.trim() !== '' && selectedCity.trim().toLowerCase() !== 'all' && storesData.length === 0) {
+        setNewProducts([])
+        setDiscountedProducts([])
+        setLowStockProducts([])
+        setAllProducts([])
+        setCategories([])
+        setNearbyStores([])
+        setPromotions([])
+        setChefs([])
+      } else {
+        // When "All": only show categories that have products in our data
+        let categoriesToShow = categoriesData
+        if (selectedCity === 'All' || !selectedCity || selectedCity.trim().toLowerCase() === 'all') {
+          const categoryIdsInProducts = new Set(allProductsData.map(p => p.category_id).filter(Boolean).map(String))
+          categoriesToShow = categoriesData.filter(c => categoryIdsInProducts.has(String(c.id)))
+        }
+
+        setNewProducts(newProductsData)
+        setDiscountedProducts(discountedProductsData)
+        setLowStockProducts(lowStockProductsData)
+        setAllProducts(allProductsData)
+        setCategories(categoriesToShow)
+        setNearbyStores(storesData)
+        setPromotions(promotionsData)
+        setChefs(chefsData)
+      }
       
       // Debug: Log what we got
       const allCarouselProducts = [
@@ -581,8 +600,7 @@ const Home = () => {
                     description: 'Braai, Bobotie & More'
                   }
                 ]
-                .filter(item => selectedCity === 'All' || nearbyStores.some(s => s.region === item.region))
-                .slice(0, 5)
+                .filter(item => nearbyStores.some(s => s.region === item.region))
                 .map((item, index) => (
                   <Link
                     key={item.region}
