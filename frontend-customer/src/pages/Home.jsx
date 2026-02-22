@@ -4,6 +4,7 @@ import api from '../services/api'
 import { ShoppingCart, Star, TrendingUp, MapPin, Sparkles, AlertCircle, Eye, Heart, Tag, Calendar, Apple, Fish, Wheat, Beef, Milk, Coffee, Cookie, Cherry, Carrot, UtensilsCrossed, Package, ChefHat, IceCream, Candy, Soup, Drumstick, Grape, Banana, Nut, ShoppingBag, Wine, Flame, Zap, Store } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
 import { useLocation } from '../contexts/LocationContext'
+import { getCitiesForProvince } from '../constants/canadaLocations'
 import { useToast } from '../contexts/ToastContext'
 import QuickViewModal from '../components/QuickViewModal'
 import AdBanner from '../components/AdBanner'
@@ -22,7 +23,7 @@ const Home = () => {
   const [chefs, setChefs] = useState([])
   const [loading, setLoading] = useState(true)
   const { addToCart } = useCart()
-  const { coordinates, selectedCity } = useLocation()
+  const { coordinates, selectedCity, selectedProvince } = useLocation()
   const { success: showSuccessToast } = useToast()
   const [quickViewProduct, setQuickViewProduct] = useState(null)
   const [favorites, setFavorites] = useState(new Set())
@@ -134,7 +135,7 @@ const Home = () => {
 
   useEffect(() => {
     fetchData()
-  }, [coordinates, selectedCity])
+  }, [coordinates, selectedCity, selectedProvince])
 
   const fetchData = async () => {
     setLoading(true)
@@ -144,17 +145,20 @@ const Home = () => {
         apiBaseURL: localStorage.getItem('API_BASE_URL') || '/api/v1'
       })
       
+      // When province is selected and "All cities" is chosen, restrict to province's cities (don't show whole Canada)
+      const provinceCities = selectedProvince && selectedCity === 'All' ? getCitiesForProvince(selectedProvince) : null
+      const effectiveCity = selectedProvince && selectedCity === 'All' ? null : selectedCity
+
       // Build product params with city filter
-      // Only include city param if it's not "All" and not empty
       const productParams = {}
-      if (selectedCity && selectedCity.trim() !== '' && selectedCity.trim().toLowerCase() !== 'all') {
-        productParams.city = selectedCity.trim()
+      if (effectiveCity && effectiveCity.trim() !== '' && effectiveCity.trim().toLowerCase() !== 'all') {
+        productParams.city = effectiveCity.trim()
       }
-      
-      // Build store params: when "All" don't pass coordinates so we get stores from all cities (not just nearest)
+
+      // Build store params: when "All" (and no province) don't pass city; when province+All cities we fetch all then filter by province
       const storeParams = {}
-      if (selectedCity && selectedCity !== 'All') {
-        storeParams.city = selectedCity
+      if (effectiveCity && effectiveCity !== 'All') {
+        storeParams.city = effectiveCity
         if (coordinates && coordinates.lat && coordinates.lng) {
           storeParams.latitude = coordinates.lat
           storeParams.longitude = coordinates.lng
@@ -186,12 +190,12 @@ const Home = () => {
         api.get('/customer/products', { params: { ...productParams, discounted: true, limit: 20 } }),
         api.get('/customer/products', { params: { ...productParams, low_stock: true, limit: 20 } }),
         api.get('/customer/products', { params: allProductsParams }),
-        api.get('/customer/categories', { params: selectedCity && selectedCity !== 'All' ? { city: selectedCity } : {} }),
+        api.get('/customer/categories', { params: effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {} }),
         Object.keys(storeParams).length > 0
           ? api.get('/customer/stores/', { params: storeParams })
           : api.get('/customer/stores/'),
-        api.get('/customer/promotions', { params: { limit: 10, ...(selectedCity && selectedCity !== 'All' ? { city: selectedCity } : {}) } }),
-        api.get('/customer/chefs', { params: { limit: 5, ...(selectedCity && selectedCity !== 'All' ? { city: selectedCity } : {}) } })
+        api.get('/customer/promotions', { params: { limit: 10, ...(effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {}) } }),
+        api.get('/customer/chefs', { params: { limit: 5, ...(effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {}) } })
       ])
       
       console.log('API responses received:', {
@@ -246,6 +250,46 @@ const Home = () => {
       let storesData = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
       const promotionsData = Array.isArray(promotionsRes.data) ? promotionsRes.data : []
       let chefsData = Array.isArray(chefsRes.data) ? chefsRes.data : (chefsRes.data?.chefs || chefsRes.data || [])
+
+      // When province is set and "All cities" chosen, filter to stores in that province only (so empty province stays empty)
+      if (provinceCities && provinceCities.length > 0) {
+        const provinceCitySet = new Set(provinceCities.map(c => c.trim().toLowerCase()))
+        storesData = storesData.filter(s => s && s.city && provinceCitySet.has(String(s.city).trim().toLowerCase()))
+        const storeIdsInProvince = new Set(storesData.map(s => s.id))
+        if (storeIdsInProvince.size === 0) {
+          setNewProducts([])
+          setDiscountedProducts([])
+          setLowStockProducts([])
+          setAllProducts([])
+          setCategories([])
+          setNearbyStores([])
+          setPromotions([])
+          setChefs([])
+          setLoading(false)
+          return
+        }
+        // Filter products/categories/promotions/chefs to only those in province stores (products by store_id; others by city or store)
+        const filterProductsByStore = (list) => list.filter(p => p && storeIdsInProvince.has(p.store_id))
+        allProductsData = filterProductsByStore(allProductsData)
+        const newProductsDataFiltered = filterProductsByStore(newProductsData)
+        const discountedProductsDataFiltered = filterProductsByStore(discountedProductsData)
+        const lowStockProductsDataFiltered = filterProductsByStore(lowStockProductsData)
+        // Categories: only those that appear in filtered products
+        const categoryIdsInProducts = new Set(allProductsData.map(p => p.category_id).filter(Boolean).map(String))
+        const categoriesDataFiltered = categoriesData.filter(c => categoryIdsInProducts.has(String(c.id)))
+        const promotionsFiltered = promotionsData.filter(p => !p.store_id || storeIdsInProvince.has(p.store_id))
+        const chefsFiltered = chefsData.filter(c => !c.store_id || storeIdsInProvince.has(c.store_id))
+        setNewProducts(newProductsDataFiltered)
+        setDiscountedProducts(discountedProductsDataFiltered)
+        setLowStockProducts(lowStockProductsDataFiltered)
+        setAllProducts(allProductsData)
+        setCategories(categoriesDataFiltered)
+        setNearbyStores(storesData)
+        setPromotions(promotionsFiltered)
+        setChefs(chefsFiltered)
+        setLoading(false)
+        return
+      }
 
       // When a specific city is selected and that city has no stores, show empty everywhere
       if (selectedCity && selectedCity.trim() !== '' && selectedCity.trim().toLowerCase() !== 'all' && storesData.length === 0) {
@@ -1055,9 +1099,9 @@ const AutoScrollCarousel = ({ products, onQuickView, onAddToCart, onShowToast, f
   })
   
   return (
-    <section className="py-3 sm:py-4 bg-gradient-to-b from-gray-50 to-white w-full" style={{ display: 'block' }}>
+    <section className="pt-1 sm:pt-2 pb-3 sm:pb-4 bg-gradient-to-b from-gray-50 to-white w-full" style={{ display: 'block' }}>
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-4 sm:mb-8">
+        <div className="flex items-center justify-between mb-2 sm:mb-4">
           <div className="relative flex items-center gap-3 sm:gap-4 group">
             {/* Large, prominent lightning bolt with organic shape */}
             <div className="relative flex items-center justify-center">

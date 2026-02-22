@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { Eye, Heart, Zap, Filter, ChefHat, Sparkles, TrendingUp, Users, Search, Grid3x3, List, SlidersHorizontal } from 'lucide-react'
 import { useLocation } from '../contexts/LocationContext'
+import { getCitiesForProvince } from '../constants/canadaLocations'
 import StarRating from '../components/StarRating'
 import PageBanner from '../components/PageBanner'
 import { resolveImageUrl } from '../utils/imageUtils'
@@ -20,7 +21,9 @@ const TopChefDeals = () => {
   const [allOfferTypes, setAllOfferTypes] = useState([])
   const [viewMode, setViewMode] = useState('grid')
   const [showFilters, setShowFilters] = useState(false)
-  const { selectedCity } = useLocation()
+  const { selectedCity, selectedProvince } = useLocation()
+  const provinceCities = selectedProvince && selectedCity === 'All' ? getCitiesForProvince(selectedProvince) : null
+  const effectiveCity = selectedProvince && selectedCity === 'All' ? null : selectedCity
 
   useEffect(() => {
     loadFavorites()
@@ -28,7 +31,7 @@ const TopChefDeals = () => {
 
   useEffect(() => {
     fetchDeals()
-  }, [selectedCity, sortBy, searchQuery, cuisineTypeFilter, offerTypeFilter])
+  }, [selectedCity, selectedProvince, sortBy, searchQuery, cuisineTypeFilter, offerTypeFilter])
 
   const loadFavorites = () => {
     const savedFavorites = localStorage.getItem('favorites_chef_cuisines')
@@ -62,8 +65,8 @@ const TopChefDeals = () => {
   const fetchDeals = async () => {
     setLoading(true)
     try {
-      if (selectedCity && selectedCity !== 'All') {
-        const storesRes = await api.get('/customer/stores/', { params: { city: selectedCity } })
+      if (effectiveCity && effectiveCity !== 'All') {
+        const storesRes = await api.get('/customer/stores/', { params: { city: effectiveCity } })
         const storesList = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
         if (storesList.length === 0) {
           setCuisines([])
@@ -71,9 +74,20 @@ const TopChefDeals = () => {
           return
         }
       }
+      if (provinceCities && provinceCities.length > 0) {
+        const storesRes = await api.get('/customer/stores/')
+        const allStores = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
+        const provinceCitySet = new Set(provinceCities.map(c => c.trim().toLowerCase()))
+        const inProvince = allStores.filter(s => s && s.city && provinceCitySet.has(String(s.city).trim().toLowerCase()))
+        if (inProvince.length === 0) {
+          setCuisines([])
+          setLoading(false)
+          return
+        }
+      }
       const params = {
         limit: 100,
-        ...(selectedCity && selectedCity !== 'All' ? { city: selectedCity } : {})
+        ...(effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {})
       }
       if (cuisineTypeFilter) params.cuisine_type = cuisineTypeFilter
       if (searchQuery) params.search = searchQuery

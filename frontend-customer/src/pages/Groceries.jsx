@@ -5,6 +5,7 @@ import { ShoppingCart, Eye, Heart, Package, Search, Filter, Grid3x3, List, Spark
 import { useCart } from '../contexts/CartContext'
 import { useToast } from '../contexts/ToastContext'
 import { useLocation } from '../contexts/LocationContext'
+import { getCitiesForProvince } from '../constants/canadaLocations'
 import QuickViewModal from '../components/QuickViewModal'
 import Pagination from '../components/Pagination'
 import StarRating from '../components/StarRating'
@@ -38,7 +39,9 @@ const Groceries = () => {
   const [showFilters, setShowFilters] = useState(false)
 
   const { addToCart } = useCart()
-  const { selectedCity } = useLocation()
+  const { selectedCity, selectedProvince } = useLocation()
+  const provinceCities = selectedProvince && selectedCity === 'All' ? getCitiesForProvince(selectedProvince) : null
+  const effectiveCity = selectedProvince && selectedCity === 'All' ? null : selectedCity
   const { success: showSuccessToast } = useToast()
 
   useEffect(() => {
@@ -47,7 +50,7 @@ const Groceries = () => {
 
   useEffect(() => {
     fetchCategories()
-  }, [selectedCity])
+  }, [selectedCity, selectedProvince])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -55,7 +58,7 @@ const Groceries = () => {
 
   useEffect(() => {
     fetchProducts()
-  }, [currentPage, selectedCity, categoryFilter, searchQuery, sortBy, featuredFilter, priceMin, priceMax, stockFilter, minRating, itemsPerPage])
+  }, [currentPage, selectedCity, selectedProvince, categoryFilter, searchQuery, sortBy, featuredFilter, priceMin, priceMax, stockFilter, minRating, itemsPerPage])
 
   const loadFavorites = () => {
     const savedFavorites = localStorage.getItem('favorites')
@@ -81,15 +84,25 @@ const Groceries = () => {
 
   const fetchCategories = async () => {
     try {
-      if (selectedCity && selectedCity !== 'All') {
-        const storesRes = await api.get('/customer/stores/', { params: { city: selectedCity } })
+      if (effectiveCity && effectiveCity !== 'All') {
+        const storesRes = await api.get('/customer/stores/', { params: { city: effectiveCity } })
         const storesList = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
         if (storesList.length === 0) {
           setCategories([])
           return
         }
       }
-      const params = selectedCity && selectedCity !== 'All' ? { city: selectedCity } : {}
+      if (provinceCities && provinceCities.length > 0) {
+        const storesRes = await api.get('/customer/stores/')
+        const allStores = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
+        const provinceCitySet = new Set(provinceCities.map(c => c.trim().toLowerCase()))
+        const inProvince = allStores.filter(s => s && s.city && provinceCitySet.has(String(s.city).trim().toLowerCase()))
+        if (inProvince.length === 0) {
+          setCategories([])
+          return
+        }
+      }
+      const params = effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {}
       const response = await api.get('/customer/categories', { params })
       const categoriesData = Array.isArray(response.data) ? response.data : (response.data?.categories || [])
       setCategories(categoriesData)
@@ -102,9 +115,8 @@ const Groceries = () => {
   const fetchProducts = async () => {
     setLoading(true)
     try {
-      // When a specific city is selected, ensure that city has stores; otherwise show empty
-      if (selectedCity && selectedCity !== 'All') {
-        const storesRes = await api.get('/customer/stores/', { params: { city: selectedCity } })
+      if (effectiveCity && effectiveCity !== 'All') {
+        const storesRes = await api.get('/customer/stores/', { params: { city: effectiveCity } })
         const storesList = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
         if (storesList.length === 0) {
           setProducts([])
@@ -115,14 +127,28 @@ const Groceries = () => {
           return
         }
       }
+      let provinceStoreIds = null
+      if (provinceCities && provinceCities.length > 0) {
+        const storesRes = await api.get('/customer/stores/')
+        const allStores = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
+        const provinceCitySet = new Set(provinceCities.map(c => c.trim().toLowerCase()))
+        provinceStoreIds = new Set(allStores.filter(s => s && s.city && provinceCitySet.has(String(s.city).trim().toLowerCase())).map(s => s.id))
+        if (provinceStoreIds.size === 0) {
+          setProducts([])
+          setTotalProducts(0)
+          setTotalPages(1)
+          setLoading(false)
+          return
+        }
+      }
 
       const params = {
-        skip: (currentPage - 1) * itemsPerPage,
-        limit: itemsPerPage
+        skip: provinceStoreIds ? 0 : (currentPage - 1) * itemsPerPage,
+        limit: provinceStoreIds ? 2000 : itemsPerPage
       }
       
-      if (selectedCity && selectedCity !== 'All') {
-        params.city = selectedCity
+      if (effectiveCity && effectiveCity !== 'All') {
+        params.city = effectiveCity
       }
       if (categoryFilter) {
         params.category_id = categoryFilter
@@ -153,11 +179,17 @@ const Groceries = () => {
 
       const response = await api.get('/customer/products', { params })
       
-      // Handle different response structures safely
-      const productsData = response.data?.products || response.data || []
-      const total = response.data?.total || 0
+      let productsData = response.data?.products || response.data || []
+      let total = response.data?.total || 0
       
-      // Remove duplicates based on product ID to prevent items from appearing on multiple pages
+      if (provinceStoreIds && provinceStoreIds.size > 0) {
+        productsData = Array.isArray(productsData) ? productsData.filter(p => p && provinceStoreIds.has(p.store_id)) : []
+        total = productsData.length
+        const start = (currentPage - 1) * itemsPerPage
+        productsData = productsData.slice(start, start + itemsPerPage)
+      }
+      
+      // Remove duplicates based on product ID
       const uniqueProducts = Array.isArray(productsData) 
         ? productsData.filter((product, index, self) => 
             product && product.id && index === self.findIndex((p) => p && p.id === product.id)
@@ -165,8 +197,8 @@ const Groceries = () => {
         : []
       
       setProducts(uniqueProducts)
-      setTotalProducts(total)
-      setTotalPages(Math.ceil(total / itemsPerPage) || 1)
+      setTotalProducts(provinceStoreIds ? total : (response.data?.total || total))
+      setTotalPages(Math.ceil((provinceStoreIds ? total : (response.data?.total || total)) / itemsPerPage) || 1)
     } catch (error) {
       console.error('Failed to fetch products:', error)
       setProducts([])

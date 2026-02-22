@@ -162,7 +162,7 @@ const ProductImageGallery = ({ images, productName, mainImage, imageType = 'prod
                 imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
               }`}
               onLoad={handleImageLoad}
-              loading="lazy"
+              loading={selectedIndex === 0 && !is360View ? 'eager' : 'lazy'}
               onError={(e) => {
                 e.target.style.display = 'none'
                 handleImageError()

@@ -94,10 +94,10 @@ export const resolveImageUrl = (url, type) => {
     }
   }
   
-  // In production with VITE_API_BASE_URL, prepend API origin so images load from Render (not Vercel)
-  if (apiOrigin) {
-    return `${apiOrigin}${path.startsWith('/') ? path : `/${path}`}`
-  }
-  return path
+  // Prepend origin so img src is always absolute (fixes desktop loading when relative path would hit wrong host)
+  const base = apiOrigin || (typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '')
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  if (base) return `${base}${normalizedPath}`
+  return normalizedPath
 }
 

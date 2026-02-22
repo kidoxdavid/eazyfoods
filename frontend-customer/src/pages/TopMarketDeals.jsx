@@ -4,6 +4,7 @@ import api from '../services/api'
 import { ShoppingCart, Eye, Heart, Zap, Filter, Package, Sparkles, TrendingUp, Users, Search, Grid3x3, List, SlidersHorizontal } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
 import { useLocation } from '../contexts/LocationContext'
+import { getCitiesForProvince } from '../constants/canadaLocations'
 import QuickViewModal from '../components/QuickViewModal'
 import StarRating from '../components/StarRating'
 import PageBanner from '../components/PageBanner'
@@ -26,7 +27,9 @@ const TopMarketDeals = () => {
   const [viewMode, setViewMode] = useState('grid') // 'grid' or 'list'
   const [showFilters, setShowFilters] = useState(false)
   const { addToCart } = useCart()
-  const { selectedCity } = useLocation()
+  const { selectedCity, selectedProvince } = useLocation()
+  const provinceCities = selectedProvince && selectedCity === 'All' ? getCitiesForProvince(selectedProvince) : null
+  const effectiveCity = selectedProvince && selectedCity === 'All' ? null : selectedCity
 
   useEffect(() => {
     loadFavorites()
@@ -38,7 +41,7 @@ const TopMarketDeals = () => {
 
   useEffect(() => {
     fetchDeals()
-  }, [selectedCity, sortBy, searchQuery, categoryFilter, offerTypeFilter])
+  }, [selectedCity, selectedProvince, sortBy, searchQuery, categoryFilter, offerTypeFilter])
 
   const loadFavorites = () => {
     const savedFavorites = localStorage.getItem('favorites')
@@ -64,7 +67,7 @@ const TopMarketDeals = () => {
 
   const fetchCategories = async () => {
     try {
-      const params = selectedCity && selectedCity !== 'All' ? { city: selectedCity } : {}
+      const params = effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {}
       const response = await api.get('/customer/categories', { params })
       const categoriesData = Array.isArray(response.data) ? response.data : (response.data?.categories || [])
       setCategories(categoriesData)
@@ -84,10 +87,21 @@ const TopMarketDeals = () => {
   const fetchDeals = async () => {
     setLoading(true)
     try {
-      if (selectedCity && selectedCity !== 'All') {
-        const storesRes = await api.get('/customer/stores/', { params: { city: selectedCity } })
+      if (effectiveCity && effectiveCity !== 'All') {
+        const storesRes = await api.get('/customer/stores/', { params: { city: effectiveCity } })
         const storesList = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
         if (storesList.length === 0) {
+          setProducts([])
+          setLoading(false)
+          return
+        }
+      }
+      if (provinceCities && provinceCities.length > 0) {
+        const storesRes = await api.get('/customer/stores/')
+        const allStores = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
+        const provinceCitySet = new Set(provinceCities.map(c => c.trim().toLowerCase()))
+        const inProvince = allStores.filter(s => s && s.city && provinceCitySet.has(String(s.city).trim().toLowerCase()))
+        if (inProvince.length === 0) {
           setProducts([])
           setLoading(false)
           return
@@ -96,7 +110,7 @@ const TopMarketDeals = () => {
       const params = { 
         discounted: true,
         limit: 100,
-        ...(selectedCity && selectedCity !== 'All' ? { city: selectedCity } : {})
+        ...(effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {})
       }
       if (categoryFilter) {
         params.category_id = categoryFilter

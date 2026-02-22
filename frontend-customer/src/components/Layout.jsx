@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useCart } from '../contexts/CartContext'
 import { ShoppingCart, User, LogOut, Search, Home, Store, Package, ShoppingBag, Settings, Menu, X, Utensils, MapPin, Info, Mail, Zap, ChefHat, Truck, DollarSign, Clock, ArrowRight } from 'lucide-react'
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense, createPortal } from 'react'
 import Breadcrumbs from './Breadcrumbs'
 
 const PageBanner = lazy(() => import('./PageBanner'))
@@ -23,6 +23,8 @@ const Layout = ({ children }) => {
   const [locationCityOpen, setLocationCityOpen] = useState(false)
   const [cartPreviewOpen, setCartPreviewOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
+  const profileButtonRef = useRef(null)
+  const [profileDropdownPosition, setProfileDropdownPosition] = useState({ top: 0, right: 0 })
   const [avatarKey, setAvatarKey] = useState(() => localStorage.getItem(AVATAR_ICON_KEY) || 'user')
   const location = useLocation()
   const navigate = useNavigate()
@@ -468,7 +470,15 @@ const Layout = ({ children }) => {
                     </div>
                     <div className="relative flex-shrink-0 flex items-center">
                       <button
-                        onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setCartPreviewOpen(false) }}
+                        ref={profileButtonRef}
+                        onClick={() => {
+                          if (!profileDropdownOpen && profileButtonRef.current) {
+                            const rect = profileButtonRef.current.getBoundingClientRect()
+                            setProfileDropdownPosition({ top: rect.bottom + 6, right: window.innerWidth - rect.right })
+                          }
+                          setProfileDropdownOpen(!profileDropdownOpen)
+                          setCartPreviewOpen(false)
+                        }}
                         className="rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center gap-2 min-h-0 h-9 w-9 sm:h-10 sm:w-10 lg:w-auto lg:min-w-0 lg:pl-2 lg:pr-3 lg:py-2 overflow-hidden p-0 lg:p-2"
                         type="button"
                         aria-label="Profile menu"
@@ -488,31 +498,37 @@ const Layout = ({ children }) => {
                       </button>
                       {profileDropdownOpen && (
                         <>
-                          <div className="fixed inset-0 z-40" onClick={() => setProfileDropdownOpen(false)} aria-hidden="true" />
-                          <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden ring-1 ring-black/5">
-                            <div className="p-4 bg-gradient-to-br from-primary-50 to-primary-100/50 border-b border-gray-100">
-                              <p className="text-sm font-semibold text-gray-900 truncate">
-                                {user?.first_name || user?.email?.split('@')[0] || 'User'}
-                              </p>
-                              <p className="text-xs text-gray-500 truncate mt-0.5">{user?.email}</p>
-                            </div>
-                            <Link
-                              to="/profile"
-                              onClick={() => setProfileDropdownOpen(false)}
-                              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary-50/50 font-medium transition-colors"
+                          <div className="fixed inset-0 z-[9998]" onClick={() => setProfileDropdownOpen(false)} aria-hidden="true" />
+                          {createPortal(
+                            <div
+                              className="fixed w-64 bg-white rounded-2xl shadow-xl border border-gray-100 z-[9999] overflow-hidden ring-1 ring-black/5"
+                              style={{ top: profileDropdownPosition.top, right: profileDropdownPosition.right, left: 'auto' }}
                             >
-                              <User className="h-4 w-4 text-primary-600 flex-shrink-0" />
-                              Profile
-                            </Link>
-                            <button
-                              onClick={() => { handleLogout(); setProfileDropdownOpen(false) }}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-red-50 font-medium transition-colors border-t border-gray-100"
-                              type="button"
-                            >
-                              <LogOut className="h-4 w-4 text-red-500 flex-shrink-0" />
-                              Log out
-                            </button>
-                          </div>
+                              <div className="p-4 bg-gradient-to-br from-primary-50 to-primary-100/50 border-b border-gray-100">
+                                <p className="text-sm font-semibold text-gray-900 truncate">
+                                  {user?.first_name || user?.email?.split('@')[0] || 'User'}
+                                </p>
+                                <p className="text-xs text-gray-500 truncate mt-0.5">{user?.email}</p>
+                              </div>
+                              <Link
+                                to="/profile"
+                                onClick={() => setProfileDropdownOpen(false)}
+                                className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary-50/50 font-medium transition-colors"
+                              >
+                                <User className="h-4 w-4 text-primary-600 flex-shrink-0" />
+                                Profile
+                              </Link>
+                              <button
+                                onClick={() => { handleLogout(); setProfileDropdownOpen(false) }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-red-50 font-medium transition-colors border-t border-gray-100"
+                                type="button"
+                              >
+                                <LogOut className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                Log out
+                              </button>
+                            </div>,
+                            document.body
+                          )}
                         </>
                       )}
                     </div>
