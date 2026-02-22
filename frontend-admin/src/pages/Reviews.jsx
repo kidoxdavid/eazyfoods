@@ -15,6 +15,10 @@ const Reviews = () => {
   const [bulkAction, setBulkAction] = useState('')
 
   useEffect(() => {
+    window.dispatchEvent(new CustomEvent('reviews-visited'))
+  }, [])
+
+  useEffect(() => {
     fetchReviews()
     fetchStats()
   }, [ratingFilter, statusFilter, currentPage])

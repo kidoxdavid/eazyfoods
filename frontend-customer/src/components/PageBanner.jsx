@@ -250,9 +250,32 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
     switch (transitionStyle) {
       case 'slide':
         return 'transform transition-transform duration-500'
+      case 'slideUp':
+        return 'transform transition-transform duration-500'
+      case 'slideDown':
+        return 'transform transition-transform duration-500'
+      case 'zoom':
+        return 'transform transition-transform duration-500'
       case 'fade':
       default:
         return 'opacity-0 transition-opacity duration-500'
+    }
+  }
+
+  const getTransitionStyle = () => {
+    if (ads.length <= 1 || !transitioning) return {}
+    switch (transitionStyle) {
+      case 'slide':
+        return { transform: 'translateX(-100%)' }
+      case 'slideUp':
+        return { transform: 'translateY(-100%)' }
+      case 'slideDown':
+        return { transform: 'translateY(100%)' }
+      case 'zoom':
+        return { transform: 'scale(1.15)', opacity: 0 }
+      case 'fade':
+      default:
+        return { opacity: 0 }
     }
   }
 
@@ -292,7 +315,7 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
       )}
 
       {/* Ad content - fixed height container with image background */}
-      <div className={`w-full h-full flex items-center relative overflow-hidden ${getTransitionClasses()}`}>
+      <div className={`w-full h-full flex items-center relative overflow-hidden ${getTransitionClasses()}`} style={getTransitionStyle()}>
         {/* Image/Video Background Section - extends to create fade effect */}
         {(imageUrl || videoUrl) && (
           <div 

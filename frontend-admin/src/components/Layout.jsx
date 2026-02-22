@@ -34,7 +34,7 @@ const Layout = () => {
     { name: 'Promotions', href: '/promotions', icon: Tag, badge: notifications.pendingPromotions },
     { name: 'Marketing', href: '/marketing', icon: Megaphone, badge: notifications.pendingAds },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-    { name: 'Reviews', href: '/reviews', icon: Star },
+    { name: 'Reviews', href: '/reviews', icon: Star, badge: notifications.pendingReviews },
     { name: 'Support', href: '/support', icon: MessageSquare, badge: notifications.pendingSupport },
     { name: 'Chat', href: '/chat', icon: MessageCircle },
     { name: 'Activity Logs', href: '/activity', icon: Activity },

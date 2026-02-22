@@ -407,8 +407,11 @@ const AdDesigner = () => {
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                         >
                           <option value="fade">Fade</option>
-                          <option value="slide">Slide</option>
-                          <option value="none">None (Instant)</option>
+                          <option value="slide">Slide (horizontal)</option>
+                          <option value="slideUp">Slide up</option>
+                          <option value="slideDown">Slide down</option>
+                          <option value="zoom">Zoom</option>
+                          <option value="none">None (instant)</option>
                         </select>
                         <p className="text-xs text-gray-500 mt-1">
                           How the ad transitions to the next one in the slideshow

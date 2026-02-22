@@ -1,24 +1,39 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
 
 export const useNotifications = () => {
+  const reviewsSeenRef = useRef(false)
+  const [reviewsSeen, setReviewsSeen] = useState(false)
   const [notifications, setNotifications] = useState({
     pendingAds: 0,
     pendingVendors: 0,
     pendingPromotions: 0,
     pendingSupport: 0,
-    pendingDrivers: 0
+    pendingDrivers: 0,
+    pendingReviews: 0
   })
   const [loading, setLoading] = useState(true)
+
+  const markReviewsSeen = () => {
+    reviewsSeenRef.current = true
+    setReviewsSeen(true)
+  }
 
   useEffect(() => {
     fetchNotifications()
     const interval = setInterval(fetchNotifications, 10000)
     const onRefresh = () => fetchNotifications()
+    const onReviewsVisited = () => {
+      reviewsSeenRef.current = true
+      setReviewsSeen(true)
+      setNotifications(prev => ({ ...prev, pendingReviews: 0 }))
+    }
     window.addEventListener('refresh-notifications', onRefresh)
+    window.addEventListener('reviews-visited', onReviewsVisited)
     return () => {
       clearInterval(interval)
       window.removeEventListener('refresh-notifications', onRefresh)
+      window.removeEventListener('reviews-visited', onReviewsVisited)
     }
   }, [])
 
@@ -29,7 +44,8 @@ export const useNotifications = () => {
       let promotionsCount = 0
       let supportCount = 0
       let driversCount = 0
-      
+      let reviewsCount = 0
+
       // Fetch pending ads
       try {
         const adsRes = await api.get('/admin/marketing/ads', { 
@@ -85,12 +101,22 @@ export const useNotifications = () => {
         console.error('Failed to fetch drivers notifications:', error)
       }
 
+      // Fetch review stats (reported / needing attention for badge)
+      try {
+        const statsRes = await api.get('/admin/reviews/stats')
+        const stats = statsRes.data || {}
+        reviewsCount = (stats.reported_reviews || 0) + (stats.abusive_reviews || 0)
+      } catch (error) {
+        console.error('Failed to fetch reviews notifications:', error)
+      }
+
       setNotifications({
         pendingAds: adsCount,
         pendingVendors: vendorsCount,
         pendingPromotions: promotionsCount,
         pendingSupport: supportCount,
-        pendingDrivers: driversCount
+        pendingDrivers: driversCount,
+        pendingReviews: reviewsSeenRef.current ? 0 : reviewsCount
       })
     } catch (error) {
       console.error('Failed to fetch notifications:', error)
@@ -99,6 +125,6 @@ export const useNotifications = () => {
     }
   }
 
-  return { notifications, loading, refresh: fetchNotifications }
+  return { notifications, loading, refresh: fetchNotifications, markReviewsSeen }
 }
 

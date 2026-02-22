@@ -145,9 +145,8 @@ const ChefDetail = () => {
             </div>
           </div>
 
-          {/* Documents (all three, like driver view) */}
-          {(chef.government_id_url || chef.chef_certification_url || chef.business_permit_url) && (
-            <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+          {/* Documents (all three, like driver view — always show section) */}
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <FileText className="h-5 w-5" />
                 Documents for Verification
@@ -200,7 +199,6 @@ const ChefDetail = () => {
                 </div>
               </div>
             </div>
-          )}
 
           {/* Cuisines */}
           <div className="bg-white rounded-lg shadow border border-gray-200 p-6">

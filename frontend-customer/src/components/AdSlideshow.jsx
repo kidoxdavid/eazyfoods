@@ -218,7 +218,7 @@ const AdSlideshow = () => {
   const videoUrl = hasVideo ? resolveMediaUrl(currentAd.video_url) : null
   const transitionStyle = currentAd?.transition_style || 'fade'
   
-  // Get transition classes and styles based on style
+  // Get transition classes and styles based on style (marketing sets duration & transition per ad)
   const getTransitionProps = () => {
     if (transitioning) {
       switch (transitionStyle) {
@@ -227,16 +227,28 @@ const AdSlideshow = () => {
             className: 'transform transition-transform duration-500',
             style: { transform: 'translateX(-100%)' }
           }
+        case 'slideUp':
+          return {
+            className: 'transform transition-transform duration-500',
+            style: { transform: 'translateY(-100%)' }
+          }
+        case 'slideDown':
+          return {
+            className: 'transform transition-transform duration-500',
+            style: { transform: 'translateY(100%)' }
+          }
+        case 'zoom':
+          return {
+            className: 'transform transition-transform duration-500',
+            style: { transform: 'scale(1.15)', opacity: 0 }
+          }
         case 'fade':
           return {
             className: 'transition-opacity duration-500',
             style: { opacity: 0 }
           }
         case 'none':
-          return {
-            className: '',
-            style: {}
-          }
+          return { className: '', style: {} }
         default:
           return {
             className: 'transition-opacity duration-500',
@@ -244,10 +256,12 @@ const AdSlideshow = () => {
           }
       }
     }
-    return {
-      className: transitionStyle === 'slide' ? 'transform transition-transform duration-500' : transitionStyle === 'fade' ? 'transition-opacity duration-500' : '',
-      style: {}
-    }
+    const baseClass = ['slide', 'slideUp', 'slideDown', 'zoom'].includes(transitionStyle)
+      ? 'transform transition-transform duration-500'
+      : transitionStyle === 'fade'
+        ? 'transition-opacity duration-500'
+        : ''
+    return { className: baseClass, style: {} }
   }
   
   const transitionProps = getTransitionProps()

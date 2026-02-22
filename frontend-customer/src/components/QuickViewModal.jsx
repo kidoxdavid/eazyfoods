@@ -86,11 +86,11 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
           )}
         </div>
 
-        {/* Mobile: fixed layout — image ~58% height, content fixed below (no scroll) */}
-        <div className="md:hidden flex flex-col flex-1 min-h-0 h-[85vh] max-h-[600px]">
-          {/* Image: fixed height, more space */}
-          <div className="flex-[0_0_58%] min-h-0 flex-shrink-0 bg-gray-100 px-3 pt-3 pb-2 flex items-center justify-center">
-            <div className="relative w-full h-full max-w-[14rem] max-h-full rounded-2xl overflow-hidden bg-white shadow-inner">
+        {/* Mobile: 50/50 — image top half, content bottom half */}
+        <div className="md:hidden flex flex-col flex-1 min-h-0 h-[85vh] max-h-[560px]">
+          {/* Image: top half */}
+          <div className="flex-[0_0_50%] min-h-0 flex-shrink-0 bg-gray-100 px-3 pt-3 pb-2 flex items-center justify-center">
+            <div className="relative w-full h-full max-w-[12rem] max-h-full rounded-2xl overflow-hidden bg-white shadow-inner">
               {product.image_url ? (
                 <img
                   src={resolveImageUrl(product.image_url)}
@@ -111,8 +111,8 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
               )}
             </div>
           </div>
-          {/* Content: fixed, no scroll, compact */}
-          <div className="flex-1 min-h-0 flex flex-col flex-shrink-0 overflow-hidden px-3 pb-3 pt-1">
+          {/* Content: bottom half, fixed, no scroll */}
+          <div className="flex-[0_0_50%] min-h-0 flex flex-col flex-shrink-0 overflow-hidden px-3 pb-3 pt-2">
             <div className="flex items-start justify-between gap-2 mb-1">
               <h2 className="text-sm font-bold text-gray-900 line-clamp-2 flex-1 min-w-0 pr-8">{product.name}</h2>
               <button

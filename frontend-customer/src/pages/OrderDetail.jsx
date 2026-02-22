@@ -26,6 +26,15 @@ const OrderDetail = () => {
     fetchOrder()
   }, [id])
 
+  // Poll for status updates while order is not in a terminal state
+  useEffect(() => {
+    if (!order || !id) return
+    const terminal = ['delivered', 'picked_up', 'cancelled']
+    if (terminal.includes(order.status)) return
+    const interval = setInterval(fetchOrder, 8000) // every 8s
+    return () => clearInterval(interval)
+  }, [id, order?.status])
+
   const fetchOrder = async () => {
     try {
       const response = await api.get(`/customer/orders/${id}`)
