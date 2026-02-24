@@ -7,6 +7,7 @@ One-page value proposition fliers for printing or saving as PDF. Use them at eve
 | File | Audience |
 |------|----------|
 | `chef-value-proposition` | Chefs – join the platform, list cuisines, get orders |
+| `vendor-value-proposition` | Vendors – sell groceries, manage store, products, and orders |
 | `driver-value-proposition` | Delivery drivers – sign up, flexible hours, earn per delivery |
 | `customer-value-proposition` | Shoppers – why shop eazyfoods (groceries + chef meals) |
 
@@ -22,6 +23,7 @@ Each flier has an **HTML** version (print-friendly, open in browser) and a **Mar
 ## Brand
 
 - **eazyfoods** – Authentic African groceries & meals, delivered.
+- Vendor portal: [vendor.eazyfoods.ca](https://vendor.eazyfoods.ca)  
 - Chef portal: [chef.eazyfoods.ca](https://chef.eazyfoods.ca)  
 - Driver/delivery signup: [delivery.eazyfoods.ca](https://delivery.eazyfoods.ca)  
 - Customer site: [eazyfoods.ca](https://eazyfoods.ca)  

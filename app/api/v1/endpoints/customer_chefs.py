@@ -1,6 +1,7 @@
 """
 Customer-facing chef endpoints - browse verified chefs
 """
+import logging
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_, and_
@@ -13,7 +14,18 @@ from app.models.customer import CustomerSavedChef
 from app.api.v1.dependencies import get_optional_customer
 from uuid import UUID
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _safe_float(value):
+    """Convert to float for JSON; return None on failure."""
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _haversine_km(lat1, lon1, lat2, lon2):
@@ -181,128 +193,144 @@ async def get_chef(
     
     if not chef:
         raise HTTPException(status_code=404, detail="Chef not found")
-    
-    # Get reviews
-    from app.models.chef import ChefReview
-    from app.models.customer import Customer
-    from app.models.cuisine import Cuisine
-    
-    reviews = db.query(ChefReview).filter(
-        ChefReview.chef_id == chef.id,
-        ChefReview.is_public == True
-    ).order_by(ChefReview.created_at.desc()).limit(10).all()
-    
-    review_list = []
-    for review in reviews:
-        customer = db.query(Customer).filter(Customer.id == review.customer_id).first()
-        review_list.append({
-            "id": str(review.id),
-            "rating": review.rating,
-            "title": review.title,
-            "comment": review.comment,
-            "cuisine_quality": review.cuisine_quality,
-            "service_quality": review.service_quality,
-            "value_for_money": review.value_for_money,
-            "customer_name": f"{customer.first_name} {customer.last_name}" if customer else "Anonymous",
-            "created_at": review.created_at.isoformat() if getattr(review, "created_at", None) else None,
-            "chef_response": review.chef_response
-        })
-    
-    # Get all cuisines (including out_of_stock) so we can show "Temporarily unavailable"
-    cuisines = db.query(Cuisine).filter(Cuisine.chef_id == chef.id).order_by(
-        Cuisine.is_featured.desc(), Cuisine.created_at.desc()
-    ).all()
-    cuisine_list = []
-    for cuisine in cuisines:
-        cuisine_list.append({
-            "id": str(cuisine.id),
-            "name": cuisine.name,
-            "description": cuisine.description,
-            "cuisine_type": cuisine.cuisine_type,
-            "price": float(cuisine.price) if cuisine.price else None,
-            "price_per_person": float(cuisine.price_per_person) if cuisine.price_per_person else None,
-            "minimum_servings": cuisine.minimum_servings,
-            "image_url": cuisine.image_url,
-            "images": cuisine.images or [],
-            "ingredients": cuisine.ingredients or [],
-            "allergens": cuisine.allergens or [],
-            "spice_level": cuisine.spice_level,
-            "prep_time_minutes": cuisine.prep_time_minutes,
-            "serves": cuisine.serves,
-            "is_vegetarian": cuisine.is_vegetarian,
-            "is_vegan": cuisine.is_vegan,
-            "is_gluten_free": cuisine.is_gluten_free,
-            "is_halal": cuisine.is_halal,
-            "is_kosher": cuisine.is_kosher,
-            "is_featured": cuisine.is_featured,
-            "slug": cuisine.slug,
-            "status": cuisine.status or "active",
-        })
-    # Similar chefs (same city or overlapping cuisines, exclude self)
-    similar_query = db.query(Chef).filter(
-        Chef.id != chef.id,
-        Chef.verification_status == "verified",
-        Chef.is_active == True,
-        Chef.is_available == True
-    )
-    sim_conditions = []
-    if chef.city and chef.city.strip():
-        sim_conditions.append(func.lower(Chef.city) == func.lower(chef.city))
-    if chef.cuisines and len(chef.cuisines) > 0:
-        sim_conditions.append(Chef.cuisines.overlap(chef.cuisines))
-    if sim_conditions:
-        similar_query = similar_query.filter(or_(*sim_conditions))
-    similar = similar_query.order_by(Chef.average_rating.desc().nullslast()).limit(6).all()
-    similar_list = []
-    for s in similar:
-        similar_list.append({
-            "id": str(s.id),
-            "chef_name": s.chef_name,
-            "profile_image_url": s.profile_image_url,
-            "city": s.city,
-            "state": s.state,
-            "average_rating": float(s.average_rating) if s.average_rating else None,
-            "total_reviews": s.total_reviews,
-        })
-    return {
-        "id": str(chef.id),
-        "chef_name": chef.chef_name,
-        "bio": chef.bio,
-        "profile_image_url": chef.profile_image_url,
-        "banner_image_url": chef.banner_image_url,
-        "cuisines": chef.cuisines,
-        "cuisine_offerings": cuisine_list,
-        "cuisine_description": chef.cuisine_description,
-        "city": chef.city,
-        "state": chef.state,
-        "street_address": chef.street_address,
-        "postal_code": chef.postal_code,
-        "average_rating": float(chef.average_rating) if chef.average_rating else None,
-        "total_reviews": chef.total_reviews,
-        "service_radius_km": float(chef.service_radius_km) if chef.service_radius_km else None,
-        "minimum_order_amount": float(chef.minimum_order_amount) if chef.minimum_order_amount else None,
-        "service_fee": float(chef.service_fee) if chef.service_fee else None,
-        "estimated_prep_time_minutes": chef.estimated_prep_time_minutes,
-        "gallery_images": chef.gallery_images or [],
-        "social_media_links": chef.social_media_links,
-        "website_url": chef.website_url,
-        "reviews": review_list,
-        "operating_hours": getattr(chef, "operating_hours", None),
-        "blocked_dates": getattr(chef, "blocked_dates", None) or [],
-        "is_available": chef.is_available if chef.is_available is not None else True,
-        "phone": chef.phone,
-        "accepts_delivery": True,
-        "accepts_pickup": True,
-        "similar_chefs": similar_list,
-        "is_saved": (
-            db.query(CustomerSavedChef).filter(
-                CustomerSavedChef.customer_id == UUID(current_customer.get("customer_id")),
-                CustomerSavedChef.chef_id == chef.id
-            ).first() is not None
-            if (current_customer and current_customer.get("customer_id"))
-            else False
-        ),
-    }
+
+    try:
+        # Get reviews
+        from app.models.chef import ChefReview
+        from app.models.customer import Customer
+        from app.models.cuisine import Cuisine
+
+        reviews = db.query(ChefReview).filter(
+            ChefReview.chef_id == chef.id,
+            ChefReview.is_public == True
+        ).order_by(ChefReview.created_at.desc()).limit(10).all()
+
+        review_list = []
+        for review in reviews:
+            customer = db.query(Customer).filter(Customer.id == review.customer_id).first()
+            review_list.append({
+                "id": str(review.id),
+                "rating": review.rating,
+                "title": review.title,
+                "comment": review.comment,
+                "cuisine_quality": review.cuisine_quality,
+                "service_quality": review.service_quality,
+                "value_for_money": review.value_for_money,
+                "customer_name": f"{customer.first_name} {customer.last_name}" if customer else "Anonymous",
+                "created_at": review.created_at.isoformat() if getattr(review, "created_at", None) else None,
+                "chef_response": review.chef_response
+            })
+
+        # Get all cuisines (including out_of_stock) so we can show "Temporarily unavailable"
+        cuisines = db.query(Cuisine).filter(Cuisine.chef_id == chef.id).order_by(
+            Cuisine.is_featured.desc(), Cuisine.created_at.desc()
+        ).all()
+        cuisine_list = []
+        for cuisine in cuisines:
+            cuisine_list.append({
+                "id": str(cuisine.id),
+                "name": cuisine.name,
+                "description": cuisine.description,
+                "cuisine_type": cuisine.cuisine_type,
+                "price": _safe_float(cuisine.price),
+                "price_per_person": _safe_float(cuisine.price_per_person),
+                "minimum_servings": cuisine.minimum_servings,
+                "image_url": cuisine.image_url,
+                "images": cuisine.images or [],
+                "ingredients": cuisine.ingredients or [],
+                "allergens": cuisine.allergens or [],
+                "spice_level": cuisine.spice_level,
+                "prep_time_minutes": cuisine.prep_time_minutes,
+                "serves": cuisine.serves,
+                "is_vegetarian": cuisine.is_vegetarian,
+                "is_vegan": cuisine.is_vegan,
+                "is_gluten_free": cuisine.is_gluten_free,
+                "is_halal": cuisine.is_halal,
+                "is_kosher": cuisine.is_kosher,
+                "is_featured": cuisine.is_featured,
+                "slug": cuisine.slug,
+                "status": cuisine.status or "active",
+            })
+
+        # Similar chefs (same city or overlapping cuisines, exclude self)
+        similar_query = db.query(Chef).filter(
+            Chef.id != chef.id,
+            Chef.verification_status == "verified",
+            Chef.is_active == True,
+            Chef.is_available == True
+        )
+        sim_conditions = []
+        if chef.city and chef.city.strip():
+            sim_conditions.append(func.lower(Chef.city) == func.lower(chef.city))
+        if chef.cuisines and isinstance(chef.cuisines, list) and len(chef.cuisines) > 0:
+            try:
+                sim_conditions.append(Chef.cuisines.overlap(chef.cuisines))
+            except Exception:
+                pass  # overlap not supported or failed; use city-only
+        if sim_conditions:
+            similar_query = similar_query.filter(or_(*sim_conditions))
+        similar = similar_query.order_by(Chef.average_rating.desc().nullslast()).limit(6).all()
+        similar_list = []
+        for s in similar:
+            similar_list.append({
+                "id": str(s.id),
+                "chef_name": s.chef_name,
+                "profile_image_url": s.profile_image_url,
+                "city": s.city,
+                "state": s.state,
+                "average_rating": _safe_float(s.average_rating),
+                "total_reviews": s.total_reviews,
+            })
+
+        is_saved = False
+        if current_customer and current_customer.get("customer_id"):
+            try:
+                cid = current_customer.get("customer_id")
+                if cid:
+                    is_saved = db.query(CustomerSavedChef).filter(
+                        CustomerSavedChef.customer_id == UUID(cid),
+                        CustomerSavedChef.chef_id == chef.id
+                    ).first() is not None
+            except (ValueError, TypeError):
+                pass
+
+        return {
+            "id": str(chef.id),
+            "chef_name": chef.chef_name,
+            "bio": chef.bio,
+            "profile_image_url": chef.profile_image_url,
+            "banner_image_url": chef.banner_image_url,
+            "cuisines": chef.cuisines,
+            "cuisine_offerings": cuisine_list,
+            "cuisine_description": chef.cuisine_description,
+            "city": chef.city,
+            "state": chef.state,
+            "street_address": chef.street_address,
+            "postal_code": chef.postal_code,
+            "average_rating": _safe_float(chef.average_rating),
+            "total_reviews": chef.total_reviews,
+            "service_radius_km": _safe_float(chef.service_radius_km),
+            "minimum_order_amount": _safe_float(chef.minimum_order_amount),
+            "service_fee": _safe_float(chef.service_fee),
+            "estimated_prep_time_minutes": chef.estimated_prep_time_minutes,
+            "gallery_images": chef.gallery_images or [],
+            "social_media_links": chef.social_media_links,
+            "website_url": chef.website_url,
+            "reviews": review_list,
+            "operating_hours": getattr(chef, "operating_hours", None),
+            "blocked_dates": getattr(chef, "blocked_dates", None) or [],
+            "is_available": chef.is_available if chef.is_available is not None else True,
+            "phone": chef.phone,
+            "accepts_delivery": True,
+            "accepts_pickup": True,
+            "similar_chefs": similar_list,
+            "is_saved": is_saved,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("get_chef failed for chef_id=%s: %s", chef_id, e)
+        raise
 
 
 @router.get("/saved-chefs", response_model=dict)
