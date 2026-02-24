@@ -46,3 +46,15 @@ class CustomerAddress(Base):
     # Relationships
     customer = relationship("Customer", back_populates="addresses")
 
+
+class CustomerSavedChef(Base):
+    __tablename__ = "customer_saved_chefs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id"), nullable=False)
+    chef_id = Column(UUID(as_uuid=True), ForeignKey("chefs.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    customer = relationship("Customer", backref="saved_chefs")
+    chef = relationship("Chef", backref="saved_by_customers")
+

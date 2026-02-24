@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import StarRating from '../components/StarRating'
-import { ChefHat, MapPin, Clock, DollarSign, ArrowLeft, UtensilsCrossed, Flame, Users, Leaf, ShoppingCart } from 'lucide-react'
+import { ChefHat, MapPin, Clock, DollarSign, ArrowLeft, UtensilsCrossed, Flame, Users, Leaf, ShoppingCart, Phone, Mail, Share2, Heart, Truck, MessageCircle, X } from 'lucide-react'
 import { resolveImageUrl } from '../utils/imageUtils'
 import { ChefDetailSkeleton } from '../components/SkeletonLoader'
 import { useCart } from '../contexts/CartContext'
+
+const DAY_LABELS = { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' }
 
 const ChefDetail = () => {
   const { id: chefId } = useParams()
@@ -15,6 +17,8 @@ const ChefDetail = () => {
   const [loading, setLoading] = useState(true)
   const [cuisineQuantities, setCuisineQuantities] = useState({})
   const [addingCuisineId, setAddingCuisineId] = useState(null)
+  const [galleryLightbox, setGalleryLightbox] = useState(null)
+  const [savingSave, setSavingSave] = useState(false)
 
   useEffect(() => {
     fetchChef()
@@ -32,6 +36,38 @@ const ChefDetail = () => {
     }
   }
 
+  const handleSaveChef = async () => {
+    if (!chef) return
+    setSavingSave(true)
+    try {
+      if (chef.is_saved) {
+        await api.delete(`/customer/saved-chefs/${chef.id}`)
+        setChef(prev => ({ ...prev, is_saved: false }))
+      } else {
+        await api.post(`/customer/saved-chefs/${chef.id}`)
+        setChef(prev => ({ ...prev, is_saved: true }))
+      }
+    } catch (e) {
+      if (e.response?.status === 401) window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname)
+    } finally {
+      setSavingSave(false)
+    }
+  }
+
+  const handleShare = () => {
+    const url = window.location.href
+    if (navigator.share) {
+      navigator.share({ title: chef?.chef_name || 'Chef', url }).catch(() => {})
+    } else {
+      navigator.clipboard.writeText(url)
+      alert('Link copied to clipboard!')
+    }
+  }
+
+  const minPrice = chef?.cuisine_offerings?.length
+    ? Math.min(...(chef.cuisine_offerings.filter(c => c.status === 'active').map(c => Number(c.price) || 0).filter(Boolean) || [0]))
+    : null
+
   if (loading) {
     return <ChefDetailSkeleton />
   }
@@ -48,16 +84,35 @@ const ChefDetail = () => {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full pb-20">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3">
-        <div className="mb-2">
-          <Link
-            to="/chefs"
-            className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900"
-          >
+        {/* Breadcrumbs */}
+        <nav className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+          <Link to="/" className="hover:text-primary-600">Home</Link>
+          <span>/</span>
+          <Link to="/chefs" className="hover:text-primary-600">Chefs</Link>
+          <span>/</span>
+          <span className="text-gray-900 font-medium truncate max-w-[180px]">{chef.chef_name}</span>
+        </nav>
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <Link to="/chefs" className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900">
             <ArrowLeft className="h-4 w-4" />
             Back to Chefs
           </Link>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={handleShare} className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50" aria-label="Share">
+              <Share2 className="h-4 w-4 text-gray-600" />
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveChef}
+              disabled={savingSave}
+              className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+              aria-label={chef.is_saved ? 'Unsave' : 'Save chef'}
+            >
+              <Heart className={`h-4 w-4 ${chef.is_saved ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+            </button>
+          </div>
         </div>
 
         {/* Banner */}
@@ -126,6 +181,26 @@ const ChefDetail = () => {
             )}
           </div>
 
+          {/* Operating hours & blocked dates */}
+          {(chef.operating_hours && Object.keys(chef.operating_hours).length > 0) || (chef.blocked_dates && chef.blocked_dates.length > 0) ? (
+            <div className="bg-white rounded-lg shadow border border-gray-200 p-3">
+              <h2 className="text-lg font-bold text-gray-900 mb-2">Schedule</h2>
+              {chef.operating_hours && Object.keys(chef.operating_hours).length > 0 && (
+                <div className="mb-2">
+                  <p className="text-xs font-medium text-gray-500 mb-1">Weekly hours</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-700">
+                    {Object.entries(chef.operating_hours).map(([day, slots]) => (
+                      <span key={day}>{DAY_LABELS[day] || day}: {Array.isArray(slots) && slots.length ? slots[0] : '—'}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {chef.blocked_dates && chef.blocked_dates.length > 0 && (
+                <p className="text-xs text-amber-700">Not available on: {chef.blocked_dates.slice(0, 5).join(', ')}{chef.blocked_dates.length > 5 ? ` +${chef.blocked_dates.length - 5} more` : ''}</p>
+              )}
+            </div>
+          ) : null}
+
           {/* Cuisine Types */}
           {chef.cuisines && chef.cuisines.length > 0 && (
             <div className="bg-white rounded-lg shadow border border-gray-200 p-3">
@@ -145,10 +220,11 @@ const ChefDetail = () => {
 
           {/* Cuisine Offerings - large cards with full details */}
           {chef.cuisine_offerings && chef.cuisine_offerings.length > 0 && (
-            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-5 sm:p-6">
+            <div id="cuisine-offerings" className="bg-white rounded-xl shadow-md border border-gray-200 p-5 sm:p-6 scroll-mt-24">
               <h2 className="text-2xl font-bold text-gray-900 mb-5">Cuisine Offerings</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {chef.cuisine_offerings.map((cuisine) => {
+                  const isUnavailable = cuisine.status && cuisine.status !== 'active'
                   const dietary = []
                   if (cuisine.is_vegetarian) dietary.push('Vegetarian')
                   if (cuisine.is_vegan) dietary.push('Vegan')
@@ -160,7 +236,7 @@ const ChefDetail = () => {
                   return (
                     <div
                       key={cuisine.id}
-                      className="bg-gray-50 rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-xl hover:border-primary-300 transition-all duration-300 group flex flex-col"
+                      className={`bg-gray-50 rounded-xl border-2 overflow-hidden transition-all duration-300 group flex flex-col ${isUnavailable ? 'border-gray-200 opacity-75' : 'border-gray-200 hover:shadow-xl hover:border-primary-300'}`}
                     >
                       {/* Large image */}
                       <div className="relative aspect-[16/10] min-h-[220px] bg-gray-100 overflow-hidden">
@@ -184,7 +260,12 @@ const ChefDetail = () => {
                         <div className="image-fallback absolute inset-0 w-full h-full flex items-center justify-center text-gray-400 hidden">
                           <UtensilsCrossed className="h-20 w-20" />
                         </div>
-                        {cuisine.is_featured && (
+                        {isUnavailable && (
+                          <div className="absolute top-3 right-3 bg-gray-700 text-white text-sm font-semibold px-3 py-1.5 rounded-md shadow">
+                            Temporarily unavailable
+                          </div>
+                        )}
+                        {cuisine.is_featured && !isUnavailable && (
                           <div className="absolute top-3 right-3 bg-primary-600 text-white text-sm font-semibold px-3 py-1.5 rounded-md shadow">
                             Featured
                           </div>
@@ -286,6 +367,7 @@ const ChefDetail = () => {
                             <button
                               type="button"
                               onClick={() => {
+                                if (isUnavailable) return
                                 const qty = cuisineQuantities[cuisine.id] ?? (cuisine.minimum_servings ?? 1)
                                 setAddingCuisineId(cuisine.id)
                                 addToCart({
@@ -300,11 +382,11 @@ const ChefDetail = () => {
                                 setAddingCuisineId(null)
                                 navigate('/cart')
                               }}
-                              disabled={addingCuisineId === cuisine.id}
-                              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                              disabled={addingCuisineId === cuisine.id || isUnavailable}
+                              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <ShoppingCart className="h-4 w-4" />
-                              {addingCuisineId === cuisine.id ? 'Adding...' : 'Add to Cart'}
+                              {isUnavailable ? 'Unavailable' : addingCuisineId === cuisine.id ? 'Adding...' : 'Add to Cart'}
                             </button>
                           </div>
                         </div>
@@ -322,18 +404,47 @@ const ChefDetail = () => {
               <h2 className="text-lg font-bold text-gray-900 mb-2">Gallery</h2>
               <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                 {chef.gallery_images.map((img, idx) => (
-                  <img
+                  <button
                     key={idx}
-                    src={resolveImageUrl(img)}
-                    alt={`Gallery ${idx + 1}`}
-                    className="w-full h-24 object-cover rounded"
-                    onError={(e) => {
-                      console.error('[ChefDetail] Gallery image failed to load:', img)
-                      e.target.style.display = 'none'
-                    }}
-                  />
+                    type="button"
+                    onClick={() => setGalleryLightbox(idx)}
+                    className="w-full h-24 rounded overflow-hidden focus:ring-2 focus:ring-primary-500"
+                  >
+                    <img
+                      src={resolveImageUrl(img)}
+                      alt={`Gallery ${idx + 1}`}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform"
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                      }}
+                    />
+                  </button>
                 ))}
               </div>
+              {galleryLightbox != null && (
+                <div
+                  className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+                  onClick={() => setGalleryLightbox(null)}
+                  role="dialog"
+                  aria-label="Gallery lightbox"
+                >
+                  <button type="button" onClick={() => setGalleryLightbox(null)} className="absolute top-4 right-4 text-white p-2" aria-label="Close">
+                    <X className="h-8 w-8" />
+                  </button>
+                  {galleryLightbox > 0 && (
+                    <button type="button" onClick={(e) => { e.stopPropagation(); setGalleryLightbox(galleryLightbox - 1) }} className="absolute left-4 text-white p-2 bg-black/50 rounded-full">‹</button>
+                  )}
+                  <img
+                    src={resolveImageUrl(chef.gallery_images[galleryLightbox])}
+                    alt={`Gallery ${galleryLightbox + 1}`}
+                    className="max-w-full max-h-[90vh] object-contain"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  {galleryLightbox < chef.gallery_images.length - 1 && (
+                    <button type="button" onClick={(e) => { e.stopPropagation(); setGalleryLightbox(galleryLightbox + 1) }} className="absolute right-4 text-white p-2 bg-black/50 rounded-full">›</button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -355,6 +466,13 @@ const ChefDetail = () => {
                         {new Date(review.created_at).toLocaleDateString()}
                       </span>
                     </div>
+                    {(review.cuisine_quality != null || review.service_quality != null || review.value_for_money != null) && (
+                      <div className="flex flex-wrap gap-3 text-xs text-gray-600 mb-1">
+                        {review.cuisine_quality != null && <span>Cuisine: {review.cuisine_quality}/5</span>}
+                        {review.service_quality != null && <span>Service: {review.service_quality}/5</span>}
+                        {review.value_for_money != null && <span>Value: {review.value_for_money}/5</span>}
+                      </div>
+                    )}
                     {review.title && (
                       <h4 className="text-sm font-medium text-gray-900 mb-0.5">{review.title}</h4>
                     )}
@@ -374,6 +492,26 @@ const ChefDetail = () => {
               <p className="text-sm text-gray-600">No reviews yet</p>
             )}
           </div>
+
+          {/* Similar chefs */}
+          {chef.similar_chefs && chef.similar_chefs.length > 0 && (
+            <div className="bg-white rounded-lg shadow border border-gray-200 p-3">
+              <h2 className="text-lg font-bold text-gray-900 mb-3">More chefs you might like</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {chef.similar_chefs.map((s) => (
+                  <Link key={s.id} to={`/chefs/${s.id}`} className="flex flex-col items-center p-2 rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow">
+                    {s.profile_image_url ? (
+                      <img src={resolveImageUrl(s.profile_image_url)} alt={s.chef_name} className="w-16 h-16 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center"><ChefHat className="h-8 w-8 text-primary-600" /></div>
+                    )}
+                    <p className="text-sm font-semibold text-gray-900 mt-1 truncate w-full text-center">{s.chef_name}</p>
+                    {s.average_rating > 0 && <p className="text-xs text-gray-500">{s.average_rating.toFixed(1)} ★</p>}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -409,6 +547,15 @@ const ChefDetail = () => {
             </div>
           </div>
 
+          {/* Service: Delivery & Pickup */}
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-3">
+            <h3 className="text-base font-bold text-gray-900 mb-2">Order options</h3>
+            <div className="flex flex-wrap gap-2 text-sm text-gray-700">
+              {chef.accepts_delivery !== false && <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded"><Truck className="h-4 w-4" /> Delivery</span>}
+              {chef.accepts_pickup !== false && <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded">Pickup</span>}
+            </div>
+          </div>
+
           {/* Contact */}
           <div className="bg-white rounded-lg shadow border border-gray-200 p-3">
             <h3 className="text-base font-bold text-gray-900 mb-2">Contact</h3>
@@ -416,16 +563,21 @@ const ChefDetail = () => {
               <p>{chef.street_address}</p>
               <p>{chef.city}, {chef.state} {chef.postal_code}</p>
             </div>
-            {chef.website_url && (
-              <a
-                href={chef.website_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-block text-sm text-primary-600 hover:underline"
-              >
-                Visit Website
-              </a>
-            )}
+            <div className="mt-2 flex flex-wrap gap-2">
+              {chef.phone && (
+                <a href={`tel:${chef.phone}`} className="inline-flex items-center gap-1 text-sm text-primary-600 hover:underline">
+                  <Phone className="h-4 w-4" /> Call
+                </a>
+              )}
+              {chef.website_url && (
+                <a href={chef.website_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-primary-600 hover:underline">
+                  Visit Website
+                </a>
+              )}
+            </div>
+            <Link to="/contact" className="mt-2 inline-flex items-center gap-1 text-sm text-primary-600 hover:underline">
+              <MessageCircle className="h-4 w-4" /> Message / Request custom order
+            </Link>
           </div>
 
           {/* Social Media */}
@@ -468,6 +620,22 @@ const ChefDetail = () => {
           )}
         </div>
         </div>
+      </div>
+
+      {/* Sticky CTA */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-lg px-4 py-3 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 min-w-0">
+          {minPrice != null && minPrice > 0 && (
+            <span className="text-sm font-bold text-primary-600">From ${minPrice.toFixed(2)}</span>
+          )}
+          <span className="text-sm text-gray-600 truncate">View menu above</span>
+        </div>
+        <Link
+          to="#cuisine-offerings"
+          className="flex-shrink-0 px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700"
+        >
+          Order now
+        </Link>
       </div>
     </div>
   )

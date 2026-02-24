@@ -3,15 +3,55 @@ Customer-facing chef endpoints - browse verified chefs
 """
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func, or_, and_
 from typing import Optional, List
+from datetime import datetime
+from math import radians, sin, cos, sqrt, atan2
 from app.core.database import get_db
 from app.models.chef import Chef
-from app.schemas.chef import ChefResponse
-from sqlalchemy import func, or_
-
+from app.models.customer import CustomerSavedChef
+from app.api.v1.dependencies import get_optional_customer
 from uuid import UUID
 
 router = APIRouter()
+
+
+def _haversine_km(lat1, lon1, lat2, lon2):
+    if None in (lat1, lon1, lat2, lon2):
+        return None
+    try:
+        R = 6371
+        lat1, lon1, lat2, lon2 = map(radians, [float(lat1), float(lon1), float(lat2), float(lon2)])
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+        c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return round(R * c, 1)
+    except (TypeError, ValueError):
+        return None
+
+
+@router.get("/chefs/cuisines", response_model=dict)
+async def get_chef_cuisine_types(
+    city: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """List cuisine type strings that have at least one verified chef (for filter dropdown)."""
+    query = db.query(Chef).filter(
+        Chef.verification_status == "verified",
+        Chef.is_active == True,
+        Chef.is_available == True
+    )
+    if city and city.strip() and city.strip().lower() != "all":
+        query = query.filter(func.lower(Chef.city).ilike(f"%{city.strip().lower()}%"))
+    chefs = query.all()
+    cuisines = set()
+    for c in chefs:
+        if c.cuisines:
+            for cu in c.cuisines:
+                if cu:
+                    cuisines.add(cu)
+    return {"cuisines": sorted(cuisines)}
 
 
 @router.get("/chefs", response_model=dict)
@@ -20,29 +60,36 @@ async def get_chefs(
     cuisine: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     min_rating: Optional[float] = Query(None),
+    sort: Optional[str] = Query("rating", description="rating, reviews, min_order"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    lat: Optional[float] = Query(None),
+    lng: Optional[float] = Query(None),
+    saved_only: Optional[bool] = Query(False),
+    current_customer: Optional[dict] = Depends(get_optional_customer),
     db: Session = Depends(get_db)
 ):
-    """Get verified chefs for customers to browse"""
+    """Get verified chefs for customers to browse. sort: rating, reviews, min_order."""
     query = db.query(Chef).filter(
         Chef.verification_status == "verified",
         Chef.is_active == True,
         Chef.is_available == True
     )
-    
-    # Filter by city
+    if saved_only and current_customer:
+        saved_ids = db.query(CustomerSavedChef.chef_id).filter(
+            CustomerSavedChef.customer_id == UUID(current_customer["customer_id"])
+        ).all()
+        if saved_ids:
+            query = query.filter(Chef.id.in_([s[0] for s in saved_ids]))
+        else:
+            query = query.filter(Chef.id.in_([]))  # no results
     if city and city.strip() and city.strip().lower() != 'all':
         query = query.filter(func.lower(Chef.city).ilike(f"%{city.strip().lower()}%"))
-    
-    # Filter by cuisine (cuisines is ARRAY; handle None safely)
     if cuisine and cuisine.strip():
         query = query.filter(
             Chef.cuisines.isnot(None),
             Chef.cuisines.contains([cuisine.strip()])
         )
-    
-    # Search
     if search and search.strip():
         search_term = f"%{search.strip()}%"
         query = query.filter(
@@ -52,24 +99,38 @@ async def get_chefs(
                 func.coalesce(func.array_to_string(Chef.cuisines, ','), '').ilike(search_term)
             )
         )
-    
-    # Filter by minimum rating
     if min_rating:
         query = query.filter(Chef.average_rating >= min_rating)
-    
+    if sort == "reviews":
+        query = query.order_by(Chef.total_reviews.desc().nullslast(), Chef.average_rating.desc().nullslast())
+    elif sort == "min_order":
+        query = query.order_by(Chef.minimum_order_amount.asc().nullslast(), Chef.average_rating.desc().nullslast())
+    else:
+        query = query.order_by(Chef.average_rating.desc().nullslast(), Chef.total_reviews.desc().nullslast())
     total = query.count()
-    chefs = query.order_by(Chef.average_rating.desc(), Chef.total_reviews.desc()).offset(skip).limit(limit).all()
-    
-    # Get featured cuisine for each chef
+    chefs = query.offset(skip).limit(limit).all()
+    saved_chef_ids = set()
+    if current_customer:
+        saved = db.query(CustomerSavedChef.chef_id).filter(
+            CustomerSavedChef.customer_id == UUID(current_customer["customer_id"])
+        ).all()
+        saved_chef_ids = {str(s[0]) for s in saved}
+    now = datetime.utcnow()
     from app.models.cuisine import Cuisine
+    from app.models.promotion import Promotion
     chef_list = []
     for c in chefs:
-        # Get featured cuisine or first active cuisine
         featured_cuisine = db.query(Cuisine).filter(
             Cuisine.chef_id == c.id,
             Cuisine.status == "active"
         ).order_by(Cuisine.is_featured.desc(), Cuisine.created_at.desc()).first()
-        
+        has_promotion = db.query(Promotion).filter(
+            Promotion.chef_id == c.id,
+            Promotion.is_active == True,
+            Promotion.start_date <= now,
+            Promotion.end_date >= now
+        ).limit(1).first() is not None
+        distance_km = _haversine_km(lat, lng, c.latitude, c.longitude) if (lat is not None and lng is not None) else None
         chef_dict = {
             "id": str(c.id),
             "chef_name": c.chef_name,
@@ -86,10 +147,13 @@ async def get_chefs(
             "service_radius_km": float(c.service_radius_km) if c.service_radius_km else None,
             "minimum_order_amount": float(c.minimum_order_amount) if c.minimum_order_amount else None,
             "gallery_images": c.gallery_images or [],
-            "social_media_links": c.social_media_links
+            "social_media_links": c.social_media_links,
+            "is_available": c.is_available if c.is_available is not None else True,
+            "has_promotion": has_promotion,
+            "distance_km": distance_km,
+            "is_saved": str(c.id) in saved_chef_ids,
         }
         chef_list.append(chef_dict)
-    
     return {
         "chefs": chef_list,
         "total": total,
@@ -101,6 +165,7 @@ async def get_chefs(
 @router.get("/chefs/{chef_id}", response_model=dict)
 async def get_chef(
     chef_id: str,
+    current_customer: Optional[dict] = Depends(get_optional_customer),
     db: Session = Depends(get_db)
 ):
     """Get chef details"""
@@ -139,12 +204,10 @@ async def get_chef(
             "chef_response": review.chef_response
         })
     
-    # Get cuisines
-    cuisines = db.query(Cuisine).filter(
-        Cuisine.chef_id == chef.id,
-        Cuisine.status == "active"
-    ).order_by(Cuisine.is_featured.desc(), Cuisine.created_at.desc()).all()
-    
+    # Get all cuisines (including out_of_stock) so we can show "Temporarily unavailable"
+    cuisines = db.query(Cuisine).filter(Cuisine.chef_id == chef.id).order_by(
+        Cuisine.is_featured.desc(), Cuisine.created_at.desc()
+    ).all()
     cuisine_list = []
     for cuisine in cuisines:
         cuisine_list.append({
@@ -169,16 +232,42 @@ async def get_chef(
             "is_kosher": cuisine.is_kosher,
             "is_featured": cuisine.is_featured,
             "slug": cuisine.slug,
+            "status": cuisine.status or "active",
         })
-    
+    # Similar chefs (same city or overlapping cuisines, exclude self)
+    similar_query = db.query(Chef).filter(
+        Chef.id != chef.id,
+        Chef.verification_status == "verified",
+        Chef.is_active == True,
+        Chef.is_available == True
+    )
+    sim_conditions = []
+    if chef.city and chef.city.strip():
+        sim_conditions.append(func.lower(Chef.city) == func.lower(chef.city))
+    if chef.cuisines and len(chef.cuisines) > 0:
+        sim_conditions.append(Chef.cuisines.overlap(chef.cuisines))
+    if sim_conditions:
+        similar_query = similar_query.filter(or_(*sim_conditions))
+    similar = similar_query.order_by(Chef.average_rating.desc().nullslast()).limit(6).all()
+    similar_list = []
+    for s in similar:
+        similar_list.append({
+            "id": str(s.id),
+            "chef_name": s.chef_name,
+            "profile_image_url": s.profile_image_url,
+            "city": s.city,
+            "state": s.state,
+            "average_rating": float(s.average_rating) if s.average_rating else None,
+            "total_reviews": s.total_reviews,
+        })
     return {
         "id": str(chef.id),
         "chef_name": chef.chef_name,
         "bio": chef.bio,
         "profile_image_url": chef.profile_image_url,
         "banner_image_url": chef.banner_image_url,
-        "cuisines": chef.cuisines,  # Array of cuisine types (e.g., ["Nigerian", "Ghanaian"])
-        "cuisine_offerings": cuisine_list,  # List of actual cuisine dishes/items
+        "cuisines": chef.cuisines,
+        "cuisine_offerings": cuisine_list,
         "cuisine_description": chef.cuisine_description,
         "city": chef.city,
         "state": chef.state,
@@ -193,8 +282,99 @@ async def get_chef(
         "gallery_images": chef.gallery_images or [],
         "social_media_links": chef.social_media_links,
         "website_url": chef.website_url,
-        "reviews": review_list
+        "reviews": review_list,
+        "operating_hours": getattr(chef, "operating_hours", None),
+        "blocked_dates": getattr(chef, "blocked_dates", None) or [],
+        "is_available": chef.is_available if chef.is_available is not None else True,
+        "phone": chef.phone,
+        "accepts_delivery": True,
+        "accepts_pickup": True,
+        "similar_chefs": similar_list,
+        "is_saved": db.query(CustomerSavedChef).filter(
+            CustomerSavedChef.customer_id == UUID(current_customer["customer_id"]),
+            CustomerSavedChef.chef_id == chef.id
+        ).first() is not None if current_customer else False,
     }
+
+
+@router.get("/saved-chefs", response_model=dict)
+async def get_saved_chefs(
+    current_customer: Optional[dict] = Depends(get_optional_customer),
+    db: Session = Depends(get_db)
+):
+    """List saved chef IDs (and optionally full chef list) for current customer."""
+    if not current_customer:
+        return {"chef_ids": [], "chefs": []}
+    saved = db.query(CustomerSavedChef).filter(
+        CustomerSavedChef.customer_id == UUID(current_customer["customer_id"])
+    ).all()
+    chef_ids = [str(s.chef_id) for s in saved]
+    if not chef_ids:
+        return {"chef_ids": [], "chefs": []}
+    chefs = db.query(Chef).filter(
+        Chef.id.in_([UUID(cid) for cid in chef_ids]),
+        Chef.verification_status == "verified",
+        Chef.is_active == True
+    ).all()
+    from app.models.cuisine import Cuisine
+    chef_list = []
+    for c in chefs:
+        fc = db.query(Cuisine).filter(
+            Cuisine.chef_id == c.id,
+            Cuisine.status == "active"
+        ).order_by(Cuisine.is_featured.desc()).first()
+        chef_list.append({
+            "id": str(c.id),
+            "chef_name": c.chef_name,
+            "profile_image_url": c.profile_image_url,
+            "city": c.city,
+            "state": c.state,
+            "average_rating": float(c.average_rating) if c.average_rating else None,
+            "total_reviews": c.total_reviews,
+            "minimum_order_amount": float(c.minimum_order_amount) if c.minimum_order_amount else None,
+            "featured_cuisine_name": fc.name if fc else None,
+        })
+    return {"chef_ids": chef_ids, "chefs": chef_list}
+
+
+@router.post("/saved-chefs/{chef_id}")
+async def save_chef(
+    chef_id: str,
+    current_customer: Optional[dict] = Depends(get_optional_customer),
+    db: Session = Depends(get_db)
+):
+    """Save a chef to favorites. Requires auth."""
+    if not current_customer:
+        raise HTTPException(status_code=401, detail="Login to save chefs")
+    chef = db.query(Chef).filter(Chef.id == UUID(chef_id)).first()
+    if not chef:
+        raise HTTPException(status_code=404, detail="Chef not found")
+    existing = db.query(CustomerSavedChef).filter(
+        CustomerSavedChef.customer_id == UUID(current_customer["customer_id"]),
+        CustomerSavedChef.chef_id == UUID(chef_id)
+    ).first()
+    if existing:
+        return {"message": "Already saved", "saved": True}
+    db.add(CustomerSavedChef(customer_id=UUID(current_customer["customer_id"]), chef_id=UUID(chef_id)))
+    db.commit()
+    return {"message": "Chef saved", "saved": True}
+
+
+@router.delete("/saved-chefs/{chef_id}")
+async def unsave_chef(
+    chef_id: str,
+    current_customer: Optional[dict] = Depends(get_optional_customer),
+    db: Session = Depends(get_db)
+):
+    """Remove a chef from favorites."""
+    if not current_customer:
+        raise HTTPException(status_code=401, detail="Login to manage saved chefs")
+    db.query(CustomerSavedChef).filter(
+        CustomerSavedChef.customer_id == UUID(current_customer["customer_id"]),
+        CustomerSavedChef.chef_id == UUID(chef_id)
+    ).delete()
+    db.commit()
+    return {"message": "Removed", "saved": False}
 
 
 @router.get("/chef-cuisines-deals", response_model=dict)
