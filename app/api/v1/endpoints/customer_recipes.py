@@ -3,6 +3,7 @@ Customer-facing recipe endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from typing import Optional, List
 from app.core.database import get_db
 from app.models.recipe import Recipe, RecipeIngredient
@@ -51,15 +52,18 @@ async def get_recipes(
                 func.coalesce(Recipe.cuisine_type, "").ilike(term),
             )
         )
-    if featured_only:
+    if featured_only and hasattr(Recipe, "is_featured"):
         query = query.filter(Recipe.is_featured == True)
 
-    # Order: sort_order ASC nulls last, then is_featured DESC, then name
-    recipes = query.order_by(
-        Recipe.sort_order.asc().nullslast(),
-        Recipe.is_featured.desc().nullslast(),
-        Recipe.name,
-    ).offset(skip).limit(limit).all()
+    # Order: sort_order ASC nulls last, then is_featured DESC, then name (fallback if columns missing)
+    try:
+        recipes = query.order_by(
+            Recipe.sort_order.asc().nullslast(),
+            Recipe.is_featured.desc().nullslast(),
+            Recipe.name,
+        ).offset(skip).limit(limit).all()
+    except (OperationalError, ProgrammingError, Exception):
+        recipes = query.order_by(Recipe.name).offset(skip).limit(limit).all()
 
     result = []
     for recipe in recipes:
@@ -295,11 +299,14 @@ async def get_meal_plans(
     if plan_type:
         query = query.filter(MealPlan.plan_type == plan_type)
 
-    meal_plans = query.order_by(
-        MealPlan.sort_order.asc().nullslast(),
-        MealPlan.is_featured.desc().nullslast(),
-        MealPlan.created_at.desc(),
-    ).offset(skip).limit(limit).all()
+    try:
+        meal_plans = query.order_by(
+            MealPlan.sort_order.asc().nullslast(),
+            MealPlan.is_featured.desc().nullslast(),
+            MealPlan.created_at.desc(),
+        ).offset(skip).limit(limit).all()
+    except (OperationalError, ProgrammingError, Exception):
+        meal_plans = query.order_by(MealPlan.created_at.desc()).offset(skip).limit(limit).all()
     
     result = []
     for plan in meal_plans:
