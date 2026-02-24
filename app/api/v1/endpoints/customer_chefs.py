@@ -169,8 +169,12 @@ async def get_chef(
     db: Session = Depends(get_db)
 ):
     """Get chef details"""
+    try:
+        chef_uuid = UUID(chef_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=404, detail="Chef not found")
     chef = db.query(Chef).filter(
-        Chef.id == UUID(chef_id),
+        Chef.id == chef_uuid,
         Chef.verification_status == "verified",
         Chef.is_active == True
     ).first()
@@ -200,7 +204,7 @@ async def get_chef(
             "service_quality": review.service_quality,
             "value_for_money": review.value_for_money,
             "customer_name": f"{customer.first_name} {customer.last_name}" if customer else "Anonymous",
-            "created_at": review.created_at.isoformat(),
+            "created_at": review.created_at.isoformat() if getattr(review, "created_at", None) else None,
             "chef_response": review.chef_response
         })
     
@@ -290,10 +294,14 @@ async def get_chef(
         "accepts_delivery": True,
         "accepts_pickup": True,
         "similar_chefs": similar_list,
-        "is_saved": db.query(CustomerSavedChef).filter(
-            CustomerSavedChef.customer_id == UUID(current_customer["customer_id"]),
-            CustomerSavedChef.chef_id == chef.id
-        ).first() is not None if current_customer else False,
+        "is_saved": (
+            db.query(CustomerSavedChef).filter(
+                CustomerSavedChef.customer_id == UUID(current_customer.get("customer_id")),
+                CustomerSavedChef.chef_id == chef.id
+            ).first() is not None
+            if (current_customer and current_customer.get("customer_id"))
+            else False
+        ),
     }
 
 

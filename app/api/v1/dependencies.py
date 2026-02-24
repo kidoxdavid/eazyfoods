@@ -108,8 +108,12 @@ async def get_optional_customer(token: str = Depends(customer_oauth2_scheme), db
     except JWTError:
         return None
     
-    # Verify customer exists
-    customer = db.query(Customer).filter(Customer.id == UUID(customer_id)).first()
+    # Verify customer_id is valid UUID and customer exists
+    try:
+        customer_uuid = UUID(customer_id)
+    except (ValueError, TypeError):
+        return None
+    customer = db.query(Customer).filter(Customer.id == customer_uuid).first()
     if customer is None:
         return None
     
