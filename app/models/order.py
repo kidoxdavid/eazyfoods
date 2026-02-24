@@ -64,6 +64,7 @@ class Order(Base):
     helcim_transaction_id = Column(String(255))  # Helcim Transaction ID
     helcim_card_token = Column(String(255))  # Helcim Card Token (for saved cards)
     stripe_payment_intent_id = Column(String(255))  # Stripe PaymentIntent ID
+    stripe_transfer_id = Column(String(255), nullable=True)  # Stripe Connect Transfer to vendor (when applicable)
     
     # Fulfillment timestamps
     accepted_at = Column(DateTime)

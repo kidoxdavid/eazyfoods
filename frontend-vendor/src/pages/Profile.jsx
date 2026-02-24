@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { Save, MapPin, Clock, Truck, Image as ImageIcon, Building2, Upload, CreditCard } from 'lucide-react'
+import { Save, MapPin, Clock, Truck, Image as ImageIcon, Building2, Upload, CreditCard, ExternalLink, CheckCircle } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { CANADIAN_PROVINCES, getCitiesForProvince } from '../constants/locations'
 
 const Profile = () => {
+  const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [vendor, setVendor] = useState(null)
+  const [stripeConnectStatus, setStripeConnectStatus] = useState(null)
+  const [stripeConnectLoading, setStripeConnectLoading] = useState(false)
   const [formData, setFormData] = useState({
     business_name: '',
     phone: '',
@@ -42,6 +46,18 @@ const Profile = () => {
   useEffect(() => {
     fetchVendor()
   }, [])
+
+  useEffect(() => {
+    const fetchStripeStatus = async () => {
+      try {
+        const res = await api.get('/vendors/me/stripe-connect/status')
+        setStripeConnectStatus(res.data)
+      } catch {
+        setStripeConnectStatus({ connected: false })
+      }
+    }
+    fetchStripeStatus()
+  }, [vendor, searchParams.get('stripe')])
 
   const fetchVendor = async () => {
     try {
@@ -507,13 +523,53 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Bank details for payout */}
+        {/* Stripe Connect: receive payouts automatically */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+          <div className="flex items-center space-x-2 mb-2">
+            <CreditCard className="h-5 w-5 text-primary-600" />
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Receive payouts</h2>
+          </div>
+          {stripeConnectStatus?.onboarding_complete ? (
+            <div className="flex items-center gap-2 text-green-700 text-sm sm:text-base">
+              <CheckCircle className="h-5 w-5 flex-shrink-0" />
+              <span>Stripe connected — you&apos;ll receive order payouts automatically to your Stripe account.</span>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs sm:text-sm text-gray-600">
+                Connect Stripe to get paid automatically when customers pay for orders. No manual bank transfers needed.
+              </p>
+              <button
+                type="button"
+                disabled={stripeConnectLoading}
+                onClick={async () => {
+                  setStripeConnectLoading(true)
+                  try {
+                    const res = await api.post('/vendors/me/stripe-connect/onboard')
+                    if (res.data?.url) window.location.href = res.data.url
+                    else alert('Could not start Stripe setup')
+                  } catch (e) {
+                    alert(e.response?.data?.detail || 'Failed to start Stripe Connect')
+                  } finally {
+                    setStripeConnectLoading(false)
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium disabled:opacity-50"
+              >
+                <ExternalLink className="h-4 w-4" />
+                {stripeConnectStatus?.connected ? 'Complete Stripe setup' : 'Connect with Stripe'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Bank details for payout (manual fallback) */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
           <div className="flex items-center space-x-2 mb-4">
             <CreditCard className="h-5 w-5 text-primary-600" />
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Bank details for payout</h2>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Bank details (optional)</h2>
           </div>
-          <p className="text-xs sm:text-sm text-gray-600 mb-4">Add your bank account details to receive payouts</p>
+          <p className="text-xs sm:text-sm text-gray-600 mb-4">Used only if you don&apos;t use Stripe Connect for payouts</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Bank name</label>

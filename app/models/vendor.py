@@ -73,11 +73,14 @@ class Vendor(Base):
     status = Column(String(20), default="onboarding")
     go_live_at = Column(DateTime)
     
-    # Bank account
+    # Bank account (for manual payouts when Stripe Connect not used)
     bank_account_name = Column(String(200))
     bank_account_number = Column(String(50))
     bank_routing_number = Column(String(50))
     bank_name = Column(String(200))
+    # Stripe Connect (Express) – when set, we transfer order payouts to this account
+    stripe_connect_account_id = Column(String(255), unique=True, nullable=True)
+    stripe_connect_details_submitted = Column(Boolean, default=False)
     
     # Ratings
     average_rating = Column(DECIMAL(3, 2), default=0.0)
