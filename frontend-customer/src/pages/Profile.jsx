@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useLocation } from '../contexts/LocationContext'
+import { useCart } from '../contexts/CartContext'
 import api from '../services/api'
 import { User, Mail, Phone, MapPin, Edit, Plus, Trash2, Package, CreditCard, Settings, Eye, EyeOff, Sparkles, TrendingUp, Users as UsersIcon } from 'lucide-react'
 import { AVATAR_ICONS, AVATAR_ICON_KEY, getAvatarIcon, getAvatarStyle } from '../constants/avatarIcons'
@@ -12,6 +13,7 @@ import { Link } from 'react-router-dom'
 const Profile = () => {
   const { user, token } = useAuth()
   const { deliveryAddress, updateAddress } = useLocation()
+  const { cart } = useCart()
   const [profile, setProfile] = useState(null)
   const [addresses, setAddresses] = useState([])
   const [orders, setOrders] = useState([])
@@ -234,7 +236,7 @@ const Profile = () => {
           {/* Main Content */}
           <div className="lg:col-span-3 min-w-0">
             {/* Overview Tab */}
-            {activeTab === 'overview' && (
+                {activeTab === 'overview' && (
               <div className="space-y-3 sm:space-y-6">
                 <div className="card p-3 sm:p-4 lg:p-6">
                   <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-6">Account Information</h3>
@@ -288,21 +290,72 @@ const Profile = () => {
                   </div>
                 </div>
 
+                {/* Overview quick stats */}
                 <div className="grid grid-cols-3 gap-2 sm:gap-6">
                   <div className="card text-center p-3 sm:p-4">
                     <Package className="h-6 w-6 sm:h-8 sm:w-8 text-primary-600 mx-auto mb-1 sm:mb-2" />
                     <p className="text-lg sm:text-2xl font-bold text-gray-900">{orders.length}</p>
                     <p className="text-xs sm:text-base text-gray-600">Orders</p>
+                    <Link
+                      to="/orders"
+                      className="mt-1 inline-block text-[11px] sm:text-xs text-primary-600 hover:text-primary-700 underline-offset-2 hover:underline"
+                    >
+                      View orders →
+                    </Link>
                   </div>
                   <div className="card text-center p-3 sm:p-4">
                     <MapPin className="h-6 w-6 sm:h-8 sm:w-8 text-primary-600 mx-auto mb-1 sm:mb-2" />
                     <p className="text-lg sm:text-2xl font-bold text-gray-900">{addresses.length}</p>
                     <p className="text-xs sm:text-base text-gray-600">Addresses</p>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('addresses')}
+                      className="mt-1 inline-block text-[11px] sm:text-xs text-primary-600 hover:text-primary-700 underline-offset-2 hover:underline"
+                    >
+                      Manage addresses →
+                    </button>
                   </div>
                   <div className="card text-center p-3 sm:p-4">
                     <CreditCard className="h-6 w-6 sm:h-8 sm:w-8 text-primary-600 mx-auto mb-1 sm:mb-2" />
-                    <p className="text-lg sm:text-2xl font-bold text-gray-900">0</p>
-                    <p className="text-xs sm:text-base text-gray-600">Payment</p>
+                    <p className="text-lg sm:text-2xl font-bold text-gray-900">
+                      {deliveryAddress?.city || (addresses.find(a => a.is_default)?.city) || 'Not set'}
+                    </p>
+                    <p className="text-xs sm:text-base text-gray-600">Default city</p>
+                  </div>
+                </div>
+
+                {/* Quick actions */}
+                <div className="card p-3 sm:p-4 lg:p-5">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3">Quick actions</h3>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('orders')}
+                      className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-primary-50 text-primary-700 hover:bg-primary-100"
+                    >
+                      View orders
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('addresses')}
+                      className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-gray-50 text-gray-800 hover:bg-gray-100"
+                    >
+                      Manage addresses
+                    </button>
+                    {cart.length > 0 && (
+                      <Link
+                        to="/cart"
+                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-gray-50 text-gray-800 hover:bg-gray-100"
+                      >
+                        View cart
+                      </Link>
+                    )}
+                    <Link
+                      to="/groceries"
+                      className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-gray-50 text-gray-800 hover:bg-gray-100"
+                    >
+                      Browse groceries
+                    </Link>
                   </div>
                 </div>
 
@@ -312,7 +365,7 @@ const Profile = () => {
                     <p className="text-gray-600">No orders yet</p>
                   ) : (
                     <div className="space-y-4">
-                      {orders.map((order) => (
+                      {orders.slice(0, 3).map((order) => (
                         <Link
                           key={order.id}
                           to={`/orders/${order.id}`}

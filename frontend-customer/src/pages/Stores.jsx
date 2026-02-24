@@ -159,10 +159,38 @@ const Stores = () => {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
-        {/* Region Filter - Compact */}
+        {/* Location context + counts */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+          <div className="text-sm text-gray-700">
+            {stores.length > 0 ? (
+              <p>
+                Showing <span className="font-semibold text-gray-900">{stores.length}</span>{' '}
+                {stores.length === 1 ? 'market' : 'markets'}
+                {selectedCity && selectedCity !== 'All' && (
+                  <>
+                    {' '}near{' '}
+                    <span className="font-semibold text-gray-900">{selectedCity}</span>
+                  </>
+                )}
+              </p>
+            ) : (
+              <p>No markets found with the current location filters.</p>
+            )}
+          </div>
+          {selectedCity && selectedCity !== 'All' && (
+            <Link
+              to="/groceries"
+              className="inline-flex items-center justify-center px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-white border border-primary-600 text-primary-700 hover:bg-primary-50 transition-colors"
+            >
+              Shop groceries in {selectedCity}
+            </Link>
+          )}
+        </div>
+
+        {/* Region Filter - Compact, tied to African regions */}
         <div className="flex items-center justify-end mb-6">
           <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-600">Region:</label>
+            <label className="text-xs text-gray-600">African region:</label>
             <select
               value={selectedRegion}
               onChange={(e) => setSelectedRegion(e.target.value)}
@@ -179,14 +207,25 @@ const Stores = () => {
         <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
           <Store className="h-16 w-16 text-gray-400 mx-auto mb-3" />
           <p className="text-gray-600 mb-1 text-base">No African stores nearby yet — but we're expanding! 🏪</p>
-          <p className="text-xs text-gray-500 mb-4">More authentic African grocery stores are opening soon. Check back for updates!</p>
-          <button
-            onClick={fetchStores}
-            className="px-4 py-1.5 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-            type="button"
-          >
-            Refresh
-          </button>
+          <p className="text-xs text-gray-500 mb-4 max-w-md mx-auto">
+            Try changing your location to <span className="font-semibold">“All”</span> to see more markets,
+            or browse all groceries while we add more local stores.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={fetchStores}
+              className="px-4 py-1.5 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              type="button"
+            >
+              Refresh
+            </button>
+            <Link
+              to="/groceries"
+              className="px-4 py-1.5 text-sm border border-primary-600 text-primary-700 rounded-lg hover:bg-primary-50 transition-colors"
+            >
+              Browse all groceries
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">

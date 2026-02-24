@@ -220,22 +220,28 @@ const StoreDetail = () => {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-white">
       {/* Store Header - Same height as home page banner (240px) */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white overflow-hidden" style={{ height: '240px', minHeight: '240px', maxHeight: '240px' }}>
         <div className="w-full h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
           <div className="flex items-center space-x-4 sm:space-x-6 w-full">
-            {store.store_profile_image_url && (
-              <img
-                src={resolveImageUrl(store.store_profile_image_url)}
-                alt={store.business_name}
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover flex-shrink-0"
-                onError={(e) => {
-                  console.error('[StoreDetail] Store image failed to load:', store.store_profile_image_url)
-                  e.target.style.display = 'none'
-                }}
-              />
-            )}
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-white/10 flex-shrink-0 flex items-center justify-center">
+              {store.store_profile_image_url ? (
+                <>
+                  <img
+                    src={resolveImageUrl(store.store_profile_image_url)}
+                    alt={store.business_name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error('[StoreDetail] Store image failed to load:', store.store_profile_image_url)
+                      e.target.style.display = 'none'
+                    }}
+                  />
+                </>
+              ) : (
+                <Store className="h-8 w-8 text-primary-200" />
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-1 truncate">{store.business_name}</h1>
               {store.average_rating && (
@@ -438,12 +444,18 @@ const StoreDetail = () => {
                       <Link to={`/products/${product.id}`} className="flex-shrink-0 w-full sm:w-32 h-32 bg-gray-100 rounded-lg overflow-hidden">
                         {product.image_url ? (
                           <img
-                            src={resolveImageUrl(product.image_url)}
+                            src={resolveImageUrl(product.image_url, 'product')}
                             alt={product.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                             loading="lazy"
                             onError={(e) => {
-                              e.target.style.display = 'none'
+                              const imgEl = e.target
+                              if (!imgEl.dataset.fallbackTried && product.image_url && typeof product.image_url === 'string') {
+                                imgEl.dataset.fallbackTried = '1'
+                                imgEl.src = product.image_url
+                                return
+                              }
+                              imgEl.style.display = 'none'
                             }}
                           />
                         ) : (
@@ -553,33 +565,22 @@ const StoreDetail = () => {
                     {product.image_url ? (
                       <>
                         <img
-                          src={resolveImageUrl(product.image_url)}
+                          src={resolveImageUrl(product.image_url, 'product')}
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                           loading="lazy"
                           onError={(e) => {
-                            const resolvedUrl = resolveImageUrl(product.image_url)
-                            console.error('[StoreDetail] Product image failed to load:', {
-                              originalUrl: product.image_url,
-                              resolvedUrl: resolvedUrl,
-                              fullUrl: window.location.origin + resolvedUrl,
-                              productId: product.id,
-                              productName: product.name,
-                              userAgent: navigator.userAgent,
-                              isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
-                              currentOrigin: window.location.origin
-                            })
-                            e.target.style.display = 'none'
-                            const fallback = e.target.parentElement.querySelector('.image-fallback')
+                            const imgEl = e.target
+                            if (!imgEl.dataset.fallbackTried && product.image_url && typeof product.image_url === 'string') {
+                              imgEl.dataset.fallbackTried = '1'
+                              imgEl.src = product.image_url
+                              return
+                            }
+                            imgEl.style.display = 'none'
+                            const fallback = imgEl.parentElement.querySelector('.image-fallback')
                             if (fallback) {
                               fallback.style.display = 'flex'
                             }
-                          }}
-                          onLoad={() => {
-                            console.log('[StoreDetail] Image loaded successfully:', {
-                              productId: product.id,
-                              url: resolveImageUrl(product.image_url)
-                            })
                           }}
                         />
                         <div className="image-fallback absolute inset-0 w-full h-full flex items-center justify-center text-gray-400 text-[10px] hidden">

@@ -14,8 +14,6 @@ import CategoryBadge from '../components/CategoryBadge'
 import PageBanner from '../components/PageBanner'
 import { ProductGridSkeleton } from '../components/SkeletonLoader'
 import { resolveImageUrl } from '../utils/imageUtils'
-import RecentlyViewed from '../components/RecentlyViewed'
-import { useRecentlyViewed } from '../contexts/RecentlyViewedContext'
 
 const Groceries = () => {
   const [products, setProducts] = useState([])
@@ -43,7 +41,6 @@ const Groceries = () => {
 
   const { addToCart } = useCart()
   const { selectedCity, selectedProvince } = useLocation()
-  const { recentlyViewed } = useRecentlyViewed()
   const provinceCities = selectedProvince && selectedCity === 'All' ? getCitiesForProvince(selectedProvince) : null
   const effectiveCity = selectedProvince && selectedCity === 'All' ? null : selectedCity
   const { success: showSuccessToast } = useToast()
@@ -406,13 +403,6 @@ const Groceries = () => {
             </button>
           ))}
         </div>
-
-        {/* Recently viewed */}
-        {recentlyViewed.length > 0 && (
-          <div className="mb-6">
-            <RecentlyViewed maxItems={6} />
-          </div>
-        )}
 
         {/* Results Count and View Toggle */}
         <div className="flex items-center justify-between mb-4">

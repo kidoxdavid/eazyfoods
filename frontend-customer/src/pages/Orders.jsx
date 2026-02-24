@@ -104,6 +104,27 @@ const Orders = () => {
     )
   }
 
+  const totalOrders = orders.length
+  const activeOrders = orders.filter(o =>
+    ['new', 'accepted', 'picking', 'ready'].includes(o.status)
+  )
+  const deliveredOrders = orders.filter(o =>
+    ['delivered', 'picked_up'].includes(o.status)
+  )
+  const firstActiveOrderId = activeOrders[0]?.id
+
+  const scrollToActiveOrder = () => {
+    if (!firstActiveOrderId) return
+    const el = document.getElementById(`order-${firstActiveOrderId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      el.classList.add('ring-2', 'ring-primary-500', 'ring-offset-2')
+      setTimeout(() => {
+        el.classList.remove('ring-2', 'ring-primary-500', 'ring-offset-2')
+      }, 2000)
+    }
+  }
+
   return (
     <PrivateRoute>
       <div className="w-full">
@@ -142,6 +163,33 @@ const Orders = () => {
         />
 
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pb-3 sm:pb-8">
+        {orders.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 px-3 py-3 sm:px-4 sm:py-4 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100 text-gray-800 font-medium">
+                <Package className="h-3.5 w-3.5" />
+                Total orders: <span className="font-semibold">{totalOrders}</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-50 text-primary-800 font-medium">
+                <Clock className="h-3.5 w-3.5" />
+                Active: <span className="font-semibold">{activeOrders.length}</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 text-green-800 font-medium">
+                <CheckCircle className="h-3.5 w-3.5" />
+                Delivered: <span className="font-semibold">{deliveredOrders.length}</span>
+              </span>
+            </div>
+            {activeOrders.length > 0 && (
+              <button
+                type="button"
+                onClick={scrollToActiveOrder}
+                className="inline-flex items-center justify-center px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700"
+              >
+                Track active order
+              </button>
+            )}
+          </div>
+        )}
 
         {error ? (
           <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-200">
@@ -162,15 +210,24 @@ const Orders = () => {
             <Package className="h-24 w-24 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600 mb-2 text-lg">No orders yet — but your first taste of home is waiting! 🍽️</p>
             <p className="text-sm text-gray-500 mb-6">Start exploring our authentic African products and place your first order</p>
-            <Link to="/groceries" className="btn-primary inline-block">
-              Start Shopping
-            </Link>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link to="/groceries" className="btn-primary inline-block">
+                Start Shopping
+              </Link>
+              <Link
+                to="/top-market-deals"
+                className="px-4 py-2 border border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 text-sm font-semibold"
+              >
+                View Top Market Deals
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="space-y-1.5 sm:space-y-3">
             {orders.map((order) => (
               <Link
                 key={order.id}
+                id={`order-${order.id}`}
                 to={`/orders/${order.id}`}
                 className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 block overflow-hidden group"
               >

@@ -86,14 +86,6 @@ const ChefDetail = () => {
   return (
     <div className="w-full pb-20">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3">
-        {/* Breadcrumbs */}
-        <nav className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-          <Link to="/" className="hover:text-primary-600">Home</Link>
-          <span>/</span>
-          <Link to="/chefs" className="hover:text-primary-600">Chefs</Link>
-          <span>/</span>
-          <span className="text-gray-900 font-medium truncate max-w-[180px]">{chef.chef_name}</span>
-        </nav>
         <div className="flex items-center justify-between gap-2 mb-2">
           <Link to="/chefs" className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900">
             <ArrowLeft className="h-4 w-4" />

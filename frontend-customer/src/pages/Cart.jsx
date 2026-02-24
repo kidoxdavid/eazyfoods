@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../contexts/CartContext'
+import { useLocation } from '../contexts/LocationContext'
 import { useSaveForLater } from '../contexts/SaveForLaterContext'
 import { useToast } from '../contexts/ToastContext'
-import { Minus, Plus, Trash2, ShoppingCart, Sparkles, TrendingUp, Users, ArrowRightLeft, Bookmark, BookmarkCheck } from 'lucide-react'
+import { Minus, Plus, Trash2, ShoppingCart, Sparkles, TrendingUp, Users, ArrowRightLeft, Bookmark, BookmarkCheck, Zap } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import { resolveImageUrl } from '../utils/imageUtils'
-import EmptyState from '../components/EmptyState'
 import api from '../services/api'
 
 const Cart = () => {
@@ -15,6 +15,8 @@ const Cart = () => {
   const { success: showSuccessToast, info: showInfoToast, error: showErrorToast } = useToast()
   const navigate = useNavigate()
   const [compareData, setCompareData] = useState(null)
+  const [upsellProducts, setUpsellProducts] = useState([])
+  const { selectedCity } = useLocation()
 
   const handleSaveForLater = (item) => {
     addToSaveForLater(item, item.quantity)
@@ -79,6 +81,25 @@ const Cart = () => {
     showInfoToast('Cart cleared')
   }
 
+  // Deals / upsell products (similar to Top Market Deals)
+  useEffect(() => {
+    const fetchUpsellProducts = async () => {
+      try {
+        const params = { discounted: true, limit: 5 }
+        if (selectedCity && selectedCity !== 'All') {
+          params.city = selectedCity
+        }
+        const res = await api.get('/customer/products', { params })
+        const list = res.data?.products || res.data || []
+        setUpsellProducts(Array.isArray(list) ? list.slice(0, 5) : [])
+      } catch {
+        setUpsellProducts([])
+      }
+    }
+
+    fetchUpsellProducts()
+  }, [selectedCity])
+
   if (cart.length === 0) {
     return (
       <div className="w-full">
@@ -120,9 +141,23 @@ const Cart = () => {
             <ShoppingCart className="h-24 w-24 text-gray-400 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty — let's fill it with African flavors! 🛒</h2>
             <p className="text-gray-600 mb-6">Discover authentic African groceries, spices, and ingredients waiting for you</p>
-            <Link to="/groceries" className="btn-primary inline-block">
-              Continue Shopping
-            </Link>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link to="/groceries" className="btn-primary inline-block">
+                Continue Shopping
+              </Link>
+              <Link
+                to="/top-market-deals"
+                className="px-4 py-2 border border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 text-sm font-semibold"
+              >
+                Browse Top Market Deals
+              </Link>
+              <Link
+                to="/stores"
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-semibold"
+              >
+                Discover Local Markets
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -164,6 +199,57 @@ const Cart = () => {
         }
       />
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-4 sm:pb-8">
+        {/* Deals / upsell strip */}
+        {upsellProducts.length > 0 && (
+          <div className="mb-4 sm:mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2">
+                <Zap className="h-4 w-4 text-amber-500" />
+                Save more on these deals
+              </h2>
+              <Link
+                to="/top-market-deals"
+                className="text-xs sm:text-sm font-semibold text-primary-600 hover:text-primary-700"
+              >
+                View all deals
+              </Link>
+            </div>
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+              {upsellProducts.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => {
+                    addToCart(p, 1)
+                    showSuccessToast(`${p.name} added to cart!`)
+                  }}
+                  className="flex-shrink-0 w-32 sm:w-36 bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden text-left"
+                >
+                  <div className="relative aspect-square bg-gray-100">
+                    {p.image_url && (
+                      <img
+                        src={resolveImageUrl(p.image_url)}
+                        alt={p.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.target.style.display = 'none'
+                        }}
+                      />
+                    )}
+                  </div>
+                  <div className="p-2">
+                    <p className="text-xs font-medium text-gray-900 line-clamp-2 mb-1">{p.name}</p>
+                    <p className="text-xs font-bold text-primary-600">
+                      ${Number(p.price).toFixed(2)}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Two panes: Cart (left) | Saved for later (right) on desktop; stacked on mobile */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Pane 1: Your cart */}
@@ -374,6 +460,27 @@ const Cart = () => {
             >
               Continue Shopping
             </Link>
+            <p className="mt-3 text-xs sm:text-sm text-gray-600 text-center">
+              Secure checkout • Fast delivery
+              {selectedCity && selectedCity !== 'All' && (
+                <> in <span className="font-semibold text-gray-800">{selectedCity}</span></>
+              )}
+              .{' '}
+              <Link
+                to="/orders"
+                className="text-primary-600 hover:text-primary-700 underline-offset-2 hover:underline"
+              >
+                View your orders
+              </Link>
+              {' · '}
+              <Link
+                to="/profile"
+                className="text-primary-600 hover:text-primary-700 underline-offset-2 hover:underline"
+              >
+                Manage profile & addresses
+              </Link>
+              . You’ll confirm address and delivery on the next step.
+            </p>
           </div>
         </div>
       </div>
