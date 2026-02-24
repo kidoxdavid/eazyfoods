@@ -18,7 +18,9 @@ const Meals = () => {
   const [filters, setFilters] = useState({
     meal_type: '',
     cuisine_type: '',
-    difficulty: ''
+    difficulty: '',
+    prep_time_max: '',
+    search: ''
   })
   const [planTypeFilter, setPlanTypeFilter] = useState('all')
   const [buildPlanOpen, setBuildPlanOpen] = useState(false)
@@ -56,6 +58,8 @@ const Meals = () => {
       if (filters.meal_type) params.meal_type = filters.meal_type
       if (filters.cuisine_type) params.cuisine_type = filters.cuisine_type
       if (filters.difficulty) params.difficulty = filters.difficulty
+      if (filters.prep_time_max) params.prep_time_max = parseInt(filters.prep_time_max, 10)
+      if (filters.search && filters.search.trim()) params.search = filters.search.trim()
 
       const response = await api.get('/customer/recipes/', { params })
       setRecipes(response.data || [])
@@ -66,6 +70,9 @@ const Meals = () => {
       setLoading(false)
     }
   }
+
+  const hasActiveRecipeFilters = filters.meal_type || filters.cuisine_type || filters.difficulty || filters.prep_time_max || (filters.search && filters.search.trim())
+  const clearRecipeFilters = () => setFilters({ meal_type: '', cuisine_type: '', difficulty: '', prep_time_max: '', search: '' })
 
   const fetchMealPlans = async () => {
     setLoading(true)
@@ -249,45 +256,88 @@ const Meals = () => {
           </div>
         </div>
 
-        {/* Filters - Compact */}
+        {/* Filters - Recipes */}
         {activeTab === 'recipes' && (
           <div className="mb-4 bg-white rounded-lg shadow-md p-3 sm:p-4 border border-gray-200">
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-gray-500" />
-                <span className="text-sm font-semibold text-gray-700">Filters:</span>
+            <div className="flex flex-wrap items-end gap-2 sm:gap-3 mb-2">
+              <div className="flex-1 min-w-[140px]">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={filters.search}
+                    onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                    placeholder="Recipe name, cuisine..."
+                    className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
               </div>
-              <select
-                value={filters.meal_type}
-                onChange={(e) => setFilters({ ...filters, meal_type: e.target.value })}
-                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
-              >
-                <option value="">All Meal Types</option>
-                <option value="breakfast">Breakfast</option>
-                <option value="lunch">Lunch</option>
-                <option value="dinner">Dinner</option>
-              </select>
-              <select
-                value={filters.difficulty}
-                onChange={(e) => setFilters({ ...filters, difficulty: e.target.value })}
-                className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
-              >
-                <option value="">All Difficulties</option>
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </select>
-              <div className="relative flex-1 min-w-[150px]">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="w-32 sm:w-36">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Meal type</label>
+                <select
+                  value={filters.meal_type}
+                  onChange={(e) => setFilters({ ...filters, meal_type: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white"
+                >
+                  <option value="">All</option>
+                  <option value="breakfast">Breakfast</option>
+                  <option value="lunch">Lunch</option>
+                  <option value="dinner">Dinner</option>
+                </select>
+              </div>
+              <div className="w-28 sm:w-32">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Difficulty</label>
+                <select
+                  value={filters.difficulty}
+                  onChange={(e) => setFilters({ ...filters, difficulty: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white"
+                >
+                  <option value="">All</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+              <div className="w-32 sm:w-36">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Max time</label>
+                <select
+                  value={filters.prep_time_max}
+                  onChange={(e) => setFilters({ ...filters, prep_time_max: e.target.value })}
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white"
+                >
+                  <option value="">Any</option>
+                  <option value="30">Under 30 min</option>
+                  <option value="45">Under 45 min</option>
+                  <option value="60">Under 60 min</option>
+                  <option value="90">Under 90 min</option>
+                </select>
+              </div>
+              <div className="min-w-[100px]">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Cuisine</label>
                 <input
                   type="text"
-                  placeholder="Search cuisine..."
                   value={filters.cuisine_type}
                   onChange={(e) => setFilters({ ...filters, cuisine_type: e.target.value })}
-                  className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="e.g. Nigerian"
+                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                 />
               </div>
+              {hasActiveRecipeFilters && (
+                <button
+                  type="button"
+                  onClick={clearRecipeFilters}
+                  className="text-sm text-primary-600 hover:underline font-medium"
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
+            {!loading && (
+              <p className="text-xs text-gray-500">
+                {recipes.length} {recipes.length === 1 ? 'recipe' : 'recipes'}
+              </p>
+            )}
           </div>
         )}
 
@@ -384,14 +434,23 @@ const Meals = () => {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
                   <Utensils className="h-8 w-8 text-primary-600" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">No African recipes found yet — but they're cooking! 👩🏽‍🍳</h3>
-                <p className="text-sm text-gray-600 mb-4">Our chefs are preparing authentic African dishes. Try adjusting your filters or check back soon!</p>
-                <button
-                  onClick={() => setFilters({ meal_type: '', cuisine_type: '', difficulty: '' })}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-semibold"
-                >
-                  Clear Filters
-                </button>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                  {hasActiveRecipeFilters ? 'No recipes match your filters.' : "No African recipes yet — but they're cooking! 👩🏽‍🍳"}
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  {hasActiveRecipeFilters ? 'Try clearing filters or browse meal plans below.' : 'Our chefs are preparing authentic African dishes. Check back soon or explore meal plans!'}
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {hasActiveRecipeFilters ? (
+                    <button onClick={clearRecipeFilters} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-semibold">
+                      Clear filters
+                    </button>
+                  ) : (
+                    <button onClick={() => setActiveTab('meal-plans')} className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-semibold">
+                      Browse meal plans
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 sm:gap-6">
@@ -429,6 +488,13 @@ const Meals = () => {
                         <div className="absolute top-2 left-2 z-10">
                           <span className={`px-2.5 py-1 rounded-full text-xs font-bold shadow-lg ${getDifficultyColor(recipe.difficulty)}`}>
                             {recipe.difficulty.charAt(0).toUpperCase() + recipe.difficulty.slice(1)}
+                          </span>
+                        </div>
+                      )}
+                      {recipe.is_featured && (
+                        <div className="absolute bottom-2 left-2 z-10">
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold shadow-lg bg-amber-500 text-white">
+                            Featured
                           </span>
                         </div>
                       )}
@@ -542,13 +608,15 @@ const Meals = () => {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
                   <Calendar className="h-8 w-8 text-primary-600" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">No African meal plans yet — but they're cooking! 👩🏽‍🍳</h3>
-                <p className="text-sm text-gray-600 mb-4">We're curating authentic African meal plans for you. Try adjusting your filters or check back soon!</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">No meal plans yet — build your own! 👩🏽‍🍳</h3>
+                <p className="text-sm text-gray-600 mb-4">We're curating meal plans for you. Use "Build your plan" to pick recipes and add all ingredients to cart in one click.</p>
                 <button
-                  onClick={() => setPlanTypeFilter('all')}
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-semibold"
+                  type="button"
+                  onClick={() => { setBuildPlanOpen(true); setBuildPlanType('one_week'); setBuildSlots(makeBuildSlots('one_week')); }}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-semibold flex items-center gap-2 mx-auto"
                 >
-                  Clear Filters
+                  <Plus className="h-4 w-4" />
+                  Build your plan
                 </button>
               </div>
             ) : mealPlans.length > 0 ? (
@@ -577,7 +645,12 @@ const Meals = () => {
                         </div>
                       )}
                       {/* Plan Type Badge */}
-                      <div className="absolute top-2 right-2 z-10">
+                      <div className="absolute top-2 right-2 z-10 flex flex-col gap-1 items-end">
+                        {plan.is_featured && (
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold shadow-lg bg-amber-500 text-white">
+                            Featured
+                          </span>
+                        )}
                         <span className="px-2.5 py-1 bg-white/95 backdrop-blur-sm rounded-full text-xs font-bold text-primary-600 shadow-lg">
                           {plan.plan_type === 'one_day' ? '1 Day' : plan.plan_type === 'one_week' ? '1 Week' : '1 Month'}
                         </span>

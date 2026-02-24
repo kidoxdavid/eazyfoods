@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { ShoppingCart, ArrowLeft, Users, Calendar, Utensils } from 'lucide-react'
+import { ShoppingCart, ArrowLeft, Utensils, Sunrise, Sun, Moon } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
+import { useToast } from '../contexts/ToastContext'
 import { MealDetailSkeleton } from '../components/SkeletonLoader'
 import { resolveImageUrl } from '../utils/imageUtils'
+import StickyAddToCartMealPlan from '../components/StickyAddToCartMealPlan'
 
 const MealPlanDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const { addToCart } = useCart()
+  const { success: showSuccessToast, error: showErrorToast } = useToast()
   const [mealPlan, setMealPlan] = useState(null)
   const [loading, setLoading] = useState(true)
   const [householdSize, setHouseholdSize] = useState(1)
@@ -45,12 +48,11 @@ const MealPlanDetail = () => {
         addToCart(productWithQuantity, item.quantity)
       }
 
-      // Show success message and navigate to cart
-      alert(`Added all ingredients for ${householdSize} person${householdSize > 1 ? 's' : ''} to cart!`)
+      showSuccessToast(`Added all ingredients for ${householdSize} person${householdSize > 1 ? 's' : ''} to cart!`)
       navigate('/cart')
     } catch (error) {
       console.error('Failed to add meal plan to cart:', error)
-      alert('Failed to add ingredients to cart. Please try again.')
+      showErrorToast('Failed to add ingredients to cart. Please try again.')
     } finally {
       setAddingToCart(false)
     }
@@ -133,36 +135,42 @@ const MealPlanDetail = () => {
             </div>
           </div>
 
-          {/* Meals by Day */}
-          <div className="space-y-4 sm:space-y-6">
-            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">Meal Schedule</h2>
-            {Object.keys(mealsByDay).sort((a, b) => a - b).map(day => (
-              <div key={day} className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Day {day}</h3>
-                <div className="space-y-3 sm:space-y-4">
+          {/* Meals by Day - clear day-by-day structure */}
+          <div className="space-y-6 sm:space-y-8">
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 border-b border-gray-200 pb-2">Meal Schedule</h2>
+            {Object.keys(mealsByDay).sort((a, b) => Number(a) - Number(b)).map(day => (
+              <section key={day} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900">Day {day}</h3>
+                </div>
+                <ul className="divide-y divide-gray-100">
                   {mealsByDay[day].map(meal => (
-                    <div key={meal.id} className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
-                      <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium capitalize self-start ${getMealTypeColor(meal.meal_type)}`}>
+                    <li key={meal.id} className="flex gap-4 p-4 sm:p-5 hover:bg-gray-50/50 transition-colors">
+                      <span className={`flex-shrink-0 w-24 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium capitalize ${getMealTypeColor(meal.meal_type)}`}>
+                        {meal.meal_type === 'breakfast' && <Sunrise className="h-3.5 w-3.5" />}
+                        {meal.meal_type === 'lunch' && <Sun className="h-3.5 w-3.5" />}
+                        {meal.meal_type === 'dinner' && <Moon className="h-3.5 w-3.5" />}
                         {meal.meal_type}
                       </span>
-                      <div className="flex-1">
-                        {meal.recipe && (
-                          <>
-                            <h4 className="font-medium text-sm sm:text-base text-gray-900">{meal.recipe.name}</h4>
-                            {meal.recipe.image_url && (
-                              <img
-                                src={resolveImageUrl(meal.recipe.image_url, 'recipe')}
-                                alt={meal.recipe.name}
-                                className="h-16 w-16 sm:h-20 sm:w-20 object-cover rounded mt-2"
-                              />
-                            )}
-                          </>
+                      <div className="flex-1 min-w-0 flex items-center gap-4">
+                        {meal.recipe?.image_url && (
+                          <img
+                            src={resolveImageUrl(meal.recipe.image_url, 'recipe')}
+                            alt=""
+                            className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
+                          />
                         )}
+                        <div className="min-w-0">
+                          <h4 className="font-semibold text-gray-900">{meal.recipe?.name || 'Recipe'}</h4>
+                          {meal.recipe?.cuisine_type && (
+                            <p className="text-xs text-gray-500 mt-0.5">{meal.recipe.cuisine_type}</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    </li>
                   ))}
-                </div>
-              </div>
+                </ul>
+              </section>
             ))}
           </div>
         </div>
@@ -213,6 +221,15 @@ const MealPlanDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Sticky Add to Cart (Mobile) */}
+      <StickyAddToCartMealPlan
+        mealPlan={mealPlan}
+        householdSize={householdSize}
+        setHouseholdSize={setHouseholdSize}
+        onAddToCart={handleAddToCart}
+        disabled={addingToCart}
+      />
     </div>
   )
 }

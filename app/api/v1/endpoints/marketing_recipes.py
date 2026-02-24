@@ -58,6 +58,8 @@ class RecipeUpdate(BaseModel):
     instructions: Optional[str] = None
     nutrition_info: Optional[dict] = None
     is_active: Optional[bool] = None
+    is_featured: Optional[bool] = None
+    sort_order: Optional[int] = None
     ingredients: Optional[List[RecipeIngredientCreate]] = None
 
 
@@ -87,6 +89,8 @@ class MealPlanUpdate(BaseModel):
     price: Optional[float] = None
     status: Optional[str] = None
     is_live: Optional[bool] = None
+    is_featured: Optional[bool] = None
+    sort_order: Optional[int] = None
     store_id: Optional[str] = None
     meals: Optional[List[MealPlanMealCreate]] = None
 
@@ -178,7 +182,7 @@ async def get_recipes(
         valid_recipe_ids = [r[0] for r in valid_ids] if valid_ids else []
         query = query.filter(Recipe.id.in_(valid_recipe_ids))
     
-    recipes = query.order_by(Recipe.created_at.desc()).offset(skip).limit(limit).all()
+    recipes = query.order_by(Recipe.sort_order.asc().nullslast(), Recipe.is_featured.desc(), Recipe.created_at.desc()).offset(skip).limit(limit).all()
     
     result = []
     for recipe in recipes:
@@ -198,6 +202,8 @@ async def get_recipes(
             "instructions": recipe.instructions,
             "nutrition_info": recipe.nutrition_info,
             "is_active": recipe.is_active,
+            "is_featured": getattr(recipe, "is_featured", False),
+            "sort_order": getattr(recipe, "sort_order", None),
             "ingredients": [
                 {
                     "id": str(ing.id),
@@ -268,6 +274,8 @@ async def get_recipe(
         "instructions": recipe.instructions,
         "nutrition_info": recipe.nutrition_info,
         "is_active": recipe.is_active,
+        "is_featured": getattr(recipe, "is_featured", False),
+        "sort_order": getattr(recipe, "sort_order", None),
         "ingredients": ing_list
     }
 
@@ -375,6 +383,10 @@ async def update_recipe(
         recipe.nutrition_info = recipe_data.nutrition_info
     if recipe_data.is_active is not None:
         recipe.is_active = recipe_data.is_active
+    if recipe_data.is_featured is not None:
+        recipe.is_featured = recipe_data.is_featured
+    if recipe_data.sort_order is not None:
+        recipe.sort_order = recipe_data.sort_order
     
     if recipe_data.ingredients is not None:
         db.query(RecipeIngredient).filter(RecipeIngredient.recipe_id == recipe.id).delete()
@@ -436,6 +448,8 @@ async def get_meal_plan(
         "image_url": meal_plan.image_url,
         "status": meal_plan.status,
         "is_live": meal_plan.is_live,
+        "is_featured": getattr(meal_plan, "is_featured", False),
+        "sort_order": getattr(meal_plan, "sort_order", None),
         "price": float(meal_plan.price) if meal_plan.price else None,
         "store_id": str(meal_plan.store_id) if meal_plan.store_id else None,
         "meals": [
@@ -493,7 +507,7 @@ async def get_meal_plans(
     if is_live is not None:
         query = query.filter(MealPlan.is_live == is_live)
     
-    meal_plans = query.order_by(MealPlan.created_at.desc()).offset(skip).limit(limit).all()
+    meal_plans = query.order_by(MealPlan.sort_order.asc().nullslast(), MealPlan.is_featured.desc(), MealPlan.created_at.desc()).offset(skip).limit(limit).all()
     
     result = []
     for plan in meal_plans:
@@ -506,6 +520,8 @@ async def get_meal_plans(
             "image_url": plan.image_url,
             "status": plan.status,
             "is_live": plan.is_live,
+            "is_featured": getattr(plan, "is_featured", False),
+            "sort_order": getattr(plan, "sort_order", None),
             "price": float(plan.price) if plan.price else None,
             "meals": [
                 {
@@ -645,6 +661,10 @@ async def update_meal_plan(
         meal_plan.status = plan_data.status
     if plan_data.is_live is not None:
         meal_plan.is_live = plan_data.is_live
+    if plan_data.is_featured is not None:
+        meal_plan.is_featured = plan_data.is_featured
+    if plan_data.sort_order is not None:
+        meal_plan.sort_order = plan_data.sort_order
     if plan_data.store_id is not None:
         meal_plan.store_id = UUID(plan_data.store_id)
     

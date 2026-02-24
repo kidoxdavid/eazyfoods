@@ -19,23 +19,48 @@ async def get_recipes(
     meal_type: Optional[str] = Query(None, pattern="^(breakfast|lunch|dinner)$"),
     cuisine_type: Optional[str] = Query(None),
     difficulty: Optional[str] = Query(None, pattern="^(easy|medium|hard)$"),
+    prep_time_max: Optional[int] = Query(None, ge=1, le=300, description="Max total prep+cook time in minutes"),
+    search: Optional[str] = Query(None),
+    featured_only: Optional[bool] = Query(False),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
-    """Get all active recipes"""
+    """Get all active recipes. Ordered by sort_order, then featured first, then name."""
+    from sqlalchemy import or_, func
+
     query = db.query(Recipe).filter(Recipe.is_active == True)
-    
+
     if meal_type:
         query = query.filter(Recipe.meal_type == meal_type)
     if cuisine_type:
         query = query.filter(Recipe.cuisine_type.ilike(f"%{cuisine_type}%"))
     if difficulty:
         query = query.filter(Recipe.difficulty == difficulty)
-    
-    recipes = query.order_by(Recipe.name).offset(skip).limit(limit).all()
-    
-    # Manually format response to ensure proper serialization
+    if prep_time_max is not None:
+        # Total time = prep + cook (either can be null; treat null as 0 for filter)
+        query = query.filter(
+            func.coalesce(Recipe.prep_time_minutes, 0) + func.coalesce(Recipe.cook_time_minutes, 0) <= prep_time_max
+        )
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        query = query.filter(
+            or_(
+                Recipe.name.ilike(term),
+                func.coalesce(Recipe.description, "").ilike(term),
+                func.coalesce(Recipe.cuisine_type, "").ilike(term),
+            )
+        )
+    if featured_only:
+        query = query.filter(Recipe.is_featured == True)
+
+    # Order: sort_order ASC nulls last, then is_featured DESC, then name
+    recipes = query.order_by(
+        Recipe.sort_order.asc().nullslast(),
+        Recipe.is_featured.desc().nullslast(),
+        Recipe.name,
+    ).offset(skip).limit(limit).all()
+
     result = []
     for recipe in recipes:
         result.append({
@@ -49,9 +74,9 @@ async def get_recipes(
             "prep_time_minutes": recipe.prep_time_minutes,
             "cook_time_minutes": recipe.cook_time_minutes,
             "servings": recipe.servings,
-            "difficulty": recipe.difficulty
+            "difficulty": recipe.difficulty,
+            "is_featured": getattr(recipe, "is_featured", False),
         })
-    
     return result
 
 
@@ -269,8 +294,12 @@ async def get_meal_plans(
     
     if plan_type:
         query = query.filter(MealPlan.plan_type == plan_type)
-    
-    meal_plans = query.order_by(MealPlan.created_at.desc()).offset(skip).limit(limit).all()
+
+    meal_plans = query.order_by(
+        MealPlan.sort_order.asc().nullslast(),
+        MealPlan.is_featured.desc().nullslast(),
+        MealPlan.created_at.desc(),
+    ).offset(skip).limit(limit).all()
     
     result = []
     for plan in meal_plans:
@@ -286,6 +315,7 @@ async def get_meal_plans(
             "image_url": plan.image_url,
             "price": float(plan.price) if plan.price else None,
             "meal_count": len(meals),
+            "is_featured": getattr(plan, "is_featured", False),
             "meals": [
                 {
                     "id": str(meal.id),

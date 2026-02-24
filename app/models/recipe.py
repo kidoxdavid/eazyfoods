@@ -29,6 +29,8 @@ class Recipe(Base):
     instructions = Column(Text)  # Step-by-step cooking instructions
     nutrition_info = Column(JSONB)  # Optional nutrition information
     is_active = Column(Boolean, default=True)
+    is_featured = Column(Boolean, default=False)  # Marketing: recipe of the week / staff pick
+    sort_order = Column(Integer, default=None)  # Marketing: display order (lower first)
     created_at = Column(Text, server_default=func.now())
     updated_at = Column(Text, server_default=func.now(), onupdate=func.now())
 

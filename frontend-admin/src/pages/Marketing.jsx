@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { Megaphone, Image, Mail, Users, DollarSign, TrendingUp, AlertCircle, Shield, Settings, BarChart3, Eye } from 'lucide-react'
+import { Megaphone, Image, Mail, Users, DollarSign, TrendingUp, AlertCircle, Shield, Settings, BarChart3, Eye, ChefHat } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const Marketing = () => {
@@ -150,6 +150,14 @@ const Marketing = () => {
             <AlertCircle className="h-6 w-6 text-yellow-600 mx-auto mb-2" />
             <p className="text-sm font-medium text-gray-900">Approvals</p>
             <p className="text-xs text-gray-500">{overview.ads?.pending_approval || 0} pending</p>
+          </Link>
+          <Link
+            to="/marketing/recipes-meal-plans"
+            className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 text-center transition-colors"
+          >
+            <ChefHat className="h-6 w-6 text-primary-500 mx-auto mb-2" />
+            <p className="text-sm font-medium text-gray-900">Recipes & Meal Plans</p>
+            <p className="text-xs text-gray-500">Featured & order</p>
           </Link>
         </div>
       </div>

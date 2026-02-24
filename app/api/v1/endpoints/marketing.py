@@ -739,8 +739,8 @@ def _safe_marketing_analytics_response():
         "campaign_breakdown": [],
         "ad_breakdown": [],
         "email_breakdown": [],
-        "meal_plans": {"total": 0, "live": 0, "draft": 0, "revenue": 0.0, "orders": 0, "breakdown_by_type": [], "popular_plans": []},
-        "recipes": {"total": 0, "active": 0, "inactive": 0, "breakdown_by_meal_type": [], "breakdown_by_difficulty": [], "popular_recipes": []},
+        "meal_plans": {"total": 0, "live": 0, "draft": 0, "featured": 0, "revenue": 0.0, "orders": 0, "breakdown_by_type": [], "popular_plans": []},
+        "recipes": {"total": 0, "active": 0, "inactive": 0, "featured": 0, "breakdown_by_meal_type": [], "breakdown_by_difficulty": [], "popular_recipes": []},
         "orders": {"total_orders": 0, "completed_orders": 0, "total_revenue": 0.0, "average_order_value": 0.0, "orders_by_status": {}},
         "customers": {"total_customers": 0, "active_customers": 0, "new_customers": 0, "repeat_customers": 0},
         "vendors": {"total_vendors": 0, "active_vendors": 0, "new_vendors": 0},
@@ -930,6 +930,7 @@ async def get_marketing_analytics(
     total_meal_plans = len(meal_plans)
     live_meal_plans = len([mp for mp in meal_plans if mp.is_live])
     draft_meal_plans = len([mp for mp in meal_plans if not mp.is_live])
+    featured_meal_plans = len([mp for mp in meal_plans if getattr(mp, "is_featured", False)])
     
     # Calculate meal plan revenue (from orders that include meal plan products)
     # This is a simplified calculation - in a real system, you'd track meal plan purchases separately
@@ -988,6 +989,7 @@ async def get_marketing_analytics(
     total_recipes = len(recipes)
     active_recipes = len([r for r in recipes if r.is_active])
     inactive_recipes = len([r for r in recipes if not r.is_active])
+    featured_recipes = len([r for r in recipes if getattr(r, "is_featured", False)])
     
     # Recipe breakdown by meal type
     recipe_breakdown = []
@@ -1041,6 +1043,7 @@ async def get_marketing_analytics(
             "total": total_meal_plans,
             "live": live_meal_plans,
             "draft": draft_meal_plans,
+            "featured": featured_meal_plans,
             "revenue": round(meal_plan_revenue, 2),
             "orders": meal_plan_order_count,
             "breakdown_by_type": meal_plan_breakdown,
@@ -1050,6 +1053,7 @@ async def get_marketing_analytics(
             "total": total_recipes,
             "active": active_recipes,
             "inactive": inactive_recipes,
+            "featured": featured_recipes,
             "breakdown_by_meal_type": recipe_breakdown,
             "breakdown_by_difficulty": difficulty_breakdown,
             "popular_recipes": popular_recipes

@@ -30,6 +30,7 @@ import MarketingControl from './pages/MarketingControl'
 import MarketingCampaigns from './pages/MarketingCampaigns'
 import MarketingAds from './pages/MarketingAds'
 import MarketingBudgets from './pages/MarketingBudgets'
+import MarketingRecipesMealPlans from './pages/MarketingRecipesMealPlans'
 import Barcode from './pages/Barcode'
 import Chat from './pages/Chat'
 import Documentation from './pages/Documentation'
@@ -85,6 +86,7 @@ function AppRoutes() {
         <Route path="marketing/ads" element={<MarketingAds />} />
         <Route path="marketing/budgets" element={<MarketingBudgets />} />
         <Route path="marketing/pending-approvals" element={<MarketingPendingApprovals />} />
+        <Route path="marketing/recipes-meal-plans" element={<MarketingRecipesMealPlans />} />
         <Route path="barcode" element={<Barcode />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="reviews" element={<Reviews />} />

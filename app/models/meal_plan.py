@@ -24,6 +24,10 @@ class MealPlan(Base):
     
     # Pricing (optional)
     price = Column(DECIMAL(10, 2))  # Optional pricing for meal plan
+
+    # Marketing / merchandising
+    is_featured = Column(Boolean, default=False)  # Staff pick / featured plan
+    sort_order = Column(Integer, default=None)  # Display order (lower first)
     
     # Store association: store_id from customer_stores (Store.id or Vendor.id for vendors without stores)
     store_id = Column(UUID(as_uuid=True), nullable=True)  # Links to Store or Vendor for checkout display

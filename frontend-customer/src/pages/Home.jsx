@@ -184,7 +184,8 @@ const Home = () => {
         categoriesRes,
         storesRes,
         promotionsRes,
-        chefsRes
+        chefsRes,
+        recipesRes
       ] = await Promise.all([
         api.get('/customer/products', { params: { ...productParams, new_arrivals: true, limit: 20 } }),
         api.get('/customer/products', { params: { ...productParams, discounted: true, limit: 20 } }),
@@ -195,7 +196,8 @@ const Home = () => {
           ? api.get('/customer/stores/', { params: storeParams })
           : api.get('/customer/stores/'),
         api.get('/customer/promotions', { params: { limit: 10, ...(effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {}) } }),
-        api.get('/customer/chefs', { params: { limit: 5, ...(effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {}) } })
+        api.get('/customer/chefs', { params: { limit: 5, ...(effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {}) } }),
+        api.get('/customer/recipes/', { params: { limit: 5 } })
       ])
       
       console.log('API responses received:', {
