@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
-import { ShoppingCart, Eye, Heart, Zap, Filter, Package, Sparkles, TrendingUp, Users, Search, Grid3x3, List, SlidersHorizontal } from 'lucide-react'
+import { ShoppingCart, Eye, Heart, Zap, Filter, Package, Sparkles, TrendingUp, Users, Search, Grid3x3, List, SlidersHorizontal, MapPin, Clock } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
 import { useLocation } from '../contexts/LocationContext'
 import { getCitiesForProvince } from '../constants/canadaLocations'
@@ -26,6 +26,9 @@ const TopMarketDeals = () => {
   const [allOfferTypes, setAllOfferTypes] = useState([]) // All available offer types
   const [viewMode, setViewMode] = useState('grid') // 'grid' or 'list'
   const [showFilters, setShowFilters] = useState(false)
+  const [priceMin, setPriceMin] = useState('')
+  const [priceMax, setPriceMax] = useState('')
+  const [minRating, setMinRating] = useState('')
   const { addToCart } = useCart()
   const { selectedCity, selectedProvince } = useLocation()
   const provinceCities = selectedProvince && selectedCity === 'All' ? getCitiesForProvince(selectedProvince) : null
@@ -41,7 +44,7 @@ const TopMarketDeals = () => {
 
   useEffect(() => {
     fetchDeals()
-  }, [selectedCity, selectedProvince, sortBy, searchQuery, categoryFilter, offerTypeFilter])
+  }, [selectedCity, selectedProvince, sortBy, searchQuery, categoryFilter, offerTypeFilter, priceMin, priceMax, minRating])
 
   const loadFavorites = () => {
     const savedFavorites = localStorage.getItem('favorites')
@@ -82,6 +85,9 @@ const TopMarketDeals = () => {
     setSearchQuery('')
     setSortBy('discount')
     setOfferTypeFilter('')
+    setPriceMin('')
+    setPriceMax('')
+    setMinRating('')
   }
 
   const fetchDeals = async () => {
@@ -150,6 +156,20 @@ const TopMarketDeals = () => {
           }
           return false
         })
+      }
+
+      // Price and rating filters (client-side)
+      if (priceMin !== '') {
+        const min = parseFloat(priceMin)
+        if (!isNaN(min)) deals = deals.filter(p => Number(p.price) >= min)
+      }
+      if (priceMax !== '') {
+        const max = parseFloat(priceMax)
+        if (!isNaN(max)) deals = deals.filter(p => Number(p.price) <= max)
+      }
+      if (minRating !== '') {
+        const rating = parseFloat(minRating)
+        if (!isNaN(rating)) deals = deals.filter(p => (p.average_rating ?? 0) >= rating)
       }
 
       // Sort products
@@ -223,6 +243,16 @@ const TopMarketDeals = () => {
     return null
   }
 
+  const getEndingSoon = (product) => {
+    const endDate = product.promotions?.[0]?.end_date
+    if (!endDate) return null
+    const days = Math.ceil((new Date(endDate) - new Date()) / (1000 * 60 * 60 * 24))
+    if (days <= 0) return 'Ends today'
+    if (days === 1) return 'Ends tomorrow'
+    if (days <= 7) return `Ends in ${days} days`
+    return null
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white relative">
@@ -274,6 +304,66 @@ const TopMarketDeals = () => {
       />
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4">
+        {/* Back to Groceries + Location */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <Link to="/groceries" className="text-sm font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1">
+            <Package className="h-4 w-4" />
+            See all groceries
+          </Link>
+          {effectiveCity && effectiveCity !== 'All' && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <MapPin className="h-4 w-4 text-orange-500" />
+              <span>Deals in <span className="font-semibold text-gray-900">{effectiveCity}</span></span>
+            </div>
+          )}
+        </div>
+
+        {/* Deal count + Save up to */}
+        {products.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-4">
+            <span><span className="font-bold text-gray-900">{products.length}</span> deals this week</span>
+            {(() => {
+              const maxSave = Math.max(...products.map((p) => parseFloat(getSavingsAmount(p) || '0')))
+              return maxSave > 0 ? <span>Save up to <span className="font-bold text-orange-600">${maxSave.toFixed(2)}</span></span> : null
+            })()}
+          </div>
+        )}
+
+        {/* Biggest savings strip */}
+        {products.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <Zap className="h-5 w-5 text-amber-500" />
+              Biggest savings
+            </h2>
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1">
+              {products.slice(0, 6).map((p) => {
+                const badge = getDiscountBadge(p)
+                const endingSoon = getEndingSoon(p)
+                return (
+                  <Link key={p.id} to={`/products/${p.id}`} className="flex-shrink-0 w-36 sm:w-40 group">
+                    <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                      {p.image_url && (
+                        <img src={resolveImageUrl(p.image_url)} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      )}
+                      <div className="absolute top-1.5 right-1.5 z-10 flex flex-col gap-1 items-end">
+                        {endingSoon && (
+                          <span className="bg-amber-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{endingSoon}</span>
+                        )}
+                        {badge && (
+                          <span className="bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{badge}</span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 mt-1 line-clamp-2">{p.name}</p>
+                    <p className="text-sm font-bold text-primary-600">${Number(p.price).toFixed(2)}</p>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Results Count and View Toggle */}
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm text-gray-600">
@@ -390,7 +480,7 @@ const TopMarketDeals = () => {
             </div>
 
             {/* Clear Filters */}
-          {(categoryFilter || searchQuery || sortBy !== 'discount') && (
+          {(categoryFilter || searchQuery || sortBy !== 'discount' || offerTypeFilter || priceMin || priceMax || minRating) && (
               <button
                 onClick={clearAllFilters}
               className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
@@ -427,7 +517,45 @@ const TopMarketDeals = () => {
           {showFilters && (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
               <h3 className="font-semibold text-gray-900 mb-3">Advanced Filters</h3>
-              <p className="text-sm text-gray-600">Additional filters coming soon...</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Min price ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={priceMin}
+                    onChange={(e) => setPriceMin(e.target.value)}
+                    placeholder="0"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Max price ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={priceMax}
+                    onChange={(e) => setPriceMax(e.target.value)}
+                    placeholder="Any"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Min rating</label>
+                  <select
+                    value={minRating}
+                    onChange={(e) => setMinRating(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="">Any</option>
+                    <option value="4">4+ stars</option>
+                    <option value="3">3+ stars</option>
+                    <option value="2">2+ stars</option>
+                  </select>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -451,6 +579,7 @@ const TopMarketDeals = () => {
             {products.map((product) => {
               const badge = getDiscountBadge(product)
               const savingsAmount = getSavingsAmount(product)
+              const endingSoon = getEndingSoon(product)
               const isFavorite = favorites.has(product.id)
 
               // List View
@@ -475,14 +604,20 @@ const TopMarketDeals = () => {
                           </div>
                         )}
                         <ProductBadges product={product} />
-                        {badge && (
-                          <div className="absolute top-1.5 right-1.5 z-10">
+                        <div className="absolute top-1.5 right-1.5 z-10 flex flex-col gap-1 items-end">
+                          {endingSoon && (
+                            <span className="bg-amber-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg flex items-center gap-0.5">
+                              <Clock className="h-2.5 w-2.5" />
+                              {endingSoon}
+                            </span>
+                          )}
+                          {badge && (
                             <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg flex items-center gap-0.5">
                               <Zap className="h-2.5 w-2.5 fill-white" />
                               {badge}
                             </span>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </Link>
                       <div className="flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="flex-1">
@@ -626,15 +761,20 @@ const TopMarketDeals = () => {
                         </div>
                       )}
                       <ProductBadges product={product} />
-                      {/* Discount Badge - Top Right */}
-                      {badge && (
-                        <div className="absolute top-1.5 right-1.5 z-10">
+                      <div className="absolute top-1.5 right-1.5 z-10 flex flex-col gap-1 items-end">
+                        {endingSoon && (
+                          <span className="bg-amber-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg flex items-center gap-0.5">
+                            <Clock className="h-2.5 w-2.5" />
+                            {endingSoon}
+                          </span>
+                        )}
+                        {badge && (
                           <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg flex items-center gap-0.5">
                             <Zap className="h-2.5 w-2.5 fill-white" />
                             {badge}
                           </span>
-                        </div>
-                      )}
+                        )}
+                      </div>
                       {/* Favorite Heart - Bottom Right */}
                       <button
                         onClick={(e) => {

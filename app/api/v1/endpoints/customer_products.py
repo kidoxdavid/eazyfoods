@@ -377,7 +377,8 @@ async def get_products(
                             "id": str(promo.id),
                             "name": str(promo.name).strip() if promo.name and str(promo.name).strip() else "Special Offer",
                             "discount_type": promo.discount_type,
-                            "discount_value": float(promo.discount_value) if promo.discount_value else None
+                            "discount_value": float(promo.discount_value) if promo.discount_value else None,
+                            "end_date": promo.end_date.isoformat() if promo.end_date else None,
                         })
                 elif promo.product_ids:
                     for pid in promo.product_ids:
@@ -388,7 +389,8 @@ async def get_products(
                             "id": str(promo.id),
                             "name": str(promo.name).strip() if promo.name and str(promo.name).strip() else "Special Offer",
                             "discount_type": promo.discount_type,
-                            "discount_value": float(promo.discount_value) if promo.discount_value else None
+                            "discount_value": float(promo.discount_value) if promo.discount_value else None,
+                            "end_date": promo.end_date.isoformat() if promo.end_date else None,
                         })
         except Exception as e:
             print(f"Error getting promotions: {e}")
@@ -509,7 +511,8 @@ async def get_product(
             product_promotions.append({
                 "name": str(promo.name).strip() if promo.name and str(promo.name).strip() else "Special Offer",
                 "discount_type": promo.discount_type,
-                "discount_value": float(promo.discount_value) if promo.discount_value else None
+                "discount_value": float(promo.discount_value) if promo.discount_value else None,
+                "end_date": promo.end_date.isoformat() if promo.end_date else None,
             })
     
     return {

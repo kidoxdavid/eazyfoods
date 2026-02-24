@@ -515,7 +515,8 @@ async def get_chef_cuisines_deals(
                 "name": promo.name or "Special Offer",
                 "discount_type": promo.discount_type,
                 "discount_value": float(promo.discount_value) if promo.discount_value else None,
-                "discount_display": discount_display
+                "discount_display": discount_display,
+                "end_date": promo.end_date.isoformat() if promo.end_date else None,
             })
 
         price = float(c.price) if c.price else 0

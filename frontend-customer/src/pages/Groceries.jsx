@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
-import { ShoppingCart, Eye, Heart, Package, Search, Filter, Grid3x3, List, Sparkles, TrendingUp, Users, SlidersHorizontal } from 'lucide-react'
+import { ShoppingCart, Eye, Heart, Package, Search, Filter, Grid3x3, List, Sparkles, TrendingUp, Users, SlidersHorizontal, Zap, MapPin } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
 import { useToast } from '../contexts/ToastContext'
 import { useLocation } from '../contexts/LocationContext'
@@ -14,6 +14,8 @@ import CategoryBadge from '../components/CategoryBadge'
 import PageBanner from '../components/PageBanner'
 import { ProductGridSkeleton } from '../components/SkeletonLoader'
 import { resolveImageUrl } from '../utils/imageUtils'
+import RecentlyViewed from '../components/RecentlyViewed'
+import { useRecentlyViewed } from '../contexts/RecentlyViewedContext'
 
 const Groceries = () => {
   const [products, setProducts] = useState([])
@@ -37,9 +39,11 @@ const Groceries = () => {
   const [minRating, setMinRating] = useState('')
   const [viewMode, setViewMode] = useState('grid') // 'grid' or 'list'
   const [showFilters, setShowFilters] = useState(false)
+  const [dealProducts, setDealProducts] = useState([])
 
   const { addToCart } = useCart()
   const { selectedCity, selectedProvince } = useLocation()
+  const { recentlyViewed } = useRecentlyViewed()
   const provinceCities = selectedProvince && selectedCity === 'All' ? getCitiesForProvince(selectedProvince) : null
   const effectiveCity = selectedProvince && selectedCity === 'All' ? null : selectedCity
   const { success: showSuccessToast } = useToast()
@@ -59,6 +63,46 @@ const Groceries = () => {
   useEffect(() => {
     fetchProducts()
   }, [currentPage, selectedCity, selectedProvince, categoryFilter, searchQuery, sortBy, featuredFilter, priceMin, priceMax, stockFilter, minRating, itemsPerPage])
+
+  useEffect(() => {
+    fetchDealProducts()
+  }, [selectedCity, selectedProvince])
+
+  const fetchDealProducts = async () => {
+    try {
+      if (effectiveCity && effectiveCity !== 'All') {
+        const storesRes = await api.get('/customer/stores/', { params: { city: effectiveCity } })
+        const storesList = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
+        if (storesList.length === 0) {
+          setDealProducts([])
+          return
+        }
+      }
+      let provinceStoreIds = null
+      if (provinceCities && provinceCities.length > 0) {
+        const storesRes = await api.get('/customer/stores/')
+        const allStores = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
+        const provinceCitySet = new Set(provinceCities.map(c => c.trim().toLowerCase()))
+        provinceStoreIds = new Set(allStores.filter(s => s && s.city && provinceCitySet.has(String(s.city).trim().toLowerCase())).map(s => s.id))
+        if (provinceStoreIds.size === 0) {
+          setDealProducts([])
+          return
+        }
+      }
+      const params = { discounted: true, limit: 8 }
+      if (effectiveCity && effectiveCity !== 'All') params.city = effectiveCity
+      const res = await api.get('/customer/products', { params })
+      let list = res.data?.products || res.data || []
+      if (provinceStoreIds && provinceStoreIds.size > 0) {
+        list = list.filter(p => p && provinceStoreIds.has(p.store_id)).slice(0, 8)
+      } else {
+        list = list.slice(0, 8)
+      }
+      setDealProducts(Array.isArray(list) ? list : [])
+    } catch (e) {
+      setDealProducts([])
+    }
+  }
 
   const loadFavorites = () => {
     const savedFavorites = localStorage.getItem('favorites')
@@ -300,6 +344,76 @@ const Groceries = () => {
       />
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4">
+        {/* Location note */}
+        {(effectiveCity && effectiveCity !== 'All') && (
+          <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
+            <MapPin className="h-4 w-4 text-primary-600" />
+            <span>Delivery in <span className="font-semibold text-gray-900">{effectiveCity}</span></span>
+          </div>
+        )}
+
+        {/* Deals this week strip */}
+        {dealProducts.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Zap className="h-5 w-5 text-amber-500" />
+                Deals this week
+              </h2>
+              <Link to="/top-market-deals" className="text-sm font-semibold text-primary-600 hover:text-primary-700">View all deals</Link>
+            </div>
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1">
+              {dealProducts.map((p) => {
+                const hasPromo = p.promotions && p.promotions.length > 0
+                const comparePrice = p.compare_at_price && p.compare_at_price > p.price
+                const discountPct = hasPromo && p.promotions[0]?.discount_type === 'percentage' ? Math.round(Number(p.promotions[0]?.discount_value)) : (comparePrice ? Math.round(((p.compare_at_price - p.price) / p.compare_at_price) * 100) : 0)
+                return (
+                  <Link key={p.id} to={`/products/${p.id}`} className="flex-shrink-0 w-36 sm:w-40 group">
+                    <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                      {p.image_url && (
+                        <img src={resolveImageUrl(p.image_url)} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      )}
+                      {discountPct > 0 && (
+                        <span className="absolute top-1.5 right-1.5 bg-amber-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{discountPct}% OFF</span>
+                      )}
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 mt-1 line-clamp-2">{p.name}</p>
+                    <p className="text-sm font-bold text-primary-600">${Number(p.price).toFixed(2)}</p>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Shop by use / Popular for */}
+        <div className="flex items-center gap-2 mb-3 overflow-x-auto scrollbar-hide pb-1">
+          <span className="text-xs text-gray-600 font-medium flex-shrink-0">Popular for:</span>
+          {[
+            { label: 'For Jollof', search: 'jollof' },
+            { label: 'For Stews', search: 'stew' },
+            { label: 'Breakfast', search: 'breakfast' },
+            { label: 'Snacks', search: 'snack' },
+            { label: 'Spices', search: 'spice' },
+          ].map(({ label, search }) => (
+            <button
+              key={search}
+              type="button"
+              onClick={() => setSearchQuery(search)}
+              className="flex-shrink-0 px-3 py-1.5 text-xs rounded-full bg-gray-100 text-gray-700 hover:bg-primary-100 hover:text-primary-700 transition-colors"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Recently viewed */}
+        {recentlyViewed.length > 0 && (
+          <div className="mb-6">
+            <RecentlyViewed maxItems={6} />
+          </div>
+        )}
+
         {/* Results Count and View Toggle */}
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm text-gray-600">

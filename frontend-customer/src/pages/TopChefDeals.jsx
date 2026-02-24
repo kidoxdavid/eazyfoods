@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
-import { Eye, Heart, Zap, Filter, ChefHat, Sparkles, TrendingUp, Users, Search, Grid3x3, List, SlidersHorizontal } from 'lucide-react'
+import { Eye, Heart, Zap, Filter, ChefHat, Sparkles, TrendingUp, Users, Search, Grid3x3, List, SlidersHorizontal, MapPin, Clock } from 'lucide-react'
 import { useLocation } from '../contexts/LocationContext'
 import { getCitiesForProvince } from '../constants/canadaLocations'
 import StarRating from '../components/StarRating'
@@ -21,6 +21,9 @@ const TopChefDeals = () => {
   const [allOfferTypes, setAllOfferTypes] = useState([])
   const [viewMode, setViewMode] = useState('grid')
   const [showFilters, setShowFilters] = useState(false)
+  const [priceMin, setPriceMin] = useState('')
+  const [priceMax, setPriceMax] = useState('')
+  const [minRating, setMinRating] = useState('')
   const { selectedCity, selectedProvince } = useLocation()
   const provinceCities = selectedProvince && selectedCity === 'All' ? getCitiesForProvince(selectedProvince) : null
   const effectiveCity = selectedProvince && selectedCity === 'All' ? null : selectedCity
@@ -31,7 +34,7 @@ const TopChefDeals = () => {
 
   useEffect(() => {
     fetchDeals()
-  }, [selectedCity, selectedProvince, sortBy, searchQuery, cuisineTypeFilter, offerTypeFilter])
+  }, [selectedCity, selectedProvince, sortBy, searchQuery, cuisineTypeFilter, offerTypeFilter, priceMin, priceMax, minRating])
 
   const loadFavorites = () => {
     const savedFavorites = localStorage.getItem('favorites_chef_cuisines')
@@ -60,6 +63,9 @@ const TopChefDeals = () => {
     setSearchQuery('')
     setSortBy('discount')
     setOfferTypeFilter('')
+    setPriceMin('')
+    setPriceMax('')
+    setMinRating('')
   }
 
   const fetchDeals = async () => {
@@ -113,6 +119,18 @@ const TopChefDeals = () => {
       }
 
       let sorted = [...allCuisines]
+      if (priceMin !== '') {
+        const min = parseFloat(priceMin)
+        if (!isNaN(min)) sorted = sorted.filter((c) => (c.discounted_price ?? c.price ?? 0) >= min)
+      }
+      if (priceMax !== '') {
+        const max = parseFloat(priceMax)
+        if (!isNaN(max)) sorted = sorted.filter((c) => (c.discounted_price ?? c.price ?? 0) <= max)
+      }
+      if (minRating !== '') {
+        const rating = parseFloat(minRating)
+        if (!isNaN(rating)) sorted = sorted.filter((c) => (c.average_rating ?? 0) >= rating)
+      }
       if (sortBy === 'discount') {
         sorted.sort((a, b) => {
           const saveA = (a.price || 0) - (a.discounted_price || a.price || 0)
@@ -151,6 +169,16 @@ const TopChefDeals = () => {
     const price = cuisine.price || 0
     const discounted = cuisine.discounted_price ?? price
     if (price > discounted) return (price - discounted).toFixed(2)
+    return null
+  }
+
+  const getEndingSoon = (cuisine) => {
+    const endDate = cuisine.promotions?.[0]?.end_date
+    if (!endDate) return null
+    const days = Math.ceil((new Date(endDate) - new Date()) / (1000 * 60 * 60 * 24))
+    if (days <= 0) return 'Ends today'
+    if (days === 1) return 'Ends tomorrow'
+    if (days <= 7) return `Ends in ${days} days`
     return null
   }
 
@@ -207,6 +235,23 @@ const TopChefDeals = () => {
       />
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4">
+        {/* Location + deal stats */}
+        {effectiveCity && effectiveCity !== 'All' && (
+          <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+            <MapPin className="h-4 w-4 text-orange-500" />
+            <span>Deals in <span className="font-semibold text-gray-900">{effectiveCity}</span></span>
+          </div>
+        )}
+        {cuisines.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-3">
+            <span><span className="font-bold text-gray-900">{cuisines.length}</span> deals this week</span>
+            {(() => {
+              const maxSave = Math.max(...cuisines.map((c) => (c.price || 0) - (c.discounted_price ?? c.price ?? 0)))
+              return maxSave > 0 ? <span>Save up to <span className="font-bold text-orange-600">${maxSave.toFixed(2)}</span></span> : null
+            })()}
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm text-gray-600">
             {cuisines.length > 0 ? (
@@ -300,7 +345,7 @@ const TopChefDeals = () => {
               </select>
             </div>
 
-            {(cuisineTypeFilter || searchQuery || sortBy !== 'discount') && (
+            {(cuisineTypeFilter || searchQuery || sortBy !== 'discount' || offerTypeFilter || priceMin || priceMax || minRating) && (
               <button
                 onClick={clearAllFilters}
                 className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
@@ -330,9 +375,47 @@ const TopChefDeals = () => {
           )}
 
           {showFilters && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
               <h3 className="font-semibold text-gray-900 mb-3">Advanced Filters</h3>
-              <p className="text-sm text-gray-600">Additional filters coming soon...</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Min price ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={priceMin}
+                    onChange={(e) => setPriceMin(e.target.value)}
+                    placeholder="0"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Max price ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={priceMax}
+                    onChange={(e) => setPriceMax(e.target.value)}
+                    placeholder="Any"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Min rating</label>
+                  <select
+                    value={minRating}
+                    onChange={(e) => setMinRating(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="">Any</option>
+                    <option value="4">4+ stars</option>
+                    <option value="3">3+ stars</option>
+                    <option value="2">2+ stars</option>
+                  </select>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -354,6 +437,7 @@ const TopChefDeals = () => {
             {cuisines.map((cuisine) => {
               const badge = getDiscountBadge(cuisine)
               const savingsAmount = getSavingsAmount(cuisine)
+              const endingSoon = getEndingSoon(cuisine)
               const isFavorite = favorites.has(cuisine.id)
 
               if (viewMode === 'list') {
@@ -373,19 +457,26 @@ const TopChefDeals = () => {
                             <ChefHat className="h-8 w-8" />
                           </div>
                         )}
-                        {badge && (
-                          <div className="absolute top-1.5 right-1.5 z-10">
+                        <div className="absolute top-1.5 right-1.5 z-10 flex flex-col gap-1 items-end">
+                          {endingSoon && (
+                            <span className="bg-amber-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg flex items-center gap-0.5">
+                              <Clock className="h-2.5 w-2.5" />
+                              {endingSoon}
+                            </span>
+                          )}
+                          {badge && (
                             <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg flex items-center gap-0.5">
                               <Zap className="h-2.5 w-2.5 fill-white" />
                               {badge}
                             </span>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </Link>
                       <div className="flex-1">
                         <Link to={`/chefs/${cuisine.chef_id}`}>
                           <h3 className="text-lg font-bold text-gray-900 hover:text-orange-600 transition-colors mb-1">{cuisine.name}</h3>
                         </Link>
+                        {endingSoon && <p className="text-xs text-amber-600 font-medium mb-1">{endingSoon}</p>}
                         <p className="text-xs text-gray-500 mb-2">by {cuisine.chef_name}</p>
                         {cuisine.cuisine_type && (
                           <span className="inline-block px-2 py-0.5 bg-orange-50 text-orange-700 text-xs rounded mb-2">{cuisine.cuisine_type}</span>
@@ -436,14 +527,20 @@ const TopChefDeals = () => {
                           <ChefHat className="h-12 w-12" />
                         </div>
                       )}
-                      {badge && (
-                        <div className="absolute top-1.5 right-1.5 z-10">
+                      <div className="absolute top-1.5 right-1.5 z-10 flex flex-col gap-1 items-end">
+                        {endingSoon && (
+                          <span className="bg-amber-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg flex items-center gap-0.5">
+                            <Clock className="h-2.5 w-2.5" />
+                            {endingSoon}
+                          </span>
+                        )}
+                        {badge && (
                           <span className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-lg flex items-center gap-0.5">
                             <Zap className="h-2.5 w-2.5 fill-white" />
                             {badge}
                           </span>
-                        </div>
-                      )}
+                        )}
+                      </div>
                       <button
                         onClick={(e) => { e.preventDefault(); toggleFavorite(cuisine.id) }}
                         className="absolute bottom-2 right-2 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg z-20"
@@ -453,6 +550,7 @@ const TopChefDeals = () => {
                       </button>
                     </div>
                     <div className="px-1.5 pb-1.5 pt-1">
+                      {endingSoon && <p className="text-[9px] text-amber-600 font-semibold mb-0.5">{endingSoon}</p>}
                       <h3 className="text-sm font-bold text-gray-900 line-clamp-2 min-h-[2rem] group-hover:text-orange-600 transition-colors">{cuisine.name}</h3>
                       <p className="text-[9px] text-gray-500 mt-0.5">by {cuisine.chef_name}</p>
                       {cuisine.cuisine_type && (
