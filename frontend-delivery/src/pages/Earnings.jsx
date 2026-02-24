@@ -1,17 +1,33 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import api from '../services/api'
-import { DollarSign, TrendingUp, Calendar, Download, Filter } from 'lucide-react'
+import { DollarSign, TrendingUp, Calendar, Download, Filter, CreditCard, ExternalLink, CheckCircle } from 'lucide-react'
 
 const Earnings = () => {
+  const [searchParams] = useSearchParams()
   const [earnings, setEarnings] = useState([])
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [stripeStatus, setStripeStatus] = useState(null)
+  const [stripeLoading, setStripeLoading] = useState(false)
   const [dateFilter, setDateFilter] = useState('all') // all, today, week, month, year
   const [statusFilter, setStatusFilter] = useState('all') // all, completed, pending
 
   useEffect(() => {
     fetchEarnings()
   }, [dateFilter, statusFilter])
+
+  useEffect(() => {
+    const fetchStripeStatus = async () => {
+      try {
+        const res = await api.get('/driver/me/stripe-connect/status')
+        setStripeStatus(res.data)
+      } catch (e) {
+        setStripeStatus({ connected: false })
+      }
+    }
+    fetchStripeStatus()
+  }, [searchParams.get('stripe')])
 
   const fetchEarnings = async () => {
     try {
@@ -158,6 +174,49 @@ const Earnings = () => {
             <TrendingUp className="h-4 w-4 sm:h-5 sm:w-6 lg:h-6 lg:w-6 text-purple-500 flex-shrink-0 ml-2" />
           </div>
         </div>
+      </div>
+
+      {/* Receive payouts (Stripe Connect) */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <CreditCard className="h-5 w-5" />
+          Receive payouts
+        </h3>
+        {stripeStatus?.onboarding_complete ? (
+          <div className="flex items-center gap-2 text-green-700 text-sm">
+            <CheckCircle className="h-5 w-5 flex-shrink-0" />
+            <span>Stripe connected — you&apos;ll receive delivery earnings automatically to your Stripe account.</span>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600">
+              Connect Stripe to get paid automatically for completed deliveries.
+            </p>
+            <button
+              type="button"
+              disabled={stripeLoading}
+              onClick={async () => {
+                setStripeLoading(true)
+                try {
+                  const res = await api.post('/driver/me/stripe-connect/onboard')
+                  if (res.data?.url) {
+                    window.location.href = res.data.url
+                  } else {
+                    alert('Could not start Stripe Connect onboarding')
+                  }
+                } catch (e) {
+                  alert(e.response?.data?.detail || 'Failed to start Stripe Connect')
+                } finally {
+                  setStripeLoading(false)
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm disabled:opacity-50"
+            >
+              <ExternalLink className="h-4 w-4" />
+              {stripeStatus?.connected ? 'Complete Stripe setup' : 'Connect with Stripe'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filters - match vendor card */}

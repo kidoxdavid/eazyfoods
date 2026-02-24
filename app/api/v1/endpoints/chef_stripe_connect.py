@@ -85,8 +85,8 @@ async def chef_stripe_connect_onboard(
     ).rstrip("/")
     if not base:
         base = "http://localhost:5175"
-    return_url = f"{base}/profile?stripe=return"
-    refresh_url = f"{base}/profile?stripe=refresh"
+    return_url = f"{base}/payouts?stripe=return"
+    refresh_url = f"{base}/payouts?stripe=refresh"
 
     try:
         if not chef.stripe_connect_account_id:

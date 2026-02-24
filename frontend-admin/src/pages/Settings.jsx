@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
-import { Settings as SettingsIcon, Save, AlertCircle, DollarSign, ShoppingBag, Mail, Bell, Shield, Globe, CreditCard, Users, Package, Edit, Download, Database, RefreshCw, Megaphone } from 'lucide-react'
+import { Settings as SettingsIcon, Save, AlertCircle, DollarSign, ShoppingBag, Mail, Bell, Shield, Globe, CreditCard, Users, Package, Edit, Download, Database, RefreshCw, Megaphone, Percent } from 'lucide-react'
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('general')
@@ -119,6 +119,10 @@ const Settings = () => {
   ]
   const DURATION_KEYS = ['day', 'week', '2weeks', 'month']
   const [adSettings, setAdSettings] = useState(() => loadSettings('ad', { placement_pricing: {} }))
+  const [pricingSettings, setPricingSettings] = useState(() => loadSettings('pricing', {
+    chef_markup_percent: 0,
+    vendor_markup_percent: 0
+  }))
 
   // Load settings from backend on mount - defined after all state setters
   const loadSettingsFromBackend = async () => {
@@ -163,6 +167,10 @@ const Settings = () => {
       if (allSettings.ad?.settings) {
         setAdSettings(allSettings.ad.settings)
         saveSettings('ad', allSettings.ad.settings)
+      }
+      if (allSettings.pricing?.settings) {
+        setPricingSettings(allSettings.pricing.settings)
+        saveSettings('pricing', allSettings.pricing.settings)
       }
     } catch (error) {
       console.error('Failed to load settings from backend:', error)
@@ -230,6 +238,9 @@ const Settings = () => {
         case 'commission':
           settingsToSave = commissionSettings
           break
+        case 'pricing':
+          settingsToSave = pricingSettings
+          break
         case 'orders':
           settingsToSave = orderSettings
           break
@@ -275,6 +286,9 @@ const Settings = () => {
                 break
               case 'commission':
                 setCommissionSettings(getResponse.data.settings)
+                break
+              case 'pricing':
+                setPricingSettings(getResponse.data.settings)
                 break
               case 'orders':
                 setOrderSettings(getResponse.data.settings)
@@ -354,6 +368,7 @@ const Settings = () => {
   const tabs = [
     { id: 'general', label: 'General', icon: Globe },
     { id: 'commission', label: 'Commission', icon: DollarSign },
+    { id: 'pricing', label: 'Pricing (Markup)', icon: Percent },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
     { id: 'payment', label: 'Payment', icon: CreditCard },
     { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -708,6 +723,41 @@ const Settings = () => {
           </>
         )}
       </div>
+    </div>
+  )
+
+  const renderPricingSettings = () => (
+    <div className="space-y-6">
+      <section className="rounded-lg border border-gray-200 bg-gray-50/50 p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-gray-900">Price markups (customer-facing)</h3>
+        <p className="text-xs text-gray-600">
+          Add a percentage markup to chef or vendor base prices. Customers see and pay the marked-up price; chefs/vendors receive their base price (minus commission for vendors). Example: 10% on $10 shows $11 to the customer.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Vendor markup (%)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={pricingSettings.vendor_markup_percent ?? 0}
+              onChange={(e) => setPricingSettings({ ...pricingSettings, vendor_markup_percent: parseFloat(e.target.value) || 0 })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Chef markup (%)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={pricingSettings.chef_markup_percent ?? 0}
+              onChange={(e) => setPricingSettings({ ...pricingSettings, chef_markup_percent: parseFloat(e.target.value) || 0 })}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+        </div>
+      </section>
     </div>
   )
 
@@ -1271,6 +1321,7 @@ const Settings = () => {
             <div className="p-4 sm:p-6">
               {activeTab === 'general' && renderGeneralSettings()}
               {activeTab === 'commission' && renderCommissionSettings()}
+              {activeTab === 'pricing' && renderPricingSettings()}
               {activeTab === 'orders' && renderOrderSettings()}
               {activeTab === 'payment' && renderPaymentSettings()}
               {activeTab === 'notifications' && renderNotificationSettings()}

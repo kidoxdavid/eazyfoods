@@ -172,22 +172,22 @@ const Chefs = () => {
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-3 sm:mb-4">
           <div className="flex flex-wrap items-end gap-2 sm:gap-3 mb-2">
-            <div className="flex-1 min-w-[120px]">
+            <div className="flex-1 min-w-0 w-full sm:min-w-[120px] sm:w-auto">
               <label className="block text-xs font-medium text-gray-700 mb-1">Search</label>
               <input
                 type="text"
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
                 placeholder="Search chefs..."
-                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2.5 sm:py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 touch-manipulation"
               />
             </div>
-            <div className="w-36 sm:w-40">
+            <div className="w-full xs:w-36 sm:w-40">
               <label className="block text-xs font-medium text-gray-700 mb-1">Cuisine</label>
               <select
                 value={filters.cuisine}
                 onChange={(e) => handleFilterChange('cuisine', e.target.value)}
-                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2.5 sm:py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 touch-manipulation"
               >
                 <option value="">All Cuisines</option>
                 {cuisines.map((c) => (
@@ -276,7 +276,7 @@ const Chefs = () => {
                 <Link
                   key={chef.id}
                   to={`/chefs/${chef.id}`}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300 overflow-hidden group relative"
+                  className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-lg active:scale-[0.99] transition-all duration-300 overflow-hidden group relative block min-h-[280px] sm:min-h-0"
                 >
                   <div className="relative aspect-[4/3] bg-gradient-to-br from-primary-100 to-primary-200 overflow-hidden">
                     {chef.profile_image_url ? (

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { Save, Upload, X, MapPin, ChefHat, Globe, DollarSign, Clock, Users, CreditCard, ExternalLink, CheckCircle } from 'lucide-react'
-import { useSearchParams } from 'react-router-dom'
+import { Save, Upload, X, MapPin, ChefHat, Globe, DollarSign, Clock, Users, CreditCard } from 'lucide-react'
 import { CANADIAN_PROVINCES, getCitiesForProvince } from '../constants/locations'
 
 // Cuisine types: African countries (same as CuisineForm dropdown)
@@ -17,12 +16,9 @@ const AFRICAN_CUISINE_TYPES = [
 ].sort()
 
 const Profile = () => {
-  const [searchParams] = useSearchParams()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [profile, setProfile] = useState(null)
-  const [stripeStatus, setStripeStatus] = useState(null)
-  const [stripeLoading, setStripeLoading] = useState(false)
   const [formData, setFormData] = useState({
     chef_name: '',
     first_name: '',
@@ -62,18 +58,6 @@ const Profile = () => {
   useEffect(() => {
     fetchProfile()
   }, [])
-
-  useEffect(() => {
-    const fetchStripeStatus = async () => {
-      try {
-        const res = await api.get('/chef/me/stripe-connect/status')
-        setStripeStatus(res.data)
-      } catch (e) {
-        setStripeStatus({ connected: false })
-      }
-    }
-    fetchStripeStatus()
-  }, [searchParams.get('stripe')])
 
   const fetchProfile = async () => {
     try {
@@ -623,49 +607,6 @@ const Profile = () => {
                 />
               </div>
             </div>
-          </div>
-
-          {/* Stripe Connect - automatic payouts */}
-          <div className="border-b pb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Receive payouts
-            </h2>
-            {stripeStatus?.onboarding_complete ? (
-              <div className="flex items-center gap-2 text-green-700 text-sm">
-                <CheckCircle className="h-5 w-5" />
-                <span>Stripe connected — you&apos;ll receive earnings automatically to your Stripe account.</span>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-gray-600">
-                  Connect Stripe to get paid automatically when customers pay for your bookings and orders.
-                </p>
-                <button
-                  type="button"
-                  disabled={stripeLoading}
-                  onClick={async () => {
-                    setStripeLoading(true)
-                    try {
-                      const res = await api.post('/chef/me/stripe-connect/onboard')
-                      if (res.data?.url) {
-                        window.location.href = res.data.url
-                      } else {
-                        alert('Could not start Stripe Connect onboarding')
-                      }
-                    } catch (e) {
-                      alert(e.response?.data?.detail || 'Failed to start Stripe Connect')
-                    } finally {
-                      setStripeLoading(false)
-                    }
-                  }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm disabled:opacity-50"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  {stripeStatus?.connected ? 'Complete Stripe setup' : 'Connect with Stripe'}
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Bank details for payout */}

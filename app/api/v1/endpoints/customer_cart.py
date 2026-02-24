@@ -158,13 +158,30 @@ async def create_order(
 
     created_orders = []
 
+    # Pricing markups (admin): customer pays marked-up price; vendor payout uses base
+    pricing = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "pricing").first()
+    vendor_markup_pct = 0.0
+    chef_markup_pct = 0.0
+    if pricing and isinstance(getattr(pricing, "settings_data", None), dict):
+        try:
+            vendor_markup_pct = max(0.0, float(pricing.settings_data.get("vendor_markup_percent") or 0))
+        except (TypeError, ValueError):
+            pass
+        try:
+            chef_markup_pct = max(0.0, float(pricing.settings_data.get("chef_markup_percent") or 0))
+        except (TypeError, ValueError):
+            pass
+    vendor_markup_mult = Decimal("1") + (Decimal(str(vendor_markup_pct)) / Decimal("100"))
+    chef_markup_mult = Decimal("1") + (Decimal(str(chef_markup_pct)) / Decimal("100"))
+
     # Create orders for each vendor
     created_orders = []
     for vendor_id, vendor_data in vendor_orders.items():
         vendor = vendor_data["vendor"]
         
-        # Calculate totals
-        subtotal = sum(item["product"].price * item["quantity"] for item in vendor_data["items"])
+        # Subtotal: base (for payout) vs customer (marked-up for charge)
+        subtotal_base = sum(item["product"].price * item["quantity"] for item in vendor_data["items"])
+        subtotal = subtotal_base * vendor_markup_mult
         
         # Apply coupon discount if applicable
         vendor_discount = Decimal("0.00")
@@ -209,8 +226,8 @@ async def create_order(
             if ps and ps.settings_data and "default_commission_rate" in ps.settings_data:
                 default_rate = float(ps.settings_data["default_commission_rate"])
             commission_rate = Decimal(str(default_rate))
-        commission_amount = subtotal * (commission_rate / Decimal("100"))
-        net_payout = subtotal - commission_amount
+        commission_amount = subtotal_base * (commission_rate / Decimal("100"))
+        net_payout = subtotal_base - commission_amount
         
         # Generate order number
         order_number = f"EZF-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
@@ -235,7 +252,7 @@ async def create_order(
             shipping_amount=shipping_amount,
             discount_amount=vendor_discount,
             total_amount=total_amount,
-            gross_sales=subtotal,
+            gross_sales=subtotal_base,
             commission_rate=commission_rate,
             commission_amount=commission_amount,
             net_payout=net_payout,
@@ -253,13 +270,14 @@ async def create_order(
             product = item_data["product"]
             quantity = item_data["quantity"]
             
+            customer_unit_price = product.price * vendor_markup_mult
             order_item = OrderItem(
                 order_id=order.id,
                 product_id=product.id,
                 product_name=product.name,
                 product_price=product.price,
                 quantity=quantity,
-                subtotal=product.price * quantity
+                subtotal=customer_unit_price * quantity
             )
             db.add(order_item)
             
@@ -292,14 +310,15 @@ async def create_order(
     # Create orders for each chef (cuisine orders)
     for chef_id_str, chef_data in chef_orders.items():
         chef = chef_data["chef"]
-        subtotal = sum(item["cuisine"].price * item["quantity"] for item in chef_data["items"])
+        subtotal_base = sum(item["cuisine"].price * item["quantity"] for item in chef_data["items"])
+        subtotal = subtotal_base * chef_markup_mult
         tax_amount = subtotal * Decimal("0.08")
         platform_delivery_fee = _get_platform_delivery_fee(db)
         shipping_amount = platform_delivery_fee if delivery_method == "delivery" else Decimal("0.00")
         total_amount = subtotal + tax_amount + shipping_amount
         commission_rate = Decimal("0.00")
         commission_amount = Decimal("0.00")
-        net_payout = subtotal
+        net_payout = subtotal_base
         order_number = f"EZF-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
         helcim_transaction_id = order_data.get("helcim_transaction_id")
         stripe_payment_intent_id = order_data.get("stripe_payment_intent_id")
@@ -320,7 +339,7 @@ async def create_order(
             shipping_amount=shipping_amount,
             discount_amount=Decimal("0.00"),
             total_amount=total_amount,
-            gross_sales=subtotal,
+            gross_sales=subtotal_base,
             commission_rate=commission_rate,
             commission_amount=commission_amount,
             net_payout=net_payout,
@@ -334,6 +353,7 @@ async def create_order(
         for item_data in chef_data["items"]:
             cuisine = item_data["cuisine"]
             qty = item_data["quantity"]
+            customer_unit = cuisine.price * chef_markup_mult
             order_item = OrderItem(
                 order_id=order.id,
                 product_id=None,
@@ -341,7 +361,7 @@ async def create_order(
                 product_name=cuisine.name,
                 product_price=cuisine.price,
                 quantity=qty,
-                subtotal=cuisine.price * qty
+                subtotal=customer_unit * qty
             )
             db.add(order_item)
         db.commit()

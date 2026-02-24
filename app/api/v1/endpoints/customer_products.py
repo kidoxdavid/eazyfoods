@@ -10,9 +10,23 @@ from app.core.config import resolve_upload_url, resolve_upload_urls
 from app.models.vendor import Vendor
 from app.models.product import Product, Category
 from app.models.store import Store
+from app.models.platform_settings import PlatformSettings
 from sqlalchemy import or_, and_, func, text, distinct
 
 router = APIRouter()
+
+
+def _get_vendor_markup_percent(db: Session) -> float:
+    """Get vendor markup % from admin pricing settings (0 = no markup)."""
+    ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "pricing").first()
+    if ps and isinstance(getattr(ps, "settings_data", None), dict):
+        v = ps.settings_data.get("vendor_markup_percent")
+        if v is not None:
+            try:
+                return max(0.0, float(v))
+            except (TypeError, ValueError):
+                pass
+    return 0.0
 
 
 @router.get("/categories")
@@ -394,6 +408,9 @@ async def get_products(
                         })
         except Exception as e:
             print(f"Error getting promotions: {e}")
+
+        vendor_markup = _get_vendor_markup_percent(db)
+        markup_mult = 1.0 + (vendor_markup / 100.0)
         
         return {
         "products": [
@@ -401,8 +418,8 @@ async def get_products(
                 "id": str(p.id),
                 "name": p.name,
                 "description": p.description,
-                "price": float(p.price),
-                "compare_at_price": float(p.compare_at_price) if p.compare_at_price else None,
+                "price": round(float(p.price) * markup_mult, 2),
+                "compare_at_price": round(float(p.compare_at_price) * markup_mult, 2) if p.compare_at_price else None,
                 "image_url": resolve_upload_url(p.image_url),
                 "images": resolve_upload_urls(p.images) or [],
                 "category_id": str(p.category_id) if p.category_id else None,
@@ -514,13 +531,25 @@ async def get_product(
                 "discount_value": float(promo.discount_value) if promo.discount_value else None,
                 "end_date": promo.end_date.isoformat() if promo.end_date else None,
             })
+
+    from app.models.platform_settings import PlatformSettings
+    vendor_markup = 0.0
+    ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "pricing").first()
+    if ps and isinstance(getattr(ps, "settings_data", None), dict):
+        v = ps.settings_data.get("vendor_markup_percent")
+        if v is not None:
+            try:
+                vendor_markup = max(0.0, float(v))
+            except (TypeError, ValueError):
+                pass
+    markup_mult = 1.0 + (vendor_markup / 100.0)
     
     return {
         "id": str(product.id),
         "name": product.name,
         "description": product.description,
-        "price": float(product.price),
-        "compare_at_price": float(product.compare_at_price) if product.compare_at_price else None,
+        "price": round(float(product.price) * markup_mult, 2),
+        "compare_at_price": round(float(product.compare_at_price) * markup_mult, 2) if product.compare_at_price else None,
         "promotions": product_promotions,
         "image_url": resolve_upload_url(product.image_url),
         "images": resolve_upload_urls(product.images) or [],

@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
-import { User, Mail, Phone, MapPin, Car, Shield, DollarSign, Package, Star, Edit, Save, X, Eye, EyeOff, CreditCard, ExternalLink, CheckCircle } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Car, Shield, DollarSign, Package, Star, Edit, Save, X, Eye, EyeOff } from 'lucide-react'
 import { CANADIAN_PROVINCES, getCitiesForProvince } from '../constants/locations'
 
 // Calgary Delivery Zones with neighborhoods
@@ -102,13 +101,10 @@ const DELIVERY_ZONES = [
 ]
 
 const Profile = () => {
-  const [searchParams] = useSearchParams()
   const { driver, token } = useAuth()
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
-  const [stripeStatus, setStripeStatus] = useState(null)
-  const [stripeLoading, setStripeLoading] = useState(false)
   const isApproved = profile?.verification_status === 'approved'
   const [formData, setFormData] = useState({
     first_name: '',
@@ -149,19 +145,6 @@ const Profile = () => {
       setEditing(false)
     }
   }, [profile?.verification_status, editing])
-
-  useEffect(() => {
-    if (!token) return
-    const fetchStripeStatus = async () => {
-      try {
-        const res = await api.get('/driver/me/stripe-connect/status')
-        setStripeStatus(res.data)
-      } catch (e) {
-        setStripeStatus({ connected: false })
-      }
-    }
-    fetchStripeStatus()
-  }, [token, searchParams.get('stripe')])
 
   const fetchProfile = async () => {
     try {
@@ -812,48 +795,6 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Stripe Connect - receive delivery payouts */}
-          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Receive payouts
-            </h3>
-            {stripeStatus?.onboarding_complete ? (
-              <div className="flex items-center gap-2 text-green-700 text-sm">
-                <CheckCircle className="h-5 w-5 flex-shrink-0" />
-                <span>Stripe connected — you&apos;ll receive delivery earnings automatically to your Stripe account.</span>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-gray-600">
-                  Connect Stripe to get paid automatically for completed deliveries.
-                </p>
-                <button
-                  type="button"
-                  disabled={stripeLoading}
-                  onClick={async () => {
-                    setStripeLoading(true)
-                    try {
-                      const res = await api.post('/driver/me/stripe-connect/onboard')
-                      if (res.data?.url) {
-                        window.location.href = res.data.url
-                      } else {
-                        alert('Could not start Stripe Connect onboarding')
-                      }
-                    } catch (e) {
-                      alert(e.response?.data?.detail || 'Failed to start Stripe Connect')
-                    } finally {
-                      setStripeLoading(false)
-                    }
-                  }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm disabled:opacity-50"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  {stripeStatus?.connected ? 'Complete Stripe setup' : 'Connect with Stripe'}
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>

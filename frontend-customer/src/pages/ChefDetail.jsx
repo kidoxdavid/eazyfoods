@@ -84,8 +84,8 @@ const ChefDetail = () => {
   }
 
   return (
-    <div className="w-full pb-20">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3">
+    <div className="w-full pb-20 min-h-screen">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between gap-2 mb-2">
           <Link to="/chefs" className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900">
             <ArrowLeft className="h-4 w-4" />
@@ -108,7 +108,7 @@ const ChefDetail = () => {
         </div>
 
         {/* Banner */}
-        <div className="relative h-72 mb-4 rounded-lg overflow-hidden">
+        <div className="relative h-48 sm:h-60 md:h-72 mb-3 sm:mb-4 rounded-lg overflow-hidden">
         {chef.banner_image_url ? (
           <img
             src={resolveImageUrl(chef.banner_image_url)}
@@ -125,22 +125,22 @@ const ChefDetail = () => {
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="flex items-end gap-4">
+        <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4">
+          <div className="flex flex-col xs:flex-row items-start xs:items-end gap-2 sm:gap-4">
             {chef.profile_image_url && (
               <img
                 src={resolveImageUrl(chef.profile_image_url)}
                 alt={chef.chef_name}
-                className="h-32 w-32 rounded-full border-4 border-white object-cover"
+                className="h-20 w-20 sm:h-28 sm:w-28 lg:h-32 lg:w-32 rounded-full border-2 sm:border-4 border-white object-cover flex-shrink-0"
                 onError={(e) => {
                   console.error('[ChefDetail] Profile image failed to load:', chef.profile_image_url)
                   e.target.style.display = 'none'
                 }}
               />
             )}
-            <div className="text-white">
-              <h1 className="text-2xl font-bold mb-2">{chef.chef_name}</h1>
-              <div className="flex items-center gap-4">
+            <div className="text-white min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2 truncate">{chef.chef_name}</h1>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm sm:text-base">
                 <StarRating
                   rating={chef.average_rating}
                   totalReviews={chef.total_reviews}
@@ -212,9 +212,9 @@ const ChefDetail = () => {
 
           {/* Cuisine Offerings - large cards with full details */}
           {chef.cuisine_offerings && chef.cuisine_offerings.length > 0 && (
-            <div id="cuisine-offerings" className="bg-white rounded-xl shadow-md border border-gray-200 p-5 sm:p-6 scroll-mt-24">
-              <h2 className="text-2xl font-bold text-gray-900 mb-5">Cuisine Offerings</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div id="cuisine-offerings" className="bg-white rounded-xl shadow-md border border-gray-200 p-4 sm:p-5 lg:p-6 scroll-mt-20 sm:scroll-mt-24">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-5">Cuisine Offerings</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 {chef.cuisine_offerings.map((cuisine) => {
                   const isUnavailable = cuisine.status && cuisine.status !== 'active'
                   const dietary = []
@@ -231,7 +231,7 @@ const ChefDetail = () => {
                       className={`bg-gray-50 rounded-xl border-2 overflow-hidden transition-all duration-300 group flex flex-col ${isUnavailable ? 'border-gray-200 opacity-75' : 'border-gray-200 hover:shadow-xl hover:border-primary-300'}`}
                     >
                       {/* Large image */}
-                      <div className="relative aspect-[16/10] min-h-[220px] bg-gray-100 overflow-hidden">
+                      <div className="relative aspect-[16/10] min-h-[160px] sm:min-h-[200px] lg:min-h-[220px] bg-gray-100 overflow-hidden">
                         {cuisine.image_url ? (
                           <img
                             src={resolveImageUrl(cuisine.image_url)}
@@ -375,7 +375,7 @@ const ChefDetail = () => {
                                 navigate('/cart')
                               }}
                               disabled={addingCuisineId === cuisine.id || isUnavailable}
-                              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] touch-manipulation bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <ShoppingCart className="h-4 w-4" />
                               {isUnavailable ? 'Unavailable' : addingCuisineId === cuisine.id ? 'Adding...' : 'Add to Cart'}

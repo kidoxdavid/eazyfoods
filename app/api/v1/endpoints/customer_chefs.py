@@ -11,11 +11,25 @@ from math import radians, sin, cos, sqrt, atan2
 from app.core.database import get_db
 from app.models.chef import Chef
 from app.models.customer import CustomerSavedChef
+from app.models.platform_settings import PlatformSettings
 from app.api.v1.dependencies import get_optional_customer
 from uuid import UUID
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _get_chef_markup_percent(db) -> float:
+    """Get chef markup % from admin pricing settings (0 = no markup)."""
+    ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "pricing").first()
+    if ps and isinstance(getattr(ps, "settings_data", None), dict):
+        v = ps.settings_data.get("chef_markup_percent")
+        if v is not None:
+            try:
+                return max(0.0, float(v))
+            except (TypeError, ValueError):
+                pass
+    return 0.0
 
 
 def _safe_float(value):
@@ -225,15 +239,19 @@ async def get_chef(
         cuisines = db.query(Cuisine).filter(Cuisine.chef_id == chef.id).order_by(
             Cuisine.is_featured.desc(), Cuisine.created_at.desc()
         ).all()
+        chef_markup = _get_chef_markup_percent(db)
+        markup_mult = 1.0 + (chef_markup / 100.0)
         cuisine_list = []
         for cuisine in cuisines:
+            base_price = _safe_float(cuisine.price)
+            base_pp = _safe_float(cuisine.price_per_person)
             cuisine_list.append({
                 "id": str(cuisine.id),
                 "name": cuisine.name,
                 "description": cuisine.description,
                 "cuisine_type": cuisine.cuisine_type,
-                "price": _safe_float(cuisine.price),
-                "price_per_person": _safe_float(cuisine.price_per_person),
+                "price": round(base_price * markup_mult, 2) if base_price is not None else None,
+                "price_per_person": round(base_pp * markup_mult, 2) if base_pp is not None else None,
                 "minimum_servings": cuisine.minimum_servings,
                 "image_url": cuisine.image_url,
                 "images": cuisine.images or [],
@@ -519,7 +537,9 @@ async def get_chef_cuisines_deals(
                 "end_date": promo.end_date.isoformat() if promo.end_date else None,
             })
 
-        price = float(c.price) if c.price else 0
+        chef_markup = _get_chef_markup_percent(db)
+        markup_mult = 1.0 + (chef_markup / 100.0)
+        price = (float(c.price) if c.price else 0) * markup_mult
         # Apply first promo for display price
         discounted_price = price
         if promo_list and promo_list[0].get("discount_type") == "percentage" and promo_list[0].get("discount_value"):
@@ -532,7 +552,7 @@ async def get_chef_cuisines_deals(
             "name": c.name,
             "description": c.description,
             "cuisine_type": c.cuisine_type,
-            "price": price,
+            "price": round(price, 2),
             "discounted_price": round(discounted_price, 2),
             "image_url": resolve_upload_url(c.image_url),
             "images": [resolve_upload_url(u) for u in (c.images or []) if u],
