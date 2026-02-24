@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { Star, MessageSquare, Flag } from 'lucide-react'
+import { Star, MessageSquare, Flag, Download } from 'lucide-react'
 import { formatDateTime } from '../utils/format'
 
 const Reviews = () => {
@@ -72,6 +72,36 @@ const Reviews = () => {
     }
   }
 
+  const RESPONSE_TEMPLATES = [
+    'Thank you for your feedback! We\'re glad you had a positive experience.',
+    'We\'re sorry to hear that. We\'d like to make it right — please reach out to us.',
+    'Thanks for letting us know. We\'ll look into this and improve.'
+  ]
+
+  const handleExportCsv = () => {
+    if (reviews.length === 0) {
+      alert('No reviews to export')
+      return
+    }
+    const headers = ['Rating', 'Date', 'Product', 'Title', 'Comment', 'Vendor Response', 'Response Date']
+    const rows = reviews.map((r) => [
+      r.rating,
+      r.created_at ? new Date(r.created_at).toISOString() : '',
+      r.product_name || '',
+      (r.title || '').replace(/"/g, '""'),
+      (r.comment || '').replace(/"/g, '""'),
+      (r.vendor_response || '').replace(/"/g, '""'),
+      r.vendor_response_at ? new Date(r.vendor_response_at).toISOString() : ''
+    ])
+    const csv = [headers.join(','), ...rows.map((row) => row.map((c) => `"${String(c)}"`).join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `reviews_${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
   const renderStars = (rating) => {
     return Array.from({ length: 5 }).map((_, i) => (
       <Star
@@ -93,9 +123,21 @@ const Reviews = () => {
 
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Customer Reviews</h1>
-        <p className="text-xs sm:text-sm text-gray-600 mt-1">View and respond to customer feedback</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Customer Reviews</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">View and respond to customer feedback</p>
+        </div>
+        {reviews.length > 0 && (
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
+        )}
       </div>
 
       {/* Stats */}
@@ -198,6 +240,19 @@ const Reviews = () => {
               ) : (
                 selectedReview === review.id ? (
                   <div className="bg-gray-50 p-3 sm:p-4 rounded-lg mb-2">
+                    <p className="text-xs font-medium text-gray-600 mb-1">Quick templates:</p>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {RESPONSE_TEMPLATES.map((tpl, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setResponseText(tpl)}
+                          className="px-2 py-1 text-xs rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+                        >
+                          {tpl.slice(0, 30)}…
+                        </button>
+                      ))}
+                    </div>
                     <textarea
                       rows={3}
                       value={responseText}

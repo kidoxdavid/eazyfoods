@@ -1,18 +1,21 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import api, { resolveUploadUrl } from '../services/api'
-import { Plus, Edit, Trash2, Package, Search, X, Camera, Barcode } from 'lucide-react'
+import { Plus, Edit, Trash2, Package, Search, X, Camera, Barcode, Copy } from 'lucide-react'
 import { formatCurrency } from '../utils/format'
 import Pagination from '../components/Pagination'
 import BarcodeScanner from '../components/BarcodeScanner'
 import BarcodeGenerator from '../components/BarcodeGenerator'
 
 const Products = () => {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const urlFilter = searchParams.get('filter') || 'all'
   const [products, setProducts] = useState([])
   const [allProducts, setAllProducts] = useState([])
+  const [expiringProducts, setExpiringProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter] = useState(urlFilter)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
@@ -22,9 +25,24 @@ const Products = () => {
   const [barcodeSearch, setBarcodeSearch] = useState('')
 
   useEffect(() => {
+    const f = searchParams.get('filter') || 'all'
+    setFilter(f)
+  }, [searchParams])
+
+  useEffect(() => {
     fetchProducts()
     fetchCategories()
   }, [])
+
+  useEffect(() => {
+    if (filter === 'expiring') {
+      api.get('/products/expiring-soon/list').then((res) => {
+        setExpiringProducts(Array.isArray(res.data) ? res.data : [])
+      }).catch(() => setExpiringProducts([]))
+    } else {
+      setExpiringProducts([])
+    }
+  }, [filter])
 
   const fetchProducts = async () => {
     try {
@@ -118,10 +136,27 @@ const Products = () => {
     }
   }
 
+  const handleDuplicateProduct = async (product) => {
+    if (!window.confirm(`Duplicate "${product.name}"? A new product will be created with the same details (you can edit name/SKU after).`)) return
+    try {
+      const full = await api.get(`/products/${product.id}`).then((r) => r.data)
+      const { id, created_at, updated_at, slug, ...rest } = full
+      const payload = { ...rest, name: `${full.name} (Copy)`, sku: full.sku ? `${full.sku}-copy` : '', status: 'draft' }
+      await api.post('/products/', payload)
+      fetchProducts()
+      if (filter === 'expiring') api.get('/products/expiring-soon/list').then((r) => setExpiringProducts(Array.isArray(r.data) ? r.data : [])).catch(() => {})
+      alert('Product duplicated. Edit the new product to change name and SKU.')
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to duplicate product')
+    }
+  }
+
   const filteredProducts =
-    filter === 'all'
-      ? products
-      : products.filter((p) => p.status === filter)
+    filter === 'expiring'
+      ? expiringProducts
+      : filter === 'all'
+        ? products
+        : products.filter((p) => p.status === filter)
 
   // Pagination
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
@@ -211,17 +246,20 @@ const Products = () => {
 
       {/* Filters */}
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {['all', 'active', 'out_of_stock', 'hidden'].map((status) => (
+        {['all', 'active', 'out_of_stock', 'hidden', 'expiring'].map((status) => (
           <button
             key={status}
-            onClick={() => setFilter(status)}
+            onClick={() => {
+              setFilter(status)
+              setSearchParams(status === 'all' ? {} : { filter: status })
+            }}
             className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-xs sm:text-sm flex-shrink-0 ${
               filter === status
                 ? 'bg-primary-600 text-white'
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
             }`}
           >
-            {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+            {status === 'expiring' ? 'Expiring' : status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
           </button>
         ))}
       </div>
@@ -362,6 +400,13 @@ const Products = () => {
                               <Barcode className="h-4 w-4 xl:h-5 xl:w-5" />
                             </button>
                           )}
+                          <button
+                            onClick={() => handleDuplicateProduct(product)}
+                            className="text-gray-600 hover:text-gray-900"
+                            title="Duplicate product"
+                          >
+                            <Copy className="h-4 w-4 xl:h-5 xl:w-5" />
+                          </button>
                           <Link
                             to={`/products/${product.id}/edit`}
                             className="text-primary-600 hover:text-primary-900"
@@ -470,6 +515,13 @@ const Products = () => {
                           <Barcode className="h-5 w-5" />
                         </button>
                       )}
+                      <button
+                        onClick={() => handleDuplicateProduct(product)}
+                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Duplicate"
+                      >
+                        <Copy className="h-5 w-5" />
+                      </button>
                       <Link
                         to={`/products/${product.id}/edit`}
                         className="p-2 text-primary-600 hover:text-primary-900 hover:bg-primary-50 rounded-lg transition-colors"

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
-import { Tag, Plus, Edit, Trash2, Calendar, Search, RotateCcw } from 'lucide-react'
+import { Tag, Plus, Edit, Trash2, Calendar, Search, RotateCcw, Copy } from 'lucide-react'
 import { formatCurrency, formatDateTime } from '../utils/format'
 
 const Promotions = () => {
@@ -172,6 +172,28 @@ const Promotions = () => {
     setProductSearch('')
     setFormData({
       name: promo.name,
+      description: promo.description || '',
+      promotion_type: promo.promotion_type,
+      discount_type: promo.discount_type,
+      discount_value: promo.discount_value || '',
+      minimum_order_amount: promo.minimum_order_amount || '',
+      applies_to_all_products: promo.applies_to_all_products,
+      product_ids: promo.product_ids || [],
+      start_date: now.toISOString().slice(0, 16),
+      end_date: defaultEnd.toISOString().slice(0, 16)
+    })
+    setShowForm(true)
+  }
+
+  const handleCopyPromotion = (promo, e) => {
+    e.stopPropagation()
+    const now = new Date()
+    const defaultEnd = new Date(now)
+    defaultEnd.setDate(defaultEnd.getDate() + 7)
+    setEditingPromotion(null)
+    setProductSearch('')
+    setFormData({
+      name: `Copy of ${promo.name}`,
       description: promo.description || '',
       promotion_type: promo.promotion_type,
       discount_type: promo.discount_type,
@@ -535,6 +557,14 @@ const Promotions = () => {
                     )}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={(e) => handleCopyPromotion(promo, e)}
+                      className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-gray-200"
+                      type="button"
+                      title="Copy promotion"
+                    >
+                      <Copy className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </button>
                     {getStatusDisplay(promo) === 'Expired' && (
                       <button
                         onClick={(e) => handleRenew(promo, e)}

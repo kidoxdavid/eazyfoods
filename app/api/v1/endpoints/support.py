@@ -103,7 +103,8 @@ async def update_support_message(
     if message_update.status == "resolved" and not message.resolved_at:
         from datetime import datetime
         message.resolved_at = datetime.utcnow()
-    
+    if message_update.status == "open":
+        message.resolved_at = None
     db.commit()
     db.refresh(message)
     return message

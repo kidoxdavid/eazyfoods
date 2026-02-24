@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { ShoppingCart, Eye, Search, X } from 'lucide-react'
+import { ShoppingCart, Eye, Search, X, Download } from 'lucide-react'
 import { formatCurrency, formatDateTime } from '../utils/format'
 import Pagination from '../components/Pagination'
 import { useNotifications } from '../hooks/useNotifications'
@@ -26,10 +26,11 @@ const Orders = () => {
   const itemsPerPage = 20
   // Date filter: show orders from this date onwards (optional)
   const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
 
   useEffect(() => {
     fetchOrders()
-  }, [tab, statusFilter, fromDate])
+  }, [tab, statusFilter, fromDate, toDate])
 
   useEffect(() => {
     const onRefresh = () => fetchOrders()
@@ -68,6 +69,7 @@ const Orders = () => {
       // Delivery tab: fetch all and filter by displayStatus client-side so we can filter by driver statuses (awaiting_driver, in_transit, etc.)
       if (tab === TAB_PICKUP && statusFilter !== 'all') params.status = statusFilter
       if (fromDate) params.start_date = fromDate
+      if (toDate) params.end_date = toDate
       const response = await api.get('/orders/', { params })
       const all = Array.isArray(response.data) ? response.data : []
       setAllOrders(all)
@@ -104,10 +106,16 @@ const Orders = () => {
   }
 
   // Filter by tab (pickup vs delivery) and search. Normalize delivery_method to lowercase so "Delivery"/"delivery" both match.
-  const ordersForTab = allOrders.filter((o) => {
+  let ordersForTab = allOrders.filter((o) => {
     const method = (o.delivery_method && String(o.delivery_method).toLowerCase()) || 'delivery'
     return method === tab
   })
+  if (toDate) {
+    ordersForTab = ordersForTab.filter((o) => {
+      const d = o.created_at ? new Date(o.created_at).toISOString().split('T')[0] : ''
+      return !d || d <= toDate
+    })
+  }
   // On Delivery tab, filter by display status (order status or delivery_status) when a status filter is selected
   const byStatus = tab === TAB_DELIVERY && statusFilter !== 'all'
     ? (o) => (displayStatus(o) || '').toLowerCase() === statusFilter.toLowerCase()
@@ -123,6 +131,30 @@ const Orders = () => {
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const paginatedOrders = ordersFiltered.slice(startIndex, endIndex)
+
+  const handleExportCsv = () => {
+    if (ordersFiltered.length === 0) {
+      alert('No orders to export')
+      return
+    }
+    const headers = ['Order #', 'Date', 'Status', 'Payment', 'Total', 'Customer', 'Delivery method']
+    const rows = ordersFiltered.map((o) => [
+      o.order_number || '',
+      o.created_at ? formatDateTime(o.created_at) : '',
+      displayStatus(o),
+      o.payment_status || '',
+      typeof o.total_amount !== 'undefined' ? formatCurrency(o.total_amount) : '',
+      o.customer_name || o.customer_email || '',
+      (o.delivery_method || '').toLowerCase()
+    ])
+    const csv = [headers.join(','), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `orders_${fromDate || 'all'}_${toDate || 'all'}_${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
 
   useEffect(() => {
     setCurrentPage(1)
@@ -143,25 +175,39 @@ const Orders = () => {
         <p className="text-xs sm:text-sm text-gray-600 mt-1">
           {tab === TAB_PICKUP ? 'Pickup orders — same statuses until Ready, then Complete' : 'Delivery orders — status matches Driver portal (awaiting driver → accepted → picked up → in transit → delivered)'}
         </p>
-        <div className="mt-3 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2">
-          <label className="text-sm font-medium text-gray-700 shrink-0">From date:</label>
-          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:max-w-[12rem]">
+        <div className="mt-3 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
+            <label className="text-sm font-medium text-gray-700 shrink-0">From:</label>
             <input
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              className="flex-1 min-w-0 w-full sm:w-auto px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="flex-1 min-w-0 w-full sm:w-auto max-w-[12rem] px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
-            {fromDate && (
-              <button
-                type="button"
-                onClick={() => setFromDate('')}
-                className="text-sm text-primary-600 hover:underline whitespace-nowrap shrink-0"
-              >
-                Clear
-              </button>
-            )}
           </div>
+          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
+            <label className="text-sm font-medium text-gray-700 shrink-0">To:</label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="flex-1 min-w-0 w-full sm:w-auto max-w-[12rem] px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          {(fromDate || toDate) && (
+            <button type="button" onClick={() => { setFromDate(''); setToDate('') }} className="text-sm text-primary-600 hover:underline shrink-0">
+              Clear dates
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={ordersFiltered.length === 0}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
         </div>
       </div>
 

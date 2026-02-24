@@ -9,7 +9,8 @@ import {
   PieChart,
   BarChart,
   LineChart,
-  Activity
+  Activity,
+  Download
 } from 'lucide-react'
 import { formatCurrency } from '../utils/format'
 import {
@@ -117,6 +118,59 @@ const Analytics = () => {
     })
   }
 
+  const handleExportCsv = () => {
+    const dateStr = `${dateRange.start_date}_to_${dateRange.end_date}`
+    const trendsData = salesTrends?.trends ?? salesTrends?.data
+    if (viewMode === 'trends' && Array.isArray(trendsData) && trendsData.length) {
+      const headers = ['Date', 'Orders', 'Revenue', 'Net Payout']
+      const rows = trendsData.map((d) => [
+        d.date || d.period || '',
+        d.order_count ?? d.orders_count ?? '',
+        d.revenue ?? '',
+        d.net_payout ?? ''
+      ])
+      const csv = [headers.join(','), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n')
+      const blob = new Blob([csv], { type: 'text/csv' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `sales_trends_${dateStr}.csv`
+      a.click()
+      URL.revokeObjectURL(a.href)
+      return
+    }
+    const productsData = productPerformance?.products ?? (Array.isArray(productPerformance) ? productPerformance : [])
+    if (viewMode === 'products' && productsData.length) {
+      const headers = ['Product', 'Units Sold', 'Revenue']
+      const rows = productsData.map((p) => [p.product_name || p.name || '', p.total_sold ?? p.units_sold ?? '', p.revenue ?? ''])
+      const csv = [headers.join(','), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n')
+      const blob = new Blob([csv], { type: 'text/csv' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `product_performance_${dateStr}.csv`
+      a.click()
+      URL.revokeObjectURL(a.href)
+      return
+    }
+    if (report) {
+      const lines = [
+        `Sales Report,${dateRange.start_date},to,${dateRange.end_date}`,
+        'Metric,Value',
+        `Total Orders,${report.total_orders ?? ''}`,
+        `Total Revenue,${report.total_revenue ?? report.revenue ?? ''}`,
+        `Average Order Value,${report.average_order_value ?? ''}`
+      ]
+      const csv = lines.join('\n')
+      const blob = new Blob([csv], { type: 'text/csv' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = `analytics_report_${dateStr}.csv`
+      a.click()
+      URL.revokeObjectURL(a.href)
+      return
+    }
+    alert('No data available to export for the current view.')
+  }
+
   if (loading && !report && viewMode !== 'comparison') {
     return (
       <div className="flex items-center justify-center h-64">
@@ -127,9 +181,19 @@ const Analytics = () => {
 
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Analytics & Reports</h1>
-        <p className="text-xs sm:text-sm text-gray-600 mt-1">Comprehensive business insights and visualizations</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Analytics & Reports</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Comprehensive business insights and visualizations</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleExportCsv}
+          className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </button>
       </div>
 
       {/* View Mode Tabs */}

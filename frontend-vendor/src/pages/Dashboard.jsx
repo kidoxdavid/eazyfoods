@@ -10,6 +10,8 @@ import {
   Star,
   Power,
   Clock,
+  CheckCircle,
+  Circle,
 } from 'lucide-react'
 import { formatCurrency } from '../utils/format'
 
@@ -18,10 +20,23 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true)
   const [vendorInfo, setVendorInfo] = useState(null)
   const [statusLoading, setStatusLoading] = useState(false)
+  const [expiringProducts, setExpiringProducts] = useState([])
 
   useEffect(() => {
     fetchStats()
     fetchVendorInfo()
+  }, [])
+
+  useEffect(() => {
+    const fetchExpiring = async () => {
+      try {
+        const res = await api.get('/products/expiring-soon/list')
+        setExpiringProducts(Array.isArray(res.data) ? res.data.slice(0, 5) : [])
+      } catch {
+        setExpiringProducts([])
+      }
+    }
+    fetchExpiring()
   }, [])
 
   const fetchStats = async () => {
@@ -80,19 +95,40 @@ const Dashboard = () => {
       </div>
     )
   }
-  
-  // Ensure stats is always defined
+
   const safeStats = stats || {
-      today_orders: 0,
-      pending_orders: 0,
-      low_stock_alerts: 0,
-      expiring_products_count: 0,
-      today_revenue: 0,
-      week_revenue: 0,
-      month_revenue: 0,
-      average_rating: null,
-      total_reviews: 0
+    today_orders: 0,
+    pending_orders: 0,
+    low_stock_alerts: 0,
+    expiring_products_count: 0,
+    today_revenue: 0,
+    week_revenue: 0,
+    month_revenue: 0,
+    average_rating: null,
+    total_reviews: 0
   }
+
+  const onboardingSteps = [
+    {
+      id: 'profile',
+      label: 'Complete your profile',
+      link: '/profile',
+      done: !!(vendorInfo?.business_name && (vendorInfo?.street_address || vendorInfo?.city)),
+    },
+    {
+      id: 'product',
+      label: 'Add your first product',
+      link: '/products/new',
+      done: (safeStats.expiring_products_count ?? 0) > 0 || (safeStats.today_orders ?? 0) > 0 || (safeStats.pending_orders ?? 0) > 0,
+    },
+    {
+      id: 'hours',
+      label: 'Set store hours',
+      link: '/profile',
+      done: !!(vendorInfo?.operating_hours && typeof vendorInfo.operating_hours === 'object' && Object.values(vendorInfo.operating_hours).some((d) => d && (d.open || d.close))),
+    },
+  ]
+  const onboardingComplete = onboardingSteps.every((s) => s.done)
 
   const statCards = [
     {
@@ -106,12 +142,14 @@ const Dashboard = () => {
       value: safeStats.pending_orders || 0,
       icon: Package,
       color: 'bg-yellow-500',
+      link: '/orders?status=new',
     },
     {
       title: 'Low Stock Alerts',
       value: safeStats.low_stock_alerts || 0,
       icon: AlertTriangle,
       color: 'bg-red-500',
+      link: '/inventory',
     },
     {
       title: 'Expiring Products',
@@ -217,6 +255,33 @@ const Dashboard = () => {
         })}
       </div>
 
+      {/* Expiring soon snippet */}
+      {expiringProducts.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-5 lg:p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
+              Expiring soon
+            </h2>
+            <Link to="/products?filter=expiring" className="text-sm font-medium text-primary-600 hover:text-primary-700">
+              View all →
+            </Link>
+          </div>
+          <ul className="space-y-2">
+            {expiringProducts.map((p) => (
+              <li key={p.id} className="flex items-center justify-between text-sm">
+                <span className="truncate text-gray-900">{p.name}</span>
+                {p.expiry_date && (
+                  <span className="text-gray-500 flex-shrink-0 ml-2">
+                    {new Date(p.expiry_date).toLocaleDateString()}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Rating Card */}
       {safeStats.average_rating && parseFloat(safeStats.average_rating) > 0 && (
         <div className="bg-white rounded-lg shadow-sm p-4 sm:p-5 lg:p-6 border border-gray-200">
@@ -234,6 +299,30 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Onboarding checklist - hide when all done */}
+      {vendorInfo && !onboardingComplete && (
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-5 lg:p-6 border border-gray-200 border-l-4 border-l-primary-500">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Getting started</h2>
+          <ul className="space-y-2">
+            {onboardingSteps.map((step) => (
+              <li key={step.id}>
+                <Link
+                  to={step.link}
+                  className="flex items-center gap-2 text-sm text-gray-700 hover:text-primary-600"
+                >
+                  {step.done ? (
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <Circle className="h-5 w-5 text-gray-300 flex-shrink-0" />
+                  )}
+                  <span className={step.done ? 'text-gray-500 line-through' : ''}>{step.label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

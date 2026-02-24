@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { AlertTriangle, TrendingDown, Package, Plus, Camera, Barcode, X } from 'lucide-react'
+import { AlertTriangle, TrendingDown, Package, Plus, Camera, Barcode, X, Download, CheckCircle } from 'lucide-react'
 import BarcodeScanner from '../components/BarcodeScanner'
 
 const Inventory = () => {
@@ -21,13 +21,61 @@ const Inventory = () => {
         api.get('/inventory/low-stock-alerts?resolved=false'),
         api.get('/inventory/adjustments?limit=50'),
       ])
-      setLowStockAlerts(alertsRes.data)
-      setAdjustments(adjustmentsRes.data)
+      setLowStockAlerts(Array.isArray(alertsRes.data) ? alertsRes.data : [])
+      setAdjustments(Array.isArray(adjustmentsRes.data) ? adjustmentsRes.data : [])
     } catch (error) {
       console.error('Failed to fetch inventory data:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleResolveAlert = async (alertId) => {
+    try {
+      await api.put(`/inventory/low-stock-alerts/${alertId}/resolve`)
+      fetchData()
+    } catch (e) {
+      alert(e.response?.data?.detail || 'Failed to resolve alert')
+    }
+  }
+
+  const handleExportLowStockCsv = () => {
+    if (lowStockAlerts.length === 0) {
+      alert('No low stock alerts to export')
+      return
+    }
+    const headers = ['Product', 'Current', 'Threshold']
+    const rows = lowStockAlerts.map((a) => [a.product_name || a.product_id, a.current_quantity, a.threshold_quantity])
+    const csv = [headers.join(','), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `low_stock_alerts_${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
+  const handleExportAdjustmentsCsv = () => {
+    if (adjustments.length === 0) {
+      alert('No adjustments to export')
+      return
+    }
+    const headers = ['Date', 'Type', 'Change', 'Before', 'After', 'Reason']
+    const rows = adjustments.map((adj) => [
+      adj.created_at ? new Date(adj.created_at).toLocaleDateString() : '',
+      adj.adjustment_type || '',
+      adj.quantity_change,
+      adj.quantity_before,
+      adj.quantity_after,
+      adj.reason || ''
+    ])
+    const csv = [headers.join(','), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `inventory_adjustments_${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
   }
 
   if (loading) {
@@ -56,11 +104,21 @@ const Inventory = () => {
 
       {/* Low Stock Alerts */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3 sm:mb-4">
           <h2 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
             <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 mr-2" />
             Low Stock Alerts
           </h2>
+          {lowStockAlerts.length > 0 && (
+            <button
+              type="button"
+              onClick={handleExportLowStockCsv}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </button>
+          )}
         </div>
         {lowStockAlerts.length === 0 ? (
           <p className="text-sm sm:text-base text-gray-600">No low stock alerts</p>
@@ -69,7 +127,7 @@ const Inventory = () => {
             {lowStockAlerts.map((alert) => (
               <div
                 key={alert.id}
-                className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg"
+                className="flex items-center justify-between gap-3 p-3 bg-red-50 border border-red-200 rounded-lg"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm sm:text-base font-medium text-gray-900 truncate">{alert.product_name || `Product ID: ${alert.product_id}`}</p>
@@ -77,6 +135,14 @@ const Inventory = () => {
                     Current: {alert.current_quantity} | Threshold: {alert.threshold_quantity}
                   </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => handleResolveAlert(alert.id)}
+                  className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  Resolve
+                </button>
               </div>
             ))}
           </div>
@@ -85,7 +151,19 @@ const Inventory = () => {
 
       {/* Recent Adjustments */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Recent Adjustments</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3 sm:mb-4">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Recent Adjustments</h2>
+          {adjustments.length > 0 && (
+            <button
+              type="button"
+              onClick={handleExportAdjustmentsCsv}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </button>
+          )}
+        </div>
         {adjustments.length === 0 ? (
           <p className="text-sm sm:text-base text-gray-600">No adjustments yet</p>
         ) : (

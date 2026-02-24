@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { MessageSquare, Plus, CheckCircle, Clock, AlertCircle } from 'lucide-react'
+import { MessageSquare, Plus, CheckCircle, Clock, AlertCircle, RotateCcw } from 'lucide-react'
 import { formatDateTime } from '../utils/format'
 
 const Support = () => {
@@ -37,6 +37,15 @@ const Support = () => {
       fetchMessages()
     } catch (error) {
       alert('Failed to create support message')
+    }
+  }
+
+  const handleReopen = async (messageId) => {
+    try {
+      await api.put(`/support/${messageId}`, { status: 'open' })
+      fetchMessages()
+    } catch (e) {
+      alert(e.response?.data?.detail || 'Failed to reopen ticket')
     }
   }
 
@@ -168,6 +177,16 @@ const Support = () => {
                       }`}>
                         {msg.status}
                       </span>
+                      {msg.status === 'resolved' && (
+                        <button
+                          type="button"
+                          onClick={() => handleReopen(msg.id)}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Reopen
+                        </button>
+                      )}
                     </div>
                     <p className="text-xs sm:text-sm text-gray-600 mb-2">{msg.message}</p>
                     <p className="text-[10px] sm:text-xs text-gray-500">

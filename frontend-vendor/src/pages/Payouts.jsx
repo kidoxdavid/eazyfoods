@@ -8,6 +8,9 @@ const Payouts = () => {
   const [stats, setStats] = useState(null)
   const [balance, setBalance] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -39,6 +42,19 @@ const Payouts = () => {
     }
     return colors[status] || 'bg-gray-100 text-gray-800'
   }
+
+  const filteredPayouts = payouts.filter((p) => {
+    if (statusFilter !== 'all' && p.status !== statusFilter) return false
+    if (dateFrom && p.created_at) {
+      if (new Date(p.created_at) < new Date(dateFrom)) return false
+    }
+    if (dateTo && p.created_at) {
+      const to = new Date(dateTo)
+      to.setHours(23, 59, 59, 999)
+      if (new Date(p.created_at) > to) return false
+    }
+    return true
+  })
 
   if (loading) {
     return (
@@ -122,9 +138,49 @@ const Payouts = () => {
 
       {/* Payouts - Desktop Table / Mobile Cards */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Payout History</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 sm:mb-4">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Payout History</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg"
+            >
+              <option value="all">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+            </select>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg"
+              placeholder="From"
+            />
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg"
+              placeholder="To"
+            />
+            {(dateFrom || dateTo || statusFilter !== 'all') && (
+              <button
+                type="button"
+                onClick={() => { setDateFrom(''); setDateTo(''); setStatusFilter('all') }}
+                className="px-2 py-1.5 text-sm text-gray-600 hover:text-gray-900"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
         {payouts.length === 0 ? (
           <p className="text-sm sm:text-base text-gray-600">No payouts yet</p>
+        ) : filteredPayouts.length === 0 ? (
+          <p className="text-sm sm:text-base text-gray-600">No payouts match your filters</p>
         ) : (
           <>
             {/* Desktop Table */}
@@ -156,7 +212,7 @@ const Payouts = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {payouts.map((payout) => (
+                  {filteredPayouts.map((payout) => (
                     <tr key={payout.id}>
                       <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {payout.payout_number}
@@ -189,7 +245,7 @@ const Payouts = () => {
 
             {/* Mobile Cards */}
             <div className="lg:hidden space-y-3">
-              {payouts.map((payout) => (
+              {filteredPayouts.map((payout) => (
                 <div key={payout.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <div className="space-y-2 text-xs sm:text-sm">
                     <div className="flex items-center justify-between">

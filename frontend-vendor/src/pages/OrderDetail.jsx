@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import api from '../services/api'
-import { ArrowLeft, CheckCircle, XCircle, Truck, MapPin, Clock, User } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, Truck, MapPin, Clock, User, Printer } from 'lucide-react'
 import { formatCurrency, formatDateTime } from '../utils/format'
 
 const OrderDetail = () => {
@@ -72,19 +72,71 @@ const OrderDetail = () => {
     return <div>Order not found</div>
   }
 
+  const handlePrintPackingSlip = () => {
+    const printContent = document.getElementById('packing-slip-content')
+    if (!printContent) return
+    const win = window.open('', '_blank')
+    win.document.write(`
+      <!DOCTYPE html><html><head><title>Packing Slip - ${order.order_number}</title>
+      <style>body{font-family:sans-serif;padding:20px;max-width:600px;margin:0 auto}
+      table{width:100%;border-collapse:collapse;margin:16px 0}
+      th,td{border:1px solid #ddd;padding:8px;text-align:left}
+      th{background:#f5f5f5}
+      .meta{color:#666;font-size:14px;margin-bottom:16px}
+      h1{font-size:20px;margin:0 0 8px 0}
+      @media print{body{padding:0}}</style></head><body>
+      ${printContent.innerHTML}
+      </body></html>
+    `)
+    win.document.close()
+    win.focus()
+    setTimeout(() => { win.print(); win.close() }, 250)
+  }
+
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-      <div className="flex items-center space-x-2 sm:space-x-4">
-        <button
-          onClick={() => navigate('/orders')}
-          className="text-gray-600 hover:text-gray-900 p-1"
-        >
-          <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-        </button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">Order {order.order_number}</h1>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1">{formatDateTime(order.created_at)}</p>
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
+        <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
+          <button
+            onClick={() => navigate('/orders')}
+            className="text-gray-600 hover:text-gray-900 p-1 flex-shrink-0"
+          >
+            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+          </button>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">Order {order.order_number}</h1>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">{formatDateTime(order.created_at)}</p>
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={handlePrintPackingSlip}
+          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+        >
+          <Printer className="h-4 w-4" />
+          Print packing slip
+        </button>
+      </div>
+
+      {/* Hidden content for print */}
+      <div id="packing-slip-content" className="hidden">
+        <h1>Packing Slip</h1>
+        <p className="meta">Order #{order.order_number} · {formatDateTime(order.created_at)} · {order.delivery_method}</p>
+        <table>
+          <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr></thead>
+          <tbody>
+            {order.items?.map((item) => (
+              <tr key={item.id}>
+                <td>{item.product_name}</td>
+                <td>{item.quantity}</td>
+                <td>{formatCurrency(item.product_price)}</td>
+                <td>{formatCurrency(item.subtotal)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="meta"><strong>Total: {formatCurrency(order.total_amount)}</strong></p>
+        {order.special_instructions && <p className="meta">Notes: {order.special_instructions}</p>}
       </div>
 
       {/* Delivery: status updated by driver */}
