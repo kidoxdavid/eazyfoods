@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { ChefHat, Star, Users, Clock, DollarSign, TrendingUp, AlertCircle, CheckCircle, Power } from 'lucide-react'
+import { ChefHat, Star, Users, Clock, DollarSign, TrendingUp, AlertCircle, CheckCircle, Power, ShoppingCart } from 'lucide-react'
 import { Link } from 'react-router-dom'
+
+const ONBOARDING_KEY = 'chef_onboarding_dismissed'
 
 const Dashboard = () => {
   const [profile, setProfile] = useState(null)
   const [reviews, setReviews] = useState([])
+  const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [availabilityLoading, setAvailabilityLoading] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem(ONBOARDING_KEY))
 
   useEffect(() => {
     fetchData()
@@ -15,12 +19,14 @@ const Dashboard = () => {
 
   const fetchData = async () => {
     try {
-      const [profileRes, reviewsRes] = await Promise.all([
+      const [profileRes, reviewsRes, statsRes] = await Promise.all([
         api.get('/chef/profile'),
-        api.get('/chef/reviews')
+        api.get('/chef/reviews'),
+        api.get('/chef/dashboard/stats').catch(() => ({ data: null }))
       ])
       setProfile(profileRes.data)
       setReviews(reviewsRes.data || [])
+      setStats(statsRes?.data || null)
     } catch (error) {
       console.error('Failed to fetch data:', error)
     } finally {
@@ -61,6 +67,30 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+      {/* Optional onboarding checklist */}
+      {showOnboarding && (
+        <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 flex items-start justify-between gap-3">
+          <div>
+            <h3 className="font-semibold text-primary-900">Getting started</h3>
+            <ul className="mt-2 text-sm text-primary-800 space-y-1">
+              <li>• Complete your profile and add cuisines</li>
+              <li>• Set your schedule in Settings</li>
+              <li>• Turn on Availability when you&apos;re ready to accept orders</li>
+            </ul>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.setItem(ONBOARDING_KEY, '1')
+              setShowOnboarding(false)
+            }}
+            className="text-primary-600 hover:text-primary-800 text-sm font-medium shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Welcome Header */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
@@ -108,6 +138,39 @@ const Dashboard = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        {stats && (
+          <>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm text-gray-600 mb-1 truncate">Today&apos;s Orders</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{stats.today_orders ?? 0}</p>
+                </div>
+                <ShoppingCart className="h-8 w-8 sm:h-10 sm:w-10 text-primary-500 flex-shrink-0" />
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm text-gray-600 mb-1 truncate">Pending Orders</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{stats.pending_orders ?? 0}</p>
+                </div>
+                <AlertCircle className="h-8 w-8 sm:h-10 sm:w-10 text-amber-500 flex-shrink-0" />
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm text-gray-600 mb-1 truncate">Today&apos;s Revenue</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+                    ${Number(stats.today_revenue ?? 0).toFixed(2)}
+                  </p>
+                </div>
+                <DollarSign className="h-8 w-8 sm:h-10 sm:w-10 text-green-500 flex-shrink-0" />
+              </div>
+            </div>
+          </>
+        )}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">

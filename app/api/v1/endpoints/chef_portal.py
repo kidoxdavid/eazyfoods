@@ -56,6 +56,8 @@ def _chef_to_response(chef):
         "bank_account_number": getattr(chef, "bank_account_number", None),
         "bank_routing_number": getattr(chef, "bank_routing_number", None),
         "bank_name": getattr(chef, "bank_name", None),
+        "operating_hours": getattr(chef, "operating_hours", None),
+        "blocked_dates": getattr(chef, "blocked_dates", None) or [],
     })
 
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { DollarSign, TrendingUp } from 'lucide-react'
+import { DollarSign, TrendingUp, Download } from 'lucide-react'
 import { formatCurrency, formatDate } from '../utils/format'
 
 const Payouts = () => {
@@ -15,19 +15,19 @@ const Payouts = () => {
 
   const fetchData = async () => {
     try {
-      // For now, use a placeholder since chef payouts might not be implemented yet
-      // This can be extended when chef payout endpoints are created
-      setPayouts([])
+      const [balanceRes, statsRes, payoutsRes] = await Promise.all([
+        api.get('/chef/payouts/balance'),
+        api.get('/chef/payouts/stats'),
+        api.get('/chef/payouts')
+      ])
+      setBalance(balanceRes.data)
       setStats({
-        total_paid: 0,
-        total_payouts: 0,
-        pending_amount: 0,
-        pending_payouts: 0
+        total_paid: statsRes.data?.total_paid ?? 0,
+        total_payouts: statsRes.data?.total_payouts ?? 0,
+        pending_amount: statsRes.data?.pending_amount ?? 0,
+        pending_payouts: statsRes.data?.pending_payouts ?? 0
       })
-      setBalance({
-        available_balance: 0,
-        pending_orders_count: 0
-      })
+      setPayouts(payoutsRes.data || [])
     } catch (error) {
       console.error('Failed to fetch payout data:', error)
     } finally {
@@ -110,7 +110,32 @@ const Payouts = () => {
 
       {/* Payouts Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Payout History</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 sm:mb-4">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Payout History</h2>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const res = await api.get('/chef/payouts/statement/csv', { responseType: 'blob' })
+                const url = window.URL.createObjectURL(new Blob([res.data]))
+                const a = document.createElement('a')
+                a.href = url
+                a.setAttribute('download', 'chef-earnings-statement.csv')
+                document.body.appendChild(a)
+                a.click()
+                a.remove()
+                window.URL.revokeObjectURL(url)
+              } catch (e) {
+                console.error(e)
+                alert('Download failed. Please try again.')
+              }
+            }}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
+          >
+            <Download className="h-4 w-4" />
+            Download statement
+          </button>
+        </div>
         {payouts.length === 0 ? (
           <div className="text-center py-8 sm:py-12">
             <DollarSign className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-3 sm:mb-4" />

@@ -2,10 +2,14 @@
 Chef order management endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime, date
+from uuid import UUID
+from io import StringIO
+import csv
 from app.core.database import get_db
 from app.models.order import Order, OrderItem, OrderStatusHistory
 from app.schemas.order import OrderResponse, OrderUpdate, OrderListResponse
@@ -82,6 +86,18 @@ async def get_chef_order(
             detail="Order not found"
         )
     
+    # Customer contact (for chef to reach customer)
+    customer_contact = None
+    if order.customer_id:
+        from app.models.customer import Customer
+        customer = db.query(Customer).filter(Customer.id == order.customer_id).first()
+        if customer:
+            customer_contact = {
+                "name": f"{customer.first_name or ''} {customer.last_name or ''}".strip() or "Customer",
+                "email": customer.email,
+                "phone": customer.phone,
+            }
+
     # Get driver information if assigned
     driver_info = None
     delivery_info = None
@@ -130,6 +146,9 @@ async def get_chef_order(
         "payment_status": order.payment_status,
         "special_instructions": order.special_instructions,
         "customer_notes": order.customer_notes,
+        "cancelled_at": order.cancelled_at.isoformat() if order.cancelled_at else None,
+        "cancellation_reason": order.cancellation_reason,
+        "customer_contact": customer_contact,
         "driver_id": str(order.driver_id) if order.driver_id else None,
         "driver": driver_info,
         "delivery": delivery_info,
@@ -315,5 +334,43 @@ async def cancel_chef_order(
     }
 
 
+@router.get("/export/csv")
+async def export_chef_orders_csv(
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    current_chef: dict = Depends(get_current_chef),
+    db: Session = Depends(get_db)
+):
+    """Export orders as CSV (includes cancellation_reason)."""
+    chef_id = UUID(current_chef["chef_id"])
+    query = db.query(Order).filter(Order.chef_id == chef_id)
+    if start_date:
+        query = query.filter(func.date(Order.created_at) >= start_date)
+    if end_date:
+        query = query.filter(func.date(Order.created_at) <= end_date)
+    orders = query.order_by(Order.created_at.desc()).all()
 
+    out = StringIO()
+    w = csv.writer(out)
+    w.writerow([
+        "order_number", "status", "total_amount", "net_payout", "payment_status",
+        "created_at", "cancelled_at", "cancellation_reason"
+    ])
+    for o in orders:
+        w.writerow([
+            o.order_number,
+            o.status,
+            float(o.total_amount) if o.total_amount else "",
+            float(o.net_payout) if o.net_payout else "",
+            o.payment_status or "",
+            o.created_at.isoformat() if o.created_at else "",
+            o.cancelled_at.isoformat() if o.cancelled_at else "",
+            (o.cancellation_reason or "").replace("\n", " "),
+        ])
+    out.seek(0)
+    return StreamingResponse(
+        iter([out.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=chef-orders.csv"}
+    )
 

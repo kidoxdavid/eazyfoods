@@ -58,6 +58,8 @@ class ChefUpdate(BaseModel):
     bank_account_number: Optional[str] = None
     bank_routing_number: Optional[str] = None
     bank_name: Optional[str] = None
+    operating_hours: Optional[dict] = None
+    blocked_dates: Optional[List[str]] = None
 
 
 class ChefResponse(ChefBase):
@@ -90,6 +92,8 @@ class ChefResponse(ChefBase):
     bank_account_number: Optional[str] = None
     bank_routing_number: Optional[str] = None
     bank_name: Optional[str] = None
+    operating_hours: Optional[dict] = None
+    blocked_dates: Optional[List[str]] = None
 
     class Config:
         from_attributes = True

@@ -21,6 +21,7 @@ import {
   Tag,
   DollarSign,
   FileText,
+  HelpCircle,
 } from 'lucide-react'
 
 const Layout = ({ children }) => {
@@ -28,7 +29,7 @@ const Layout = ({ children }) => {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout, loading: authLoading } = useAuth()
-  const { ordersCount } = useNotifications()
+  const { ordersCount, newOrderAlert, dismissNewOrderAlert } = useNotifications()
 
   // Show loading while auth is being checked
   if (authLoading) {
@@ -54,6 +55,7 @@ const Layout = ({ children }) => {
     { name: 'Chat', href: '/chat', icon: MessageCircle },
     { name: 'Support', href: '/support', icon: MessageSquare },
     { name: 'Settings', href: '/settings', icon: SettingsIcon },
+    { name: 'Help', href: '/support', icon: HelpCircle },
   ]
 
   const isActive = (path) => {
@@ -168,6 +170,14 @@ const Layout = ({ children }) => {
             </span>
           </div>
         </header>
+
+        {/* New order toast */}
+        {newOrderAlert && (
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-primary-600 text-white px-4 py-3 rounded-lg shadow-lg animate-pulse">
+            <span className="font-medium">New order received!</span>
+            <button onClick={dismissNewOrderAlert} className="text-white/90 hover:text-white text-sm underline">Dismiss</button>
+          </div>
+        )}
 
         {/* Page content - responsive padding and overflow for tables on mobile */}
         <main className="p-3 sm:p-4 lg:p-6 max-w-full overflow-x-auto min-w-0">

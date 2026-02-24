@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
-import { ShoppingCart, Eye, Search, X } from 'lucide-react'
+import { ShoppingCart, Eye, Search, X, Download } from 'lucide-react'
 import { formatCurrency, formatDateTime } from '../utils/format'
 import Pagination from '../components/Pagination'
 
@@ -86,9 +86,34 @@ const Orders = () => {
 
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Orders</h1>
-        <p className="text-xs sm:text-sm text-gray-600 mt-1">Manage and fulfill customer bookings</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Orders</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Manage and fulfill customer bookings</p>
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              const res = await api.get('/chef/orders/export/csv', { responseType: 'blob' })
+              const url = window.URL.createObjectURL(new Blob([res.data]))
+              const a = document.createElement('a')
+              a.href = url
+              a.setAttribute('download', 'chef-orders.csv')
+              document.body.appendChild(a)
+              a.click()
+              a.remove()
+              window.URL.revokeObjectURL(url)
+            } catch (e) {
+              console.error(e)
+              alert('Export failed. Please try again.')
+            }
+          }}
+          className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </button>
       </div>
 
       {/* Search */}

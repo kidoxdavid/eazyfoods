@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { ArrowLeft, CheckCircle, XCircle, MapPin, Clock } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, MapPin, Clock, User, Mail, Phone } from 'lucide-react'
 import { formatCurrency, formatDateTime } from '../utils/format'
 
 const OrderDetail = () => {
@@ -199,10 +199,43 @@ const OrderDetail = () => {
             </div>
           )}
 
+          {order.customer_contact && (order.customer_contact.email || order.customer_contact.phone) && (
+            <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-3">Customer Contact</h2>
+              <div className="space-y-2 text-sm">
+                {order.customer_contact.name && (
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <User className="h-4 w-4 text-gray-500" />
+                    <span>{order.customer_contact.name}</span>
+                  </div>
+                )}
+                {order.customer_contact.email && (
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Mail className="h-4 w-4 text-gray-500" />
+                    <a href={`mailto:${order.customer_contact.email}`} className="text-primary-600 hover:underline">{order.customer_contact.email}</a>
+                  </div>
+                )}
+                {order.customer_contact.phone && (
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <Phone className="h-4 w-4 text-gray-500" />
+                    <a href={`tel:${order.customer_contact.phone}`} className="text-primary-600 hover:underline">{order.customer_contact.phone}</a>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {order.customer_notes && (
             <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-2">Customer Notes</h2>
               <p className="text-sm text-gray-600">{order.customer_notes}</p>
+            </div>
+          )}
+
+          {order.status === 'cancelled' && order.cancellation_reason && (
+            <div className="bg-white rounded-lg shadow border border-red-200 p-6">
+              <h2 className="text-lg font-semibold text-red-800 mb-2">Cancellation Reason</h2>
+              <p className="text-sm text-gray-700">{order.cancellation_reason}</p>
             </div>
           )}
         </div>

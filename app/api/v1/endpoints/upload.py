@@ -338,6 +338,42 @@ async def upload_image(
     }
 
 
+@router.post("/chef-gallery", response_model=dict)
+async def upload_chef_gallery(
+    file: UploadFile = File(...),
+    current_chef: dict = Depends(get_current_chef),
+    db: Session = Depends(get_db)
+):
+    """Upload a chef gallery image (saved under chef-gallery folder)."""
+    allowed_types = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid file type. Allowed types: {', '.join(allowed_types)}"
+        )
+    file_content = await file.read()
+    if len(file_content) > settings.MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File too large. Maximum size: {settings.MAX_UPLOAD_SIZE / (1024*1024)}MB"
+        )
+    file_ext = Path(file.filename).suffix or ".jpg"
+    unique_filename = f"{uuid.uuid4()}{file_ext}"
+    try:
+        file_url = _save_file(file_content, "chef-gallery", unique_filename, file.content_type)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save file: {str(e)}"
+        )
+    return {
+        "url": file_url,
+        "image_url": file_url,
+        "filename": unique_filename,
+        "size": len(file_content)
+    }
+
+
 @router.post("/vendor-profile", response_model=dict)
 async def upload_vendor_profile_image(
     file: UploadFile = File(...),

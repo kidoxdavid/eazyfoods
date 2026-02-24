@@ -15,7 +15,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Import all models to ensure SQLAlchemy relationships are resolved
-from app.models import vendor, customer, product, order, admin, inventory, payout, promotion, recipe, review, support, driver, chef, cuisine
+from app.models import vendor, customer, product, order, admin, inventory, payout, promotion, recipe, review, support, driver, chef, cuisine, chef_payout
 
 app = FastAPI(
     title="EAZyfoods Vendor Portal API",

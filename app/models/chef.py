@@ -74,6 +74,11 @@ class Chef(Base):
     bank_routing_number = Column(String(50))
     bank_name = Column(String(200))
 
+    # Operating schedule: {"mon": ["09:00-17:00"], "tue": [], ...} or null for always
+    operating_hours = Column(JSON)
+    # Dates when chef is not available: ["2025-12-25", "2025-01-01"]
+    blocked_dates = Column(JSON)
+
     # Ratings
     average_rating = Column(DECIMAL(3, 2), default=0.0)
     total_reviews = Column(Integer, default=0)

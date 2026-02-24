@@ -602,14 +602,15 @@ const CuisineForm = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Availability</label>
             <select
               name="status"
               value={formData.status}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             >
-              <option value="active">Active</option>
+              <option value="active">Available</option>
+              <option value="out_of_stock">Out of stock / Not available today</option>
               <option value="inactive">Inactive</option>
             </select>
           </div>

@@ -7,7 +7,7 @@ from app.api.v1.endpoints import (
     support, reviews, promotions, staff, analytics, upload, vendor_deliveries, vendor_marketing, vendor_stores,
     customer_auth, customer_products, customer_orders, customer_stores, customer_cart, customer_profile, customer_recipes, customer_reviews, customer_promotions, customer_chat, customer_deliveries, customer_support, customer_marketing, customer_chefs,
     driver_auth, driver_portal, delivery_tracking,
-    chef_auth, chef_portal, chef_marketing, chef_support, chef_chat, chef_cuisines, chef_orders, chef_promotions,
+    chef_auth, chef_portal, chef_marketing, chef_support, chef_chat, chef_cuisines, chef_orders, chef_promotions, chef_payouts, chef_dashboard, chef_analytics,
     admin_auth, admin_vendors, admin_categories, admin_customers, admin_products, admin_orders, admin_dashboard,
     admin_analytics, admin_reviews, admin_support, admin_activity, admin_users, admin_promotions, admin_export, admin_drivers, admin_deliveries, admin_settings, admin_barcode, admin_chefs,
     restore_backup, marketing, marketing_extended, marketing_admin, marketing_recipes, marketing_coupons,
@@ -70,6 +70,9 @@ api_router.include_router(chef_chat.router, prefix="/chef/chat", tags=["Chef Cha
 api_router.include_router(chef_cuisines.router, prefix="/chef/cuisines", tags=["Chef Cuisines"])
 api_router.include_router(chef_orders.router, prefix="/chef/orders", tags=["Chef Orders"])
 api_router.include_router(chef_promotions.router, prefix="/chef/promotions", tags=["Chef Promotions"])
+api_router.include_router(chef_payouts.router, prefix="/chef/payouts", tags=["Chef Payouts"])
+api_router.include_router(chef_dashboard.router, prefix="/chef/dashboard", tags=["Chef Dashboard"])
+api_router.include_router(chef_analytics.router, prefix="/chef/analytics", tags=["Chef Analytics"])
 api_router.include_router(customer_chefs.router, prefix="/customer", tags=["Customer Chefs"])
 
 # Admin endpoints
