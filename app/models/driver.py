@@ -74,11 +74,14 @@ class Driver(Base):
     delivery_radius_km = Column(DECIMAL(5, 2), default=10.0)  # Max distance willing to travel
     preferred_delivery_zones = Column(JSON)  # Array of preferred areas/cities
     
-    # Bank account for payouts
+    # Bank account for payouts (manual)
     bank_account_name = Column(String(200))
     bank_account_number = Column(String(50))
     bank_routing_number = Column(String(50))
     bank_name = Column(String(200))
+    # Stripe Connect (Express) - automatic payouts
+    stripe_connect_account_id = Column(String(255), unique=True, nullable=True)
+    stripe_connect_details_submitted = Column(Boolean, default=False)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -118,6 +121,7 @@ class Delivery(Base):
     distance_km = Column(DECIMAL(8, 2))
     delivery_fee = Column(DECIMAL(10, 2), default=0.0)
     driver_earnings = Column(DECIMAL(10, 2), default=0.0)  # Amount driver earns from this delivery
+    stripe_transfer_id = Column(String(255), nullable=True)  # Stripe Transfer to driver (when automatic payouts enabled)
     
     # GPS Routing & Tracking
     route_polyline = Column(Text)  # Encoded route from Google Maps

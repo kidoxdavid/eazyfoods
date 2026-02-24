@@ -68,11 +68,14 @@ class Chef(Base):
     social_media_links = Column(JSON)  # {"facebook": "url", "instagram": "url", "youtube": "url"}
     website_url = Column(String(255))
     
-    # Bank account for payouts
+    # Bank account for payouts (manual)
     bank_account_name = Column(String(200))
     bank_account_number = Column(String(50))
     bank_routing_number = Column(String(50))
     bank_name = Column(String(200))
+    # Stripe Connect (Express) - automatic payouts
+    stripe_connect_account_id = Column(String(255), unique=True, nullable=True)
+    stripe_connect_details_submitted = Column(Boolean, default=False)
 
     # Operating schedule: {"mon": ["09:00-17:00"], "tue": [], ...} or null for always
     operating_hours = Column(JSON)

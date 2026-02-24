@@ -55,10 +55,12 @@ class Settings(BaseSettings):
     # Stripe (works embedded; no iframe blocking)
     STRIPE_SECRET_KEY: Optional[str] = None
     STRIPE_PUBLISHABLE_KEY: Optional[str] = None
-    # Stripe Connect: webhook secret for payment_intent.succeeded (create transfers to vendors)
+    # Stripe Connect: webhook secret for payment_intent.succeeded (create transfers)
     STRIPE_WEBHOOK_SECRET: Optional[str] = None
-    # Vendor portal base URL for Connect return/refresh (e.g. https://vendor.eazyfoods.ca)
+    # Portal base URLs for Connect return/refresh (optional)
     VENDOR_PORTAL_BASE_URL: Optional[str] = None
+    CHEF_PORTAL_BASE_URL: Optional[str] = None
+    DRIVER_PORTAL_BASE_URL: Optional[str] = None
     # Helcim
     HELCIM_API_TOKEN: Optional[str] = None
     HELCIM_API_URL: str = "https://api.helcim.com/v2"

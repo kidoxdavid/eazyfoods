@@ -721,12 +721,36 @@ async def update_delivery_status(
         if order:
             order.status = "delivered"
             order.delivered_at = datetime.utcnow()
-        # Update driver stats
+        # Update driver stats and trigger automatic payout (Stripe Connect) if configured
         driver = db.query(Driver).filter(Driver.id == delivery.driver_id).first()
         if driver:
             driver.completed_deliveries += 1
             driver.total_deliveries += 1
             driver.total_earnings += delivery.driver_earnings or Decimal("0")
+            # Automatic payout to driver via Stripe Connect (one transfer per delivery)
+            if (
+                getattr(driver, "stripe_connect_account_id", None)
+                and not getattr(delivery, "stripe_transfer_id", None)
+                and delivery.driver_earnings
+            ):
+                try:
+                    import stripe
+                    from app.core.config import settings as app_settings
+
+                    if app_settings.STRIPE_SECRET_KEY:
+                        stripe.api_key = app_settings.STRIPE_SECRET_KEY
+                        amount_cents = int(round(float(delivery.driver_earnings) * 100))
+                        if amount_cents > 0:
+                            transfer = stripe.Transfer.create(
+                                amount=amount_cents,
+                                currency="cad",
+                                destination=driver.stripe_connect_account_id,
+                                description=f"Delivery {str(delivery.id)} earnings",
+                            )
+                            delivery.stripe_transfer_id = transfer.id
+                except Exception:
+                    # Swallow payout errors here so delivery status still updates
+                    pass
     
     # Update location if provided
     if status_data.latitude and status_data.longitude:
