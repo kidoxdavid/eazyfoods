@@ -148,7 +148,7 @@ const ChefDetail = () => {
                 />
                 <div className="flex items-center gap-1.5">
                   <MapPin className="h-4 w-4" />
-                  <span>{chef.city}, {chef.state}</span>
+                  <span>{chef.city}</span>
                 </div>
               </div>
             </div>
@@ -548,26 +548,9 @@ const ChefDetail = () => {
             </div>
           </div>
 
-          {/* Contact */}
+          {/* Request / Message - no contact details shown on customer side */}
           <div className="bg-white rounded-lg shadow border border-gray-200 p-3">
-            <h3 className="text-base font-bold text-gray-900 mb-2">Contact</h3>
-            <div className="space-y-1 text-sm text-gray-700">
-              <p>{chef.street_address}</p>
-              <p>{chef.city}, {chef.state} {chef.postal_code}</p>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {chef.phone && (
-                <a href={`tel:${chef.phone}`} className="inline-flex items-center gap-1 text-sm text-primary-600 hover:underline">
-                  <Phone className="h-4 w-4" /> Call
-                </a>
-              )}
-              {chef.website_url && (
-                <a href={chef.website_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-primary-600 hover:underline">
-                  Visit Website
-                </a>
-              )}
-            </div>
-            <Link to="/contact" className="mt-2 inline-flex items-center gap-1 text-sm text-primary-600 hover:underline">
+            <Link to="/contact" className="inline-flex items-center gap-1 text-sm text-primary-600 hover:underline font-medium">
               <MessageCircle className="h-4 w-4" /> Message / Request custom order
             </Link>
           </div>

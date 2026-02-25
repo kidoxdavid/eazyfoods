@@ -25,8 +25,24 @@ const Layout = ({ children }) => {
   const [cartPreviewOpen, setCartPreviewOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
   const profileButtonRef = useRef(null)
+  const profileDropdownRef = useRef(null)
   const [profileDropdownPosition, setProfileDropdownPosition] = useState({ top: 0, right: 0 })
   const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches)
+
+  // Close profile dropdown when clicking outside (anywhere on page)
+  useEffect(() => {
+    if (!profileDropdownOpen) return
+    const handleClickOutside = (e) => {
+      if (
+        profileButtonRef.current && !profileButtonRef.current.contains(e.target) &&
+        profileDropdownRef.current && !profileDropdownRef.current.contains(e.target)
+      ) {
+        setProfileDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [profileDropdownOpen])
   const [avatarKey, setAvatarKey] = useState(() => localStorage.getItem(AVATAR_ICON_KEY) || 'user')
   const location = useLocation()
   const navigate = useNavigate()
@@ -509,6 +525,7 @@ const Layout = ({ children }) => {
                           <div className="fixed inset-0 z-[9998]" onClick={() => setProfileDropdownOpen(false)} aria-hidden="true" />
                           {createPortal(
                             <div
+                              ref={profileDropdownRef}
                               className="fixed w-64 bg-white rounded-2xl shadow-xl border border-gray-100 z-[9999] overflow-hidden ring-1 ring-black/5"
                               style={{ top: profileDropdownPosition.top, right: profileDropdownPosition.right, left: 'auto' }}
                             >

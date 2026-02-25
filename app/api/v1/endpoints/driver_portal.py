@@ -467,7 +467,18 @@ def _do_accept_delivery(order_id: str, body: Optional[dict], current_driver: dic
 
     shipping = order.shipping_amount if order.shipping_amount is not None else Decimal("0")
     delivery_fee_val = float(shipping)
-    driver_earnings_val = float(shipping * Decimal("0.80"))
+    # Driver earnings % from admin orders settings (default 80)
+    from app.models.platform_settings import PlatformSettings
+    driver_pct = Decimal("80")
+    ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "orders").first()
+    if ps and isinstance(getattr(ps, "settings_data", None), dict):
+        val = ps.settings_data.get("driver_earnings_percent")
+        if val is not None:
+            try:
+                driver_pct = Decimal(str(val))
+            except Exception:
+                pass
+    driver_earnings_val = float(shipping * (driver_pct / Decimal("100")))
 
     # Safe delivery lat/lon from address
     delivery_lat = _safe_float(delivery_address.latitude) if delivery_address else None

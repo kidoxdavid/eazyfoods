@@ -836,6 +836,19 @@ const Settings = () => {
         />
         <label className="text-sm text-gray-700">Allow Order Modifications</label>
       </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Driver earnings (% of delivery fee)</label>
+        <input
+          type="number"
+          min="0"
+          max="100"
+          step="1"
+          value={orderSettings.driver_earnings_percent ?? 80}
+          onChange={(e) => setOrderSettings({ ...orderSettings, driver_earnings_percent: parseFloat(e.target.value) || 80 })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+        />
+        <p className="text-xs text-gray-500 mt-1">Percentage of the delivery fee that drivers receive per delivery (default 80).</p>
+      </div>
     </div>
   )
 

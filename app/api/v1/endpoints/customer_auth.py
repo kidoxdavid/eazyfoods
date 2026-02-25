@@ -49,12 +49,11 @@ async def customer_signup(
     db.commit()
     db.refresh(customer)
 
-    # Send verification email (stub: set up SMTP or Resend/SendGrid and implement send_verification_email)
+    # Send verification email (uses SMTP when configured; otherwise logs link for dev)
     try:
         token = create_email_verification_token(customer.email)
-        # TODO: send email with link to frontend /verify-email?token=... (e.g. Resend, SendGrid, or SMTP)
-        # from app.core.email import send_verification_email
-        # await send_verification_email(customer.email, token)
+        from app.core.email import send_verification_email
+        send_verification_email(customer.email, token, portal="customer")
     except Exception:
         pass
 

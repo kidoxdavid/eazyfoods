@@ -172,9 +172,9 @@ const ProductDetail = () => {
       </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-        {/* Image - larger, hero feel */}
-        <div className="lg:col-span-6 lg:sticky lg:top-4">
-          <div className="rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-xl aspect-square max-w-lg mx-auto lg:max-w-none">
+        {/* Image - constrained size on desktop so images load reliably; reduced from full column */}
+        <div className="lg:col-span-5 lg:sticky lg:top-4">
+          <div className="rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-lg aspect-square max-w-sm mx-auto lg:max-w-[340px] w-full">
             <ProductImageGallery
               images={product.images || []}
               mainImage={product.image_url}
@@ -185,7 +185,7 @@ const ProductDetail = () => {
         </div>
 
         {/* Info column */}
-        <div className="lg:col-span-6 space-y-6">
+        <div className="lg:col-span-7 space-y-6">
           {product.vendor && (
             <p className="text-sm text-gray-500">
               Sold by <span className="font-semibold text-gray-800">{product.vendor.business_name}</span>

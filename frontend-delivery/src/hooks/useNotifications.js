@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import api from '../services/api'
 
 export const useNotifications = () => {
+  const location = useLocation()
   const [notifications, setNotifications] = useState({
     availableDeliveries: 0,
     activeDeliveries: 0,
@@ -47,6 +49,13 @@ export const useNotifications = () => {
     }
   }
 
-  return { notifications, loading, refresh: fetchNotifications }
+  const onRatingsPage = location.pathname === '/ratings'
+  return {
+    notifications: onRatingsPage
+      ? { ...notifications, unreadRatings: 0 }
+      : notifications,
+    loading,
+    refresh: fetchNotifications
+  }
 }
 

@@ -60,3 +60,55 @@ def send_password_reset_email(to_email: str, reset_token: str, portal: str = "cu
     except Exception as e:
         logger.exception("Failed to send password reset email: %s", e)
         return False
+
+
+def send_verification_email(to_email: str, verification_token: str, portal: str = "customer") -> bool:
+    """
+    Send email verification link. Uses CUSTOMER_RESET_PASSWORD_BASE_URL for customer portal
+    (same base URL as reset so frontend can handle /verify-email?token=...).
+    Returns True if sent (or logged in dev), False on send failure.
+    """
+    base_url = (settings.CUSTOMER_RESET_PASSWORD_BASE_URL or "").strip() or "https://eazyfoods.ca"
+    verify_link = f"{base_url.rstrip('/')}/verify-email?token={verification_token}"
+    subject = "Verify your eazyfoods email"
+    body_plain = (
+        f"Thanks for signing up for eazyfoods.\n\n"
+        f"Please verify your email by clicking the link below (link expires in 24 hours):\n{verify_link}\n\n"
+        f"If you didn't create an account, you can ignore this email.\n\n"
+        f"— eazyfoods"
+    )
+    body_html = (
+        f"<p>Thanks for signing up for eazyfoods.</p>"
+        f"<p><a href=\"{verify_link}\">Verify your email</a> (link expires in 24 hours).</p>"
+        f"<p>If you didn't create an account, you can ignore this email.</p>"
+        f"<p>— eazyfoods</p>"
+    )
+
+    if not all([settings.SMTP_HOST, settings.SMTP_USER, settings.SMTP_PASSWORD]):
+        logger.warning(
+            "SMTP not configured. Verification link (log only): %s",
+            verify_link,
+        )
+        return True
+
+    try:
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = settings.SMTP_FROM_EMAIL or settings.SMTP_USER
+        msg["To"] = to_email
+        msg.attach(MIMEText(body_plain, "plain"))
+        msg.attach(MIMEText(body_html, "html"))
+
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+            server.starttls()
+            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            server.sendmail(msg["From"], to_email, msg.as_string())
+        logger.info("Verification email sent to %s", to_email)
+        return True
+    except Exception as e:
+        logger.exception("Failed to send verification email: %s", e)
+        return False

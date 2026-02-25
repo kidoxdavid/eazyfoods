@@ -336,7 +336,7 @@ const Chefs = () => {
                     )}
                     <div className="flex items-center text-gray-600 text-sm mb-1">
                       <MapPin className="h-4 w-4 mr-1 text-primary-600 flex-shrink-0" />
-                      <span>{[chef.city, chef.state].filter(Boolean).join(', ') || '—'}</span>
+                      <span>{chef.city || '—'}</span>
                     </div>
                     {chef.distance_km != null && (
                       <div className="flex items-center text-xs text-gray-500 mb-1">

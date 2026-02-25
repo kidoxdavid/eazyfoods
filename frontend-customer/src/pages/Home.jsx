@@ -21,6 +21,7 @@ const Home = () => {
   const [nearbyStores, setNearbyStores] = useState([])
   const [promotions, setPromotions] = useState([])
   const [chefs, setChefs] = useState([])
+  const [chefDeals, setChefDeals] = useState([])
   const [loading, setLoading] = useState(true)
   const { addToCart } = useCart()
   const { coordinates, selectedCity, selectedProvince } = useLocation()
@@ -185,7 +186,8 @@ const Home = () => {
         storesRes,
         promotionsRes,
         chefsRes,
-        recipesRes
+        recipesRes,
+        chefDealsRes
       ] = await Promise.all([
         api.get('/customer/products', { params: { ...productParams, new_arrivals: true, limit: 20 } }),
         api.get('/customer/products', { params: { ...productParams, discounted: true, limit: 20 } }),
@@ -197,7 +199,8 @@ const Home = () => {
           : api.get('/customer/stores/'),
         api.get('/customer/promotions', { params: { limit: 10, ...(effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {}) } }),
         api.get('/customer/chefs', { params: { limit: 5, ...(effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {}) } }),
-        api.get('/customer/recipes/', { params: { limit: 5 } })
+        api.get('/customer/recipes/', { params: { limit: 5 } }),
+        api.get('/customer/chef-cuisines-deals', { params: { limit: 20, ...(effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {}) } }).catch(() => ({ data: { cuisines: [] } }))
       ])
       
       console.log('API responses received:', {
@@ -252,6 +255,7 @@ const Home = () => {
       let storesData = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
       const promotionsData = Array.isArray(promotionsRes.data) ? promotionsRes.data : []
       let chefsData = Array.isArray(chefsRes.data) ? chefsRes.data : (chefsRes.data?.chefs || chefsRes.data || [])
+      const chefDealsData = Array.isArray(chefDealsRes?.data?.cuisines) ? chefDealsRes.data.cuisines : (chefDealsRes?.data?.cuisines || [])
 
       // When province is set and "All cities" chosen, filter to stores in that province only (so empty province stays empty)
       if (provinceCities && provinceCities.length > 0) {
@@ -289,6 +293,7 @@ const Home = () => {
         setNearbyStores(storesData)
         setPromotions(promotionsFiltered)
         setChefs(chefsFiltered)
+        setChefDeals(chefDealsData)
         setLoading(false)
         return
       }
@@ -303,6 +308,7 @@ const Home = () => {
         setNearbyStores([])
         setPromotions([])
         setChefs([])
+        setChefDeals([])
       } else {
         // When "All": only show categories that have products in our data
         let categoriesToShow = categoriesData
@@ -319,6 +325,7 @@ const Home = () => {
         setNearbyStores(storesData)
         setPromotions(promotionsData)
         setChefs(chefsData)
+        setChefDeals(chefDealsData)
       }
       
       // Debug: Log what we got
@@ -505,13 +512,23 @@ const Home = () => {
             return false
           })
           
-          console.log('Final carousel products (with promotions only):', {
-            count: productsWithPromotions.length,
-            sample: productsWithPromotions.slice(0, 3).map(p => ({ id: p.id, name: p.name, badge: p.badge, hasPromo: p.promotions?.length > 0 }))
-          })
+          // Chef promo items for carousel (cuisines with active chef promotions)
+          const chefDealItems = (chefDeals || []).map(c => ({
+            id: `chef_${c.id}`,
+            type: 'chef_promo',
+            name: c.name,
+            image_url: c.image_url,
+            chef_id: c.chef_id,
+            chef_name: c.chef_name,
+            price: c.price,
+            discounted_price: c.discounted_price,
+            badge: c.promotions?.[0]?.discount_display || (c.discounted_price != null ? `${Math.round(((c.price - c.discounted_price) / c.price) * 100)}% OFF` : null),
+            promotions: c.promotions
+          }))
           
-          // Return array of products with promotions only
-          return productsWithPromotions
+          const combined = [...productsWithPromotions, ...chefDealItems]
+          console.log('Final carousel (market + chef deals):', { market: productsWithPromotions.length, chef: chefDealItems.length, total: combined.length })
+          return combined
         })()}
         onQuickView={setQuickViewProduct}
         onAddToCart={addToCart}
@@ -901,7 +918,7 @@ const Home = () => {
                               {chef.city && (
                                 <span className="flex items-center gap-0.5 text-xs text-gray-600">
                                   <MapPin className="h-3 w-3" />
-                                  {chef.city}{chef.state ? `, ${chef.state}` : ''}
+                                  {chef.city}
                                 </span>
                               )}
                             </div>
@@ -982,10 +999,11 @@ const AutoScrollCarousel = ({ products, onQuickView, onAddToCart, onShowToast, f
   const isPausedRef = useRef(false)
   const isHoveringRef = useRef(false)
 
-  // Remove duplicates based on product ID
+  // Remove duplicates based on product/card ID (products and chef deals have unique ids)
   const uniqueProducts = products.filter((product, index, self) =>
     index === self.findIndex((p) => p.id === product.id)
   )
+  const isChefDeal = (item) => item.type === 'chef_promo' || item.chef_id
 
   // Duplicate products for seamless loop
   const duplicatedProducts = [...uniqueProducts, ...uniqueProducts]
@@ -1143,9 +1161,17 @@ const AutoScrollCarousel = ({ products, onQuickView, onAddToCart, onShowToast, f
             </div>
           </div>
           
-          <div className="hidden md:flex items-center space-x-2 text-sm text-gray-600">
-            <span>Scroll to explore</span>
-            <span className="animate-pulse">→</span>
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center space-x-2 text-sm text-gray-600">
+              <span>Scroll to explore</span>
+              <span className="animate-pulse">→</span>
+            </div>
+            <Link to="/top-chef-deals" className="relative flex items-center gap-2 group cursor-pointer flex-shrink-0">
+              <span className="text-lg sm:text-xl font-bold leading-tight bg-gradient-to-r from-amber-600 via-orange-500 to-amber-600 bg-clip-text text-transparent group-hover:from-orange-600 group-hover:to-amber-600 transition-all duration-200">
+                Top Chef Deals
+              </span>
+              <UtensilsCrossed className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500 group-hover:scale-110 transition-transform" />
+            </Link>
           </div>
         </div>
         
@@ -1182,6 +1208,59 @@ const AutoScrollCarousel = ({ products, onQuickView, onAddToCart, onShowToast, f
               }}
             >
           {duplicatedProducts.map((product, index) => {
+            const isChef = isChefDeal(product)
+            if (isChef) {
+              const badge = product.badge || (product.promotions?.[0]?.discount_display)
+              return (
+                <div
+                  key={`${product.id}-${index}`}
+                  className="flex-shrink-0 w-32 sm:w-40 bg-white rounded-xl shadow-md border border-gray-100 hover:shadow-xl hover:scale-105 transition-all duration-300 overflow-hidden group relative"
+                >
+                  <Link to={product.chef_id ? `/chefs/${product.chef_id}` : '/top-chef-deals'} className="block">
+                    <div className="relative aspect-[4/3] bg-gray-100 rounded-t-xl overflow-hidden mb-0.5">
+                      {product.image_url ? (
+                        <img
+                          src={resolveImageUrl(product.image_url, 'recipe')}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          loading="lazy"
+                          onError={(e) => { e.target.style.display = 'none' }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <UtensilsCrossed className="h-8 w-8" />
+                        </div>
+                      )}
+                      {badge && (
+                        <div className="absolute top-0.5 left-0.5 z-10">
+                          <span className="bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[8px] font-bold px-1 py-0.5 rounded-full shadow-lg">
+                            {badge}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="px-1 pt-0.5 pb-0.5">
+                      <h3 className="text-xs font-bold text-gray-900 mb-0.5 line-clamp-2 min-h-[1rem] group-hover:text-primary-600 transition-colors">
+                        {product.name}
+                      </h3>
+                      {product.chef_name && (
+                        <p className="text-[8px] text-gray-500 mb-0.5 truncate">{product.chef_name}</p>
+                      )}
+                      <div className="mb-0.5">
+                        {product.discounted_price != null && product.discounted_price < product.price ? (
+                          <div className="flex items-baseline gap-0.5">
+                            <span className="text-xs font-bold text-green-600">${Number(product.discounted_price).toFixed(2)}</span>
+                            <span className="text-[10px] text-gray-500 line-through">${Number(product.price).toFixed(2)}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs font-bold text-gray-900">${Number(product.price || 0).toFixed(2)}</span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              )
+            }
             const discountBadge = getDiscountBadge(product)
             const hasDiscount = discountBadge !== null
             const isNew = product.is_newly_stocked

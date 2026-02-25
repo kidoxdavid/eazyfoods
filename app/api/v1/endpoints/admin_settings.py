@@ -147,7 +147,8 @@ def get_default_settings(setting_type: str) -> dict:
             'free_delivery_threshold': 50,
             'order_timeout_minutes': 30,
             'auto_cancel_unpaid_hours': 24,
-            'allow_order_modifications': True
+            'allow_order_modifications': True,
+            'driver_earnings_percent': 80
         },
         'payment': {
             'payment_methods': ['credit_card', 'debit_card'],
