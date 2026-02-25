@@ -53,6 +53,7 @@ function App() {
         <AuthProvider>
           <CartProvider>
             <SaveForLaterProvider>
+            <FavoritesProvider>
             <LocationProvider>
               <ToastProvider>
                 <RecentlyViewedProvider>
