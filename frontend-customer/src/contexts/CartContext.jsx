@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { useAuth } from './AuthContext'
 
 const CartContext = createContext()
 
@@ -10,19 +11,49 @@ export const useCart = () => {
   return context
 }
 
-export const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState([])
+const getStorageKey = (customerId) => (customerId ? `cart_${customerId}` : 'cart')
 
+export const CartProvider = ({ children }) => {
+  const { user } = useAuth()
+  const customerId = user?.id ?? null
+  const [cart, setCart] = useState([])
+  const prevKeyRef = useRef(getStorageKey(customerId))
+
+  // Initial load from storage (once on mount)
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart')
-    if (savedCart) {
-      setCart(JSON.parse(savedCart))
+    const key = getStorageKey(customerId)
+    try {
+      const savedCart = localStorage.getItem(key)
+      if (savedCart) setCart(JSON.parse(savedCart))
+      prevKeyRef.current = key
+    } catch (e) {
+      console.error('Failed to load cart:', e)
     }
   }, [])
 
+  // When login/logout: save current cart to old key, load from new key so each user's cart is remembered
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart))
-  }, [cart])
+    const key = getStorageKey(customerId)
+    if (prevKeyRef.current === key) return
+
+    try {
+      localStorage.setItem(prevKeyRef.current, JSON.stringify(cart))
+      const saved = localStorage.getItem(key)
+      setCart(saved ? JSON.parse(saved) : [])
+    } catch (e) {
+      console.error('Cart storage switch failed:', e)
+    }
+    prevKeyRef.current = key
+  }, [customerId])
+
+  useEffect(() => {
+    const key = getStorageKey(customerId)
+    try {
+      localStorage.setItem(key, JSON.stringify(cart))
+    } catch (e) {
+      console.error('Failed to save cart:', e)
+    }
+  }, [cart, customerId])
 
   const addToCart = (productOrCuisine, quantity = 1, showToast = true) => {
     const itemId = productOrCuisine.id

@@ -6,6 +6,7 @@ import ProductBadges from './ProductBadges'
 import CategoryBadge from './CategoryBadge'
 import { ShoppingCart, Heart } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
+import { useFavorites } from '../contexts/FavoritesContext'
 import { useToast } from '../contexts/ToastContext'
 
 const YouMayAlsoLike = ({ productId, categoryId, maxItems = 4 }) => {
@@ -13,26 +14,11 @@ const YouMayAlsoLike = ({ productId, categoryId, maxItems = 4 }) => {
   const [loading, setLoading] = useState(true)
   const { addToCart } = useCart()
   const { success: showSuccessToast } = useToast()
-  const [favorites, setFavorites] = useState(new Set())
-
-  useEffect(() => {
-    loadFavorites()
-  }, [])
+  const { productFavorites: favorites, toggleProductFavorite: toggleFavorite } = useFavorites()
 
   useEffect(() => {
     fetchRecommendations()
   }, [productId, categoryId])
-
-  const loadFavorites = () => {
-    const saved = localStorage.getItem('favorites')
-    if (saved) {
-      try {
-        setFavorites(new Set(JSON.parse(saved)))
-      } catch (e) {
-        console.error('Failed to load favorites:', e)
-      }
-    }
-  }
 
   const fetchRecommendations = async () => {
     try {
@@ -63,17 +49,6 @@ const YouMayAlsoLike = ({ productId, categoryId, maxItems = 4 }) => {
     } finally {
       setLoading(false)
     }
-  }
-
-  const toggleFavorite = (productId) => {
-    const newFavorites = new Set(favorites)
-    if (newFavorites.has(productId)) {
-      newFavorites.delete(productId)
-    } else {
-      newFavorites.add(productId)
-    }
-    setFavorites(newFavorites)
-    localStorage.setItem('favorites', JSON.stringify(Array.from(newFavorites)))
   }
 
   const handleAddToCart = (e, product) => {

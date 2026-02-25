@@ -392,6 +392,34 @@ async def get_vendor_payouts(
     ]
 
 
+@router.delete("/{vendor_id}")
+async def delete_vendor(
+    vendor_id: str,
+    current_admin: dict = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Permanently delete a vendor (use with caution)."""
+    try:
+        vendor_uuid = UUID(vendor_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid vendor ID format")
+    vendor = db.query(Vendor).filter(Vendor.id == vendor_uuid).first()
+    if not vendor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vendor not found")
+    from app.models.admin import AdminActivityLog
+    log = AdminActivityLog(
+        admin_id=UUID(current_admin["admin_id"]),
+        action="vendor_deleted",
+        entity_type="vendor",
+        entity_id=vendor.id,
+        details={"vendor_name": vendor.business_name}
+    )
+    db.add(log)
+    db.delete(vendor)
+    db.commit()
+    return {"message": "Vendor deleted successfully"}
+
+
 @router.put("/{vendor_id}")
 async def update_vendor(
     vendor_id: str,

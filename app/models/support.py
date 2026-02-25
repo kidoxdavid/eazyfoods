@@ -22,6 +22,7 @@ class SupportMessage(Base):
     status = Column(String(20), default="open")  # open, in_progress, resolved, closed
     priority = Column(String(20), default="normal")  # low, normal, high, urgent
     assigned_to = Column(String(100))  # Admin staff name/ID
+    attachment_url = Column(String(500), nullable=True)  # Optional picture/document from contact form
     resolved_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

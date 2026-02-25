@@ -33,6 +33,10 @@ import {
 
 export const AVATAR_ICON_KEY = 'customer_avatar_icon'
 
+/** Per-user avatar key so each account remembers its own avatar after login. */
+export const getAvatarStorageKey = (customerId) =>
+  customerId ? `${AVATAR_ICON_KEY}_${customerId}` : AVATAR_ICON_KEY
+
 // Picture/cartoon-style icon avatars with distinct colors
 export const AVATAR_ICONS = {
   user: { Icon: User, label: 'Default', bg: 'bg-slate-500', text: 'text-white' },

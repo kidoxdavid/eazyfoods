@@ -260,3 +260,27 @@ async def deactivate_chef(
     
     return {"message": "Chef deactivated successfully", "chef_id": str(chef.id)}
 
+
+@router.delete("/{chef_id}", response_model=dict)
+async def delete_chef(
+    chef_id: str,
+    current_admin: dict = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Permanently delete a chef (use with caution)."""
+    chef = db.query(Chef).filter(Chef.id == UUID(chef_id)).first()
+    if not chef:
+        raise HTTPException(status_code=404, detail="Chef not found")
+    from app.models.admin import AdminActivityLog
+    log = AdminActivityLog(
+        admin_id=UUID(current_admin["admin_id"]),
+        action="chef_deleted",
+        entity_type="chef",
+        entity_id=chef.id,
+        details={"chef_name": chef.chef_name or f"{chef.first_name} {chef.last_name}"}
+    )
+    db.add(log)
+    db.delete(chef)
+    db.commit()
+    return {"message": "Chef deleted successfully"}
+

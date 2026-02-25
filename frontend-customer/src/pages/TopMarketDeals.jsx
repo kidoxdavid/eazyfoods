@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { ShoppingCart, Eye, Heart, Zap, Filter, Package, Sparkles, TrendingUp, Users, Search, Grid3x3, List, SlidersHorizontal, MapPin, Clock } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
+import { useFavorites } from '../contexts/FavoritesContext'
 import { useLocation } from '../contexts/LocationContext'
 import { getCitiesForProvince } from '../constants/canadaLocations'
 import QuickViewModal from '../components/QuickViewModal'
@@ -18,7 +19,7 @@ const TopMarketDeals = () => {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [quickViewProduct, setQuickViewProduct] = useState(null)
-  const [favorites, setFavorites] = useState(new Set())
+  const { productFavorites: favorites, toggleProductFavorite: toggleFavorite } = useFavorites()
   const [sortBy, setSortBy] = useState('discount') // discount, price-low, price-high
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
@@ -35,38 +36,12 @@ const TopMarketDeals = () => {
   const effectiveCity = selectedProvince && selectedCity === 'All' ? null : selectedCity
 
   useEffect(() => {
-    loadFavorites()
-  }, [])
-
-  useEffect(() => {
     fetchCategories()
   }, [selectedCity])
 
   useEffect(() => {
     fetchDeals()
   }, [selectedCity, selectedProvince, sortBy, searchQuery, categoryFilter, offerTypeFilter, priceMin, priceMax, minRating])
-
-  const loadFavorites = () => {
-    const savedFavorites = localStorage.getItem('favorites')
-    if (savedFavorites) {
-      try {
-        setFavorites(new Set(JSON.parse(savedFavorites)))
-      } catch (e) {
-        console.error('Failed to load favorites:', e)
-      }
-    }
-  }
-
-  const toggleFavorite = (productId) => {
-    const newFavorites = new Set(favorites)
-    if (newFavorites.has(productId)) {
-      newFavorites.delete(productId)
-    } else {
-      newFavorites.add(productId)
-    }
-    setFavorites(newFavorites)
-    localStorage.setItem('favorites', JSON.stringify(Array.from(newFavorites)))
-  }
 
   const fetchCategories = async () => {
     try {

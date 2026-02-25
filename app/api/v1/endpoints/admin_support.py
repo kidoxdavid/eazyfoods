@@ -69,6 +69,7 @@ async def get_all_support_tickets(
             "customer_name": customer_name,
             "customer_email": customer.email if customer else None,
             "assigned_to": ticket.assigned_to,
+            "attachment_url": getattr(ticket, "attachment_url", None),
             "created_at": ticket.created_at,
             "updated_at": ticket.updated_at,
             "resolved_at": ticket.resolved_at
@@ -141,6 +142,7 @@ async def get_ticket_detail(
         "customer_name": customer_name,
         "customer_email": customer.email if customer else None,
         "assigned_to": ticket.assigned_to,
+        "attachment_url": getattr(ticket, "attachment_url", None),
         "created_at": ticket.created_at,
         "updated_at": ticket.updated_at,
         "resolved_at": ticket.resolved_at

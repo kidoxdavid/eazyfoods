@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { MessageSquare, AlertCircle, CheckCircle, Clock, User, Download } from 'lucide-react'
 import Pagination from '../components/Pagination'
@@ -231,8 +232,13 @@ const Support = () => {
               Array.isArray(tickets) && tickets.map((ticket) => (
               <tr key={ticket.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-gray-900">{ticket.subject}</div>
-                  <div className="text-sm text-gray-500 mt-1">{ticket.message?.substring(0, 100)}...</div>
+                  <Link
+                    to={`/support/${ticket.id}`}
+                    className="block text-left hover:underline text-primary-600 font-medium"
+                  >
+                    <div className="text-sm font-medium text-gray-900">{ticket.subject}</div>
+                    <div className="text-sm text-gray-500 mt-1">{ticket.message?.substring(0, 100)}...</div>
+                  </Link>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { Search, CheckCircle, XCircle, Eye, Download, Truck } from 'lucide-react'
+import { Search, CheckCircle, XCircle, Eye, Download, Truck, Trash2 } from 'lucide-react'
 import Pagination from '../components/Pagination'
 
 const Drivers = () => {
@@ -61,6 +61,17 @@ const Drivers = () => {
       fetchDrivers()
     } catch (error) {
       alert('Failed to update driver status')
+    }
+  }
+
+  const handleDelete = async (driverId) => {
+    if (!confirm('Are you sure you want to permanently delete this driver? This cannot be undone.')) return
+    try {
+      await api.delete(`/admin/drivers/${driverId}`)
+      alert('Driver deleted successfully')
+      fetchDrivers()
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Failed to delete driver')
     }
   }
 
@@ -249,6 +260,13 @@ const Drivers = () => {
                             </button>
                           </>
                         )}
+                        <button
+                          onClick={() => handleDelete(driver.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>

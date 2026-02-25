@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { Eye, Heart, Zap, Filter, ChefHat, Sparkles, TrendingUp, Users, Search, Grid3x3, List, SlidersHorizontal, MapPin, Clock } from 'lucide-react'
+import { useFavorites } from '../contexts/FavoritesContext'
 import { useLocation } from '../contexts/LocationContext'
 import { getCitiesForProvince } from '../constants/canadaLocations'
 import StarRating from '../components/StarRating'
@@ -13,7 +14,7 @@ const TopChefDeals = () => {
   const [cuisines, setCuisines] = useState([])
   const [cuisineTypes, setCuisineTypes] = useState([])
   const [loading, setLoading] = useState(true)
-  const [favorites, setFavorites] = useState(new Set())
+  const { chefCuisineFavorites: favorites, toggleChefCuisineFavorite: toggleFavorite } = useFavorites()
   const [sortBy, setSortBy] = useState('discount')
   const [searchQuery, setSearchQuery] = useState('')
   const [cuisineTypeFilter, setCuisineTypeFilter] = useState('')
@@ -29,34 +30,8 @@ const TopChefDeals = () => {
   const effectiveCity = selectedProvince && selectedCity === 'All' ? null : selectedCity
 
   useEffect(() => {
-    loadFavorites()
-  }, [])
-
-  useEffect(() => {
     fetchDeals()
   }, [selectedCity, selectedProvince, sortBy, searchQuery, cuisineTypeFilter, offerTypeFilter, priceMin, priceMax, minRating])
-
-  const loadFavorites = () => {
-    const savedFavorites = localStorage.getItem('favorites_chef_cuisines')
-    if (savedFavorites) {
-      try {
-        setFavorites(new Set(JSON.parse(savedFavorites)))
-      } catch (e) {
-        console.error('Failed to load favorites:', e)
-      }
-    }
-  }
-
-  const toggleFavorite = (cuisineId) => {
-    const newFavorites = new Set(favorites)
-    if (newFavorites.has(cuisineId)) {
-      newFavorites.delete(cuisineId)
-    } else {
-      newFavorites.add(cuisineId)
-    }
-    setFavorites(newFavorites)
-    localStorage.setItem('favorites_chef_cuisines', JSON.stringify(Array.from(newFavorites)))
-  }
 
   const clearAllFilters = () => {
     setCuisineTypeFilter('')

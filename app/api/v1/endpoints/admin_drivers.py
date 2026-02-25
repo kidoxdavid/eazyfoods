@@ -117,46 +117,6 @@ async def get_expiring_documents(
     return result
 
 
-@router.get("/expiring-documents", response_model=List[dict])
-async def get_expiring_documents(
-    current_admin: dict = Depends(get_current_admin),
-    db: Session = Depends(get_db)
-):
-    """List drivers with documents expired or expiring within 14 days (for admin notification)."""
-    now = datetime.utcnow()
-    cutoff = now + timedelta(days=14)
-    drivers = db.query(Driver).filter(Driver.is_active == True).all()
-    result = []
-    for d in drivers:
-        expired = []
-        expiring_soon = []
-        if d.driver_license_validity:
-            if d.driver_license_validity <= now:
-                expired.append("driver_license")
-            elif d.driver_license_validity <= cutoff:
-                expiring_soon.append("driver_license")
-        if d.vehicle_registration_validity:
-            if d.vehicle_registration_validity <= now:
-                expired.append("vehicle_registration")
-            elif d.vehicle_registration_validity <= cutoff:
-                expiring_soon.append("vehicle_registration")
-        if d.insurance_validity:
-            if d.insurance_validity <= now:
-                expired.append("insurance")
-            elif d.insurance_validity <= cutoff:
-                expiring_soon.append("insurance")
-        if expired or expiring_soon:
-            result.append({
-                "id": str(d.id),
-                "first_name": d.first_name,
-                "last_name": d.last_name,
-                "email": d.email,
-                "expired": expired,
-                "expiring_soon": expiring_soon,
-            })
-    return result
-
-
 @router.get("/{driver_id}", response_model=dict)
 async def get_driver_detail(
     driver_id: str,
@@ -294,6 +254,34 @@ async def toggle_driver_active(
     db.commit()
     
     return {"message": f"Driver {'activated' if driver.is_active else 'deactivated'}", "is_active": driver.is_active}
+
+
+@router.delete("/{driver_id}", response_model=dict)
+async def delete_driver(
+    driver_id: str,
+    current_admin: dict = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Permanently delete a driver (use with caution)."""
+    try:
+        driver_uuid = UUID(driver_id)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid driver ID format")
+    driver = db.query(Driver).filter(Driver.id == driver_uuid).first()
+    if not driver:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Driver not found")
+    from app.models.admin import AdminActivityLog
+    log = AdminActivityLog(
+        admin_id=UUID(current_admin["admin_id"]),
+        action="driver_deleted",
+        entity_type="driver",
+        entity_id=driver.id,
+        details={"driver_name": f"{driver.first_name} {driver.last_name}"}
+    )
+    db.add(log)
+    db.delete(driver)
+    db.commit()
+    return {"message": "Driver deleted successfully"}
 
 
 @router.get("/stats/overview", response_model=dict)

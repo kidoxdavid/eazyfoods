@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { Search, CheckCircle, XCircle, Eye, Download } from 'lucide-react'
+import { Search, CheckCircle, XCircle, Eye, Download, Trash2 } from 'lucide-react'
 import Pagination from '../components/Pagination'
 
 const Vendors = () => {
@@ -64,6 +64,17 @@ const Vendors = () => {
       fetchVendors()
     } catch (error) {
       alert('Failed to verify vendor')
+    }
+  }
+
+  const handleDelete = async (vendorId) => {
+    if (!confirm('Are you sure you want to permanently delete this vendor? This cannot be undone.')) return
+    try {
+      await api.delete(`/admin/vendors/${vendorId}`)
+      alert('Vendor deleted successfully')
+      fetchVendors()
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Failed to delete vendor')
     }
   }
 
@@ -228,6 +239,13 @@ const Vendors = () => {
                             Verify
                           </button>
                         )}
+                        <button
+                          onClick={() => handleDelete(vendor.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -318,6 +336,13 @@ const Vendors = () => {
                       Verify
                     </button>
                   )}
+                  <button
+                    onClick={() => handleDelete(vendor.id)}
+                    className="flex-1 sm:flex-none px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg border border-red-200 flex items-center justify-center gap-1"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </button>
                 </div>
               </div>
             </div>

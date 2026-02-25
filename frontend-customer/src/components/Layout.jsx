@@ -12,7 +12,7 @@ import { CANADA_PROVINCES, getCitiesForProvince } from '../constants/canadaLocat
 import AnimatedCartIcon from './AnimatedCartIcon'
 import CartPreview from './CartPreview'
 import SearchAutocomplete from './SearchAutocomplete'
-import { getAvatarIcon, getAvatarStyle, AVATAR_ICON_KEY } from '../constants/avatarIcons'
+import { getAvatarIcon, getAvatarStyle, AVATAR_ICON_KEY, getAvatarStorageKey } from '../constants/avatarIcons'
 
 const Layout = ({ children }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -43,9 +43,20 @@ const Layout = ({ children }) => {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [profileDropdownOpen])
+  const authContext = useAuth()
+  const user = (authContext && authContext.user) ? authContext.user : null
+  const avatarStorageKey = getAvatarStorageKey(user?.id)
   const [avatarKey, setAvatarKey] = useState(() => localStorage.getItem(AVATAR_ICON_KEY) || 'user')
   const location = useLocation()
   const navigate = useNavigate()
+  useEffect(() => {
+    const key = getAvatarStorageKey(user?.id)
+    let v = localStorage.getItem(key)
+    if (!v && user?.id && (v = localStorage.getItem(AVATAR_ICON_KEY))) {
+      localStorage.setItem(key, v)
+    }
+    setAvatarKey(v || 'user')
+  }, [user?.id])
   useEffect(() => {
     const mql = window.matchMedia('(min-width: 1024px)')
     const handler = () => setIsDesktop(mql.matches)
@@ -53,18 +64,19 @@ const Layout = ({ children }) => {
     return () => mql.removeEventListener('change', handler)
   }, [])
   useEffect(() => {
-    const onAvatarUpdated = (e) => setAvatarKey((e && e.detail && e.detail.key) || localStorage.getItem(AVATAR_ICON_KEY) || 'user')
+    const onAvatarUpdated = (e) => {
+      const key = getAvatarStorageKey(user?.id)
+      const v = (e && e.detail && e.detail.key) || localStorage.getItem(key) || 'user'
+      if (key) localStorage.setItem(key, v)
+      setAvatarKey(v)
+    }
     window.addEventListener('avatar-updated', onAvatarUpdated)
     return () => window.removeEventListener('avatar-updated', onAvatarUpdated)
-  }, [])
-  
-  // Access contexts without destructuring to prevent errors
-  const authContext = useAuth()
+  }, [user?.id])
+
   const cartContext = useCart()
   const locationContext = useLocationContext()
-  
-  // Extract values safely
-  const user = (authContext && authContext.user) ? authContext.user : null
+
   const logout = (authContext && authContext.logout) ? authContext.logout : (() => {})
   const token = (authContext && authContext.token) ? authContext.token : null
   const getCartItemCount = (cartContext && cartContext.getCartItemCount) ? cartContext.getCartItemCount : (() => 0)

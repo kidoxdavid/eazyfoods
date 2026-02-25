@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { ShoppingCart, Eye, Heart, Package, Search, Filter, Grid3x3, List, Sparkles, TrendingUp, Users, SlidersHorizontal, Zap, MapPin } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
+import { useFavorites } from '../contexts/FavoritesContext'
 import { useToast } from '../contexts/ToastContext'
 import { useLocation } from '../contexts/LocationContext'
 import { getCitiesForProvince } from '../constants/canadaLocations'
@@ -20,7 +21,7 @@ const Groceries = () => {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [quickViewProduct, setQuickViewProduct] = useState(null)
-  const [favorites, setFavorites] = useState(new Set())
+  const { productFavorites: favorites, toggleProductFavorite: toggleFavorite } = useFavorites()
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalProducts, setTotalProducts] = useState(0)
@@ -44,10 +45,6 @@ const Groceries = () => {
   const provinceCities = selectedProvince && selectedCity === 'All' ? getCitiesForProvince(selectedProvince) : null
   const effectiveCity = selectedProvince && selectedCity === 'All' ? null : selectedCity
   const { success: showSuccessToast } = useToast()
-
-  useEffect(() => {
-    loadFavorites()
-  }, [])
 
   useEffect(() => {
     fetchCategories()
@@ -99,28 +96,6 @@ const Groceries = () => {
     } catch (e) {
       setDealProducts([])
     }
-  }
-
-  const loadFavorites = () => {
-    const savedFavorites = localStorage.getItem('favorites')
-    if (savedFavorites) {
-      try {
-        setFavorites(new Set(JSON.parse(savedFavorites)))
-      } catch (e) {
-        console.error('Failed to load favorites:', e)
-      }
-    }
-  }
-
-  const toggleFavorite = (productId) => {
-    const newFavorites = new Set(favorites)
-    if (newFavorites.has(productId)) {
-      newFavorites.delete(productId)
-    } else {
-      newFavorites.add(productId)
-    }
-    setFavorites(newFavorites)
-    localStorage.setItem('favorites', JSON.stringify(Array.from(newFavorites)))
   }
 
   const fetchCategories = async () => {

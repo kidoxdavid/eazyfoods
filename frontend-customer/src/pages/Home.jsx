@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { ShoppingCart, Star, TrendingUp, MapPin, Sparkles, AlertCircle, Eye, Heart, Tag, Calendar, Apple, Fish, Wheat, Beef, Milk, Coffee, Cookie, Cherry, Carrot, UtensilsCrossed, Package, ChefHat, IceCream, Candy, Soup, Drumstick, Grape, Banana, Nut, ShoppingBag, Wine, Flame, Zap, Store } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
+import { useFavorites } from '../contexts/FavoritesContext'
 import { useLocation } from '../contexts/LocationContext'
 import { getCitiesForProvince } from '../constants/canadaLocations'
 import { useToast } from '../contexts/ToastContext'
@@ -27,30 +28,7 @@ const Home = () => {
   const { coordinates, selectedCity, selectedProvince } = useLocation()
   const { success: showSuccessToast } = useToast()
   const [quickViewProduct, setQuickViewProduct] = useState(null)
-  const [favorites, setFavorites] = useState(new Set())
-
-  // Load favorites from localStorage
-  useEffect(() => {
-    const savedFavorites = localStorage.getItem('favorites')
-    if (savedFavorites) {
-      try {
-        setFavorites(new Set(JSON.parse(savedFavorites)))
-      } catch (e) {
-        console.error('Failed to load favorites:', e)
-      }
-    }
-  }, [])
-
-  const toggleFavorite = (productId) => {
-    const newFavorites = new Set(favorites)
-    if (newFavorites.has(productId)) {
-      newFavorites.delete(productId)
-    } else {
-      newFavorites.add(productId)
-    }
-    setFavorites(newFavorites)
-    localStorage.setItem('favorites', JSON.stringify(Array.from(newFavorites)))
-  }
+  const { productFavorites: favorites, toggleProductFavorite: toggleFavorite } = useFavorites()
 
   // Check if store is currently open based on operating hours
   const isStoreOpen = (operatingHours) => {

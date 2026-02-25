@@ -15,6 +15,7 @@ import ProductDetail from './pages/ProductDetail'
 import Analytics from './pages/Analytics'
 import Reviews from './pages/Reviews'
 import Support from './pages/Support'
+import SupportTicketDetail from './pages/SupportTicketDetail'
 import Settings from './pages/Settings'
 import ActivityLogs from './pages/ActivityLogs'
 import AdminUsers from './pages/AdminUsers'
@@ -91,6 +92,7 @@ function AppRoutes() {
         <Route path="analytics" element={<Analytics />} />
         <Route path="reviews" element={<Reviews />} />
         <Route path="support" element={<Support />} />
+        <Route path="support/:id" element={<SupportTicketDetail />} />
         <Route path="chat" element={<Chat />} />
         <Route path="activity" element={<ActivityLogs />} />
         <Route path="admin-users" element={<AdminUsers />} />

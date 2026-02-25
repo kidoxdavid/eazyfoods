@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
-import { Search, CheckCircle, XCircle, Eye, ChefHat } from 'lucide-react'
+import { Search, CheckCircle, XCircle, Eye, ChefHat, Trash2 } from 'lucide-react'
 
 const Chefs = () => {
   const navigate = useNavigate()
@@ -78,6 +78,17 @@ const Chefs = () => {
       fetchChefs()
     } catch (error) {
       alert('Failed to deactivate chef')
+    }
+  }
+
+  const handleDelete = async (chefId) => {
+    if (!confirm('Are you sure you want to permanently delete this chef? This cannot be undone.')) return
+    try {
+      await api.delete(`/admin/chefs/${chefId}`)
+      alert('Chef deleted successfully')
+      fetchChefs()
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Failed to delete chef')
     }
   }
 
@@ -252,6 +263,13 @@ const Chefs = () => {
                             <XCircle className="h-5 w-5" />
                           </button>
                         )}
+                        <button
+                          onClick={() => handleDelete(chef.id)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
                       </div>
                     </td>
                   </tr>

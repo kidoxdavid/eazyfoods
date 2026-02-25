@@ -363,6 +363,16 @@ async def get_available_orders(
     ).all()
     
     from app.models.chef import Chef
+    from app.models.platform_settings import PlatformSettings
+    driver_pct = Decimal("80")
+    ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "orders").first()
+    if ps and isinstance(getattr(ps, "settings_data", None), dict):
+        val = ps.settings_data.get("driver_earnings_percent")
+        if val is not None:
+            try:
+                driver_pct = Decimal(str(val))
+            except Exception:
+                pass
     result = []
     for order in orders:
         delivery_address = None
@@ -387,12 +397,15 @@ async def get_available_orders(
         else:
             pickup_name = "N/A"
             pickup_street = pickup_city = pickup_state = pickup_postal = ""
+        shipping = order.shipping_amount if order.shipping_amount is not None else Decimal("0")
+        driver_earnings_estimate = float(shipping * (driver_pct / Decimal("100")))
         result.append({
             "id": str(order.id),
             "order_number": order.order_number,
             "vendor_name": pickup_name,
             "total_amount": float(order.total_amount),
-            "delivery_fee": float(order.shipping_amount),
+            "delivery_fee": None,  # Driver only sees their cut
+            "driver_earnings_estimate": driver_earnings_estimate,
             "pickup_address": {
                 "street": pickup_street,
                 "city": pickup_city,
@@ -532,7 +545,7 @@ def _do_accept_delivery(order_id: str, body: Optional[dict], current_driver: dic
         "actual_pickup_time": _dt_iso(getattr(delivery, "actual_pickup_time", None)),
         "actual_delivery_time": _dt_iso(getattr(delivery, "actual_delivery_time", None)),
         "distance_km": _num(delivery.distance_km),
-        "delivery_fee": _num(delivery.delivery_fee),
+        "delivery_fee": None,  # Driver only sees their cut (driver_earnings)
         "driver_earnings": _num(delivery.driver_earnings),
         "current_latitude": None,
         "current_longitude": None,
@@ -624,7 +637,7 @@ async def get_my_deliveries(
             actual_pickup_time=d.actual_pickup_time,
             actual_delivery_time=d.actual_delivery_time,
             distance_km=float(d.distance_km) if d.distance_km else None,
-            delivery_fee=float(d.delivery_fee) if d.delivery_fee else None,
+            delivery_fee=None,  # Driver only sees their cut (driver_earnings), not full delivery amount
             driver_earnings=float(d.driver_earnings) if d.driver_earnings else None,
             route_polyline=getattr(d, 'route_polyline', None),
             route_distance_km=float(d.route_distance_km) if hasattr(d, 'route_distance_km') and d.route_distance_km else None,
@@ -681,7 +694,7 @@ async def get_delivery_by_id(
         actual_pickup_time=delivery.actual_pickup_time,
         actual_delivery_time=delivery.actual_delivery_time,
         distance_km=float(delivery.distance_km) if delivery.distance_km else None,
-        delivery_fee=float(delivery.delivery_fee) if delivery.delivery_fee else None,
+        delivery_fee=None,  # Driver only sees their cut (driver_earnings), not full delivery amount
         driver_earnings=float(delivery.driver_earnings) if delivery.driver_earnings else None,
         route_polyline=getattr(delivery, "route_polyline", None),
         route_distance_km=float(delivery.route_distance_km) if hasattr(delivery, "route_distance_km") and delivery.route_distance_km else None,
@@ -812,7 +825,7 @@ async def update_delivery_status(
         actual_pickup_time=delivery.actual_pickup_time,
         actual_delivery_time=delivery.actual_delivery_time,
         distance_km=float(delivery.distance_km) if delivery.distance_km else None,
-        delivery_fee=float(delivery.delivery_fee) if delivery.delivery_fee else None,
+        delivery_fee=None,  # Driver only sees their cut (driver_earnings)
         driver_earnings=float(delivery.driver_earnings) if delivery.driver_earnings else None,
         route_polyline=getattr(delivery, 'route_polyline', None),
         route_distance_km=float(delivery.route_distance_km) if hasattr(delivery, 'route_distance_km') and delivery.route_distance_km else None,

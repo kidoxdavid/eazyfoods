@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import api from '../services/api'
 import { Star, MapPin, Clock, ShoppingCart, Heart, Eye, Search, Filter, Grid3x3, List, SlidersHorizontal, Store } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
+import { useFavorites } from '../contexts/FavoritesContext'
 import { useLocation } from '../contexts/LocationContext'
 import QuickViewModal from '../components/QuickViewModal'
 import StarRating from '../components/StarRating'
@@ -21,7 +22,7 @@ const StoreDetail = () => {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [storeLoading, setStoreLoading] = useState(true)
   const [productsLoading, setProductsLoading] = useState(true)
-  const [favorites, setFavorites] = useState(new Set())
+  const { productFavorites: favorites, toggleProductFavorite } = useFavorites()
   const [quickViewProduct, setQuickViewProduct] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('newest')
@@ -33,29 +34,14 @@ const StoreDetail = () => {
   const { addToCart } = useCart()
   const { success: showSuccessToast, info: showInfoToast } = useToast()
 
-  // Load favorites from localStorage
-  useEffect(() => {
-    const savedFavorites = localStorage.getItem('favorites')
-    if (savedFavorites) {
-      try {
-        setFavorites(new Set(JSON.parse(savedFavorites)))
-      } catch (e) {
-        console.error('Failed to load favorites:', e)
-      }
-    }
-  }, [])
-
   const toggleFavorite = (productId, productName) => {
-    const newFavorites = new Set(favorites)
-    if (newFavorites.has(productId)) {
-      newFavorites.delete(productId)
+    const isFavorited = favorites.has(productId)
+    toggleProductFavorite(productId)
+    if (isFavorited) {
       showInfoToast(`${productName || 'Product'} removed from favorites`)
     } else {
-      newFavorites.add(productId)
       showSuccessToast(`${productName || 'Product'} added to favorites`)
     }
-    setFavorites(newFavorites)
-    localStorage.setItem('favorites', JSON.stringify(Array.from(newFavorites)))
   }
 
   // Check if store is currently open based on operating hours

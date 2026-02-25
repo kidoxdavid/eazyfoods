@@ -1,55 +1,78 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { useLocation } from '../contexts/LocationContext'
 import api from '../services/api'
-import { Mail, MessageSquare, Send, AlertCircle, CheckCircle, Sparkles, TrendingUp, Users } from 'lucide-react'
+import { Mail, MessageSquare, Send, AlertCircle, CheckCircle, Sparkles, TrendingUp, Users, Paperclip, Store } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 
 const ContactUs = () => {
   const { token } = useAuth()
   const navigate = useNavigate()
+  const { selectedCity } = useLocation()
   const [formData, setFormData] = useState({
     subject: '',
     message: '',
-    priority: 'normal'
+    priority: 'normal',
+    enquiryType: 'general',
+    vendorId: ''
   })
+  const [attachment, setAttachment] = useState(null)
+  const [vendors, setVendors] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
 
+  useEffect(() => {
+    if (formData.enquiryType === 'vendor' && selectedCity && selectedCity !== 'All') {
+      api.get('/customer/stores', { params: { city: selectedCity } })
+        .then((res) => {
+          const list = Array.isArray(res.data) ? res.data : (res.data?.stores || [])
+          setVendors(list)
+        })
+        .catch(() => setVendors([]))
+    } else {
+      setVendors([])
+      setFormData((prev) => ({ ...prev, vendorId: '' }))
+    }
+  }, [formData.enquiryType, selectedCity])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
     if (!token) {
       setMessage({ type: 'error', text: 'Please login to send a message' })
-      setTimeout(() => {
-        navigate('/login')
-      }, 2000)
+      setTimeout(() => navigate('/login'), 2000)
       return
     }
-
     if (!formData.subject.trim() || !formData.message.trim()) {
       setMessage({ type: 'error', text: 'Please fill in all required fields' })
       return
     }
-
+    if (formData.enquiryType === 'vendor' && !formData.vendorId) {
+      setMessage({ type: 'error', text: 'Please select a vendor when messaging about a store' })
+      return
+    }
     setSubmitting(true)
     setMessage({ type: '', text: '' })
-
     try {
-      const response = await api.post('/customer/support/contact', {
-        subject: formData.subject,
-        message: formData.message,
-        priority: formData.priority
+      const fd = new FormData()
+      fd.append('subject', formData.subject)
+      fd.append('message', formData.message)
+      fd.append('priority', formData.priority)
+      if (formData.enquiryType === 'vendor' && formData.vendorId) {
+        fd.append('vendor_id', formData.vendorId)
+      }
+      if (attachment && attachment.file) {
+        fd.append('attachment', attachment.file)
+      }
+      const response = await api.post('/customer/support/contact', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       })
-
       setMessage({ type: 'success', text: response.data.message || 'Your message has been sent successfully! We\'ll get back to you soon.' })
-      setFormData({ subject: '', message: '', priority: 'normal' })
+      setFormData({ subject: '', message: '', priority: 'normal', enquiryType: 'general', vendorId: '' })
+      setAttachment(null)
     } catch (error) {
       console.error('Failed to submit message:', error)
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.detail || 'Failed to send message. Please try again.' 
-      })
+      setMessage({ type: 'error', text: error.response?.data?.detail || 'Failed to send message. Please try again.' })
     } finally {
       setSubmitting(false)
     }
@@ -183,11 +206,32 @@ const ContactUs = () => {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <Paperclip className="inline h-4 w-4 mr-1" />
+                  Attach picture or document (optional)
+                </label>
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,image/*,application/pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    setAttachment(file ? { file, name: file.name } : null)
+                  }}
+                  className="w-full text-sm text-gray-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700"
+                  disabled={submitting || !token}
+                />
+                {attachment && (
+                  <p className="text-xs text-gray-500 mt-1">{attachment.name}</p>
+                )}
+              </div>
+
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => {
-                    setFormData({ subject: '', message: '', priority: 'normal' })
+                    setFormData({ subject: '', message: '', priority: 'normal', enquiryType: 'general', vendorId: '' })
+                    setAttachment(null)
                     setMessage({ type: '', text: '' })
                   }}
                   disabled={submitting}

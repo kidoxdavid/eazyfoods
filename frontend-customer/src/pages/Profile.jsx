@@ -4,7 +4,7 @@ import { useLocation } from '../contexts/LocationContext'
 import { useCart } from '../contexts/CartContext'
 import api from '../services/api'
 import { User, Mail, Phone, MapPin, Edit, Plus, Trash2, Package, CreditCard, Settings, Eye, EyeOff, Sparkles, TrendingUp, Users as UsersIcon } from 'lucide-react'
-import { AVATAR_ICONS, AVATAR_ICON_KEY, getAvatarIcon, getAvatarStyle } from '../constants/avatarIcons'
+import { AVATAR_ICONS, AVATAR_ICON_KEY, getAvatarStorageKey, getAvatarIcon, getAvatarStyle } from '../constants/avatarIcons'
 import PrivateRoute from '../components/PrivateRoute'
 import PageBanner from '../components/PageBanner'
 import { PageSkeleton } from '../components/SkeletonLoader'
@@ -40,7 +40,14 @@ const Profile = () => {
   const [editingPhone, setEditingPhone] = useState(false)
   const [phoneValue, setPhoneValue] = useState('')
   const [phoneSaving, setPhoneSaving] = useState(false)
-  const [avatarIconKey, setAvatarIconKey] = useState(() => localStorage.getItem(AVATAR_ICON_KEY) || 'user')
+  const avatarStorageKey = getAvatarStorageKey(user?.id)
+  const [avatarIconKey, setAvatarIconKey] = useState(() => localStorage.getItem(getAvatarStorageKey(user?.id)) || localStorage.getItem(AVATAR_ICON_KEY) || 'user')
+
+  useEffect(() => {
+    const key = getAvatarStorageKey(user?.id) || AVATAR_ICON_KEY
+    const v = localStorage.getItem(key)
+    if (v) setAvatarIconKey(v)
+  }, [user?.id])
 
   useEffect(() => {
     if (token) {
@@ -599,7 +606,8 @@ const Profile = () => {
                         type="button"
                         onClick={() => {
                           setAvatarIconKey(key)
-                          localStorage.setItem(AVATAR_ICON_KEY, key)
+                          const storageKey = getAvatarStorageKey(user?.id) || AVATAR_ICON_KEY
+                          localStorage.setItem(storageKey, key)
                           window.dispatchEvent(new CustomEvent('avatar-updated', { detail: { key } }))
                         }}
                         className={`p-2 rounded-xl border-2 transition-all ${
