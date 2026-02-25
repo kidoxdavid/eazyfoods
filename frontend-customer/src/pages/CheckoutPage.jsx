@@ -85,7 +85,8 @@ const CheckoutPage = () => {
     }
   }, [stores, cart, selectedStoreId])
 
-  // When distance-based delivery is on, fetch delivery fee from store → delivery address
+  // When distance-based or dynamic delivery is on, fetch delivery fee (pass order value for dynamic)
+  const subtotal = getCartTotal()
   useEffect(() => {
     if (!useDistanceBasedDelivery || !selectedStoreId || !address.street_address?.trim() || !address.city?.trim() || !address.postal_code?.trim()) {
       setDeliveryFeeFromEstimate(null)
@@ -99,19 +100,19 @@ const CheckoutPage = () => {
       postal_code: address.postal_code.trim(),
       country: (address.country || 'Canada').trim()
     })
+    if (subtotal > 0) params.set('order_value', String(subtotal))
     api.get(`/customer/delivery-estimate?${params}`)
       .then((r) => {
         if (typeof r.data?.delivery_fee === 'number') setDeliveryFeeFromEstimate(r.data.delivery_fee)
         else setDeliveryFeeFromEstimate(null)
       })
       .catch(() => setDeliveryFeeFromEstimate(null))
-  }, [useDistanceBasedDelivery, selectedStoreId, address.street_address, address.city, address.state, address.postal_code, address.country])
+  }, [useDistanceBasedDelivery, selectedStoreId, address.street_address, address.city, address.state, address.postal_code, address.country, subtotal])
 
   const hasStoreItems = cart.some((i) => i.store_id)
   const hasChefItems = cart.some((i) => i.chef_id && i.cuisine_id)
   const needsStoreSelection = hasStoreItems
   const selectedStore = stores.find((s) => s.id === selectedStoreId)
-  const subtotal = getCartTotal()
   const tax = subtotal * 0.08
   const deliveryFeeAmount = (() => {
     if (deliveryMethod !== 'delivery') return 0

@@ -57,8 +57,8 @@ async def _geocode_address(address: str) -> Optional[tuple]:
 
 @router.get("/config")
 async def get_customer_public_config(db: Session = Depends(get_db)):
-    """Public config for customer app (allow_guest_checkout, default_delivery_fee, distance-based delivery). No auth required."""
-    out = {"allow_guest_checkout": True, "default_delivery_fee": 5.0, "use_distance_based_delivery": False, "delivery_fee_per_km": 1.0}
+    """Public config for customer app (allow_guest_checkout, delivery fee type and params). No auth required."""
+    out = {"allow_guest_checkout": True, "default_delivery_fee": 5.0, "use_distance_based_delivery": False, "delivery_fee_per_km": 1.0, "delivery_fee_type": "flat"}
     ps_customer = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "customer").first()
     if ps_customer and isinstance(getattr(ps_customer, "settings_data", None), dict):
         out["allow_guest_checkout"] = bool(ps_customer.settings_data.get("allow_guest_checkout", True))
@@ -71,7 +71,10 @@ async def get_customer_public_config(db: Session = Depends(get_db)):
                 out["default_delivery_fee"] = float(fee)
             except (TypeError, ValueError):
                 pass
-        if od.get("use_distance_based_delivery"):
+        fee_type = (od.get("delivery_fee_type") or "flat").strip().lower()
+        if fee_type in ("flat", "per_km", "dynamic"):
+            out["delivery_fee_type"] = fee_type
+        if od.get("use_distance_based_delivery") or fee_type in ("per_km", "dynamic"):
             out["use_distance_based_delivery"] = True
         per_km = od.get("delivery_fee_per_km")
         if per_km is not None:
@@ -90,11 +93,14 @@ async def get_delivery_estimate(
     state: Optional[str] = Query("", description="Delivery state/province"),
     postal_code: str = Query(..., description="Delivery postal code"),
     country: str = Query("Canada", description="Delivery country"),
+    order_value: Optional[float] = Query(None, description="Order subtotal for dynamic fee (optional)"),
     db: Session = Depends(get_db)
 ):
     """
-    Get delivery distance (km) and delivery fee based on store address and delivery address.
-    When use_distance_based_delivery is enabled, fee = distance_km * delivery_fee_per_km; otherwise returns default_delivery_fee.
+    Get delivery distance (km) and delivery fee. Uses admin setting delivery_fee_type:
+    - flat: default_delivery_fee
+    - per_km: distance_km * delivery_fee_per_km
+    - dynamic: base_fee + tiered distance + traffic/demand multipliers + small order fee (needs order_value for accuracy)
     """
     store = db.query(Store).filter(Store.id == UUID(store_id), Store.is_active == True).first()
     if not store:
@@ -102,7 +108,10 @@ async def get_delivery_estimate(
     ps_orders = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "orders").first()
     orders_data = (ps_orders.settings_data or {}) if ps_orders else {}
     default_fee = float(orders_data.get("delivery_fee", 5.99))
-    use_distance = bool(orders_data.get("use_distance_based_delivery", False))
+    delivery_fee_type = (orders_data.get("delivery_fee_type") or "flat").strip().lower()
+    if delivery_fee_type not in ("flat", "per_km", "dynamic"):
+        delivery_fee_type = "flat"
+    use_distance = delivery_fee_type in ("per_km", "dynamic") or bool(orders_data.get("use_distance_based_delivery", False))
     fee_per_km = float(orders_data.get("delivery_fee_per_km", 1.0))
 
     store_address = f"{store.street_address or ''}, {store.city or ''}, {store.state or ''} {store.postal_code or ''}, {store.country or 'Canada'}".replace(", ,", ",").strip()
@@ -113,7 +122,6 @@ async def get_delivery_estimate(
     if maps_service.is_available():
         distance_km = maps_service.get_distance_km_from_addresses(store_address, delivery_address)
 
-    # Fallback when Maps API unavailable: geocode both addresses (postal code etc.) then haversine
     if distance_km is None and use_distance:
         try:
             store_coords = await _geocode_address(store_address)
@@ -122,12 +130,21 @@ async def get_delivery_estimate(
                 store_lat, store_lon = store_coords
                 delivery_lat, delivery_lon = delivery_coords
                 straight_line_km = _haversine_km(store_lat, store_lon, delivery_lat, delivery_lon)
-                # Straight-line is shorter than driving; use ~1.5x to approximate route distance (so $/km matches admin rate)
                 distance_km = straight_line_km * 1.5
         except (TypeError, ValueError) as e:
             logger.warning("Delivery estimate fallback failed: %s", e)
 
-    if use_distance and distance_km is not None and fee_per_km >= 0:
+    if delivery_fee_type == "dynamic" and distance_km is not None:
+        from app.services.delivery_fee_service import calculate_dynamic_delivery_fee
+        order_val = float(order_value) if order_value is not None else 0.0
+        traffic = orders_data.get("dynamic_current_traffic") or "normal"
+        demand = orders_data.get("dynamic_current_demand") or "low"
+        delivery_fee = calculate_dynamic_delivery_fee(
+            distance_km, order_val, traffic, demand, orders_data
+        )
+        return {"distance_km": round(distance_km, 2), "delivery_fee": delivery_fee}
+
+    if (delivery_fee_type == "per_km" or use_distance) and distance_km is not None and fee_per_km >= 0:
         delivery_fee = round(distance_km * fee_per_km, 2)
         return {"distance_km": round(distance_km, 2), "delivery_fee": delivery_fee}
     return {"distance_km": distance_km, "delivery_fee": default_fee}

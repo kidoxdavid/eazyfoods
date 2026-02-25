@@ -62,6 +62,19 @@ const Settings = () => {
     delivery_fee: 5.99,
     delivery_fee_per_km: 1,
     use_distance_based_delivery: false,
+    delivery_fee_type: 'flat',
+    dynamic_base_fee: 3,
+    dynamic_distance_tiers: [
+      { max_km: 3, rate_per_km: 0.80 },
+      { max_km: 8, rate_per_km: 0.55 },
+      { rate_per_km: 0.40 }
+    ],
+    dynamic_traffic_multipliers: { normal: 1, moderate: 1.2, heavy: 1.5 },
+    dynamic_current_traffic: 'normal',
+    dynamic_demand_multipliers: { low: 1, busy: 1.15, peak: 1.35 },
+    dynamic_current_demand: 'low',
+    dynamic_small_order_threshold: 15,
+    dynamic_small_order_fee: 2,
     free_delivery_threshold: 50,
     order_timeout_minutes: 30,
     auto_cancel_unpaid_hours: 24,
@@ -788,9 +801,21 @@ const Settings = () => {
           />
         </div>
       </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Delivery fee type</label>
+        <select
+          value={orderSettings.delivery_fee_type ?? 'flat'}
+          onChange={(e) => setOrderSettings({ ...orderSettings, delivery_fee_type: e.target.value, use_distance_based_delivery: ['per_km', 'dynamic'].includes(e.target.value) })}
+          className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+        >
+          <option value="flat">Flat rate (fixed $ per order)</option>
+          <option value="per_km">Per km (distance × rate)</option>
+          <option value="dynamic">Dynamic (base + tiered distance + traffic/demand + small order)</option>
+        </select>
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Fee ($) – used when distance-based is off</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Fee ($) – used when type is Flat</label>
           <input
             type="number"
             step="0.01"
@@ -810,19 +835,7 @@ const Settings = () => {
           />
         </div>
       </div>
-      <div className="flex items-center gap-3 flex-wrap">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={orderSettings.use_distance_based_delivery ?? false}
-            onChange={(e) => setOrderSettings({ ...orderSettings, use_distance_based_delivery: e.target.checked })}
-            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-          />
-          <span className="text-sm font-medium text-gray-700">Use distance-based delivery cost</span>
-        </label>
-        <span className="text-xs text-gray-500">When on, delivery fee = distance (km) × rate below</span>
-      </div>
-      {(orderSettings.use_distance_based_delivery ?? false) && (
+      {(orderSettings.delivery_fee_type ?? 'flat') === 'per_km' && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Delivery fee per km ($)</label>
           <input
@@ -833,7 +846,63 @@ const Settings = () => {
             onChange={(e) => setOrderSettings({ ...orderSettings, delivery_fee_per_km: parseFloat(e.target.value) || 0 })}
             className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
           />
-          <p className="text-xs text-gray-500 mt-1">e.g. 1 = $1 per km from store to delivery address (requires Google Maps API key)</p>
+          <p className="text-xs text-gray-500 mt-1">Fee = distance (km) × this rate. Uses Maps or geocode fallback.</p>
+        </div>
+      )}
+      {(orderSettings.delivery_fee_type ?? 'flat') === 'dynamic' && (
+        <div className="space-y-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <h4 className="font-medium text-gray-800">Dynamic delivery formula</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Base fee ($)</label>
+              <input type="number" step="0.01" min="0" value={orderSettings.dynamic_base_fee ?? 3} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_base_fee: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Current traffic</label>
+              <select value={orderSettings.dynamic_current_traffic ?? 'normal'} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_current_traffic: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                <option value="normal">Normal (×1.0)</option>
+                <option value="moderate">Moderate (×1.2)</option>
+                <option value="heavy">Heavy (×1.5)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Current demand</label>
+              <select value={orderSettings.dynamic_current_demand ?? 'low'} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_current_demand: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                <option value="low">Low (×1.0)</option>
+                <option value="busy">Busy (×1.15)</option>
+                <option value="peak">Peak (×1.35)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Small order threshold ($)</label>
+              <input type="number" step="0.01" min="0" value={orderSettings.dynamic_small_order_threshold ?? 15} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_small_order_threshold: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+              <p className="text-xs text-gray-500 mt-0.5">Orders below this get an extra fee</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Small order fee ($)</label>
+              <input type="number" step="0.01" min="0" value={orderSettings.dynamic_small_order_fee ?? 2} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_small_order_fee: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Distance tiers ($ per km)</label>
+            <p className="text-xs text-gray-500 mb-2">First matching tier applies. Last row = over that km.</p>
+            {(orderSettings.dynamic_distance_tiers ?? [{ max_km: 3, rate_per_km: 0.80 }, { max_km: 8, rate_per_km: 0.55 }, { rate_per_km: 0.40 }]).map((tier, idx) => (
+              <div key={idx} className="flex items-center gap-2 mb-2">
+                <input type="number" step="0.01" min="0" placeholder="Max km (blank = over)" value={tier.max_km ?? ''} onChange={(e) => {
+                  const tiers = [...(orderSettings.dynamic_distance_tiers || [])]
+                  tiers[idx] = { ...tiers[idx], max_km: e.target.value === '' ? undefined : parseFloat(e.target.value) }
+                  setOrderSettings({ ...orderSettings, dynamic_distance_tiers: tiers })
+                }} className="w-24 px-2 py-1.5 border border-gray-300 rounded" />
+                <span className="text-gray-500">km →</span>
+                <input type="number" step="0.01" min="0" value={tier.rate_per_km ?? 0} onChange={(e) => {
+                  const tiers = [...(orderSettings.dynamic_distance_tiers || [])]
+                  tiers[idx] = { ...tiers[idx], rate_per_km: parseFloat(e.target.value) || 0 }
+                  setOrderSettings({ ...orderSettings, dynamic_distance_tiers: tiers })
+                }} className="w-24 px-2 py-1.5 border border-gray-300 rounded" />
+                <span className="text-gray-600">$/km</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
       <div className="grid grid-cols-2 gap-4">
