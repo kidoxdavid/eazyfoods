@@ -206,7 +206,15 @@ async def create_order(
         
         tax_amount = (subtotal - vendor_discount) * Decimal("0.08")  # 8% tax on discounted amount
         platform_delivery_fee = _get_platform_delivery_fee(db)
-        shipping_amount = platform_delivery_fee if delivery_method == "delivery" else Decimal("0.00")
+        if delivery_method != "delivery":
+            shipping_amount = Decimal("0.00")
+        elif order_data.get("shipping_amount") is not None:
+            try:
+                shipping_amount = Decimal(str(order_data["shipping_amount"]))
+            except Exception:
+                shipping_amount = platform_delivery_fee
+        else:
+            shipping_amount = platform_delivery_fee
         
         # Apply free shipping discount
         if coupon and coupon.discount_type == "free_shipping" and delivery_method == "delivery":
@@ -313,8 +321,15 @@ async def create_order(
         subtotal_base = sum(item["cuisine"].price * item["quantity"] for item in chef_data["items"])
         subtotal = subtotal_base * chef_markup_mult
         tax_amount = subtotal * Decimal("0.08")
-        platform_delivery_fee = _get_platform_delivery_fee(db)
-        shipping_amount = platform_delivery_fee if delivery_method == "delivery" else Decimal("0.00")
+        if delivery_method != "delivery":
+            shipping_amount = Decimal("0.00")
+        elif order_data.get("shipping_amount") is not None:
+            try:
+                shipping_amount = Decimal(str(order_data["shipping_amount"]))
+            except Exception:
+                shipping_amount = _get_platform_delivery_fee(db)
+        else:
+            shipping_amount = _get_platform_delivery_fee(db)
         total_amount = subtotal + tax_amount + shipping_amount
         commission_rate = Decimal("0.00")
         commission_amount = Decimal("0.00")

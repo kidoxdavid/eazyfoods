@@ -1,11 +1,13 @@
 """
 Customer profile and address management endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from app.core.database import get_db
 from app.models.customer import Customer, CustomerAddress
+from app.models.store import Store
+from app.models.platform_settings import PlatformSettings
 from app.api.v1.dependencies import get_current_customer
 from app.schemas.customer import CustomerResponse, CustomerProfileUpdate, CustomerAddressCreate, CustomerAddressUpdate
 from uuid import UUID
@@ -15,21 +17,66 @@ router = APIRouter()
 
 @router.get("/config")
 async def get_customer_public_config(db: Session = Depends(get_db)):
-    """Public config for customer app (allow_guest_checkout, default_delivery_fee). No auth required."""
-    from app.models.platform_settings import PlatformSettings
-    out = {"allow_guest_checkout": True, "default_delivery_fee": 5.0}
+    """Public config for customer app (allow_guest_checkout, default_delivery_fee, distance-based delivery). No auth required."""
+    out = {"allow_guest_checkout": True, "default_delivery_fee": 5.0, "use_distance_based_delivery": False, "delivery_fee_per_km": 1.0}
     ps_customer = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "customer").first()
     if ps_customer and isinstance(getattr(ps_customer, "settings_data", None), dict):
         out["allow_guest_checkout"] = bool(ps_customer.settings_data.get("allow_guest_checkout", True))
     ps_orders = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "orders").first()
     if ps_orders and isinstance(getattr(ps_orders, "settings_data", None), dict):
-        fee = ps_orders.settings_data.get("delivery_fee")
+        od = ps_orders.settings_data
+        fee = od.get("delivery_fee")
         if fee is not None:
             try:
                 out["default_delivery_fee"] = float(fee)
             except (TypeError, ValueError):
                 pass
+        if od.get("use_distance_based_delivery"):
+            out["use_distance_based_delivery"] = True
+        per_km = od.get("delivery_fee_per_km")
+        if per_km is not None:
+            try:
+                out["delivery_fee_per_km"] = float(per_km)
+            except (TypeError, ValueError):
+                pass
     return out
+
+
+@router.get("/delivery-estimate", response_model=dict)
+async def get_delivery_estimate(
+    store_id: str = Query(..., description="Store ID"),
+    street_address: str = Query(..., description="Delivery street address"),
+    city: str = Query(..., description="Delivery city"),
+    state: Optional[str] = Query("", description="Delivery state/province"),
+    postal_code: str = Query(..., description="Delivery postal code"),
+    country: str = Query("Canada", description="Delivery country"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get delivery distance (km) and delivery fee based on store address and delivery address.
+    When use_distance_based_delivery is enabled, fee = distance_km * delivery_fee_per_km; otherwise returns default_delivery_fee.
+    """
+    store = db.query(Store).filter(Store.id == UUID(store_id), Store.is_active == True).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    ps_orders = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "orders").first()
+    orders_data = (ps_orders.settings_data or {}) if ps_orders else {}
+    default_fee = float(orders_data.get("delivery_fee", 5.99))
+    use_distance = bool(orders_data.get("use_distance_based_delivery", False))
+    fee_per_km = float(orders_data.get("delivery_fee_per_km", 1.0))
+
+    store_address = f"{store.street_address or ''}, {store.city or ''}, {store.state or ''} {store.postal_code or ''}, {store.country or 'Canada'}".replace(", ,", ",").strip()
+    delivery_address = f"{street_address}, {city}, {state} {postal_code}, {country}".replace(", ,", ",").strip()
+
+    distance_km = None
+    from app.services.maps_service import maps_service
+    if maps_service.is_available():
+        distance_km = maps_service.get_distance_km_from_addresses(store_address, delivery_address)
+
+    if use_distance and distance_km is not None and fee_per_km >= 0:
+        delivery_fee = round(distance_km * fee_per_km, 2)
+        return {"distance_km": round(distance_km, 2), "delivery_fee": delivery_fee}
+    return {"distance_km": distance_km, "delivery_fee": default_fee}
 
 
 @router.get("/me", response_model=CustomerResponse)

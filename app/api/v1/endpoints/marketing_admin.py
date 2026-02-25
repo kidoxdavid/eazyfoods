@@ -499,9 +499,9 @@ async def update_marketing_settings(
     current_admin: dict = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    """Update marketing settings (admin only)"""
+    """Update marketing settings (admin or marketing role)"""
     admin_role = current_admin.get("role", "")
-    if admin_role not in ["admin", "super_admin"]:
+    if admin_role not in ["admin", "super_admin", "marketing"]:
         raise HTTPException(status_code=403, detail="Only admins can update settings")
     
     from app.models.platform_settings import PlatformSettings

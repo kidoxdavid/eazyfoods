@@ -27,6 +27,8 @@ const CheckoutPage = () => {
   const [processPaymentFn, setProcessPaymentFn] = useState(null)
   const [paymentConfig, setPaymentConfig] = useState({ stripe_enabled: true, payments_suspended: false })
   const [defaultDeliveryFee, setDefaultDeliveryFee] = useState(5)
+  const [useDistanceBasedDelivery, setUseDistanceBasedDelivery] = useState(false)
+  const [deliveryFeeFromEstimate, setDeliveryFeeFromEstimate] = useState(null)
   const [cardReady, setCardReady] = useState(false)
   const [PaymentSection, setPaymentSection] = useState(null)
   const [guestInfo, setGuestInfo] = useState({ guest_email: '', guest_first_name: '', guest_last_name: '', guest_phone: '' })
@@ -54,8 +56,10 @@ const CheckoutPage = () => {
       setPaymentConfig({ stripe_enabled: !!d.stripe_enabled, payments_suspended: !!d.payments_suspended })
     }).catch(() => {})
     api.get('/customer/config').then((r) => {
-      const fee = r.data?.default_delivery_fee
+      const d = r.data || {}
+      const fee = d.default_delivery_fee
       if (typeof fee === 'number' && fee >= 0) setDefaultDeliveryFee(fee)
+      setUseDistanceBasedDelivery(!!d.use_distance_based_delivery)
     }).catch(() => {})
   }, [])
 
@@ -81,13 +85,40 @@ const CheckoutPage = () => {
     }
   }, [stores, cart, selectedStoreId])
 
+  // When distance-based delivery is on, fetch delivery fee from store → delivery address
+  useEffect(() => {
+    if (!useDistanceBasedDelivery || !selectedStoreId || !address.street_address?.trim() || !address.city?.trim() || !address.postal_code?.trim()) {
+      setDeliveryFeeFromEstimate(null)
+      return
+    }
+    const params = new URLSearchParams({
+      store_id: selectedStoreId,
+      street_address: address.street_address.trim(),
+      city: address.city.trim(),
+      state: (address.state || '').trim(),
+      postal_code: address.postal_code.trim(),
+      country: (address.country || 'Canada').trim()
+    })
+    api.get(`/customer/delivery-estimate?${params}`)
+      .then((r) => {
+        if (typeof r.data?.delivery_fee === 'number') setDeliveryFeeFromEstimate(r.data.delivery_fee)
+        else setDeliveryFeeFromEstimate(null)
+      })
+      .catch(() => setDeliveryFeeFromEstimate(null))
+  }, [useDistanceBasedDelivery, selectedStoreId, address.street_address, address.city, address.state, address.postal_code, address.country])
+
   const hasStoreItems = cart.some((i) => i.store_id)
   const hasChefItems = cart.some((i) => i.chef_id && i.cuisine_id)
   const needsStoreSelection = hasStoreItems
   const selectedStore = stores.find((s) => s.id === selectedStoreId)
   const subtotal = getCartTotal()
   const tax = subtotal * 0.08
-  const deliveryFeeAmount = (hasStoreItems && selectedStore?.delivery_fee != null) ? Number(selectedStore.delivery_fee) : defaultDeliveryFee
+  const deliveryFeeAmount = (() => {
+    if (deliveryMethod !== 'delivery') return 0
+    if (useDistanceBasedDelivery && deliveryFeeFromEstimate != null) return deliveryFeeFromEstimate
+    if (hasStoreItems && selectedStore?.delivery_fee != null) return Number(selectedStore.delivery_fee)
+    return defaultDeliveryFee
+  })()
   const shipping = deliveryMethod === 'delivery' ? deliveryFeeAmount : 0
   const total = subtotal + tax + shipping
 
@@ -144,6 +175,7 @@ const CheckoutPage = () => {
         store_id: selectedStoreId || null,
         delivery_method: deliveryMethod,
         address: deliveryMethod === 'delivery' ? address : null,
+        shipping_amount: deliveryMethod === 'delivery' ? deliveryFeeAmount : null,
         payment_method: paymentsSuspended ? 'cash' : 'stripe',
         payment_intent_id: paymentsSuspended ? null : (paymentData?.transaction_id || null),
         helcim_transaction_id: null,

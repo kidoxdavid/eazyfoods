@@ -60,10 +60,13 @@ const Settings = () => {
     min_order_amount: 10,
     max_order_amount: 1000,
     delivery_fee: 5.99,
+    delivery_fee_per_km: 1,
+    use_distance_based_delivery: false,
     free_delivery_threshold: 50,
     order_timeout_minutes: 30,
     auto_cancel_unpaid_hours: 24,
-    allow_order_modifications: true
+    allow_order_modifications: true,
+    driver_earnings_percent: 80
   }))
 
   const [paymentSettings, setPaymentSettings] = useState(() => loadSettings('payment', {
@@ -787,7 +790,7 @@ const Settings = () => {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Fee ($)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Fee ($) – used when distance-based is off</label>
           <input
             type="number"
             step="0.01"
@@ -807,6 +810,32 @@ const Settings = () => {
           />
         </div>
       </div>
+      <div className="flex items-center gap-3 flex-wrap">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={orderSettings.use_distance_based_delivery ?? false}
+            onChange={(e) => setOrderSettings({ ...orderSettings, use_distance_based_delivery: e.target.checked })}
+            className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+          <span className="text-sm font-medium text-gray-700">Use distance-based delivery cost</span>
+        </label>
+        <span className="text-xs text-gray-500">When on, delivery fee = distance (km) × rate below</span>
+      </div>
+      {(orderSettings.use_distance_based_delivery ?? false) && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Delivery fee per km ($)</label>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            value={orderSettings.delivery_fee_per_km ?? 1}
+            onChange={(e) => setOrderSettings({ ...orderSettings, delivery_fee_per_km: parseFloat(e.target.value) || 0 })}
+            className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+          />
+          <p className="text-xs text-gray-500 mt-1">e.g. 1 = $1 per km from store to delivery address (requires Google Maps API key)</p>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Order Timeout (minutes)</label>

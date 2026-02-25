@@ -144,6 +144,8 @@ def get_default_settings(setting_type: str) -> dict:
             'min_order_amount': 10,
             'max_order_amount': 1000,
             'delivery_fee': 5.99,
+            'delivery_fee_per_km': 1.0,
+            'use_distance_based_delivery': False,
             'free_delivery_threshold': 50,
             'order_timeout_minutes': 30,
             'auto_cancel_unpaid_hours': 24,

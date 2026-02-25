@@ -90,6 +90,31 @@ class MapsService:
             distance_meters = route['legs'][0]['distance']['value']
             return distance_meters / 1000
         return None
+
+    def get_distance_km_from_addresses(self, origin_address: str, dest_address: str) -> Optional[float]:
+        """
+        Get driving distance in km between two address strings.
+        Returns None if API unavailable or request fails.
+        """
+        if not self.is_available():
+            return None
+        try:
+            result = self.client.distance_matrix(origin_address, dest_address, mode="driving")
+            if not result or result.get("status") != "OK":
+                return None
+            rows = result.get("rows") or []
+            if not rows:
+                return None
+            elements = rows[0].get("elements") or []
+            if not elements or elements[0].get("status") != "OK":
+                return None
+            dist = elements[0].get("distance", {}).get("value")  # meters
+            if dist is None:
+                return None
+            return dist / 1000.0
+        except Exception as e:
+            logger.error(f"Distance matrix error: {e}")
+            return None
     
     def get_route_polyline(self, origin_lat: float, origin_lng: float, dest_lat: float, dest_lng: float) -> Optional[str]:
         """

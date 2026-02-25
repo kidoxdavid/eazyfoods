@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import api from '../services/api'
-import { Star, MapPin, Clock, ShoppingCart, Heart, Eye, Search, Filter, Grid3x3, List, SlidersHorizontal } from 'lucide-react'
+import { Star, MapPin, Clock, ShoppingCart, Heart, Eye, Search, Filter, Grid3x3, List, SlidersHorizontal, Store } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
 import { useLocation } from '../contexts/LocationContext'
 import QuickViewModal from '../components/QuickViewModal'
@@ -221,6 +221,10 @@ const StoreDetail = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Breadcrumb / Back */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-3">
+        <Link to="/stores" className="text-sm text-primary-600 hover:text-primary-700 font-medium">← Back to stores</Link>
+      </div>
       {/* Store Header - Same height as home page banner (240px) */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white overflow-hidden" style={{ height: '240px', minHeight: '240px', maxHeight: '240px' }}>
         <div className="w-full h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
@@ -274,8 +278,9 @@ const StoreDetail = () => {
         </div>
       </div>
 
-      {/* Groceries Section */}
+      {/* Store details & Groceries */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Store details & products</h2>
         {/* Results Count and View Toggle */}
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm text-gray-600">
