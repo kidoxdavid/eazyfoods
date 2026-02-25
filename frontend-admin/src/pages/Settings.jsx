@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
-import { Settings as SettingsIcon, Save, AlertCircle, DollarSign, ShoppingBag, Mail, Bell, Shield, Globe, CreditCard, Users, Package, Edit, Download, Database, RefreshCw, Megaphone, Percent } from 'lucide-react'
+import { Settings as SettingsIcon, Save, AlertCircle, DollarSign, ShoppingBag, Mail, Bell, Shield, Globe, CreditCard, Users, Package, Edit, Download, Database, RefreshCw, Megaphone, Percent, Truck } from 'lucide-react'
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('general')
@@ -260,6 +260,9 @@ const Settings = () => {
         case 'orders':
           settingsToSave = orderSettings
           break
+        case 'delivery':
+          settingsToSave = orderSettings
+          break
         case 'payment':
           settingsToSave = paymentSettings
           break
@@ -280,8 +283,9 @@ const Settings = () => {
           break
       }
       
-      // Save to backend API
-      const response = await api.put(`/admin/settings/${settingsType}`, {
+      // Save to backend API (delivery settings are stored under 'orders')
+      const apiType = settingsType === 'delivery' ? 'orders' : settingsType
+      const response = await api.put(`/admin/settings/${apiType}`, {
         settings: settingsToSave
       })
       
@@ -293,7 +297,7 @@ const Settings = () => {
         // Reload only the specific setting type from backend to ensure UI is in sync
         // This avoids race conditions and ensures we get the latest saved data
         try {
-          const getResponse = await api.get(`/admin/settings/${settingsType}`)
+          const getResponse = await api.get(`/admin/settings/${apiType}`)
           if (getResponse.data?.settings) {
             // Update only the specific setting type state
             switch (settingsType) {
@@ -307,6 +311,9 @@ const Settings = () => {
                 setPricingSettings(getResponse.data.settings)
                 break
               case 'orders':
+                setOrderSettings(getResponse.data.settings)
+                break
+              case 'delivery':
                 setOrderSettings(getResponse.data.settings)
                 break
               case 'payment':
@@ -386,6 +393,7 @@ const Settings = () => {
     { id: 'commission', label: 'Commission', icon: DollarSign },
     { id: 'pricing', label: 'Pricing (Markup)', icon: Percent },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
+    { id: 'delivery', label: 'Delivery', icon: Truck },
     { id: 'payment', label: 'Payment', icon: CreditCard },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
@@ -777,6 +785,145 @@ const Settings = () => {
     </div>
   )
 
+  const renderDeliverySettings = () => (
+    <div className="space-y-8">
+      <p className="text-sm text-gray-600">Configure how delivery fees are calculated and how much drivers earn per delivery.</p>
+
+      {/* Delivery fee */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h3 className="text-base font-semibold text-gray-900 mb-1">Delivery fee</h3>
+        <p className="text-xs text-gray-500 mb-4">How much customers pay for delivery. Choose flat, per km, or dynamic (tiered + traffic/demand).</p>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Fee type</label>
+            <select
+              value={orderSettings.delivery_fee_type ?? 'flat'}
+              onChange={(e) => setOrderSettings({ ...orderSettings, delivery_fee_type: e.target.value, use_distance_based_delivery: ['per_km', 'dynamic'].includes(e.target.value) })}
+              className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="flat">Flat rate (fixed $ per order)</option>
+              <option value="per_km">Per km (distance × rate)</option>
+              <option value="dynamic">Dynamic (base + tiered distance + traffic/demand + small order)</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Flat delivery fee ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={orderSettings.delivery_fee}
+                onChange={(e) => setOrderSettings({ ...orderSettings, delivery_fee: parseFloat(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              />
+              <p className="text-xs text-gray-500 mt-0.5">Used when fee type is Flat</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Free delivery threshold ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={orderSettings.free_delivery_threshold}
+                onChange={(e) => setOrderSettings({ ...orderSettings, free_delivery_threshold: parseFloat(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              />
+              <p className="text-xs text-gray-500 mt-0.5">Order total above this can get free delivery (if you enable it)</p>
+            </div>
+          </div>
+          {(orderSettings.delivery_fee_type ?? 'flat') === 'per_km' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Rate per km ($)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={orderSettings.delivery_fee_per_km ?? 1}
+                onChange={(e) => setOrderSettings({ ...orderSettings, delivery_fee_per_km: parseFloat(e.target.value) || 0 })}
+                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">Fee = distance (km) × this rate. Uses Maps or geocode fallback.</p>
+            </div>
+          )}
+          {(orderSettings.delivery_fee_type ?? 'flat') === 'dynamic' && (
+            <div className="space-y-4 pt-2 border-t border-gray-100">
+              <h4 className="text-sm font-medium text-gray-800">Dynamic formula</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Base fee ($)</label>
+                  <input type="number" step="0.01" min="0" value={orderSettings.dynamic_base_fee ?? 3} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_base_fee: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Current traffic</label>
+                  <select value={orderSettings.dynamic_current_traffic ?? 'normal'} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_current_traffic: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    <option value="normal">Normal (×1.0)</option>
+                    <option value="moderate">Moderate (×1.2)</option>
+                    <option value="heavy">Heavy (×1.5)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Current demand</label>
+                  <select value={orderSettings.dynamic_current_demand ?? 'low'} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_current_demand: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    <option value="low">Low (×1.0)</option>
+                    <option value="busy">Busy (×1.15)</option>
+                    <option value="peak">Peak (×1.35)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Small order threshold ($)</label>
+                  <input type="number" step="0.01" min="0" value={orderSettings.dynamic_small_order_threshold ?? 15} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_small_order_threshold: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                  <p className="text-xs text-gray-500 mt-0.5">Orders below this get an extra fee</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Small order fee ($)</label>
+                  <input type="number" step="0.01" min="0" value={orderSettings.dynamic_small_order_fee ?? 2} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_small_order_fee: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Distance tiers ($ per km)</label>
+                <p className="text-xs text-gray-500 mb-2">First matching tier applies. Last row = over that km.</p>
+                {(orderSettings.dynamic_distance_tiers ?? [{ max_km: 3, rate_per_km: 0.80 }, { max_km: 8, rate_per_km: 0.55 }, { rate_per_km: 0.40 }]).map((tier, idx) => (
+                  <div key={idx} className="flex items-center gap-2 mb-2">
+                    <input type="number" step="0.01" min="0" placeholder="Max km (blank = over)" value={tier.max_km ?? ''} onChange={(e) => {
+                      const tiers = [...(orderSettings.dynamic_distance_tiers || [])]
+                      tiers[idx] = { ...tiers[idx], max_km: e.target.value === '' ? undefined : parseFloat(e.target.value) }
+                      setOrderSettings({ ...orderSettings, dynamic_distance_tiers: tiers })
+                    }} className="w-24 px-2 py-1.5 border border-gray-300 rounded" />
+                    <span className="text-gray-500">km →</span>
+                    <input type="number" step="0.01" min="0" value={tier.rate_per_km ?? 0} onChange={(e) => {
+                      const tiers = [...(orderSettings.dynamic_distance_tiers || [])]
+                      tiers[idx] = { ...tiers[idx], rate_per_km: parseFloat(e.target.value) || 0 }
+                      setOrderSettings({ ...orderSettings, dynamic_distance_tiers: tiers })
+                    }} className="w-24 px-2 py-1.5 border border-gray-300 rounded" />
+                    <span className="text-gray-600">$/km</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Driver earnings */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h3 className="text-base font-semibold text-gray-900 mb-1">Driver earnings</h3>
+        <p className="text-xs text-gray-500 mb-4">Percentage of the delivery fee that drivers receive per delivery.</p>
+        <div className="max-w-xs">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Driver earnings (% of delivery fee)</label>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            value={orderSettings.driver_earnings_percent ?? 80}
+            onChange={(e) => setOrderSettings({ ...orderSettings, driver_earnings_percent: parseFloat(e.target.value) || 80 })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+          />
+          <p className="text-xs text-gray-500 mt-1">e.g. 80 = driver gets 80% of the delivery fee, platform keeps 20%.</p>
+        </div>
+      </div>
+    </div>
+  )
+
   const renderOrderSettings = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
@@ -801,110 +948,6 @@ const Settings = () => {
           />
         </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Delivery fee type</label>
-        <select
-          value={orderSettings.delivery_fee_type ?? 'flat'}
-          onChange={(e) => setOrderSettings({ ...orderSettings, delivery_fee_type: e.target.value, use_distance_based_delivery: ['per_km', 'dynamic'].includes(e.target.value) })}
-          className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-        >
-          <option value="flat">Flat rate (fixed $ per order)</option>
-          <option value="per_km">Per km (distance × rate)</option>
-          <option value="dynamic">Dynamic (base + tiered distance + traffic/demand + small order)</option>
-        </select>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Fee ($) – used when type is Flat</label>
-          <input
-            type="number"
-            step="0.01"
-            value={orderSettings.delivery_fee}
-            onChange={(e) => setOrderSettings({ ...orderSettings, delivery_fee: parseFloat(e.target.value) })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Free Delivery Threshold ($)</label>
-          <input
-            type="number"
-            step="0.01"
-            value={orderSettings.free_delivery_threshold}
-            onChange={(e) => setOrderSettings({ ...orderSettings, free_delivery_threshold: parseFloat(e.target.value) })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-          />
-        </div>
-      </div>
-      {(orderSettings.delivery_fee_type ?? 'flat') === 'per_km' && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Delivery fee per km ($)</label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={orderSettings.delivery_fee_per_km ?? 1}
-            onChange={(e) => setOrderSettings({ ...orderSettings, delivery_fee_per_km: parseFloat(e.target.value) || 0 })}
-            className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-          />
-          <p className="text-xs text-gray-500 mt-1">Fee = distance (km) × this rate. Uses Maps or geocode fallback.</p>
-        </div>
-      )}
-      {(orderSettings.delivery_fee_type ?? 'flat') === 'dynamic' && (
-        <div className="space-y-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
-          <h4 className="font-medium text-gray-800">Dynamic delivery formula</h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Base fee ($)</label>
-              <input type="number" step="0.01" min="0" value={orderSettings.dynamic_base_fee ?? 3} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_base_fee: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Current traffic</label>
-              <select value={orderSettings.dynamic_current_traffic ?? 'normal'} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_current_traffic: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                <option value="normal">Normal (×1.0)</option>
-                <option value="moderate">Moderate (×1.2)</option>
-                <option value="heavy">Heavy (×1.5)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Current demand</label>
-              <select value={orderSettings.dynamic_current_demand ?? 'low'} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_current_demand: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                <option value="low">Low (×1.0)</option>
-                <option value="busy">Busy (×1.15)</option>
-                <option value="peak">Peak (×1.35)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Small order threshold ($)</label>
-              <input type="number" step="0.01" min="0" value={orderSettings.dynamic_small_order_threshold ?? 15} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_small_order_threshold: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-              <p className="text-xs text-gray-500 mt-0.5">Orders below this get an extra fee</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Small order fee ($)</label>
-              <input type="number" step="0.01" min="0" value={orderSettings.dynamic_small_order_fee ?? 2} onChange={(e) => setOrderSettings({ ...orderSettings, dynamic_small_order_fee: parseFloat(e.target.value) || 0 })} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Distance tiers ($ per km)</label>
-            <p className="text-xs text-gray-500 mb-2">First matching tier applies. Last row = over that km.</p>
-            {(orderSettings.dynamic_distance_tiers ?? [{ max_km: 3, rate_per_km: 0.80 }, { max_km: 8, rate_per_km: 0.55 }, { rate_per_km: 0.40 }]).map((tier, idx) => (
-              <div key={idx} className="flex items-center gap-2 mb-2">
-                <input type="number" step="0.01" min="0" placeholder="Max km (blank = over)" value={tier.max_km ?? ''} onChange={(e) => {
-                  const tiers = [...(orderSettings.dynamic_distance_tiers || [])]
-                  tiers[idx] = { ...tiers[idx], max_km: e.target.value === '' ? undefined : parseFloat(e.target.value) }
-                  setOrderSettings({ ...orderSettings, dynamic_distance_tiers: tiers })
-                }} className="w-24 px-2 py-1.5 border border-gray-300 rounded" />
-                <span className="text-gray-500">km →</span>
-                <input type="number" step="0.01" min="0" value={tier.rate_per_km ?? 0} onChange={(e) => {
-                  const tiers = [...(orderSettings.dynamic_distance_tiers || [])]
-                  tiers[idx] = { ...tiers[idx], rate_per_km: parseFloat(e.target.value) || 0 }
-                  setOrderSettings({ ...orderSettings, dynamic_distance_tiers: tiers })
-                }} className="w-24 px-2 py-1.5 border border-gray-300 rounded" />
-                <span className="text-gray-600">$/km</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Order Timeout (minutes)</label>
@@ -934,19 +977,7 @@ const Settings = () => {
         />
         <label className="text-sm text-gray-700">Allow Order Modifications</label>
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Driver earnings (% of delivery fee)</label>
-        <input
-          type="number"
-          min="0"
-          max="100"
-          step="1"
-          value={orderSettings.driver_earnings_percent ?? 80}
-          onChange={(e) => setOrderSettings({ ...orderSettings, driver_earnings_percent: parseFloat(e.target.value) || 80 })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-        />
-        <p className="text-xs text-gray-500 mt-1">Percentage of the delivery fee that drivers receive per delivery (default 80).</p>
-      </div>
+      <p className="text-xs text-gray-500">Delivery fee and driver earnings are configured in the <button type="button" onClick={() => setActiveTab('delivery')} className="text-primary-600 hover:underline">Delivery</button> section.</p>
     </div>
   )
 
@@ -1354,6 +1385,7 @@ const Settings = () => {
       case 'general': return generalSettings
       case 'commission': return commissionSettings
       case 'orders': return orderSettings
+      case 'delivery': return orderSettings
       case 'payment': return paymentSettings
       case 'notifications': return notificationSettings
       case 'security': return securitySettings
@@ -1434,6 +1466,7 @@ const Settings = () => {
               {activeTab === 'commission' && renderCommissionSettings()}
               {activeTab === 'pricing' && renderPricingSettings()}
               {activeTab === 'orders' && renderOrderSettings()}
+              {activeTab === 'delivery' && renderDeliverySettings()}
               {activeTab === 'payment' && renderPaymentSettings()}
               {activeTab === 'notifications' && renderNotificationSettings()}
               {activeTab === 'security' && renderSecuritySettings()}
