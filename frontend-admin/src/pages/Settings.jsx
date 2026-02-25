@@ -881,22 +881,28 @@ const Settings = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Distance tiers ($ per km)</label>
                 <p className="text-xs text-gray-500 mb-2">First matching tier applies. Last row = over that km.</p>
-                {(orderSettings.dynamic_distance_tiers ?? [{ max_km: 3, rate_per_km: 0.80 }, { max_km: 8, rate_per_km: 0.55 }, { rate_per_km: 0.40 }]).map((tier, idx) => (
-                  <div key={idx} className="flex items-center gap-2 mb-2">
-                    <input type="number" step="0.01" min="0" placeholder="Max km (blank = over)" value={tier.max_km ?? ''} onChange={(e) => {
-                      const tiers = [...(orderSettings.dynamic_distance_tiers || [])]
-                      tiers[idx] = { ...tiers[idx], max_km: e.target.value === '' ? undefined : parseFloat(e.target.value) }
-                      setOrderSettings({ ...orderSettings, dynamic_distance_tiers: tiers })
-                    }} className="w-24 px-2 py-1.5 border border-gray-300 rounded" />
-                    <span className="text-gray-500">km →</span>
-                    <input type="number" step="0.01" min="0" value={tier.rate_per_km ?? 0} onChange={(e) => {
-                      const tiers = [...(orderSettings.dynamic_distance_tiers || [])]
-                      tiers[idx] = { ...tiers[idx], rate_per_km: parseFloat(e.target.value) || 0 }
-                      setOrderSettings({ ...orderSettings, dynamic_distance_tiers: tiers })
-                    }} className="w-24 px-2 py-1.5 border border-gray-300 rounded" />
-                    <span className="text-gray-600">$/km</span>
-                  </div>
-                ))}
+                {(() => {
+                  const defaultTiers = [{ max_km: 3, rate_per_km: 0.80 }, { max_km: 8, rate_per_km: 0.55 }, { rate_per_km: 0.40 }]
+                  const tiers = (Array.isArray(orderSettings.dynamic_distance_tiers) && orderSettings.dynamic_distance_tiers.length > 0)
+                    ? orderSettings.dynamic_distance_tiers
+                    : defaultTiers
+                  return tiers.map((tier, idx) => (
+                    <div key={idx} className="flex items-center gap-2 mb-2">
+                      <input type="number" step="0.01" min="0" placeholder="Max km (blank = over)" value={tier.max_km ?? ''} onChange={(e) => {
+                        const next = [...tiers]
+                        next[idx] = { ...next[idx], max_km: e.target.value === '' ? undefined : parseFloat(e.target.value) }
+                        setOrderSettings({ ...orderSettings, dynamic_distance_tiers: next })
+                      }} className="w-24 px-2 py-1.5 border border-gray-300 rounded" />
+                      <span className="text-gray-500">km →</span>
+                      <input type="number" step="0.01" min="0" value={tier.rate_per_km ?? 0} onChange={(e) => {
+                        const next = [...tiers]
+                        next[idx] = { ...next[idx], rate_per_km: parseFloat(e.target.value) || 0 }
+                        setOrderSettings({ ...orderSettings, dynamic_distance_tiers: next })
+                      }} className="w-24 px-2 py-1.5 border border-gray-300 rounded" />
+                      <span className="text-gray-600">$/km</span>
+                    </div>
+                  ))
+                })()}
               </div>
             </div>
           )}
