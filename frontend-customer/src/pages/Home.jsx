@@ -1121,10 +1121,10 @@ const AutoScrollCarousel = ({ products, onQuickView, onAddToCart, onShowToast, f
   return (
     <section className="pt-1 sm:pt-2 pb-3 sm:pb-4 bg-gradient-to-b from-gray-50 to-white w-full" style={{ display: 'block' }}>
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        {/* Two symmetric deal strips with a clear divider – one long continuous bar */}
-        <div className="flex items-center w-full mb-2 sm:mb-4 gap-4 sm:gap-6 md:gap-8">
-          {/* Left half: Top Market Deals */}
-          <Link to="/top-market-deals" className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3 md:gap-4 group cursor-pointer">
+        {/* Two deal strips: left group + right group, no center divider */}
+        <div className="flex items-center justify-between w-full mb-2 sm:mb-4 gap-4">
+          {/* Left: Top Market Deals – icon and text together, small lightning next to text */}
+          <Link to="/top-market-deals" className="flex items-center gap-2 sm:gap-3 md:gap-4 group cursor-pointer flex-shrink-0">
             <div className="relative flex items-center justify-center flex-shrink-0">
               <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 via-orange-400 to-yellow-300 rounded-full blur-xl sm:blur-2xl opacity-50 group-hover:opacity-70 animate-pulse" />
               <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400 rounded-full blur-md sm:blur-lg opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
@@ -1136,23 +1136,14 @@ const AutoScrollCarousel = ({ products, onQuickView, onAddToCart, onShowToast, f
               <div className="absolute -bottom-0.5 -left-0.5 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-orange-400 rounded-full animate-ping" style={{ animationDelay: '0.5s' }} />
             </div>
             <div className="w-0.5 h-7 sm:h-10 md:h-12 bg-gradient-to-b from-yellow-400 via-orange-500 to-yellow-400 rounded-full shadow-sm flex-shrink-0" />
-            <span className="text-sm sm:text-base md:text-xl lg:text-2xl font-bold leading-tight tracking-tight bg-gradient-to-r from-yellow-600 via-orange-500 to-yellow-600 bg-clip-text text-transparent group-hover:from-orange-600 group-hover:to-yellow-600 transition-all duration-200 truncate">
+            <span className="text-sm sm:text-base md:text-xl lg:text-2xl font-bold leading-tight tracking-tight bg-gradient-to-r from-yellow-600 via-orange-500 to-yellow-600 bg-clip-text text-transparent group-hover:from-orange-600 group-hover:to-yellow-600 transition-all duration-200">
               Top Market Deals
             </span>
-            <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-orange-500 fill-orange-500 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-200 flex-shrink-0 ml-auto" />
+            <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-orange-500 fill-orange-500 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-200 flex-shrink-0" />
           </Link>
 
-          {/* Center: divider + scroll hint */}
-          <div className="flex flex-shrink-0 items-center gap-2">
-            <div className="w-px h-8 sm:h-10 bg-gradient-to-b from-gray-200 via-gray-300 to-gray-200 rounded-full" aria-hidden />
-            <div className="hidden md:flex items-center space-x-2 text-sm text-gray-500">
-              <span>Scroll to explore</span>
-              <span className="animate-pulse">→</span>
-            </div>
-          </div>
-
-          {/* Right half: Top Chef Deals – same structure, mirrored */}
-          <Link to="/top-chef-deals" className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3 md:gap-4 group cursor-pointer">
+          {/* Right: Top Chef Deals – justified right, fork & knife next to text */}
+          <Link to="/top-chef-deals" className="flex items-center justify-end gap-2 sm:gap-3 md:gap-4 group cursor-pointer flex-shrink-0 ml-auto">
             <div className="relative flex items-center justify-center flex-shrink-0">
               <div className="absolute inset-0 bg-gradient-to-r from-amber-300 via-orange-400 to-amber-300 rounded-full blur-xl sm:blur-2xl opacity-50 group-hover:opacity-70 animate-pulse" />
               <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 rounded-full blur-md sm:blur-lg opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
@@ -1164,10 +1155,10 @@ const AutoScrollCarousel = ({ products, onQuickView, onAddToCart, onShowToast, f
               <div className="absolute -bottom-0.5 -left-0.5 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-orange-400 rounded-full animate-ping" style={{ animationDelay: '0.5s' }} />
             </div>
             <div className="w-0.5 h-7 sm:h-10 md:h-12 bg-gradient-to-b from-amber-400 via-orange-500 to-amber-400 rounded-full shadow-sm flex-shrink-0" />
-            <span className="text-sm sm:text-base md:text-xl lg:text-2xl font-bold leading-tight tracking-tight bg-gradient-to-r from-amber-600 via-orange-500 to-amber-600 bg-clip-text text-transparent group-hover:from-orange-600 group-hover:to-amber-600 transition-all duration-200 truncate">
+            <span className="text-sm sm:text-base md:text-xl lg:text-2xl font-bold leading-tight tracking-tight bg-gradient-to-r from-amber-600 via-orange-500 to-amber-600 bg-clip-text text-transparent group-hover:from-orange-600 group-hover:to-amber-600 transition-all duration-200">
               Top Chef Deals
             </span>
-            <UtensilsCrossed className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-amber-500 fill-amber-500 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-200 flex-shrink-0 ml-auto" />
+            <UtensilsCrossed className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-amber-500 fill-amber-500 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-200 flex-shrink-0" />
           </Link>
         </div>
         

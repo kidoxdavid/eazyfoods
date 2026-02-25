@@ -1,6 +1,8 @@
 """
 Customer profile and address management endpoints
 """
+import math
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -11,8 +13,46 @@ from app.models.platform_settings import PlatformSettings
 from app.api.v1.dependencies import get_current_customer
 from app.schemas.customer import CustomerResponse, CustomerProfileUpdate, CustomerAddressCreate, CustomerAddressUpdate
 from uuid import UUID
+import httpx
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Distance between two (lat, lon) points in km."""
+    R = 6371.0
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlam = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+
+async def _geocode_address(address: str) -> Optional[tuple]:
+    """Geocode address string to (lat, lon) using Nominatim. Returns None on failure."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            r = await client.get(
+                "https://nominatim.openstreetmap.org/search",
+                params={"q": address, "format": "json", "limit": 1},
+                headers={"User-Agent": "eazyfoods-app/1.0 (contact@eazyfoods.ca)"},
+            )
+            if r.status_code != 200:
+                return None
+            data = r.json()
+            if not data or not isinstance(data, list):
+                return None
+            first = data[0]
+            lat = first.get("lat")
+            lon = first.get("lon")
+            if lat is None or lon is None:
+                return None
+            return (float(lat), float(lon))
+    except Exception as e:
+        logger.warning("Geocode fallback failed: %s", e)
+        return None
 
 
 @router.get("/config")
@@ -72,6 +112,18 @@ async def get_delivery_estimate(
     from app.services.maps_service import maps_service
     if maps_service.is_available():
         distance_km = maps_service.get_distance_km_from_addresses(store_address, delivery_address)
+
+    # Fallback when Maps API unavailable: geocode both addresses (postal code etc.) then haversine
+    if distance_km is None and use_distance:
+        try:
+            store_coords = await _geocode_address(store_address)
+            delivery_coords = await _geocode_address(delivery_address)
+            if store_coords and delivery_coords:
+                store_lat, store_lon = store_coords
+                delivery_lat, delivery_lon = delivery_coords
+                distance_km = _haversine_km(store_lat, store_lon, delivery_lat, delivery_lon)
+        except (TypeError, ValueError) as e:
+            logger.warning("Delivery estimate fallback failed: %s", e)
 
     if use_distance and distance_km is not None and fee_per_km >= 0:
         delivery_fee = round(distance_km * fee_per_km, 2)
