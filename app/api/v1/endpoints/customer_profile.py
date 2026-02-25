@@ -121,7 +121,9 @@ async def get_delivery_estimate(
             if store_coords and delivery_coords:
                 store_lat, store_lon = store_coords
                 delivery_lat, delivery_lon = delivery_coords
-                distance_km = _haversine_km(store_lat, store_lon, delivery_lat, delivery_lon)
+                straight_line_km = _haversine_km(store_lat, store_lon, delivery_lat, delivery_lon)
+                # Straight-line is shorter than driving; use ~1.5x to approximate route distance (so $/km matches admin rate)
+                distance_km = straight_line_km * 1.5
         except (TypeError, ValueError) as e:
             logger.warning("Delivery estimate fallback failed: %s", e)
 
