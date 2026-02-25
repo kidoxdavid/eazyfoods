@@ -527,9 +527,9 @@ const Home = () => {
             {/* Shop by Category - First Column */}
             <div className="w-full">
               <div className="mb-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-1 h-10 bg-gradient-to-b from-emerald-500 via-emerald-600 to-teal-600 rounded-full shadow-lg"></div>
-                  <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                  <div className="w-0.5 sm:w-1 h-6 sm:h-8 bg-gradient-to-b from-emerald-500 via-emerald-600 to-teal-600 rounded-full shadow-lg"></div>
+                  <h2 className="text-sm sm:text-base font-bold text-gray-900">
                     Browse Categories
                   </h2>
                 </div>
@@ -591,9 +591,9 @@ const Home = () => {
             {/* Shop by Region - Middle Column */}
             <div className="w-full">
               <div className="mb-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-1 h-10 bg-gradient-to-b from-amber-500 via-orange-500 to-red-500 rounded-full shadow-lg"></div>
-                  <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                  <div className="w-0.5 sm:w-1 h-6 sm:h-8 bg-gradient-to-b from-amber-500 via-orange-500 to-red-500 rounded-full shadow-lg"></div>
+                  <h2 className="text-sm sm:text-base font-bold text-gray-900">
                     Regional Flavors
                   </h2>
                 </div>
@@ -698,9 +698,9 @@ const Home = () => {
             <div className="w-full">
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-1 h-10 bg-gradient-to-b from-orange-500 via-red-500 to-pink-500 rounded-full shadow-lg"></div>
-                    <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-0.5 sm:w-1 h-6 sm:h-8 bg-gradient-to-b from-orange-500 via-red-500 to-pink-500 rounded-full shadow-lg"></div>
+                    <h2 className="text-sm sm:text-base font-bold text-gray-900">
                       Special Offers
                     </h2>
                   </div>
@@ -766,8 +766,8 @@ const Home = () => {
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-1 h-10 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-500 rounded-full shadow-lg"></div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                    <div className="w-0.5 sm:w-1 h-6 sm:h-8 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-500 rounded-full shadow-lg"></div>
+                    <h2 className="text-sm sm:text-base font-bold text-gray-900">
                       Local Markets
                     </h2>
                   </div>
@@ -852,8 +852,8 @@ const Home = () => {
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-1 h-10 bg-gradient-to-b from-amber-500 via-orange-500 to-rose-500 rounded-full shadow-lg"></div>
-                    <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                    <div className="w-0.5 sm:w-1 h-6 sm:h-8 bg-gradient-to-b from-amber-500 via-orange-500 to-rose-500 rounded-full shadow-lg"></div>
+                    <h2 className="text-sm sm:text-base font-bold text-gray-900">
                       Chefs
                     </h2>
                   </div>
@@ -1097,7 +1097,7 @@ const AutoScrollCarousel = ({ products, onQuickView, onAddToCart, onShowToast, f
   })
   
   return (
-    <section className="-mt-2 sm:mt-0 pt-0 sm:pt-1 pb-3 sm:pb-4 bg-gradient-to-b from-gray-50 to-white w-full" style={{ display: 'block' }}>
+    <section className="-mt-4 sm:mt-0 pt-0 sm:pt-1 pb-3 sm:pb-4 bg-gradient-to-b from-gray-50 to-white w-full" style={{ display: 'block' }}>
       <div className="w-full px-4 sm:px-6 lg:px-8">
         {/* Two deal strips: compact on mobile so center gap is obvious; balanced spacing above/below */}
         <div className="flex items-center justify-between w-full mb-2 sm:mb-4 gap-2 sm:gap-4">
