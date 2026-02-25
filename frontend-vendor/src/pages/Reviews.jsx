@@ -18,6 +18,7 @@ const Reviews = () => {
   // Mark all reviews as read when vendor opens this page (clears notification badge)
   useEffect(() => {
     api.put('/reviews/mark-read').then(() => {
+      window.dispatchEvent(new Event('reviews-marked-read'))
       window.dispatchEvent(new Event('refresh-notifications'))
     }).catch(() => {})
   }, [])

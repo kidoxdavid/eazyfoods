@@ -24,7 +24,7 @@ const Layout = () => {
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Vendors', href: '/vendors', icon: Store, badge: notifications.pendingVendors },
     { name: 'Categories', href: '/vendors/categories', icon: Tag },
-    { name: 'Chefs', href: '/chefs', icon: ChefHat },
+    { name: 'Chefs', href: '/chefs', icon: ChefHat, badge: notifications.pendingChefs },
     { name: 'Customers', href: '/customers', icon: Users },
     { name: 'Products', href: '/products', icon: Package },
     { name: 'Barcode', href: '/barcode', icon: ScanLine },

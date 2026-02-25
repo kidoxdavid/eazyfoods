@@ -224,7 +224,7 @@ const ContactUs = () => {
               <Mail className="h-5 w-5 text-primary-600 flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-1">Email Support</h3>
-                <p className="text-xs text-gray-600 break-all">support@eazyfoods.com</p>
+                <p className="text-xs text-gray-600 break-all">support@eazyfoods.ca</p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">

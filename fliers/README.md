@@ -27,4 +27,4 @@ Each flier has an **HTML** version (print-friendly, open in browser) and a **Mar
 - Chef portal: [chef.eazyfoods.ca](https://chef.eazyfoods.ca)  
 - Driver/delivery signup: [delivery.eazyfoods.ca](https://delivery.eazyfoods.ca)  
 - Customer site: [eazyfoods.ca](https://eazyfoods.ca)  
-- Support: support@eazyfoods.com
+- Support: support@eazyfoods.ca

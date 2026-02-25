@@ -261,78 +261,76 @@ const Cart = () => {
           {cart.map((item) => {
             const itemLink = item.chef_id ? `/chefs/${item.chef_id}` : `/products/${item.id}`
             return (
-            <div key={item.id} className="card flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 p-3 sm:p-4">
-              <Link to={itemLink} className="flex-shrink-0 w-full sm:w-auto">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0">
-                  {item.image_url ? (
-                    <img
-                      src={resolveImageUrl(item.image_url)}
-                      alt={item.name}
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        console.error('[Cart] Image failed to load:', item.image_url)
-                        e.target.style.display = 'none'
-                        const fallback = e.target.parentElement.querySelector('.image-fallback')
-                        if (fallback) {
-                          fallback.style.display = 'flex'
-                        }
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                      No Image
+            <div key={item.id} className="card overflow-hidden p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <Link to={itemLink} className="flex-shrink-0 self-start sm:self-center">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
+                    {item.image_url ? (
+                      <img
+                        src={resolveImageUrl(item.image_url)}
+                        alt={item.name}
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          console.error('[Cart] Image failed to load:', item.image_url)
+                          e.target.style.display = 'none'
+                          const fallback = e.target.parentElement.querySelector('.image-fallback')
+                          if (fallback) {
+                            fallback.style.display = 'flex'
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Image</div>
+                    )}
+                    <div className="image-fallback absolute inset-0 w-full h-full flex items-center justify-center text-gray-400 text-xs hidden">No Image</div>
+                  </div>
+                </Link>
+                <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                  <div className="min-w-0">
+                    <Link to={itemLink}>
+                      <h3 className="font-semibold text-gray-900 text-sm sm:text-base line-clamp-2">{item.name}</h3>
+                    </Link>
+                    <p className="text-sm font-bold text-gray-900 mt-0.5">${item.price.toFixed(2)} each</p>
+                  </div>
+                  <div className="flex items-center justify-between sm:justify-end gap-3 flex-wrap">
+                    <div className="flex items-center border border-gray-300 rounded-lg">
+                      <button
+                        onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                        className="p-2 hover:bg-gray-50 rounded-l-lg"
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <span className="px-3 py-1.5 text-sm min-w-[2rem] text-center">{item.quantity}</span>
+                      <button
+                        onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                        className="p-2 hover:bg-gray-50 rounded-r-lg"
+                        aria-label="Increase quantity"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
                     </div>
-                  )}
-                  <div className="image-fallback absolute inset-0 w-full h-full flex items-center justify-center text-gray-400 text-xs hidden">
-                    No Image
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleSaveForLater(item)}
+                        className="p-2 text-gray-500 hover:text-primary-600 rounded-lg"
+                        title="Save for later"
+                      >
+                        <Bookmark className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </button>
+                      <button
+                        onClick={() => handleRemoveFromCart(item.id)}
+                        className="p-2 text-red-600 hover:text-red-700 rounded-lg"
+                        title="Remove"
+                      >
+                        <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </button>
+                    </div>
+                    <p className="text-base font-bold text-gray-900 min-w-[4rem] text-right tabular-nums">
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </p>
                   </div>
                 </div>
-              </Link>
-              <div className="flex-1 w-full sm:w-auto min-w-0">
-                <Link to={itemLink}>
-                  <h3 className="font-semibold text-gray-900 mb-0.5 sm:mb-1 text-xs sm:text-base line-clamp-2">{item.name}</h3>
-                </Link>
-                <p className="text-sm sm:text-lg font-bold text-gray-900">${item.price.toFixed(2)}</p>
-              </div>
-              <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-2 sm:gap-4">
-                <div className="flex items-center space-x-1 sm:space-x-2 border border-gray-300 rounded-lg">
-                  <button
-                    onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                    className="p-1.5 sm:p-2 hover:bg-gray-50"
-                  >
-                    <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  </button>
-                  <span className="px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-base">{item.quantity}</span>
-                  <button
-                    onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                    className="p-1.5 sm:p-2 hover:bg-gray-50"
-                  >
-                    <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  </button>
-                </div>
-                <button
-                  onClick={() => handleSaveForLater(item)}
-                  className="p-1.5 sm:p-2 text-gray-500 hover:text-primary-600"
-                  title="Save for later"
-                >
-                  <Bookmark className="h-4 w-4 sm:h-5 sm:w-5" />
-                </button>
-                <button
-                  onClick={() => handleRemoveFromCart(item.id)}
-                  className="p-1.5 sm:p-2 text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                </button>
-                <div className="text-right sm:hidden">
-                  <p className="text-sm font-bold text-gray-900">
-                    ${(item.price * item.quantity).toFixed(2)}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right hidden sm:block">
-                <p className="text-base sm:text-lg font-bold text-gray-900">
-                  ${(item.price * item.quantity).toFixed(2)}
-                </p>
               </div>
             </div>
           )})}

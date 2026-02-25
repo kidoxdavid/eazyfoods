@@ -761,7 +761,7 @@ const Layout = ({ children }) => {
               <div>
                 <h4 className="font-semibold mb-4">Contact</h4>
                 <ul className="space-y-2 text-gray-400">
-                  <li>support@eazyfoods.com</li>
+                  <li>support@eazyfoods.ca</li>
                   <li>1-800-EAZYFOOD</li>
                 </ul>
               </div>

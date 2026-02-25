@@ -176,7 +176,7 @@ const BecomeADriver = () => {
 
         {/* Footer note */}
         <p className="text-center text-sm text-gray-500 mt-8">
-          Questions? Visit our <Link to="/contact" className="text-primary-600 hover:underline">Contact</Link> page or email support@eazyfoods.com.
+          Questions? Visit our <Link to="/contact" className="text-primary-600 hover:underline">Contact</Link> page or email support@eazyfoods.ca.
         </p>
       </div>
     </div>

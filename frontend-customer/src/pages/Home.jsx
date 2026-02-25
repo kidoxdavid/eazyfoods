@@ -1147,7 +1147,7 @@ const AutoScrollCarousel = ({ products, onQuickView, onAddToCart, onShowToast, f
                 <div className="w-0.5 h-10 sm:h-12 bg-gradient-to-b from-yellow-400 via-orange-500 to-yellow-400 rounded-full shadow-sm"></div>
                 
                 {/* Text content with stylized typography */}
-                <span className="text-xl sm:text-2xl lg:text-3xl font-bold leading-tight tracking-tight">
+                <span className="text-base sm:text-xl lg:text-2xl font-bold leading-tight tracking-tight">
                   <span className="bg-gradient-to-r from-yellow-600 via-orange-500 via-yellow-500 to-orange-600 bg-clip-text text-transparent group-hover:from-orange-600 group-hover:to-yellow-600 transition-all duration-200">
                     Top Market Deals
                   </span>
@@ -1167,7 +1167,7 @@ const AutoScrollCarousel = ({ products, onQuickView, onAddToCart, onShowToast, f
               <span className="animate-pulse">→</span>
             </div>
             <Link to="/top-chef-deals" className="relative flex items-center gap-2 group cursor-pointer flex-shrink-0">
-              <span className="text-lg sm:text-xl font-bold leading-tight bg-gradient-to-r from-amber-600 via-orange-500 to-amber-600 bg-clip-text text-transparent group-hover:from-orange-600 group-hover:to-amber-600 transition-all duration-200">
+              <span className="text-base sm:text-xl lg:text-2xl font-bold leading-tight bg-gradient-to-r from-amber-600 via-orange-500 to-amber-600 bg-clip-text text-transparent group-hover:from-orange-600 group-hover:to-amber-600 transition-all duration-200">
                 Top Chef Deals
               </span>
               <UtensilsCrossed className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500 group-hover:scale-110 transition-transform" />

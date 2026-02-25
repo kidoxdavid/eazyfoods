@@ -52,4 +52,4 @@
 
 ---
 
-*eazyfoods – Authentic African groceries & meals, delivered. For more info: support@eazyfoods.com*
+*eazyfoods – Authentic African groceries & meals, delivered. For more info: support@eazyfoods.ca*

@@ -65,7 +65,7 @@ const Support = () => {
               </div>
               <div>
                 <p className="font-medium text-gray-900">Email Support</p>
-                <p className="text-sm text-gray-600">drivers@eazyfoods.com</p>
+                <p className="text-sm text-gray-600">support@eazyfoods.ca</p>
                 <p className="text-xs text-gray-500">Response within 24 hours</p>
               </div>
             </div>

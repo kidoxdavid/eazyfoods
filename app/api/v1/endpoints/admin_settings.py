@@ -120,7 +120,7 @@ def get_default_settings(setting_type: str) -> dict:
     defaults = {
         'general': {
             'platform_name': 'EAZy Foods',
-            'platform_email': 'support@eazyfoods.com',
+            'platform_email': 'support@eazyfoods.ca',
             'platform_phone': '+1 (555) 123-4567',
             'timezone': 'America/New_York',
             'currency': 'USD',

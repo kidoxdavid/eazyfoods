@@ -10,6 +10,7 @@ export const useNotifications = () => {
     pendingPromotions: 0,
     pendingSupport: 0,
     pendingDrivers: 0,
+    pendingChefs: 0,
     pendingReviews: 0
   })
   const [loading, setLoading] = useState(true)
@@ -101,6 +102,18 @@ export const useNotifications = () => {
         console.error('Failed to fetch drivers notifications:', error)
       }
 
+      // Fetch pending chef signups
+      let chefsCount = 0
+      try {
+        const chefsRes = await api.get('/admin/chefs', { 
+          params: { verification_status: 'pending', limit: 1000 } 
+        })
+        const pendingChefs = Array.isArray(chefsRes.data) ? chefsRes.data.filter(c => c.verification_status === 'pending') : []
+        chefsCount = pendingChefs.length
+      } catch (error) {
+        console.error('Failed to fetch chefs notifications:', error)
+      }
+
       // Fetch review stats (reported / needing attention for badge)
       try {
         const statsRes = await api.get('/admin/reviews/stats')
@@ -116,6 +129,7 @@ export const useNotifications = () => {
         pendingPromotions: promotionsCount,
         pendingSupport: supportCount,
         pendingDrivers: driversCount,
+        pendingChefs: chefsCount,
         pendingReviews: reviewsSeenRef.current ? 0 : reviewsCount
       })
     } catch (error) {

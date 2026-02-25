@@ -9,7 +9,7 @@ const Settings = () => {
     email_settings: {
       from_name: 'eazyfoods',
       from_email: 'noreply@eazyfoods.com',
-      reply_to: 'support@eazyfoods.com'
+      reply_to: 'support@eazyfoods.ca'
     },
     notification_settings: {
       sms_enabled: true,

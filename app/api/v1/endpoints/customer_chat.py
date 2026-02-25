@@ -40,7 +40,7 @@ def generate_ai_response(user_message: str, conversation_history: List[ChatMessa
     
     # Payment/Refund queries
     if any(word in message_lower for word in ['payment', 'refund', 'money', 'charge', 'billing']):
-        return "For payment and refund inquiries, please contact our support team. You can reach us at support@eazyfoods.com or create a support ticket through your account. We typically process refunds within 5-7 business days."
+        return "For payment and refund inquiries, please contact our support team. You can reach us at support@eazyfoods.ca or create a support ticket through your account. We typically process refunds within 5-7 business days."
     
     # Product/Food queries
     if any(word in message_lower for word in ['product', 'food', 'menu', 'item', 'dish', 'recipe']):
@@ -60,7 +60,7 @@ def generate_ai_response(user_message: str, conversation_history: List[ChatMessa
     
     # General help
     if any(word in message_lower for word in ['help', 'support', 'assistance', 'problem', 'issue']):
-        return "I'm here to help! You can ask me about orders, products, delivery, payments, or anything else related to EAZyfoods. For urgent issues, please contact our support team at support@eazyfoods.com or use the support section in your account."
+        return "I'm here to help! You can ask me about orders, products, delivery, payments, or anything else related to EAZyfoods. For urgent issues, please contact our support team at support@eazyfoods.ca or use the support section in your account."
     
     # Greetings
     if any(word in message_lower for word in ['hello', 'hi', 'hey', 'greetings']):
@@ -71,7 +71,7 @@ def generate_ai_response(user_message: str, conversation_history: List[ChatMessa
         return "You're welcome! Is there anything else I can help you with today?"
     
     # Default response
-    return f"I understand you're asking about: {user_message}. I can help you with orders, products, delivery, payments, stores, and account settings. Could you provide more details about what you need help with? For specific issues, you can also contact our support team at support@eazyfoods.com."
+    return f"I understand you're asking about: {user_message}. I can help you with orders, products, delivery, payments, stores, and account settings. Could you provide more details about what you need help with? For specific issues, you can also contact our support team at support@eazyfoods.ca."
 
 
 @router.post("/chat", response_model=ChatResponse)

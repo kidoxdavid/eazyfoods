@@ -22,6 +22,14 @@ export const useNotifications = () => {
     }
   }, [])
 
+  // When driver visits Ratings page, persist "viewed" count so badge stays 0 until new ratings
+  useEffect(() => {
+    if (location.pathname !== '/ratings') return
+    const current = parseInt(localStorage.getItem('driver_ratings_viewed_count') || '0', 10)
+    const totalNow = (notifications.unreadRatings || 0) + current
+    localStorage.setItem('driver_ratings_viewed_count', String(totalNow))
+  }, [location.pathname, notifications.unreadRatings])
+
   const fetchNotifications = async () => {
     try {
       const [availableRes, myDeliveriesRes, ratingsRes] = await Promise.all([
@@ -35,7 +43,10 @@ export const useNotifications = () => {
         (d) => d.status && !['delivered', 'cancelled'].includes(d.status)
       ).length
       const ratingsData = ratingsRes.data?.ratings ?? (Array.isArray(ratingsRes.data) ? ratingsRes.data : [])
-      const unreadRatings = Array.isArray(ratingsData) ? ratingsData.length : 0
+      const totalRatings = Array.isArray(ratingsData) ? ratingsData.length : 0
+      const viewedKey = 'driver_ratings_viewed_count'
+      const viewed = parseInt(localStorage.getItem(viewedKey) || '0', 10)
+      const unreadRatings = Math.max(0, totalRatings - viewed)
 
       setNotifications({
         availableDeliveries: availableDeliveries.length,

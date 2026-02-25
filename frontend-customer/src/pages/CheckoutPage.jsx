@@ -115,7 +115,10 @@ const CheckoutPage = () => {
   const tax = subtotal * 0.08
   const deliveryFeeAmount = (() => {
     if (deliveryMethod !== 'delivery') return 0
-    if (useDistanceBasedDelivery && deliveryFeeFromEstimate != null) return deliveryFeeFromEstimate
+    if (useDistanceBasedDelivery) {
+      // When distance-based is on, only use the estimate (never fall back to flat $10)
+      return deliveryFeeFromEstimate != null ? deliveryFeeFromEstimate : 0
+    }
     if (hasStoreItems && selectedStore?.delivery_fee != null) return Number(selectedStore.delivery_fee)
     return defaultDeliveryFee
   })()
@@ -130,6 +133,7 @@ const CheckoutPage = () => {
   const isFormValid =
     (!needsStoreSelection || selectedStoreId) &&
     (deliveryMethod === 'pickup' || (address.street_address && address.city && address.postal_code)) &&
+    (deliveryMethod !== 'delivery' || !useDistanceBasedDelivery || deliveryFeeFromEstimate != null) &&
     (!isGuest || (guestInfo.guest_email && guestInfo.guest_first_name && guestInfo.guest_last_name)) &&
     (paymentConfig.payments_suspended || cardReady)
 
@@ -231,7 +235,8 @@ const CheckoutPage = () => {
                 <div className="p-3 bg-primary-50 rounded-lg border border-primary-200">
                   <p className="font-semibold text-sm">{selectedStore.store_name}</p>
                   <p className="text-xs text-gray-600">{selectedStore.street_address}, {selectedStore.city}, {selectedStore.state}</p>
-                  {selectedStore.delivery_fee != null && <p className="text-xs text-gray-600 mt-1">Delivery: ${Number(selectedStore.delivery_fee).toFixed(2)}</p>}
+                  {!useDistanceBasedDelivery && selectedStore.delivery_fee != null && <p className="text-xs text-gray-600 mt-1">Delivery: ${Number(selectedStore.delivery_fee).toFixed(2)}</p>}
+                {useDistanceBasedDelivery && <p className="text-xs text-gray-600 mt-1">Delivery: based on distance (enter address at checkout)</p>}
                 </div>
               </div>
             ) : (
@@ -289,7 +294,14 @@ const CheckoutPage = () => {
               <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer ${deliveryMethod === 'delivery' ? 'border-primary-500 bg-primary-50' : 'border-gray-200'}`}>
                 <input type="radio" name="delivery" value="delivery" checked={deliveryMethod === 'delivery'} onChange={(e) => setDeliveryMethod(e.target.value)} className="mr-2" />
                 <Truck className="h-4 w-4 mr-2 text-primary-600" />
-                <div><p className="font-semibold text-sm">Delivery</p><p className="text-xs text-gray-600">${deliveryFeeAmount.toFixed(2)}</p></div>
+                <div>
+                  <p className="font-semibold text-sm">Delivery</p>
+                  <p className="text-xs text-gray-600">
+                    {useDistanceBasedDelivery && deliveryFeeFromEstimate == null
+                      ? 'Enter address below for price'
+                      : `$${deliveryFeeAmount.toFixed(2)}`}
+                  </p>
+                </div>
               </label>
               <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer ${deliveryMethod === 'pickup' ? 'border-primary-500 bg-primary-50' : 'border-gray-200'}`}>
                 <input type="radio" name="delivery" value="pickup" checked={deliveryMethod === 'pickup'} onChange={(e) => setDeliveryMethod(e.target.value)} className="mr-2" />
@@ -369,7 +381,10 @@ const CheckoutPage = () => {
             <div className="border-t border-gray-200 pt-3 space-y-1.5">
               <div className="flex justify-between text-xs"><span className="text-gray-600">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
               <div className="flex justify-between text-xs"><span className="text-gray-600">Tax</span><span>${tax.toFixed(2)}</span></div>
-              <div className="flex justify-between text-xs"><span className="text-gray-600">Shipping</span><span>${shipping.toFixed(2)}</span></div>
+              <div className="flex justify-between text-xs">
+              <span className="text-gray-600">Shipping</span>
+              <span>{useDistanceBasedDelivery && deliveryFeeFromEstimate == null && deliveryMethod === 'delivery' ? 'Enter address' : `$${shipping.toFixed(2)}`}</span>
+            </div>
               <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200">
                 <span>Total</span><span className="text-primary-600">${total.toFixed(2)}</span>
               </div>

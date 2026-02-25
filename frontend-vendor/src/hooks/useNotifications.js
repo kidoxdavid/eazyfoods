@@ -17,10 +17,13 @@ export const useNotifications = () => {
     fetchNotifications()
     const interval = setInterval(fetchNotifications, 10000)
     const onRefresh = () => fetchNotifications()
+    const onReviewsMarkedRead = () => setNotifications(prev => ({ ...prev, reviews: 0 }))
     window.addEventListener('refresh-notifications', onRefresh)
+    window.addEventListener('reviews-marked-read', onReviewsMarkedRead)
     return () => {
       clearInterval(interval)
       window.removeEventListener('refresh-notifications', onRefresh)
+      window.removeEventListener('reviews-marked-read', onReviewsMarkedRead)
     }
   }, [])
 
