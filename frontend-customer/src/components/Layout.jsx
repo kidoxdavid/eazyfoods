@@ -781,7 +781,7 @@ const Layout = ({ children }) => {
             <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-gray-400 text-sm">
               <p>&copy; 2024 eazyfoods. All rights reserved.</p>
               <a
-                href={(import.meta.env.VITE_PORTALS_URL || 'http://localhost:3001').trim()}
+                href={(import.meta.env.VITE_PORTALS_URL || 'https://portals.eazyfoods.ca').trim()}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary-500 hover:text-primary-400 transition-colors underline"
