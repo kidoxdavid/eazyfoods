@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: Optional[str] = None
     # Custom domain/CDN URL for S3 (optional). If not set, uses bucket URL.
     S3_PUBLIC_URL: Optional[str] = None
+
+    # Cloudinary (optional - when set, uploads go to Cloudinary instead of S3/local disk)
+    CLOUDINARY_CLOUD_NAME: Optional[str] = None
+    CLOUDINARY_API_KEY: Optional[str] = None
+    CLOUDINARY_API_SECRET: Optional[str] = None
     
     # Payment Gateway Configuration: "stripe" or "helcim"
     PAYMENT_GATEWAY: str = "stripe"

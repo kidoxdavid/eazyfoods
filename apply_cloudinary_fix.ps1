@@ -1,3 +1,194 @@
+# Run this from inside your local eazyfoods folder (PowerShell)
+
+$content = @'
+"""
+Application configuration settings
+"""
+from pydantic_settings import BaseSettings
+from typing import Optional
+
+
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables"""
+    
+    # Database (set either DATABASE_URL or DB_* vars; DATABASE_URL takes precedence for deployment)
+    DATABASE_URL: Optional[str] = None
+    DB_HOST: str = "localhost"
+    DB_PORT: int = 5432
+    DB_NAME: str = "easyfoods"
+    DB_USER: str = "postgres"
+    DB_PASSWORD: str = ""
+    
+    # Application
+    SECRET_KEY: str = "your-secret-key-change-this-in-production"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
+    
+    # CORS: in production set env CORS_ORIGINS to comma-separated frontend URLs, e.g.:
+    #   CORS_ORIGINS=https://eazyfoods.ca,https://vendor.eazyfoods.ca,https://admin.eazyfoods.ca,https://marketing.eazyfoods.ca
+    # Use "*" to allow all origins (allow_credentials will be False). Must include marketing.eazyfoods.ca for marketing portal.
+    # Stored as str so Render/env never triggers JSON parse; use cors_origins_list in app.
+    CORS_ORIGINS: str = "*"
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parsed CORS origins for middleware (comma-separated string -> list)."""
+        raw = (self.CORS_ORIGINS or "").strip()
+        if not raw or raw == "*":
+            return ["*"]
+        origins = [x.strip() for x in raw.split(",") if x.strip()]
+        return origins if origins else ["*"]
+    
+    # File uploads
+    MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
+    UPLOAD_DIR: str = "uploads"
+    # Return absolute image URLs when set (e.g. https://eazyfoods-api.onrender.com on Render)
+    API_PUBLIC_URL: Optional[str] = None
+
+    # S3 (optional - when set, uploads go to S3 instead of local disk)
+    AWS_ACCESS_KEY_ID: Optional[str] = None
+    AWS_SECRET_ACCESS_KEY: Optional[str] = None
+    AWS_REGION: str = "us-east-1"
+    S3_BUCKET_NAME: Optional[str] = None
+    # Custom domain/CDN URL for S3 (optional). If not set, uses bucket URL.
+    S3_PUBLIC_URL: Optional[str] = None
+
+    # Cloudinary (optional - when set, uploads go to Cloudinary instead of S3/local disk)
+    CLOUDINARY_CLOUD_NAME: Optional[str] = None
+    CLOUDINARY_API_KEY: Optional[str] = None
+    CLOUDINARY_API_SECRET: Optional[str] = None
+    
+    # Payment Gateway Configuration: "stripe" or "helcim"
+    PAYMENT_GATEWAY: str = "stripe"
+    # Stripe (works embedded; no iframe blocking)
+    STRIPE_SECRET_KEY: Optional[str] = None
+    STRIPE_PUBLISHABLE_KEY: Optional[str] = None
+    # Stripe Connect: webhook secret for payment_intent.succeeded (create transfers)
+    STRIPE_WEBHOOK_SECRET: Optional[str] = None
+    # Portal base URLs for Connect return/refresh (optional)
+    VENDOR_PORTAL_BASE_URL: Optional[str] = None
+    CHEF_PORTAL_BASE_URL: Optional[str] = None
+    DRIVER_PORTAL_BASE_URL: Optional[str] = None
+    # Helcim
+    HELCIM_API_TOKEN: Optional[str] = None
+    HELCIM_API_URL: str = "https://api.helcim.com/v2"
+    HELCIM_TEST_MODE: bool = False  # True = sandbox/test; False = production
+    
+    # Google Maps API
+    GOOGLE_MAPS_API_KEY: Optional[str] = None
+    # Google OAuth (for Sign in with Google on customer/vendor/chef/driver)
+    GOOGLE_OAUTH_CLIENT_ID: Optional[str] = None
+    
+    # Debug
+    DEBUG: bool = False
+
+    # Email (for password reset, etc.). If not set, reset links are logged only.
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM_EMAIL: Optional[str] = None
+    # Base URL for customer password reset link (e.g. https://eazyfoods.ca or http://localhost:5173)
+    CUSTOMER_RESET_PASSWORD_BASE_URL: Optional[str] = None
+
+    # Admin/Marketing: set to False to disable public signup (invite-only)
+    ADMIN_SIGNUP_ENABLED: bool = True
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
+        extra = "ignore"  # Ignore extra fields in .env
+
+
+settings = Settings()
+
+
+def resolve_upload_url(url: Optional[str]) -> Optional[str]:
+    """If API_PUBLIC_URL is set, return absolute URL for upload paths so frontends get working image URLs."""
+    if not url or not settings.API_PUBLIC_URL:
+        return url
+    base = settings.API_PUBLIC_URL.rstrip("/")
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    return f"{base}{url}" if url.startswith("/") else f"{base}/{url}"
+
+
+def resolve_upload_urls(urls: Optional[list]) -> Optional[list]:
+    """Resolve a list of upload paths to absolute URLs."""
+    if not urls:
+        return urls
+    return [resolve_upload_url(u) if isinstance(u, str) else u for u in urls]
+
+
+'@
+Set-Content -Path "app/core/config.py" -Value $content -NoNewline
+
+$content = @'
+"""
+Cloudinary storage service for file uploads.
+When CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are
+set, uploads go to Cloudinary instead of S3 or local disk.
+"""
+from app.core.config import settings
+
+_configured = False
+
+
+def _ensure_configured():
+    """Lazy-configure the cloudinary SDK with our credentials."""
+    global _configured
+    if not _configured:
+        import cloudinary
+        cloudinary.config(
+            cloud_name=settings.CLOUDINARY_CLOUD_NAME,
+            api_key=settings.CLOUDINARY_API_KEY,
+            api_secret=settings.CLOUDINARY_API_SECRET,
+            secure=True,
+        )
+        _configured = True
+
+
+def is_cloudinary_configured() -> bool:
+    """Return True if Cloudinary should be used for uploads."""
+    return bool(
+        settings.CLOUDINARY_CLOUD_NAME
+        and settings.CLOUDINARY_API_KEY
+        and settings.CLOUDINARY_API_SECRET
+    )
+
+
+def upload_to_cloudinary(
+    content: bytes,
+    key: str,
+    content_type: str = "application/octet-stream",
+) -> str:
+    """
+    Upload bytes to Cloudinary. Returns the public HTTPS URL.
+    key: path/public_id within Cloudinary (e.g. "products/xxx.jpg", "ads/yyy.mp4")
+    """
+    _ensure_configured()
+    import cloudinary.uploader
+
+    # Cloudinary wants a public_id without the file extension, and a
+    # resource_type of "video" for video content, "image" otherwise.
+    public_id = key.rsplit(".", 1)[0]
+    resource_type = "video" if content_type.startswith("video/") else "image"
+    # "raw" lets PDFs and other non-image/video docs upload correctly.
+    if not content_type.startswith("image/") and not content_type.startswith("video/"):
+        resource_type = "raw"
+
+    result = cloudinary.uploader.upload(
+        content,
+        public_id=public_id,
+        resource_type=resource_type,
+        overwrite=True,
+    )
+    return result["secure_url"]
+
+'@
+Set-Content -Path "app/core/cloudinary_storage.py" -Value $content -NoNewline
+
+$content = @'
 """
 File upload endpoints
 """
@@ -15,25 +206,6 @@ from pathlib import Path
 from typing import List
 
 router = APIRouter()
-
-
-@router.get("/upload-config", response_model=dict)
-async def upload_config():
-    """Return which upload backend is enabled without exposing secrets."""
-    return {
-        "cloudinary_enabled": is_cloudinary_configured(),
-        "s3_enabled": is_s3_configured(),
-        "cloudinary_env": {
-            "cloud_name_set": bool(settings.CLOUDINARY_CLOUD_NAME),
-            "api_key_set": bool(settings.CLOUDINARY_API_KEY),
-            "api_secret_set": bool(settings.CLOUDINARY_API_SECRET),
-        },
-        "s3_env": {
-            "access_key_set": bool(settings.AWS_ACCESS_KEY_ID),
-            "secret_key_set": bool(settings.AWS_SECRET_ACCESS_KEY),
-            "bucket_set": bool(settings.S3_BUCKET_NAME),
-        },
-    }
 
 
 def _upload_url(path: str) -> str:
@@ -554,3 +726,29 @@ async def get_chef_uploaded_image(filename: str):
         media_type="image/jpeg"  # Default, browser will handle actual type
     )
 
+
+'@
+Set-Content -Path "app/api/v1/endpoints/upload.py" -Value $content -NoNewline
+
+$content = @'
+psycopg2-binary>=2.9.9
+pg8000>=1.30.0
+python-dotenv>=1.0.0
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+sqlalchemy>=2.0.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.6
+email-validator>=2.0.0
+stripe>=7.0.0
+httpx>=0.24.0
+boto3>=1.28.0
+cloudinary>=1.40.0
+
+
+
+'@
+Set-Content -Path "requirements.txt" -Value $content -NoNewline

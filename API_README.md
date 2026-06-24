@@ -20,6 +20,15 @@ DB_PASSWORD=Cr3@tivity
 SECRET_KEY=your-secret-key-here
 ```
 
+If you want uploads to use Cloudinary, also add:
+```
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+```
+
+If Cloudinary is not set and AWS S3 credentials are configured, uploads will fall back to S3. If neither Cloudinary nor S3 is configured, uploads are stored locally in `uploads/`.
+
 ### 3. Run the Server
 ```bash
 python3 run.py
