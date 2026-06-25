@@ -1,11 +1,24 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const PRODUCTION_API_URL = 'https://eazyfoods-api.onrender.com/api/v1'
+
 // Android build config — run with: vite build --config vite.config.android.js --mode android
-// Vite automatically loads .env.android when --mode android is passed, so VITE_API_BASE_URL
-// is injected from .env.android without any manual define block.
+// Injects the API URL directly into index.html as a <script> tag so it is available
+// before any JS module loads — this is the most reliable method for Capacitor WebViews.
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'inject-android-api-url',
+      transformIndexHtml(html) {
+        return html.replace(
+          '<head>',
+          `<head><script>window.API_BASE_URL = '${PRODUCTION_API_URL}';</script>`
+        )
+      },
+    },
+  ],
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', 'axios', '@react-google-maps/api'],
     exclude: ['@stripe/stripe-js', '@stripe/react-stripe-js'],

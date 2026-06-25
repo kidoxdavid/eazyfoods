@@ -4,25 +4,36 @@ const PRODUCTION_API_URL = 'https://eazyfoods-api.onrender.com/api/v1'
 
 // Allow overriding API URL via localStorage (for testing/sharing)
 const getApiBaseURL = () => {
-  // Check localStorage first (for easy testing)
+  // 1. localStorage override (testing)
   const stored = localStorage.getItem('API_BASE_URL')
   if (stored && (stored.startsWith('http://') || stored.startsWith('https://'))) {
     return stored
   }
 
-  // Check environment variable (baked in at build time via .env.android / VITE_API_BASE_URL)
+  // 2. Injected via index.html at build time (most reliable for Capacitor)
+  if (typeof window !== 'undefined' && window.API_BASE_URL &&
+      (window.API_BASE_URL.startsWith('http://') || window.API_BASE_URL.startsWith('https://'))) {
+    return window.API_BASE_URL
+  }
+
+  // 3. Baked in at build time via VITE_API_BASE_URL
   const envUrl = import.meta.env.VITE_API_BASE_URL
   if (envUrl && (envUrl.startsWith('http://') || envUrl.startsWith('https://'))) {
     return envUrl
   }
 
-  // Running inside Capacitor native app — relative URLs resolve to https://localhost which
-  // doesn't host the API, so always fall back to the production URL.
+  // 4. Running in Capacitor native app — relative URLs resolve to https://localhost, not the API
   if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
     return PRODUCTION_API_URL
   }
 
-  // Default: use Vite dev-server proxy (local development only)
+  // 5. Capacitor webview origin check (https://localhost means we're in the native app)
+  if (typeof window !== 'undefined' &&
+      (window.location.origin === 'https://localhost' || window.location.origin === 'capacitor://localhost')) {
+    return PRODUCTION_API_URL
+  }
+
+  // Default: Vite dev-server proxy (local development only)
   return '/api/v1'
 }
 
