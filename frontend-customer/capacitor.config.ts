@@ -21,6 +21,11 @@ const config: CapacitorConfig = {
     hideLogs: false,
   },
   plugins: {
+    CapacitorHttp: {
+      // Use native Android HTTP client instead of WebView XMLHttpRequest.
+      // This bypasses WebView cross-origin network restrictions (ERR_NETWORK).
+      enabled: true,
+    },
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,
