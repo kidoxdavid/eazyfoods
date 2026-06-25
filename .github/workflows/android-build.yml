@@ -24,7 +24,10 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: frontend-customer
-        run: npm install
+        run: npm install --legacy-peer-deps
+
+      - name: Print debug keystore SHA-1 (needed for Google Sign-In setup)
+        run: keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android 2>/dev/null | grep SHA1 || echo "debug keystore not yet generated"
 
       - name: Build web app for Android
         working-directory: frontend-customer

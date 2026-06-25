@@ -22,9 +22,13 @@ const config: CapacitorConfig = {
   },
   plugins: {
     CapacitorHttp: {
-      // Use native Android HTTP client instead of WebView XMLHttpRequest.
-      // This bypasses WebView cross-origin network restrictions (ERR_NETWORK).
       enabled: true,
+    },
+    GoogleAuth: {
+      scopes: ['profile', 'email'],
+      // Web client ID — used to request an ID token verifiable by the backend
+      serverClientId: process.env.VITE_GOOGLE_OAUTH_CLIENT_ID || '',
+      forceCodeForRefreshToken: true,
     },
     SplashScreen: {
       launchShowDuration: 2000,
