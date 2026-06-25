@@ -152,14 +152,10 @@ const Home = () => {
         hasCoordinates: !!(coordinates && coordinates.lat && coordinates.lng)
       })
       
-      const allProductsParams = { ...productParams, limit: 100 }
-      console.log('Making all products API call with params:', allProductsParams)
-      
+      const cityParam = effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {}
+
       const [
-        newRes,
-        discountedRes,
-        lowStockRes,
-        allProductsRes,
+        homeProductsRes,
         categoriesRes,
         storesRes,
         promotionsRes,
@@ -167,67 +163,23 @@ const Home = () => {
         recipesRes,
         chefDealsRes
       ] = await Promise.all([
-        api.get('/customer/products', { params: { ...productParams, new_arrivals: true, limit: 20 } }),
-        api.get('/customer/products', { params: { ...productParams, discounted: true, limit: 20 } }),
-        api.get('/customer/products', { params: { ...productParams, low_stock: true, limit: 20 } }),
-        api.get('/customer/products', { params: allProductsParams }),
-        api.get('/customer/categories', { params: effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {} }),
+        api.get('/customer/home-products', { params: { ...productParams, limit: 100 } }),
+        api.get('/customer/categories', { params: cityParam }),
         Object.keys(storeParams).length > 0
           ? api.get('/customer/stores/', { params: storeParams })
           : api.get('/customer/stores/'),
-        api.get('/customer/promotions', { params: { limit: 10, ...(effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {}) } }),
-        api.get('/customer/chefs', { params: { limit: 5, ...(effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {}) } }),
+        api.get('/customer/promotions', { params: { limit: 10, ...cityParam } }),
+        api.get('/customer/chefs', { params: { limit: 5, ...cityParam } }),
         api.get('/customer/recipes/', { params: { limit: 5 } }),
-        api.get('/customer/chef-cuisines-deals', { params: { limit: 20, ...(effectiveCity && effectiveCity !== 'All' ? { city: effectiveCity } : {}) } }).catch(() => ({ data: { cuisines: [] } }))
+        api.get('/customer/chef-cuisines-deals', { params: { limit: 20, ...cityParam } }).catch(() => ({ data: { cuisines: [] } }))
       ])
-      
-      console.log('API responses received:', {
-        newRes: newRes.status,
-        discountedRes: discountedRes.status,
-        lowStockRes: lowStockRes.status,
-        allProductsRes: allProductsRes.status,
-        categoriesRes: categoriesRes.status,
-        storesRes: storesRes.status,
-        newResData: newRes.data,
-        discountedResData: discountedRes.data,
-        lowStockResData: lowStockRes.data,
-        allProductsResData: allProductsRes.data
-      })
-      
-      // Handle different response structures
-      const newProductsData = Array.isArray(newRes.data) ? newRes.data : (newRes.data?.products || [])
-      const discountedProductsData = Array.isArray(discountedRes.data) ? discountedRes.data : (discountedRes.data?.products || [])
-      const lowStockProductsData = Array.isArray(lowStockRes.data) ? lowStockRes.data : (lowStockRes.data?.products || [])
-      
-      // For all products, the API returns { products: [...], total: ..., ... }
-      let allProductsData = []
-      if (Array.isArray(allProductsRes.data)) {
-        allProductsData = allProductsRes.data
-      } else if (allProductsRes.data?.products) {
-        allProductsData = allProductsRes.data.products
-      } else if (allProductsRes.data && typeof allProductsRes.data === 'object') {
-        // Try to find products array in the response
-        console.warn('Unexpected allProducts response structure:', allProductsRes.data)
-        allProductsData = []
-      }
-      
-      console.log('Extracted allProductsData:', {
-        count: allProductsData.length,
-        isArray: Array.isArray(allProductsData),
-        sample: allProductsData.slice(0, 2)
-      })
-      
-      console.log('Processed products data:', {
-        selectedCity,
-        newProductsCount: newProductsData.length,
-        discountedProductsCount: discountedProductsData.length,
-        lowStockProductsCount: lowStockProductsData.length,
-        allProductsCount: allProductsData.length,
-        newProductsDataStructure: Array.isArray(newRes.data) ? 'array' : (newRes.data?.products ? 'object.products' : 'other'),
-        allProductsDataStructure: Array.isArray(allProductsRes.data) ? 'array' : (allProductsRes.data?.products ? 'object.products' : 'other'),
-        newProductsSample: newProductsData.slice(0, 2),
-        allProductsSample: allProductsData.slice(0, 2)
-      })
+
+      // Extract from the combined home-products response
+      const homeProds = homeProductsRes.data || {}
+      const newProductsData = Array.isArray(homeProds.new_arrivals) ? homeProds.new_arrivals : []
+      const discountedProductsData = Array.isArray(homeProds.discounted) ? homeProds.discounted : []
+      const lowStockProductsData = Array.isArray(homeProds.low_stock) ? homeProds.low_stock : []
+      let allProductsData = Array.isArray(homeProds.products) ? homeProds.products : []
       
       const categoriesData = Array.isArray(categoriesRes.data) ? categoriesRes.data : (categoriesRes.data?.categories || categoriesRes.data || [])
       let storesData = Array.isArray(storesRes.data) ? storesRes.data : (storesRes.data?.stores || storesRes.data || [])
@@ -306,24 +258,6 @@ const Home = () => {
         setChefDeals(chefDealsData)
       }
       
-      // Debug: Log what we got
-      const allCarouselProducts = [
-        ...newProductsData.map(p => ({ ...p, badge: 'NEW', type: 'new' })),
-        ...discountedProductsData.map(p => ({ ...p, badge: null, type: 'discounted' })),
-        ...lowStockProductsData.map(p => ({ ...p, badge: null, type: 'low_stock' }))
-      ]
-      console.log('Home: Fetched data:', {
-        selectedCity,
-        new: newProductsData.length,
-        discounted: discountedProductsData.length,
-        lowStock: lowStockProductsData.length,
-        totalCarouselProducts: allCarouselProducts.length,
-        categories: categoriesData.length,
-        stores: storesData.length,
-        newProducts: newProductsData.map(p => ({ id: p.id, name: p.name, vendor: p.vendor?.business_name, created_at: p.created_at })),
-        discountedProducts: discountedProductsData.map(p => ({ id: p.id, name: p.name, vendor: p.vendor?.business_name })),
-        storesDetails: storesData.map(s => ({ id: s.id, name: s.business_name, city: s.city }))
-      })
     } catch (error) {
       console.error('Failed to fetch data:', error)
       console.error('Error details:', {
@@ -977,10 +911,8 @@ const AutoScrollCarousel = ({ products, onQuickView, onAddToCart, onShowToast, f
   const isPausedRef = useRef(false)
   const isHoveringRef = useRef(false)
 
-  // Remove duplicates based on product/card ID (products and chef deals have unique ids)
-  const uniqueProducts = products.filter((product, index, self) =>
-    index === self.findIndex((p) => p.id === product.id)
-  )
+  // Remove duplicates by id using Map (O(n) vs the prior O(n²) findIndex)
+  const uniqueProducts = [...new Map(products.map(p => [p.id, p])).values()]
   const isChefDeal = (item) => item.type === 'chef_promo' || item.chef_id
 
   // Duplicate products for seamless loop

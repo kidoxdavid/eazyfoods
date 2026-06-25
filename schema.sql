@@ -136,6 +136,17 @@ CREATE INDEX IF NOT EXISTS idx_cart_items_session ON cart_items(session_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id);
 CREATE INDEX IF NOT EXISTS idx_addresses_customer ON addresses(customer_id);
 
+-- Performance indexes for customer home page queries
+CREATE INDEX IF NOT EXISTS idx_products_vendor ON products(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_products_store ON products(store_id);
+CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_products_status_vendor ON products(status, vendor_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_product_public ON reviews(product_id, is_public);
+CREATE INDEX IF NOT EXISTS idx_reviews_vendor ON reviews(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_promotions_vendor_active ON promotions(vendor_id, is_active, start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_stores_city_active ON stores(city, is_active);
+CREATE INDEX IF NOT EXISTS idx_vendors_city_status ON vendors(city, status);
+
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$

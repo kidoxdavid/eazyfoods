@@ -575,6 +575,171 @@ async def get_product(
     }
 
 
+@router.get("/home-products")
+async def get_home_products(
+    city: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Return all four product sections for the home page in a single request."""
+    try:
+        from app.api.v1.endpoints.promotions import revert_expired_promotions
+        revert_expired_promotions(db)
+    except Exception as e:
+        print(f"Warning: Error reverting expired promotions: {str(e)}")
+
+    from uuid import UUID
+    from datetime import datetime, timedelta
+    from app.models.review import Review
+    from app.models.promotion import Promotion
+
+    city_normalized = None
+    if city:
+        city_stripped = city.strip()
+        if city_stripped and city_stripped.lower() != 'all':
+            city_normalized = city_stripped
+
+    vendor_markup = _get_vendor_markup_percent(db)
+    markup_mult = 1.0 + (vendor_markup / 100.0)
+
+    # Build city filter once — reused across all four product queries
+    city_product_filter = None  # None = no filter; [] = no matches
+    if city_normalized:
+        try:
+            matching = db.query(Product.id).join(
+                Store, Product.store_id == Store.id
+            ).filter(
+                Product.status == "active",
+                Store.is_active == True,
+                Store.city.isnot(None),
+                func.lower(Store.city).ilike(f"%{city_normalized.lower()}%")
+            ).distinct().all()
+            city_product_filter = [UUID(str(r[0])) for r in matching]
+        except Exception as e:
+            print(f"Warning: city filter error in home-products: {e}")
+
+    def _base_q():
+        q = db.query(Product).join(Vendor, Product.vendor_id == Vendor.id).filter(
+            Product.status == "active",
+            Vendor.status == "active"
+        )
+        if city_normalized:
+            if city_product_filter:
+                q = q.filter(or_(Product.id.in_(city_product_filter), Product.store_id.is_(None)))
+            else:
+                q = q.filter(Product.store_id.is_(None))
+        return q
+
+    now = datetime.utcnow()
+    week_ago = now - timedelta(days=7)
+
+    all_prods = _base_q().order_by(Product.created_at.desc()).limit(100).all()
+    new_arr   = _base_q().filter(Product.created_at >= week_ago).order_by(Product.created_at.desc()).limit(20).all()
+    discounted = _base_q().filter(
+        Product.compare_at_price.isnot(None),
+        Product.compare_at_price > Product.price
+    ).limit(20).all()
+    low_stk = _base_q().filter(
+        Product.stock_quantity <= 10,
+        Product.stock_quantity > 0
+    ).limit(20).all()
+
+    # Collect unique products for shared enrichment queries
+    seen: dict = {}
+    for p in all_prods + new_arr + discounted + low_stk:
+        seen[p.id] = p
+    unique_prods = list(seen.values())
+    all_product_ids = [p.id for p in unique_prods]
+    all_vendor_ids  = list({p.vendor_id for p in unique_prods})
+
+    vendors_map: dict = {}
+    if all_vendor_ids:
+        vendors_map = {str(v.id): v for v in db.query(Vendor).filter(Vendor.id.in_(all_vendor_ids)).all()}
+
+    ratings_map: dict = {}
+    if all_product_ids:
+        try:
+            rows = db.query(
+                Review.product_id,
+                func.avg(Review.rating).label('avg_rating'),
+                func.count(Review.id).label('total')
+            ).filter(
+                Review.product_id.in_(all_product_ids),
+                Review.is_public == True
+            ).group_by(Review.product_id).all()
+            for r in rows:
+                avg = round(float(r.avg_rating), 1) if r.avg_rating else None
+                ratings_map[str(r.product_id)] = {'average_rating': avg, 'total_reviews': r.total or 0}
+        except Exception as e:
+            print(f"Warning: ratings lookup error in home-products: {e}")
+
+    promos_map: dict = {}
+    if all_vendor_ids:
+        try:
+            active_promos = db.query(Promotion).filter(
+                Promotion.is_active == True,
+                Promotion.start_date <= now,
+                Promotion.end_date >= now,
+                Promotion.vendor_id.in_(all_vendor_ids)
+            ).all()
+            unique_prod_id_strs = {str(p.id) for p in unique_prods}
+            for promo in active_promos:
+                promo_data = {
+                    "id": str(promo.id),
+                    "name": str(promo.name).strip() if promo.name and str(promo.name).strip() else "Special Offer",
+                    "discount_type": promo.discount_type,
+                    "discount_value": float(promo.discount_value) if promo.discount_value else None,
+                    "end_date": promo.end_date.isoformat() if promo.end_date else None,
+                }
+                if promo.applies_to_all_products:
+                    for p in unique_prods:
+                        if p.vendor_id == promo.vendor_id:
+                            promos_map.setdefault(str(p.id), []).append(promo_data)
+                elif promo.product_ids:
+                    for pid in promo.product_ids:
+                        pid_str = str(pid)
+                        if pid_str in unique_prod_id_strs:
+                            promos_map.setdefault(pid_str, []).append(promo_data)
+        except Exception as e:
+            print(f"Warning: promotions lookup error in home-products: {e}")
+
+    def _serialize(products):
+        result = []
+        for p in products:
+            v = vendors_map.get(str(p.vendor_id))
+            r = ratings_map.get(str(p.id), {})
+            result.append({
+                "id": str(p.id),
+                "name": p.name,
+                "description": p.description,
+                "price": round(float(p.price) * markup_mult, 2),
+                "compare_at_price": round(float(p.compare_at_price) * markup_mult, 2) if p.compare_at_price else None,
+                "image_url": resolve_upload_url(p.image_url),
+                "images": resolve_upload_urls(p.images) or [],
+                "category_id": str(p.category_id) if p.category_id else None,
+                "vendor_id": str(p.vendor_id),
+                "store_id": str(p.store_id) if p.store_id else None,
+                "stock_quantity": p.stock_quantity,
+                "is_featured": p.is_featured,
+                "slug": p.slug,
+                "unit": p.unit,
+                "weight_kg": float(p.weight_kg) if p.weight_kg else None,
+                "is_newly_stocked": p.is_newly_stocked,
+                "promotions": promos_map.get(str(p.id), []),
+                "average_rating": r.get('average_rating'),
+                "total_reviews": r.get('total_reviews', 0),
+                "vendor": {"id": str(v.id), "business_name": v.business_name} if v else None
+            })
+        return result
+
+    return {
+        "new_arrivals": _serialize(new_arr),
+        "discounted":   _serialize(discounted),
+        "low_stock":    _serialize(low_stk),
+        "products":     _serialize(all_prods),
+        "total":        len(all_prods)
+    }
+
+
 @router.get("/vendors", response_model=List[dict])
 async def get_vendors(
     db: Session = Depends(get_db)
