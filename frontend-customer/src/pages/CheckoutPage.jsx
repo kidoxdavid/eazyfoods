@@ -14,7 +14,8 @@ import { MapPin, CreditCard, Truck, Lock, ChefHat } from 'lucide-react'
 const CheckoutPage = () => {
   const { cart, getCartTotal, clearCart } = useCart()
   const { token } = useAuth()
-  const isGuest = !(token || (typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null))
+  const authToken = token || (typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null)
+  const isGuest = !authToken
   const navigate = useNavigate()
 
   const [loading, setLoading] = useState(false)
@@ -192,14 +193,17 @@ const CheckoutPage = () => {
         orderData.guest_last_name = guestInfo.guest_last_name
         orderData.guest_phone = guestInfo.guest_phone || null
       }
-      const headers = token ? { Authorization: `Bearer ${token}` } : {}
+      const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {}
       const response = await api.post('/customer/cart/checkout', orderData, { headers })
       clearCart()
       if (response.data?.orders?.length > 0) {
         const orderId = response.data.orders[0].order_id
         const orderNumber = response.data.orders[0].order_number
-        if (isGuest) navigate('/order-confirmation', { state: { orderNumber, orderId } })
-        else navigate(`/orders/${orderId}`, { state: { orderPlaced: true, orderNumber } })
+        if (isGuest) {
+          navigate('/order-confirmation', { state: { orderNumber, orderId } })
+        } else {
+          navigate(`/orders/${orderId}`, { state: { orderPlaced: true, orderNumber } })
+        }
       } else {
         navigate(isGuest ? '/' : '/orders')
       }
