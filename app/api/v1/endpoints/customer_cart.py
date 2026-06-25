@@ -54,6 +54,16 @@ async def create_order(
         except (TypeError, ValueError):
             return 0
 
+    def _parse_uuid(value, field_name="identifier", required=False):
+        if value is None or value == "":
+            if required:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"{field_name} is required.")
+            return None
+        try:
+            return UUID(str(value))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid UUID format for {field_name}.")
+
     def _parse_uuid(value):
         if value is None or value == "":
             return None
@@ -112,15 +122,16 @@ async def create_order(
             )
             if delivery_address_id:
                 try:
-                    delivery_address_uuid = _parse_uuid(delivery_address_id)
+                    delivery_address_uuid = _parse_uuid(delivery_address_id, field_name="delivery_address_id")
                 except HTTPException:
-                    # If the client sent an invalid saved address ID but also provided a new address,
-                    # ignore the invalid saved address reference and create a fresh delivery address.
                     if address_present:
                         delivery_address_id = None
                         delivery_address_uuid = None
                     else:
                         raise
+
+            if not delivery_address_id and not address_present:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Delivery address is required for delivery orders.")
 
             if address_present and not delivery_address_id:
                 delivery_address = CustomerAddress(
@@ -135,6 +146,7 @@ async def create_order(
                     longitude=address_data.get("longitude")
                 )
                 db.add(delivery_address)
+                db.flush()
                 delivery_address_uuid = UUID(str(delivery_address.id))
 
         coupon = None
@@ -156,9 +168,13 @@ async def create_order(
             if qty <= 0:
                 continue
             if item.get("product_id"):
-                product_items.append({"product_id": item["product_id"], "quantity": qty})
+                product_items.append({"product_id": _parse_uuid(item["product_id"], field_name="product_id", required=True), "quantity": qty})
             elif item.get("chef_id") and item.get("cuisine_id"):
-                cuisine_items.append({"chef_id": item["chef_id"], "cuisine_id": item["cuisine_id"], "quantity": qty})
+                cuisine_items.append({
+                    "chef_id": _parse_uuid(item["chef_id"], field_name="chef_id", required=True),
+                    "cuisine_id": _parse_uuid(item["cuisine_id"], field_name="cuisine_id", required=True),
+                    "quantity": qty
+                })
 
         if not product_items and not cuisine_items:
             raise HTTPException(status_code=400, detail="Cart items are invalid or missing.")

@@ -22,6 +22,8 @@ router = APIRouter()
 class MarketingSettingsUpdate(BaseModel):
     auto_approve_vendor_ads: Optional[bool] = None
     auto_approve_chef_ads: Optional[bool] = None
+    disable_vendor_ad_pricing: Optional[bool] = None
+    disable_chef_ad_pricing: Optional[bool] = None
     require_approval_for_campaigns: Optional[bool] = None
     require_approval_for_budgets: Optional[bool] = None
     max_budget_per_campaign: Optional[float] = None
@@ -483,6 +485,8 @@ async def get_marketing_settings(
     defaults = {
         "auto_approve_vendor_ads": False,
         "auto_approve_chef_ads": False,
+        "disable_vendor_ad_pricing": False,
+        "disable_chef_ad_pricing": False,
         "require_approval_for_campaigns": True,
         "require_approval_for_budgets": True,
         "max_budget_per_campaign": 100000.0,

@@ -23,6 +23,9 @@ const Settings = () => {
     },
     approval_settings: {
       auto_approve_vendor_ads: false,
+      auto_approve_chef_ads: false,
+      disable_vendor_ad_pricing: false,
+      disable_chef_ad_pricing: false,
       require_approval_for_campaigns: true,
       require_approval_for_budgets: true
     }
@@ -37,6 +40,9 @@ const Settings = () => {
           ...prev,
           approval_settings: {
             auto_approve_vendor_ads: response.data.auto_approve_vendor_ads || false,
+            auto_approve_chef_ads: response.data.auto_approve_chef_ads || false,
+            disable_vendor_ad_pricing: response.data.disable_vendor_ad_pricing || false,
+            disable_chef_ad_pricing: response.data.disable_chef_ad_pricing || false,
             require_approval_for_campaigns: response.data.require_approval_for_campaigns !== undefined ? response.data.require_approval_for_campaigns : true,
             require_approval_for_budgets: response.data.require_approval_for_budgets !== undefined ? response.data.require_approval_for_budgets : true
           }
@@ -61,6 +67,8 @@ const Settings = () => {
       await api.put('/admin/marketing/admin/settings', {
         auto_approve_vendor_ads: settings.approval_settings.auto_approve_vendor_ads,
         auto_approve_chef_ads: settings.approval_settings.auto_approve_chef_ads || false,
+        disable_vendor_ad_pricing: settings.approval_settings.disable_vendor_ad_pricing || false,
+        disable_chef_ad_pricing: settings.approval_settings.disable_chef_ad_pricing || false,
         require_approval_for_campaigns: settings.approval_settings.require_approval_for_campaigns,
         require_approval_for_budgets: settings.approval_settings.require_approval_for_budgets,
         max_budget_per_campaign: 100000.0,
@@ -282,6 +290,42 @@ const Settings = () => {
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             />
             <span className="ml-2 text-sm text-gray-700">Auto-approve vendor ads</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={settings.approval_settings.auto_approve_chef_ads}
+              onChange={(e) => setSettings({
+                ...settings,
+                approval_settings: { ...settings.approval_settings, auto_approve_chef_ads: e.target.checked }
+              })}
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            />
+            <span className="ml-2 text-sm text-gray-700">Auto-approve chef ads</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={settings.approval_settings.disable_vendor_ad_pricing}
+              onChange={(e) => setSettings({
+                ...settings,
+                approval_settings: { ...settings.approval_settings, disable_vendor_ad_pricing: e.target.checked }
+              })}
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            />
+            <span className="ml-2 text-sm text-gray-700">Disable vendor ad pricing</span>
+          </label>
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={settings.approval_settings.disable_chef_ad_pricing}
+              onChange={(e) => setSettings({
+                ...settings,
+                approval_settings: { ...settings.approval_settings, disable_chef_ad_pricing: e.target.checked }
+              })}
+              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            />
+            <span className="ml-2 text-sm text-gray-700">Disable chef ad pricing</span>
           </label>
           
           <label className="flex items-center">

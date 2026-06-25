@@ -18,6 +18,8 @@ const AdminControl = () => {
   const [settings, setSettings] = useState({
     auto_approve_vendor_ads: false,
     auto_approve_chef_ads: false,
+    disable_vendor_ad_pricing: false,
+    disable_chef_ad_pricing: false,
     require_approval_for_campaigns: true,
     require_approval_for_budgets: true,
     max_budget_per_campaign: 100000,
@@ -739,6 +741,24 @@ const AdminControl = () => {
                   <label className="flex items-center gap-3">
                     <input
                       type="checkbox"
+                      checked={settings.disable_vendor_ad_pricing}
+                      onChange={(e) => setSettings(prev => ({ ...prev, disable_vendor_ad_pricing: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-700">Disable vendor ad pricing</span>
+                  </label>
+                  <label className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={settings.disable_chef_ad_pricing}
+                      onChange={(e) => setSettings(prev => ({ ...prev, disable_chef_ad_pricing: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-700">Disable chef ad pricing</span>
+                  </label>
+                  <label className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
                       checked={settings.require_approval_for_campaigns}
                       onChange={(e) => setSettings(prev => ({ ...prev, require_approval_for_campaigns: e.target.checked }))}
                       className="rounded"
@@ -760,6 +780,8 @@ const AdminControl = () => {
                     onClick={() => saveSettings({
                       auto_approve_vendor_ads: settings.auto_approve_vendor_ads,
                       auto_approve_chef_ads: settings.auto_approve_chef_ads,
+                      disable_vendor_ad_pricing: settings.disable_vendor_ad_pricing,
+                      disable_chef_ad_pricing: settings.disable_chef_ad_pricing,
                       require_approval_for_campaigns: settings.require_approval_for_campaigns,
                       require_approval_for_budgets: settings.require_approval_for_budgets
                     })}
