@@ -3,7 +3,7 @@ Customer cart and checkout endpoints
 """
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -37,7 +37,7 @@ def _get_platform_delivery_fee(db: Session) -> Decimal:
 
 @router.post("/checkout", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_order(
-    order_data: dict,
+    order_data: dict = Body(...),
     current_customer: Optional[dict] = Depends(get_optional_customer),
     db: Session = Depends(get_db)
 ):
