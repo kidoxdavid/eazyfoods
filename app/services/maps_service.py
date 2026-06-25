@@ -128,6 +128,26 @@ class MapsService:
             return route['overview_polyline']['points']
         return None
     
+    def geocode_address(self, address: str) -> Optional[Tuple[float, float]]:
+        """
+        Convert an address string to (lat, lng) using Google Maps Geocoding API.
+        Returns None when the API is unavailable or the address is not found.
+        """
+        if not self.is_available():
+            return None
+        try:
+            results = self.client.geocode(address)
+            if not results:
+                return None
+            loc = results[0].get("geometry", {}).get("location", {})
+            lat, lng = loc.get("lat"), loc.get("lng")
+            if lat is None or lng is None:
+                return None
+            return (float(lat), float(lng))
+        except Exception as e:
+            logger.error(f"Geocoding error for '{address}': {e}")
+            return None
+
     def get_route_details(self, origin_lat: float, origin_lng: float, dest_lat: float, dest_lng: float) -> Optional[Dict]:
         """
         Get complete route details including distance, duration, and polyline

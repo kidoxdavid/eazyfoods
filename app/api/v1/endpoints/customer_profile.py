@@ -116,21 +116,51 @@ async def get_delivery_estimate(
 
     store_address = f"{store.street_address or ''}, {store.city or ''}, {store.state or ''} {store.postal_code or ''}, {store.country or 'Canada'}".replace(", ,", ",").strip()
     delivery_address = f"{street_address}, {city}, {state} {postal_code}, {country}".replace(", ,", ",").strip()
+    # Postal-code-only string used as a precise geocoding fallback for Canadian/US addresses
+    postal_only = f"{postal_code}, {country}".strip()
+
+    # Use stored store coordinates when available — avoids geocoding the store address every request
+    store_lat_raw = getattr(store, "latitude", None)
+    store_lng_raw = getattr(store, "longitude", None)
+    store_lat = float(store_lat_raw) if store_lat_raw is not None else None
+    store_lng = float(store_lng_raw) if store_lng_raw is not None else None
 
     distance_km = None
     from app.services.maps_service import maps_service
+
     if maps_service.is_available():
-        distance_km = maps_service.get_distance_km_from_addresses(store_address, delivery_address)
+        if store_lat is not None and store_lng is not None:
+            # Geocode delivery address via Google Maps, fall back to postal code alone
+            delivery_coords = maps_service.geocode_address(delivery_address)
+            if delivery_coords is None and postal_code:
+                delivery_coords = maps_service.geocode_address(postal_only)
+            if delivery_coords:
+                distance_km = maps_service.get_distance_km(store_lat, store_lng, delivery_coords[0], delivery_coords[1])
+        if distance_km is None:
+            # Fallback: Distance Matrix API with full address strings
+            distance_km = maps_service.get_distance_km_from_addresses(store_address, delivery_address)
 
     if distance_km is None and use_distance:
         try:
-            store_coords = await _geocode_address(store_address)
+            # Nominatim fallback — try full address first, then postal code alone
             delivery_coords = await _geocode_address(delivery_address)
-            if store_coords and delivery_coords:
-                store_lat, store_lon = store_coords
-                delivery_lat, delivery_lon = delivery_coords
-                straight_line_km = _haversine_km(store_lat, store_lon, delivery_lat, delivery_lon)
-                distance_km = straight_line_km * 1.5
+            if delivery_coords is None and postal_code:
+                delivery_coords = await _geocode_address(postal_only)
+
+            if delivery_coords:
+                d_lat, d_lon = delivery_coords
+                if store_lat is not None and store_lng is not None:
+                    straight_line_km = _haversine_km(store_lat, store_lng, d_lat, d_lon)
+                else:
+                    store_coords = await _geocode_address(store_address)
+                    if store_coords:
+                        s_lat, s_lon = store_coords
+                        straight_line_km = _haversine_km(s_lat, s_lon, d_lat, d_lon)
+                    else:
+                        straight_line_km = None
+                if straight_line_km is not None:
+                    # 1.35 road-factor converts straight-line to realistic driving distance
+                    distance_km = round(straight_line_km * 1.35, 2)
         except (TypeError, ValueError) as e:
             logger.warning("Delivery estimate fallback failed: %s", e)
 

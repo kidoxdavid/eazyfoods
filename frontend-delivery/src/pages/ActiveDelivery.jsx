@@ -1,9 +1,9 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { GoogleMap, LoadScript, Marker, DirectionsService, DirectionsRenderer } from '@react-google-maps/api'
 import api from '../services/api'
 import { startLocationTracking, stopLocationTracking, getCurrentPosition } from '../services/locationTracking'
-import { MapPin, Clock, Navigation, CheckCircle, ArrowLeft } from 'lucide-react'
+import { MapPin, Clock, Navigation, CheckCircle, ArrowLeft, ChevronRight } from 'lucide-react'
 
 const ActiveDelivery = () => {
   const { deliveryId } = useParams()
@@ -13,7 +13,13 @@ const ActiveDelivery = () => {
   const [tripStarted, setTripStarted] = useState(false)
   const [currentLocation, setCurrentLocation] = useState(null)
   const [directionsResult, setDirectionsResult] = useState(null)
-  const directionsPanelRef = useRef(null)
+  // Callback-based ref so DirectionsRenderer gets the panel el as soon as it mounts
+  const [panelEl, setPanelEl] = useState(null)
+  const panelRef = useCallback((node) => { if (node) setPanelEl(node) }, [])
+  // Track where we were when we last fetched directions; reset when we've moved >300 m
+  const lastDirectionsOriginRef = useRef(null)
+  // Stable ref to originForDirections so the callback doesn't need it in its deps
+  const originForDirectionsRef = useRef(null)
 
   const mapContainerStyle = {
     width: '100%',
@@ -156,11 +162,42 @@ const ActiveDelivery = () => {
   const hasDirectionsRequest = originForDirections && deliveryLocation &&
     (originForDirections.lat !== deliveryLocation.lat || originForDirections.lng !== deliveryLocation.lng)
 
-  const directionsCallback = (result, status) => {
+  // Keep ref in sync so the stable callback can read the latest value
+  originForDirectionsRef.current = originForDirections
+
+  // Stable callback — empty dep array prevents DirectionsService from re-firing on every render
+  const directionsCallback = useCallback((result, status) => {
     if (status === 'OK' && result) {
       setDirectionsResult(result)
+      lastDirectionsOriginRef.current = originForDirectionsRef.current
     }
-  }
+  }, [])
+
+  // Only request directions when we don't already have a result
+  const shouldFetchDirections = hasDirectionsRequest && !directionsResult
+
+  // Auto-refresh directions when the driver moves more than 300 m from the last fetch point
+  useEffect(() => {
+    if (!currentLocation || !lastDirectionsOriginRef.current) return
+    const last = lastDirectionsOriginRef.current
+    const toRad = (d) => (d * Math.PI) / 180
+    const dLat = toRad(currentLocation.latitude - last.lat)
+    const dLng = toRad(currentLocation.longitude - last.lng)
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(last.lat)) * Math.cos(toRad(currentLocation.latitude)) * Math.sin(dLng / 2) ** 2
+    const distKm = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    if (distKm > 0.3) {
+      setDirectionsResult(null)
+      lastDirectionsOriginRef.current = null
+    }
+  }, [currentLocation])
+
+  // Pull ETA / distance / next maneuver from the live directions result
+  const routeLeg = directionsResult?.routes?.[0]?.legs?.[0]
+  const etaText = routeLeg?.duration?.text
+  const distText = routeLeg?.distance?.text
+  const nextInstruction = routeLeg?.steps?.[0]?.instructions?.replace(/<[^>]*>/g, '') ?? null
 
   // Start Trip screen: show before map + directions
   if (!tripStarted) {
@@ -271,16 +308,20 @@ const ActiveDelivery = () => {
       </div>
 
       {/* Map + Directions panel */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
-        {/* Turn-by-turn directions panel */}
-        <aside className="hidden lg:flex flex-col w-80 xl:w-96 bg-white border-l border-gray-200 overflow-hidden shrink-0">
+      <div className="flex-1 flex overflow-hidden min-h-0 relative">
+        {/* Turn-by-turn directions panel — desktop sidebar */}
+        <aside className="hidden lg:flex flex-col w-80 xl:w-96 bg-white border-r border-gray-200 overflow-hidden shrink-0">
           <div className="p-3 border-b border-gray-200 bg-gray-50 shrink-0">
-            <h3 className="font-semibold text-gray-900">Directions to delivery</h3>
+            <h3 className="font-semibold text-gray-900">Turn-by-turn directions</h3>
             <p className="text-sm text-gray-600 mt-0.5">
-              {directionsResult ? 'Route loaded' : hasDirectionsRequest ? 'Loading…' : 'Enable location for turn-by-turn'}
+              {directionsResult
+                ? `${etaText ?? ''} · ${distText ?? ''}`
+                : shouldFetchDirections
+                ? 'Calculating route…'
+                : 'Enable location for turn-by-turn'}
             </p>
           </div>
-          <div ref={directionsPanelRef} className="flex-1 overflow-auto p-2" />
+          <div ref={panelRef} className="flex-1 overflow-auto p-2" />
         </aside>
 
         {/* Embedded map */}
@@ -289,7 +330,7 @@ const ActiveDelivery = () => {
             <GoogleMap
               mapContainerStyle={mapContainerStyle}
               center={mapCenter}
-              zoom={deliveryLocation ? 13 : 10}
+              zoom={deliveryLocation ? 14 : 12}
               options={{
                 streetViewControl: false,
                 mapTypeControl: false,
@@ -297,8 +338,8 @@ const ActiveDelivery = () => {
                 zoomControl: true
               }}
             >
-              {/* Fetch and render directions when we have origin + destination */}
-              {hasDirectionsRequest && (
+              {/* Only fire DirectionsService when we don't already have a result — prevents infinite API calls */}
+              {shouldFetchDirections && (
                 <DirectionsService
                   options={{
                     origin: originForDirections,
@@ -309,38 +350,72 @@ const ActiveDelivery = () => {
                 />
               )}
 
-              {/* Draw route + directions in panel when we have results */}
+              {/* Route polyline + markers rendered from directions result */}
               {directionsResult && (
                 <DirectionsRenderer
                   directions={directionsResult}
-                  panel={directionsPanelRef.current}
-                  options={{ suppressMarkers: false }}
+                  options={{ suppressMarkers: false, panel: panelEl ?? undefined }}
                 />
               )}
 
-              {/* Fallback markers when no directions yet */}
+              {/* Fallback markers before directions load */}
               {!directionsResult && deliveryLocation && (
-                <Marker
-                  position={deliveryLocation}
-                  label="📍"
-                  title="Delivery Location"
-                />
+                <Marker position={deliveryLocation} label="📍" title="Delivery Location" />
               )}
               {!directionsResult && (currentLocation || (delivery.current_latitude != null && delivery.current_longitude != null)) && (
                 <Marker
-                  position={currentLocation 
-                    ? { lat: currentLocation.latitude, lng: currentLocation.longitude }
-                    : { lat: delivery.current_latitude, lng: delivery.current_longitude }
+                  position={
+                    currentLocation
+                      ? { lat: currentLocation.latitude, lng: currentLocation.longitude }
+                      : { lat: delivery.current_latitude, lng: delivery.current_longitude }
                   }
                   label="🚗"
                   title="Your Location"
-                  icon={{
-                    url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-                  }}
+                  icon={{ url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' }}
                 />
               )}
             </GoogleMap>
           </LoadScript>
+
+          {/* Mobile turn-by-turn overlay — shown only when directions are loaded */}
+          {directionsResult && (
+            <div className="lg:hidden absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-10">
+              {/* ETA / distance summary bar */}
+              <div className="flex items-center justify-between px-4 py-2 bg-primary-600 text-white">
+                <div className="flex items-center gap-4">
+                  {etaText && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      <span className="font-semibold text-sm">{etaText}</span>
+                    </div>
+                  )}
+                  {distText && (
+                    <div className="flex items-center gap-1">
+                      <Navigation className="h-4 w-4" />
+                      <span className="text-sm">{distText}</span>
+                    </div>
+                  )}
+                </div>
+                {navUrl && (
+                  <a
+                    href={navUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs underline font-medium"
+                  >
+                    Open Maps
+                  </a>
+                )}
+              </div>
+              {/* Next maneuver instruction */}
+              {nextInstruction && (
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <ChevronRight className="h-5 w-5 text-primary-600 shrink-0" />
+                  <p className="text-sm text-gray-800 line-clamp-2">{nextInstruction}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
