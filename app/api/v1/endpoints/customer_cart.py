@@ -194,7 +194,7 @@ async def create_order(
         stripe_payment_intent_id = order_data.get("stripe_payment_intent_id")
         payment_method = order_data.get("payment_method", "stripe" if stripe_payment_intent_id else "helcim" if helcim_transaction_id else "cash")
 
-        with db.begin():
+        with db.begin_nested():
             for vendor_id, vendor_data in vendor_orders.items():
                 vendor = vendor_data["vendor"]
                 if not vendor:
