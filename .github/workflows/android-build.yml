@@ -10,6 +10,8 @@ jobs:
   build:
     name: Build signed APK / AAB
     runs-on: ubuntu-latest
+    env:
+      HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
 
     steps:
       - name: Checkout code
@@ -66,7 +68,7 @@ jobs:
       # ── Release AAB (signed, for Google Play Store) ──
       # Only runs when keystore secrets are configured
       - name: Build release AAB
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        if: env.HAS_KEYSTORE == 'true'
         working-directory: frontend-customer/android
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -82,7 +84,7 @@ jobs:
             -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
 
       - name: Upload release AAB
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        if: env.HAS_KEYSTORE == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: eazyfoods-release.aab
