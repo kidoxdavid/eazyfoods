@@ -323,7 +323,7 @@ const Home = () => {
   return (
     <div className="w-full relative animate-fadeIn" style={{ display: 'block', width: '100%' }}>
       {/* Temporary debug banner — always visible */}
-      <div style={{ background: '#1e293b', color: '#fbbf24', fontSize: 11, padding: '6px 10px', wordBreak: 'break-all', fontFamily: 'monospace', position: 'relative', zIndex: 9999 }}>
+      <div style={{ background: '#1e293b', color: '#fbbf24', fontSize: 11, padding: '6px 10px', paddingTop: 'calc(env(safe-area-inset-top, 24px) + 6px)', wordBreak: 'break-all', fontFamily: 'monospace', position: 'relative', zIndex: 9999 }}>
         [DEBUG] origin: {window.location.origin} | API: {String(window.API_BASE_URL || 'NOT SET')} | loading: {String(loading)}
       </div>
       {/* Hero Section - same PageBanner as other pages for consistent load (no flash) */}
