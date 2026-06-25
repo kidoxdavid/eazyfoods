@@ -409,13 +409,16 @@ async def create_order(
                     "total": float(total_amount)
                 })
 
+        db.commit()
         return {
             "message": "Orders created successfully",
             "orders": created_orders
         }
     except HTTPException:
+        db.rollback()
         raise
     except Exception as exc:
+        db.rollback()
         logger.exception(
             "Failed to complete checkout for customer=%s order_data_keys=%s error=%s",
             current_customer["customer_id"] if current_customer else "guest",
