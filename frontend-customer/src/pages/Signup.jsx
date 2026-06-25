@@ -22,16 +22,21 @@ const Signup = () => {
   const googleClientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || ''
 
   const [signupSuccess, setSignupSuccess] = useState(false)
+  const [verificationLink, setVerificationLink] = useState(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     setSignupSuccess(false)
+    setVerificationLink(null)
 
     try {
-      await signup(formData)
+      const data = await signup(formData)
       localStorage.setItem(AVATAR_ICON_KEY, avatarIconKey)
+      if (data?.verification_link) {
+        setVerificationLink(data.verification_link)
+      }
       setSignupSuccess(true)
     } catch (err) {
       const status = err.response?.status
@@ -50,12 +55,33 @@ const Signup = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-nude-50 to-nude-100 px-4 py-12">
         <div className="max-w-md w-full space-y-6 bg-white p-8 rounded-xl shadow-lg text-center">
-          <h1 className="text-2xl font-bold text-primary-600">Check your email</h1>
-          <p className="text-gray-600">
-            We sent a verification link to <strong>{formData.email}</strong>. Click the link in that email to verify your address and complete signup.
-          </p>
-          <p className="text-sm text-gray-500">You can then log in with your email and password.</p>
-          <Link to="/login" className="inline-block mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">Go to Login</Link>
+          {verificationLink ? (
+            <>
+              <h1 className="text-2xl font-bold text-amber-600">One more step</h1>
+              <p className="text-gray-600">
+                Email delivery isn't configured on this server, so your verification link is shown here directly.
+                Click it to verify your account and then log in.
+              </p>
+              <a
+                href={verificationLink}
+                className="inline-block px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 break-all"
+              >
+                Verify my email
+              </a>
+              <p className="text-xs text-gray-400 break-all mt-2">{verificationLink}</p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold text-primary-600">Check your email</h1>
+              <p className="text-gray-600">
+                We sent a verification link to <strong>{formData.email}</strong>. Click the link in that email to verify your address and complete signup.
+              </p>
+              <p className="text-sm text-gray-500">Don't see it? Check your spam folder.</p>
+            </>
+          )}
+          <Link to="/login" className="inline-block mt-2 px-6 py-2 border border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50">
+            Go to Login
+          </Link>
         </div>
       </div>
     )

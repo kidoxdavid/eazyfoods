@@ -54,15 +54,25 @@ const Login = () => {
     setResendStatus('')
 
     try {
-      const data = await login(email, password)
-      if (data?.is_email_verified === false) {
-        setUnverifiedEmail(email)
-        // Stay on login page to show the verification banner
-        return
-      }
+      await login(email, password)
       navigate('/')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.')
+      const detail = err.response?.data?.detail
+      // Backend returns 403 + {code: 'email_not_verified'} when email not verified
+      if (
+        err.response?.status === 403 &&
+        (typeof detail === 'object' ? detail?.code : detail) === 'email_not_verified'
+      ) {
+        const unverified = (typeof detail === 'object' ? detail?.email : null) || email
+        setUnverifiedEmail(unverified)
+        localStorage.setItem('email_unverified', unverified)
+      } else {
+        setError(
+          typeof detail === 'string'
+            ? detail
+            : detail?.message || 'Login failed. Please check your credentials.'
+        )
+      }
     } finally {
       setLoading(false)
     }

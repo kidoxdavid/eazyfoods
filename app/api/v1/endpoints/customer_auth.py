@@ -58,18 +58,27 @@ async def customer_signup(
     db.commit()
     db.refresh(customer)
 
-    # Send verification email (uses SMTP when configured; otherwise logs link for dev)
+    # Send verification email; when SMTP is not configured include the link in
+    # the response body so the developer/admin can click it directly.
+    verification_link = None
     try:
         token = create_email_verification_token(customer.email)
         from app.core.email import send_verification_email
-        send_verification_email(customer.email, token, portal="customer")
+        email_sent = send_verification_email(customer.email, token, portal="customer")
+        smtp_configured = all([settings.SMTP_HOST, settings.SMTP_USER, settings.SMTP_PASSWORD])
+        if not smtp_configured:
+            base_url = (settings.CUSTOMER_RESET_PASSWORD_BASE_URL or "").strip() or "https://eazyfoods.ca"
+            verification_link = f"{base_url.rstrip('/')}/verify-email?token={token}"
     except Exception:
         pass
 
     return {
-        "message": "Customer account created. Please check your email to verify your address and complete signup.",
+        "message": "Account created! Please verify your email to log in."
+            if not verification_link else
+            "Account created! Email delivery is not configured — use the verification_link below to verify your account.",
         "customer_id": str(customer.id),
-        "verification_sent": True
+        "verification_sent": verification_link is None,
+        "verification_link": verification_link,
     }
 
 
@@ -99,7 +108,17 @@ async def customer_login(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
+    if not customer.is_email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "email_not_verified",
+                "email": customer.email,
+                "message": "Please verify your email before logging in. Check your inbox or request a new link.",
+            },
+        )
+
     # Create access token
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
