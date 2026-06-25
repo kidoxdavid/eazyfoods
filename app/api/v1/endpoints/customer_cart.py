@@ -268,7 +268,7 @@ async def create_order(
                     commission_rate=commission_rate,
                     commission_amount=commission_amount,
                     net_payout=net_payout,
-                    payment_status="paid",
+                    payment_status="paid" if (stripe_payment_intent_id or helcim_transaction_id) else "pending",
                     payment_method=payment_method,
                     helcim_transaction_id=helcim_transaction_id,
                     stripe_payment_intent_id=stripe_payment_intent_id
@@ -345,7 +345,7 @@ async def create_order(
                     commission_rate=Decimal("0.00"),
                     commission_amount=Decimal("0.00"),
                     net_payout=subtotal_base,
-                    payment_status="paid",
+                    payment_status="paid" if (stripe_payment_intent_id or helcim_transaction_id) else "pending",
                     payment_method=payment_method,
                     helcim_transaction_id=helcim_transaction_id,
                     stripe_payment_intent_id=stripe_payment_intent_id
