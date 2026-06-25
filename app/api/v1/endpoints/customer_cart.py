@@ -105,22 +105,37 @@ async def create_order(
         if not items:
             raise HTTPException(status_code=400, detail="Cart is empty")
 
-        if delivery_method == "delivery" and address_data and not delivery_address_id:
-            delivery_address = CustomerAddress(
-                customer_id=customer_id,
-                street_address=address_data.get("street_address", ""),
-                city=address_data.get("city", ""),
-                state=address_data.get("state", ""),
-                postal_code=address_data.get("postal_code", ""),
-                country=address_data.get("country", "Canada"),
-                is_default=False,
-                latitude=address_data.get("latitude"),
-                longitude=address_data.get("longitude")
+        delivery_address_uuid = None
+        if delivery_method == "delivery":
+            address_present = any(
+                address_data.get(field) for field in ["street_address", "city", "postal_code"]
             )
-            db.add(delivery_address)
-            delivery_address_id = str(delivery_address.id)
+            if delivery_address_id:
+                try:
+                    delivery_address_uuid = _parse_uuid(delivery_address_id)
+                except HTTPException:
+                    # If the client sent an invalid saved address ID but also provided a new address,
+                    # ignore the invalid saved address reference and create a fresh delivery address.
+                    if address_present:
+                        delivery_address_id = None
+                        delivery_address_uuid = None
+                    else:
+                        raise
 
-        delivery_address_uuid = _parse_uuid(delivery_address_id)
+            if address_present and not delivery_address_id:
+                delivery_address = CustomerAddress(
+                    customer_id=customer_id,
+                    street_address=address_data.get("street_address", ""),
+                    city=address_data.get("city", ""),
+                    state=address_data.get("state", ""),
+                    postal_code=address_data.get("postal_code", ""),
+                    country=address_data.get("country", "Canada"),
+                    is_default=False,
+                    latitude=address_data.get("latitude"),
+                    longitude=address_data.get("longitude")
+                )
+                db.add(delivery_address)
+                delivery_address_uuid = UUID(str(delivery_address.id))
 
         coupon = None
         if coupon_code:
