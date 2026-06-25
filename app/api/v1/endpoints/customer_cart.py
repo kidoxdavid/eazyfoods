@@ -54,6 +54,14 @@ async def create_order(
         except (TypeError, ValueError):
             return 0
 
+    def _parse_uuid(value):
+        if value is None or value == "":
+            return None
+        try:
+            return UUID(str(value))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid UUID format for identifier.")
+
     try:
         # Resolve customer: authenticated or guest
         if current_customer:
@@ -111,6 +119,8 @@ async def create_order(
             )
             db.add(delivery_address)
             delivery_address_id = str(delivery_address.id)
+
+        delivery_address_uuid = _parse_uuid(delivery_address_id)
 
         coupon = None
         if coupon_code:
@@ -256,8 +266,8 @@ async def create_order(
                     customer_id=customer_id,
                     status="new",
                     delivery_method=delivery_method,
-                    delivery_address_id=UUID(delivery_address_id) if delivery_address_id else None,
-                    store_id=UUID(order_data["store_id"]) if order_data.get("store_id") else None,
+                    delivery_address_id=delivery_address_uuid,
+                    store_id=_parse_uuid(order_data["store_id"] if order_data.get("store_id") else None),
                     subtotal=subtotal,
                     tax_amount=tax_amount,
                     shipping_amount=shipping_amount,
@@ -334,7 +344,7 @@ async def create_order(
                     customer_id=customer_id,
                     status="new",
                     delivery_method=delivery_method,
-                    delivery_address_id=UUID(delivery_address_id) if delivery_address_id else None,
+                    delivery_address_id=delivery_address_uuid,
                     subtotal=subtotal,
                     tax_amount=tax_amount,
                     shipping_amount=shipping_amount,
