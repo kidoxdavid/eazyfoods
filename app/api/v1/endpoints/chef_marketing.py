@@ -20,7 +20,12 @@ router = APIRouter()
 def _chef_ad_payments_suspended(db: Session) -> bool:
     ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "payment").first()
     data = (ps.settings_data or {}) if ps else {}
-    return bool(data.get("suspend_chef_ad_payments"))
+    if bool(data.get("suspend_chef_ad_payments")):
+        return True
+
+    marketing_settings = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "marketing").first()
+    marketing_data = (marketing_settings.settings_data or {}) if marketing_settings else {}
+    return bool(marketing_data.get("disable_chef_ad_pricing"))
 
 
 class ChefAdCreate(BaseModel):
