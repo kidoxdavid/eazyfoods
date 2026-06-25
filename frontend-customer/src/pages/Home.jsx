@@ -322,6 +322,12 @@ const Home = () => {
 
   return (
     <div className="w-full relative animate-fadeIn" style={{ display: 'block', width: '100%' }}>
+      {/* Temporary debug banner — remove after Android data issue is diagnosed */}
+      {window.location.origin === 'https://localhost' || window.location.origin === 'capacitor://localhost' ? (
+        <div style={{ background: '#1e293b', color: '#fbbf24', fontSize: 11, padding: '6px 10px', wordBreak: 'break-all', fontFamily: 'monospace' }}>
+          [DEBUG] origin: {window.location.origin} | API: {window.API_BASE_URL || 'NOT SET'} | loading: {String(loading)}
+        </div>
+      ) : null}
       {/* Hero Section - same PageBanner as other pages for consistent load (no flash) */}
       <PageBanner
         title="Welcome to eazyfoods"

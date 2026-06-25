@@ -1,6 +1,12 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      // Capacitor WebView serves from https://localhost — set production API URL before any module loads
+      if (window.location.origin === 'https://localhost' || window.location.origin === 'capacitor://localhost') {
+        window.API_BASE_URL = 'https://eazyfoods-api.onrender.com/api/v1';
+      }
+    </script>
     <meta charset="UTF-8" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <script async type="text/javascript" src="https://secure.helcim.app/helcim-pay/services/start.js"></script>
