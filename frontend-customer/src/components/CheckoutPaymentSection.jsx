@@ -119,17 +119,17 @@ function CheckoutPaymentSection({ amount, token, onSuccess, onError, onPaymentRe
     setProcessing(true)
     setMessage('')
     try {
-      const { error } = await stripe.confirmPayment({
+      const result = await stripe.confirmPayment({
         elements,
         confirmParams: { return_url: window.location.origin + '/orders', payment_method_data: {} },
         redirect: 'if_required'
       })
-      if (error) {
-        setMessage(error.message)
+      if (result.error) {
+        setMessage(result.error.message)
         setProcessing(false)
-        return { success: false, error: error.message }
+        return { success: false, error: result.error.message }
       }
-      const piId = (clientSecret || '').split('_secret_')[0] || null
+      const piId = result.paymentIntent?.id || (clientSecret || '').split('_secret_')[0] || null
       if (!piId) {
         setProcessing(false)
         return { success: false, error: 'Could not get payment result.' }
