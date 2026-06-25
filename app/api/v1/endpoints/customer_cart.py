@@ -173,7 +173,7 @@ async def create_order(
 
         vendor_orders = {}
         for item in product_items:
-            product_id = UUID(item["product_id"])
+            product_id = item["product_id"]
             product = db.query(Product).filter(Product.id == product_id).first()
             if not product:
                 raise HTTPException(status_code=404, detail=f"Product {item['product_id']} not found")
@@ -192,8 +192,8 @@ async def create_order(
 
         chef_orders = {}
         for item in cuisine_items:
-            chef_id = UUID(item["chef_id"])
-            cuisine_id = UUID(item["cuisine_id"])
+            chef_id = item["chef_id"]
+            cuisine_id = item["cuisine_id"]
             cuisine = db.query(Cuisine).filter(Cuisine.id == cuisine_id, Cuisine.chef_id == chef_id).first()
             if not cuisine:
                 raise HTTPException(status_code=404, detail=f"Cuisine {item['cuisine_id']} not found for chef")
