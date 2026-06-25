@@ -64,14 +64,6 @@ async def create_order(
         except (TypeError, ValueError):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid UUID format for {field_name}.")
 
-    def _parse_uuid(value):
-        if value is None or value == "":
-            return None
-        try:
-            return UUID(str(value))
-        except (TypeError, ValueError):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid UUID format for identifier.")
-
     try:
         # Resolve customer: authenticated or guest
         if current_customer:
