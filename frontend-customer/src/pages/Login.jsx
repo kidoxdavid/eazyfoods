@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { GoogleLogin } from '@react-oauth/google'
 import { useAuth } from '../contexts/AuthContext'
-import { LogIn, Eye, EyeOff } from 'lucide-react'
+import api from '../services/api'
+import { LogIn, Eye, EyeOff, MailWarning, CheckCircle } from 'lucide-react'
 
 const Login = () => {
   const [searchParams] = useSearchParams()
@@ -13,9 +14,22 @@ const Login = () => {
   const [loading, setLoading] = useState(false)
   const [ForgotComponent, setForgotComponent] = useState(null)
   const [ResetComponent, setResetComponent] = useState(null)
+  const [unverifiedEmail, setUnverifiedEmail] = useState(() => localStorage.getItem('email_unverified') || '')
+  const [resendStatus, setResendStatus] = useState('') // '' | 'sending' | 'sent' | 'error'
   const { login, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
   const googleClientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || ''
+
+  const handleResend = async () => {
+    if (!unverifiedEmail || resendStatus === 'sending') return
+    setResendStatus('sending')
+    try {
+      await api.post('/customer/auth/resend-verification', { email: unverifiedEmail })
+      setResendStatus('sent')
+    } catch {
+      setResendStatus('error')
+    }
+  }
 
   const showForgot = searchParams.get('forgot') === '1'
   const resetToken = searchParams.get('token')
@@ -36,9 +50,16 @@ const Login = () => {
     e.preventDefault()
     setError('')
     setLoading(true)
+    setUnverifiedEmail('')
+    setResendStatus('')
 
     try {
-      await login(email, password)
+      const data = await login(email, password)
+      if (data?.is_email_verified === false) {
+        setUnverifiedEmail(email)
+        // Stay on login page to show the verification banner
+        return
+      }
       navigate('/')
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed. Please check your credentials.')
@@ -66,6 +87,40 @@ const Login = () => {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {/* Email verification required banner */}
+          {unverifiedEmail && (
+            <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3">
+              <div className="flex items-start gap-3">
+                <MailWarning className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-amber-800">Please verify your email</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    We sent a verification link to <strong>{unverifiedEmail}</strong>. Check your inbox (and spam folder).
+                  </p>
+                  <div className="mt-2 flex items-center gap-3">
+                    {resendStatus === 'sent' ? (
+                      <span className="flex items-center gap-1 text-xs text-green-700">
+                        <CheckCircle className="h-4 w-4" /> Sent! Check your inbox.
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResend}
+                        disabled={resendStatus === 'sending'}
+                        className="text-xs text-amber-700 underline hover:text-amber-900 disabled:opacity-50"
+                      >
+                        {resendStatus === 'sending' ? 'Sending…' : 'Resend verification email'}
+                      </button>
+                    )}
+                    {resendStatus === 'error' && (
+                      <span className="text-xs text-red-600">Failed to send. Try again.</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               {error}

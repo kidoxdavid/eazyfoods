@@ -21,6 +21,15 @@ class GoogleTokenBody(BaseModel):
     credential: str | None = None  # Some clients send credential instead of id_token
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
 @router.post("/signup", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def customer_signup(
     customer_data: CustomerSignup,
@@ -101,8 +110,23 @@ async def customer_login(
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "customer_id": str(customer.id)
+        "customer_id": str(customer.id),
+        "is_email_verified": bool(customer.is_email_verified),
     }
+
+
+@router.post("/resend-verification", response_model=dict)
+async def resend_verification_email(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Resend email verification link. Always returns success to prevent enumeration."""
+    customer = db.query(Customer).filter(Customer.email == body.email.strip().lower()).first()
+    if customer and not customer.is_email_verified:
+        try:
+            token = create_email_verification_token(customer.email)
+            from app.core.email import send_verification_email
+            send_verification_email(customer.email, token, portal="customer")
+        except Exception:
+            pass
+    return {"message": "If an unverified account exists with this email, a new verification link has been sent."}
 
 
 @router.post("/google", response_model=dict)
@@ -183,15 +207,6 @@ async def customer_google(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Google sign-in failed. Please try again or use email and password.",
         )
-
-
-class ForgotPasswordRequest(BaseModel):
-    email: str
-
-
-class ResetPasswordRequest(BaseModel):
-    token: str
-    new_password: str
 
 
 @router.post("/forgot-password", response_model=dict)

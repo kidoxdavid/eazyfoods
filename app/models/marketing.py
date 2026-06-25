@@ -349,8 +349,42 @@ class ContentLibrary(Base):
     is_public = Column(Boolean, default=False)
     
     usage_count = Column(Integer, default=0)
-    
+
     created_by = Column(UUID(as_uuid=True), ForeignKey("admin_users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class SocialMediaAccount(Base):
+    """Linked social platform account — stores OAuth tokens per admin user."""
+    __tablename__ = "social_media_accounts"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    admin_id = Column(UUID(as_uuid=True), ForeignKey("admin_users.id"), nullable=False)
+    platform = Column(String(50), nullable=False)  # facebook, instagram, twitter, linkedin
+
+    access_token = Column(Text)
+    refresh_token = Column(Text)
+    token_expires_at = Column(DateTime)
+
+    page_id = Column(String(255))          # Facebook Page ID / Instagram Business Account ID
+    page_name = Column(String(255))
+    page_access_token = Column(Text)       # Long-lived Facebook Page access token
+
+    username = Column(String(255))         # Twitter @handle or LinkedIn display name
+    is_connected = Column(Boolean, default=True)
+    connected_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class SocialOAuthState(Base):
+    """CSRF protection tokens for social OAuth flows (short-lived)."""
+    __tablename__ = "social_oauth_states"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    state = Column(String(128), unique=True, nullable=False)
+    admin_id = Column(UUID(as_uuid=True), ForeignKey("admin_users.id"))
+    platform = Column(String(50), nullable=False)
+    code_verifier = Column(String(256))  # Twitter PKCE
+    created_at = Column(DateTime, default=datetime.utcnow)
 

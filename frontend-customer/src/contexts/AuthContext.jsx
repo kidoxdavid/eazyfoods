@@ -91,10 +91,15 @@ export const AuthProvider = ({ children }) => {
       },
     })
 
-    const { access_token, customer_id } = response.data
+    const { access_token, customer_id, is_email_verified } = response.data
     setToken(access_token)
     localStorage.setItem('token', access_token)
     localStorage.setItem('customer_id', customer_id)
+    if (is_email_verified === false) {
+      localStorage.setItem('email_unverified', email)
+    } else {
+      localStorage.removeItem('email_unverified')
+    }
     api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
 
     await fetchUser()
@@ -112,6 +117,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(false)
     localStorage.removeItem('token')
     localStorage.removeItem('customer_id')
+    localStorage.removeItem('email_unverified')
     delete api.defaults.headers.common['Authorization']
   }
 

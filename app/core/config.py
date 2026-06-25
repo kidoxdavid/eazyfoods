@@ -91,6 +91,16 @@ class Settings(BaseSettings):
     # Admin/Marketing: set to False to disable public signup (invite-only)
     ADMIN_SIGNUP_ENABLED: bool = True
 
+    # Social media OAuth apps (for marketing portal publishing)
+    FACEBOOK_APP_ID: Optional[str] = None
+    FACEBOOK_APP_SECRET: Optional[str] = None
+    TWITTER_CLIENT_ID: Optional[str] = None
+    TWITTER_CLIENT_SECRET: Optional[str] = None
+    LINKEDIN_CLIENT_ID: Optional[str] = None
+    LINKEDIN_CLIENT_SECRET: Optional[str] = None
+    # Base URL of the marketing portal frontend (used as OAuth redirect target)
+    MARKETING_PORTAL_BASE_URL: Optional[str] = None
+
     class Config:
         env_file = ".env"
         case_sensitive = True

@@ -22,6 +22,86 @@ import uuid
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+from app.api.v1.dependencies import get_current_customer
+
+
+# ── Server-side cart sync ────────────────────────────────────────────────────
+# Simple JSONB blob: one row per customer, no normalisation needed.
+# This lets CartContext push/pull the entire cart as a JSON array so items from
+# any product type (products, cuisines, meals …) survive device switches.
+
+class _CustomerCartModel:
+    """Lazy shim — avoids a circular import with the ORM models file."""
+    __tablename__ = "customer_carts"
+
+
+def _get_or_create_cart_row(db: Session, customer_id):
+    """Return the DB row (or create it) for this customer's server cart."""
+    from sqlalchemy import text
+    row = db.execute(
+        text("SELECT cart_data FROM customer_carts WHERE customer_id = :cid"),
+        {"cid": str(customer_id)}
+    ).fetchone()
+    return row
+
+
+@router.get("/cart", response_model=dict)
+async def get_customer_cart(
+    current_customer: dict = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    """Return the authenticated customer's server-side cart."""
+    from sqlalchemy import text
+    row = db.execute(
+        text("SELECT cart_data FROM customer_carts WHERE customer_id = :cid"),
+        {"cid": current_customer["customer_id"]}
+    ).fetchone()
+    return {"cart": row[0] if row else []}
+
+
+from pydantic import BaseModel as _BaseModel
+
+
+class CartSyncBody(_BaseModel):
+    cart: list
+
+
+@router.post("/cart/sync", response_model=dict)
+async def sync_customer_cart(
+    body: CartSyncBody,
+    current_customer: dict = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    """Upsert the full cart for the authenticated customer (replace server copy)."""
+    import json
+    from sqlalchemy import text
+    db.execute(
+        text("""
+            INSERT INTO customer_carts (customer_id, cart_data, updated_at)
+            VALUES (:cid, :data::jsonb, NOW())
+            ON CONFLICT (customer_id) DO UPDATE
+            SET cart_data = EXCLUDED.cart_data, updated_at = NOW()
+        """),
+        {"cid": current_customer["customer_id"], "data": json.dumps(body.cart)}
+    )
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/cart", response_model=dict)
+async def clear_customer_cart(
+    current_customer: dict = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    """Clear the server-side cart (called on logout)."""
+    from sqlalchemy import text
+    db.execute(
+        text("UPDATE customer_carts SET cart_data = '[]'::jsonb, updated_at = NOW() WHERE customer_id = :cid"),
+        {"cid": current_customer["customer_id"]}
+    )
+    db.commit()
+    return {"ok": True}
+
 
 def _get_platform_delivery_fee(db: Session) -> Decimal:
     """Get default delivery fee from admin orders settings."""

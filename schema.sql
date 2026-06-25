@@ -136,6 +136,44 @@ CREATE INDEX IF NOT EXISTS idx_cart_items_session ON cart_items(session_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id);
 CREATE INDEX IF NOT EXISTS idx_addresses_customer ON addresses(customer_id);
 
+-- Server-side cart per customer (JSON blob, one row per customer)
+CREATE TABLE IF NOT EXISTS customer_carts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    customer_id UUID REFERENCES customers(id) ON DELETE CASCADE UNIQUE NOT NULL,
+    cart_data JSONB NOT NULL DEFAULT '[]',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_customer_carts_customer ON customer_carts(customer_id);
+
+-- Social media platform accounts (linked OAuth tokens per admin user)
+CREATE TABLE IF NOT EXISTS social_media_accounts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    admin_id UUID REFERENCES admin_users(id) ON DELETE CASCADE,
+    platform VARCHAR(50) NOT NULL,
+    access_token TEXT,
+    refresh_token TEXT,
+    token_expires_at TIMESTAMP,
+    page_id VARCHAR(255),
+    page_name VARCHAR(255),
+    page_access_token TEXT,
+    username VARCHAR(255),
+    is_connected BOOLEAN DEFAULT TRUE,
+    connected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(admin_id, platform)
+);
+CREATE INDEX IF NOT EXISTS idx_social_accounts_admin ON social_media_accounts(admin_id);
+
+-- OAuth state tokens for CSRF protection during social auth flows
+CREATE TABLE IF NOT EXISTS social_oauth_states (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    state VARCHAR(128) UNIQUE NOT NULL,
+    admin_id UUID REFERENCES admin_users(id) ON DELETE CASCADE,
+    platform VARCHAR(50) NOT NULL,
+    code_verifier VARCHAR(256),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Performance indexes for customer home page queries
 CREATE INDEX IF NOT EXISTS idx_products_vendor ON products(vendor_id);
 CREATE INDEX IF NOT EXISTS idx_products_store ON products(store_id);

@@ -481,11 +481,246 @@ async def create_social_media_post(
     db.add(post)
     db.commit()
     db.refresh(post)
-    
+
     return {
         "id": str(post.id),
         "message": "Social media post created successfully"
     }
+
+
+# ── Social Media Account Linking (OAuth) ─────────────────────────────────────
+
+@router.get("/social-accounts", response_model=List[dict])
+async def list_social_accounts(
+    current_admin: dict = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """List all connected social media accounts for this admin."""
+    from app.models.marketing import SocialMediaAccount
+    accounts = db.query(SocialMediaAccount).filter(
+        SocialMediaAccount.admin_id == UUID(current_admin["admin_id"]),
+        SocialMediaAccount.is_connected == True,
+    ).all()
+    return [
+        {
+            "platform": a.platform,
+            "page_name": a.page_name or a.username,
+            "username": a.username,
+            "connected_at": a.connected_at.isoformat() if a.connected_at else None,
+        }
+        for a in accounts
+    ]
+
+
+@router.delete("/social-accounts/{platform}", response_model=dict)
+async def disconnect_social_account(
+    platform: str,
+    current_admin: dict = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Disconnect a social account (revokes stored token)."""
+    from app.models.marketing import SocialMediaAccount
+    acct = db.query(SocialMediaAccount).filter(
+        SocialMediaAccount.admin_id == UUID(current_admin["admin_id"]),
+        SocialMediaAccount.platform == platform,
+    ).first()
+    if acct:
+        db.delete(acct)
+        db.commit()
+    return {"ok": True}
+
+
+@router.get("/social-auth/{platform}/connect", response_model=dict)
+async def social_auth_connect(
+    platform: str,
+    current_admin: dict = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Return the OAuth URL for the given platform. Open this in a popup."""
+    import secrets
+    from app.models.marketing import SocialOAuthState
+    from app.services.social_publisher import (
+        facebook_oauth_url, twitter_oauth_url, linkedin_oauth_url
+    )
+
+    state = secrets.token_urlsafe(32)
+    code_verifier = None
+
+    if platform == "facebook" or platform == "instagram":
+        url = facebook_oauth_url(state)
+    elif platform == "twitter":
+        url, code_verifier = twitter_oauth_url(state)
+    elif platform == "linkedin":
+        url = linkedin_oauth_url(state)
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported platform: {platform}")
+
+    if not url:
+        raise HTTPException(
+            status_code=503,
+            detail=f"{platform.title()} API credentials are not configured. Add {platform.upper()}_APP_ID/CLIENT_ID and SECRET to the server environment."
+        )
+
+    # Persist state for CSRF verification in callback
+    db.add(SocialOAuthState(
+        state=state,
+        admin_id=UUID(current_admin["admin_id"]),
+        platform=platform,
+        code_verifier=code_verifier,
+    ))
+    db.commit()
+
+    return {"url": url, "state": state}
+
+
+@router.get("/social-auth/{platform}/callback")
+async def social_auth_callback(
+    platform: str,
+    code: str = None,
+    state: str = None,
+    error: str = None,
+    db: Session = Depends(get_db)
+):
+    """
+    OAuth callback — exchanges code for token and saves to DB.
+    Redirects the popup to the marketing portal with ?connected={platform}.
+    """
+    from fastapi.responses import HTMLResponse
+    from app.models.marketing import SocialOAuthState, SocialMediaAccount
+    from app.services.social_publisher import (
+        facebook_exchange_code, twitter_exchange_code, linkedin_exchange_code
+    )
+    from app.core.config import settings
+
+    portal = (settings.MARKETING_PORTAL_BASE_URL or "").rstrip("/") or "http://localhost:5175"
+
+    def _popup_redirect(msg: str, ok: bool = True) -> HTMLResponse:
+        """Close popup and post a message to the parent window."""
+        status_js = "true" if ok else "false"
+        html = f"""<!DOCTYPE html><html><body><script>
+        window.opener && window.opener.postMessage({{social_connect: {status_js}, platform: '{platform}', msg: '{msg}'}}, '*');
+        window.close();
+        </script><p>{msg}</p></body></html>"""
+        return HTMLResponse(html)
+
+    if error:
+        return _popup_redirect(f"Authorisation cancelled: {error}", ok=False)
+
+    # Validate state
+    state_row = db.query(SocialOAuthState).filter(SocialOAuthState.state == state).first()
+    if not state_row:
+        return _popup_redirect("Invalid or expired OAuth state.", ok=False)
+
+    admin_id = state_row.admin_id
+    code_verifier = state_row.code_verifier
+    db.delete(state_row)
+    db.commit()
+
+    try:
+        if platform in ("facebook", "instagram"):
+            token_info = await facebook_exchange_code(code)
+        elif platform == "twitter":
+            token_info = await twitter_exchange_code(code, code_verifier or "")
+        elif platform == "linkedin":
+            token_info = await linkedin_exchange_code(code)
+        else:
+            return _popup_redirect(f"Unknown platform {platform}", ok=False)
+    except Exception as e:
+        logger.error("Social token exchange failed for %s: %s", platform, e)
+        return _popup_redirect(f"Failed to connect account: {e}", ok=False)
+
+    # Upsert SocialMediaAccount
+    acct = db.query(SocialMediaAccount).filter(
+        SocialMediaAccount.admin_id == admin_id,
+        SocialMediaAccount.platform == platform,
+    ).first()
+    if not acct:
+        acct = SocialMediaAccount(admin_id=admin_id, platform=platform)
+        db.add(acct)
+
+    acct.access_token = token_info.get("access_token")
+    acct.refresh_token = token_info.get("refresh_token")
+    acct.page_id = token_info.get("page_id") or token_info.get("ig_business_id")
+    acct.page_name = token_info.get("page_name")
+    acct.page_access_token = token_info.get("page_access_token")
+    acct.username = token_info.get("username")
+    acct.is_connected = True
+    acct.connected_at = datetime.utcnow()
+    db.commit()
+
+    page_label = acct.page_name or acct.username or platform
+    return _popup_redirect(f"Connected: {page_label}", ok=True)
+
+
+@router.post("/social-media/{post_id}/publish", response_model=dict)
+async def publish_social_post(
+    post_id: str,
+    current_admin: dict = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Immediately publish a draft/scheduled post to the real platform."""
+    from app.models.marketing import SocialMediaAccount
+    from app.services.social_publisher import publish_post
+
+    post = db.query(SocialMediaPost).filter(
+        SocialMediaPost.id == UUID(post_id),
+        SocialMediaPost.created_by == UUID(current_admin["admin_id"]),
+    ).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    platform = post.platform
+    if platform == "instagram":
+        # Instagram shares the Facebook account connection
+        lookup_platform = "facebook"
+    else:
+        lookup_platform = platform
+
+    acct = db.query(SocialMediaAccount).filter(
+        SocialMediaAccount.admin_id == UUID(current_admin["admin_id"]),
+        SocialMediaAccount.platform == lookup_platform,
+        SocialMediaAccount.is_connected == True,
+    ).first()
+
+    if not acct:
+        raise HTTPException(
+            status_code=422,
+            detail=f"No connected {platform.title()} account. Please connect your account first."
+        )
+
+    acct_dict = {
+        "access_token": acct.access_token,
+        "refresh_token": acct.refresh_token,
+        "page_id": acct.page_id,
+        "page_name": acct.page_name,
+        "page_access_token": acct.page_access_token,
+        "username": acct.username,
+        "ig_business_id": acct.page_id if platform == "instagram" else None,
+        "person_urn": None,  # stored as username for LinkedIn — reconstruct if needed
+    }
+    # Rebuild LinkedIn person URN from page_id stored as person_urn
+    if platform == "linkedin" and acct.page_id:
+        acct_dict["person_urn"] = acct.page_id
+
+    try:
+        platform_post_id = await publish_post(
+            platform=platform,
+            account=acct_dict,
+            content=post.content,
+            image_url=post.image_url,
+            link_url=post.link_url,
+        )
+    except Exception as e:
+        logger.error("Failed to publish post %s to %s: %s", post_id, platform, e)
+        post.status = "failed"
+        db.commit()
+        raise HTTPException(status_code=502, detail=f"Publishing failed: {e}")
+
+    post.status = "published"
+    post.published_at = datetime.utcnow()
+    db.commit()
+
+    return {"ok": True, "platform_post_id": platform_post_id}
 
 
 # Notification Endpoints
