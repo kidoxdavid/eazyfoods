@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">eazyfoods</string>
+    <string name="title_activity_main">eazyfoods</string>
+    <string name="package_name">ca.eazyfoods.app</string>
+    <string name="custom_url_scheme">ca.eazyfoods.app</string>
+</resources>

@@ -1,0 +1,90 @@
+name: Build Android APK
+
+on:
+  push:
+    tags:
+      - 'android-v*'   # trigger by pushing a tag: git tag android-v1.0.0 && git push --tags
+  workflow_dispatch:    # also allows manual trigger from GitHub Actions tab
+
+jobs:
+  build:
+    name: Build signed APK / AAB
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend-customer/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend-customer
+        run: npm ci
+
+      - name: Build web app for Android
+        working-directory: frontend-customer
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.VITE_GOOGLE_OAUTH_CLIENT_ID }}
+          VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+        run: npx vite build --config vite.config.android.js
+
+      - name: Sync Capacitor
+        working-directory: frontend-customer
+        run: npx cap sync android
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make Gradle executable
+        working-directory: frontend-customer/android
+        run: chmod +x gradlew
+
+      # ── Debug APK (unsigned, for quick device testing without keystore) ──
+      - name: Build debug APK
+        working-directory: frontend-customer/android
+        run: ./gradlew assembleDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: eazyfoods-debug.apk
+          path: frontend-customer/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      # ── Release AAB (signed, for Google Play Store) ──
+      # Only runs when keystore secrets are configured
+      - name: Build release AAB
+        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        working-directory: frontend-customer/android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > app/eazyfoods.keystore
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/app/eazyfoods.keystore \
+            -Pandroid.injected.signing.store.password="$STORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+
+      - name: Upload release AAB
+        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: eazyfoods-release.aab
+          path: frontend-customer/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 90
