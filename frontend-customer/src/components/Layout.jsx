@@ -236,6 +236,20 @@ const Layout = ({ children }) => {
             })}
           </nav>
 
+          {/* Portals link — always visible in sidebar on mobile/tablet */}
+          <div className="px-4 py-3 border-t border-gray-100">
+            <a
+              href={(import.meta.env.VITE_PORTALS_URL || 'https://portals.eazyfoods.ca').trim()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center space-x-2 px-3 py-2.5 rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors text-sm font-medium"
+              onClick={() => setSidebarOpen(false)}
+            >
+              <Store className="h-4 w-4 flex-shrink-0" />
+              <span>For vendors &amp; partners – Portals</span>
+            </a>
+          </div>
+
           {/* User Section */}
           {token && (() => {
             const AvatarIcon = getAvatarIcon(avatarKey)

@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Safe area inset for Capacitor Android — modals/overlays use this so they clear the status bar */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+/* Fixed overlays that start at top:0 must be pushed below the status bar in the native app */
+.fixed.inset-0,
+[class*="fixed"][class*="inset-0"] {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 /* Toast Animation */
 @keyframes slideInRight {
   from {

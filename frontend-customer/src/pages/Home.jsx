@@ -24,7 +24,6 @@ const Home = () => {
   const [chefs, setChefs] = useState([])
   const [chefDeals, setChefDeals] = useState([])
   const [loading, setLoading] = useState(true)
-  const [debugError, setDebugError] = useState(null)
   const { addToCart } = useCart()
   const { coordinates, selectedCity, selectedProvince } = useLocation()
   const { success: showSuccessToast } = useToast()
@@ -260,7 +259,6 @@ const Home = () => {
       }
       
     } catch (error) {
-      setDebugError(`${error.message} | status:${error.response?.status} | code:${error.code} | url:${error.config?.baseURL}${error.config?.url}`)
       console.error('Failed to fetch data:', error)
       console.error('Error details:', {
         message: error.message,
@@ -324,11 +322,6 @@ const Home = () => {
 
   return (
     <div className="w-full relative animate-fadeIn" style={{ display: 'block', width: '100%' }}>
-      {/* Temporary debug banner */}
-      <div style={{ background: '#1e293b', color: '#fbbf24', fontSize: 11, padding: '6px 10px', paddingTop: 'calc(env(safe-area-inset-top, 24px) + 6px)', wordBreak: 'break-all', fontFamily: 'monospace', position: 'relative', zIndex: 9999 }}>
-        [DEBUG] origin: {window.location.origin} | API: {String(window.API_BASE_URL || 'NOT SET')} | loading: {String(loading)}
-        {debugError && <div style={{ color: '#f87171', marginTop: 2 }}>ERR: {debugError}</div>}
-      </div>
       {/* Hero Section - same PageBanner as other pages for consistent load (no flash) */}
       <PageBanner
         title="Welcome to eazyfoods"
