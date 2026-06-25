@@ -4,6 +4,7 @@ Customer cart and checkout endpoints
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status, Body
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -65,7 +66,7 @@ async def create_order(
             if not allow_guest:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Please log in to place an order.")
 
-            guest_email = (order_data.get("guest_email") or "").strip()
+            guest_email = (order_data.get("guest_email") or "").strip().lower()
             first_name = (order_data.get("guest_first_name") or order_data.get("first_name") or "").strip()
             last_name = (order_data.get("guest_last_name") or order_data.get("last_name") or "").strip()
             if not guest_email or not first_name or not last_name:
@@ -74,7 +75,7 @@ async def create_order(
                     detail="Guest checkout requires email, first name, and last name."
                 )
 
-            guest = db.query(Customer).filter(Customer.email == guest_email).first()
+            guest = db.query(Customer).filter(func.lower(Customer.email) == guest_email).first()
             if not guest:
                 guest = Customer(
                     email=guest_email,
@@ -85,7 +86,6 @@ async def create_order(
                     is_email_verified=False,
                 )
                 db.add(guest)
-                db.flush()
             customer_id = guest.id
 
         items = order_data.get("items", []) or []
@@ -110,7 +110,6 @@ async def create_order(
                 longitude=address_data.get("longitude")
             )
             db.add(delivery_address)
-            db.flush()
             delivery_address_id = str(delivery_address.id)
 
         coupon = None
