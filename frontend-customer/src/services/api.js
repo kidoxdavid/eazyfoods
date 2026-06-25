@@ -1,35 +1,28 @@
 import axios from 'axios'
 
+const PRODUCTION_API_URL = 'https://eazyfoods-api.onrender.com/api/v1'
+
 // Allow overriding API URL via localStorage (for testing/sharing)
 const getApiBaseURL = () => {
   // Check localStorage first (for easy testing)
   const stored = localStorage.getItem('API_BASE_URL')
-  if (stored) {
-    // Ensure it's a relative path for proxy to work, unless it's an absolute URL
-    if (stored.startsWith('http://') || stored.startsWith('https://')) {
-      return stored
-    }
-    return stored.startsWith('/') ? stored : `/${stored}`
+  if (stored && (stored.startsWith('http://') || stored.startsWith('https://'))) {
+    return stored
   }
-  
-  // Check window variable (for runtime override)
-  if (window.API_BASE_URL) {
-    if (window.API_BASE_URL.startsWith('http://') || window.API_BASE_URL.startsWith('https://')) {
-      return window.API_BASE_URL
-    }
-    return window.API_BASE_URL.startsWith('/') ? window.API_BASE_URL : `/${window.API_BASE_URL}`
+
+  // Check environment variable (baked in at build time via .env.android / VITE_API_BASE_URL)
+  const envUrl = import.meta.env.VITE_API_BASE_URL
+  if (envUrl && (envUrl.startsWith('http://') || envUrl.startsWith('https://'))) {
+    return envUrl
   }
-  
-  // Check environment variable (for build-time)
-  if (import.meta.env.VITE_API_BASE_URL) {
-    const envUrl = import.meta.env.VITE_API_BASE_URL
-    if (envUrl.startsWith('http://') || envUrl.startsWith('https://')) {
-      return envUrl
-    }
-    return envUrl.startsWith('/') ? envUrl : `/${envUrl}`
+
+  // Running inside Capacitor native app — relative URLs resolve to https://localhost which
+  // doesn't host the API, so always fall back to the production URL.
+  if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+    return PRODUCTION_API_URL
   }
-  
-  // Default: use proxy (for local development) - MUST be relative for Vite proxy to work
+
+  // Default: use Vite dev-server proxy (local development only)
   return '/api/v1'
 }
 
