@@ -116,10 +116,11 @@ async def get_delivery_estimate(
 
     store_address = f"{store.street_address or ''}, {store.city or ''}, {store.state or ''} {store.postal_code or ''}, {store.country or 'Canada'}".replace(", ,", ",").strip()
     delivery_address = f"{street_address}, {city}, {state} {postal_code}, {country}".replace(", ,", ",").strip()
-    # Postal-code-only string used as a precise geocoding fallback for Canadian/US addresses
+    store_country = store.country or "Canada"
     postal_only = f"{postal_code}, {country}".strip()
+    store_postal_only = f"{store.postal_code}, {store_country}".strip() if store.postal_code else None
 
-    # Use stored store coordinates when available — avoids geocoding the store address every request
+    # Use stored store coordinates when available
     store_lat_raw = getattr(store, "latitude", None)
     store_lng_raw = getattr(store, "longitude", None)
     store_lat = float(store_lat_raw) if store_lat_raw is not None else None
@@ -128,41 +129,49 @@ async def get_delivery_estimate(
     distance_km = None
     from app.services.maps_service import maps_service
 
+    # ── Resolve delivery coordinates ──────────────────────────────────────
+    # Try: full address → postal code only (Google Maps then Nominatim)
+    d_coords = None
     if maps_service.is_available():
-        if store_lat is not None and store_lng is not None:
-            # Geocode delivery address via Google Maps, fall back to postal code alone
-            delivery_coords = maps_service.geocode_address(delivery_address)
-            if delivery_coords is None and postal_code:
-                delivery_coords = maps_service.geocode_address(postal_only)
-            if delivery_coords:
-                distance_km = maps_service.get_distance_km(store_lat, store_lng, delivery_coords[0], delivery_coords[1])
+        d_coords = maps_service.geocode_address(delivery_address)
+        if d_coords is None and postal_code:
+            d_coords = maps_service.geocode_address(postal_only)
+    if d_coords is None:
+        d_coords = await _geocode_address(delivery_address)
+    if d_coords is None and postal_code:
+        d_coords = await _geocode_address(postal_only)
+
+    # ── Resolve store coordinates ─────────────────────────────────────────
+    # Use stored lat/lng when available — avoids geocoding on every request
+    s_coords = (store_lat, store_lng) if store_lat is not None and store_lng is not None else None
+    if s_coords is None:
+        if maps_service.is_available():
+            s_coords = maps_service.geocode_address(store_address)
+            if s_coords is None and store_postal_only:
+                s_coords = maps_service.geocode_address(store_postal_only)
+        if s_coords is None:
+            s_coords = await _geocode_address(store_address)
+        if s_coords is None and store_postal_only:
+            s_coords = await _geocode_address(store_postal_only)
+
+    # ── Calculate distance ────────────────────────────────────────────────
+    if d_coords and s_coords:
+        # Prefer actual driving distance from Google Maps Directions API
+        if maps_service.is_available():
+            driving = maps_service.get_distance_km(s_coords[0], s_coords[1], d_coords[0], d_coords[1])
+            if driving is not None:
+                distance_km = driving
         if distance_km is None:
-            # Fallback: Distance Matrix API with full address strings
-            distance_km = maps_service.get_distance_km_from_addresses(store_address, delivery_address)
+            # Haversine straight-line × 1.35 road factor
+            distance_km = round(_haversine_km(s_coords[0], s_coords[1], d_coords[0], d_coords[1]) * 1.35, 2)
 
-    if distance_km is None and use_distance:
-        try:
-            # Nominatim fallback — try full address first, then postal code alone
-            delivery_coords = await _geocode_address(delivery_address)
-            if delivery_coords is None and postal_code:
-                delivery_coords = await _geocode_address(postal_only)
-
-            if delivery_coords:
-                d_lat, d_lon = delivery_coords
-                if store_lat is not None and store_lng is not None:
-                    straight_line_km = _haversine_km(store_lat, store_lng, d_lat, d_lon)
-                else:
-                    store_coords = await _geocode_address(store_address)
-                    if store_coords:
-                        s_lat, s_lon = store_coords
-                        straight_line_km = _haversine_km(s_lat, s_lon, d_lat, d_lon)
-                    else:
-                        straight_line_km = None
-                if straight_line_km is not None:
-                    # 1.35 road-factor converts straight-line to realistic driving distance
-                    distance_km = round(straight_line_km * 1.35, 2)
-        except (TypeError, ValueError) as e:
-            logger.warning("Delivery estimate fallback failed: %s", e)
+    # ── Last resort: Distance Matrix with progressively simpler addresses ─
+    if distance_km is None and maps_service.is_available():
+        distance_km = maps_service.get_distance_km_from_addresses(store_address, delivery_address)
+    if distance_km is None and maps_service.is_available() and postal_code:
+        distance_km = maps_service.get_distance_km_from_addresses(
+            store_postal_only or store_address, postal_only
+        )
 
     if delivery_fee_type == "dynamic" and distance_km is not None:
         from app.services.delivery_fee_service import calculate_dynamic_delivery_fee
@@ -177,12 +186,6 @@ async def get_delivery_estimate(
     if (delivery_fee_type == "per_km" or use_distance) and distance_km is not None and fee_per_km >= 0:
         delivery_fee = round(distance_km * fee_per_km, 2)
         return {"distance_km": round(distance_km, 2), "delivery_fee": delivery_fee}
-
-    # Distance could not be determined — when distance-based mode is active, tell the
-    # frontend so it can prompt the customer to verify their address rather than
-    # silently showing the flat fee as if it were a calculated per-km result.
-    if use_distance and distance_km is None:
-        return {"distance_km": None, "delivery_fee": None, "distance_unavailable": True}
 
     return {"distance_km": distance_km, "delivery_fee": default_fee}
 
