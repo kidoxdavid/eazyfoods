@@ -261,7 +261,7 @@ const Login = () => {
                       setLoading(false)
                     }
                   }}
-                  onError={() => setError('Google sign-in was cancelled or failed.')}
+                  onError={(err) => setError(`Google sign-in failed: ${err?.message || err?.error || JSON.stringify(err) || 'unknown error'}`)}
                 />
               ) : (
               <GoogleLogin
