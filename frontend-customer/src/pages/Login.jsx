@@ -11,7 +11,11 @@ const NativeGoogleSignIn = ({ onSuccess, onError }) => {
   const handlePress = async () => {
     try {
       const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth')
-      await GoogleAuth.initialize()
+      await GoogleAuth.initialize({
+        clientId: import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID,
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: true,
+      })
       const user = await GoogleAuth.signIn()
       const idToken = user?.authentication?.idToken
       if (!idToken) throw new Error('No ID token returned')
