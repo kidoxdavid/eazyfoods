@@ -28,6 +28,12 @@ class BarcodeSettingsUpdate(BaseModel):
     duplicate_barcode_allowed: bool = False
 
 
+class BulkGenerateRequest(BaseModel):
+    product_ids: Optional[List[str]] = None
+    vendor_id: Optional[str] = None
+    generate_for_all: bool = False
+
+
 @router.get("/settings", response_model=dict)
 async def get_barcode_settings(
     current_admin: dict = Depends(get_current_admin),
@@ -162,12 +168,13 @@ async def get_all_products_with_barcodes(
 
 @router.post("/products/bulk-generate", response_model=dict)
 async def bulk_generate_barcodes(
-    product_ids: List[str] = None,
-    vendor_id: Optional[str] = None,
-    generate_for_all: bool = False,
+    body: BulkGenerateRequest,
     current_admin: dict = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
+    product_ids = body.product_ids
+    vendor_id = body.vendor_id
+    generate_for_all = body.generate_for_all
     """Bulk generate barcodes for products"""
     admin_role = current_admin.get("role", "")
     if admin_role not in ["admin", "super_admin"]:

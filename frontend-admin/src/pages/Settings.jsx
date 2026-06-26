@@ -237,6 +237,7 @@ const Settings = () => {
         commission_rate: parseFloat(newRate)
       })
       alert('Vendor commission rate updated successfully')
+      await fetchVendors()
     } catch (error) {
       alert('Failed to update vendor commission rate')
     }
@@ -373,7 +374,7 @@ const Settings = () => {
       const link = document.createElement('a')
       link.href = url
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
-      link.setAttribute('download', `easyfoods_master_export_${timestamp}.csv`)
+      link.setAttribute('download', `eazyfoods_master_export_${timestamp}.csv`)
       document.body.appendChild(link)
       link.click()
       link.remove()

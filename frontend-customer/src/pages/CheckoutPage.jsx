@@ -30,6 +30,7 @@ const CheckoutPage = () => {
   const [defaultDeliveryFee, setDefaultDeliveryFee] = useState(5)
   const [useDistanceBasedDelivery, setUseDistanceBasedDelivery] = useState(false)
   const [deliveryFeeFromEstimate, setDeliveryFeeFromEstimate] = useState(null)
+  const [estimatingDelivery, setEstimatingDelivery] = useState(false)
   const [cardReady, setCardReady] = useState(false)
   const [PaymentSection, setPaymentSection] = useState(null)
   const [guestInfo, setGuestInfo] = useState({ guest_email: '', guest_first_name: '', guest_last_name: '', guest_phone: '' })
@@ -91,8 +92,11 @@ const CheckoutPage = () => {
   useEffect(() => {
     if (!useDistanceBasedDelivery || !selectedStoreId || !address.street_address?.trim() || !address.city?.trim() || !address.postal_code?.trim()) {
       setDeliveryFeeFromEstimate(null)
+      setEstimatingDelivery(false)
       return
     }
+    setEstimatingDelivery(true)
+    setDeliveryFeeFromEstimate(null)
     const params = new URLSearchParams({
       store_id: selectedStoreId,
       street_address: address.street_address.trim(),
@@ -108,6 +112,7 @@ const CheckoutPage = () => {
         else setDeliveryFeeFromEstimate(null)
       })
       .catch(() => setDeliveryFeeFromEstimate(null))
+      .finally(() => setEstimatingDelivery(false))
   }, [useDistanceBasedDelivery, selectedStoreId, address.street_address, address.city, address.state, address.postal_code, address.country, subtotal])
 
   const hasStoreItems = cart.some((i) => i.store_id)
@@ -302,9 +307,11 @@ const CheckoutPage = () => {
                 <div>
                   <p className="font-semibold text-sm">Delivery</p>
                   <p className="text-xs text-gray-600">
-                    {useDistanceBasedDelivery && deliveryFeeFromEstimate == null
-                      ? 'Enter address below for price'
-                      : `$${deliveryFeeAmount.toFixed(2)}`}
+                    {estimatingDelivery
+                      ? 'Calculating…'
+                      : useDistanceBasedDelivery && deliveryFeeFromEstimate == null
+                        ? 'Enter address for price'
+                        : `$${deliveryFeeAmount.toFixed(2)}`}
                   </p>
                 </div>
               </label>
@@ -387,9 +394,15 @@ const CheckoutPage = () => {
               <div className="flex justify-between text-xs"><span className="text-gray-600">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
               <div className="flex justify-between text-xs"><span className="text-gray-600">Tax</span><span>${tax.toFixed(2)}</span></div>
               <div className="flex justify-between text-xs">
-              <span className="text-gray-600">Shipping</span>
-              <span>{useDistanceBasedDelivery && deliveryFeeFromEstimate == null && deliveryMethod === 'delivery' ? 'Enter address' : `$${shipping.toFixed(2)}`}</span>
-            </div>
+                <span className="text-gray-600">Shipping</span>
+                <span>
+                  {estimatingDelivery && deliveryMethod === 'delivery'
+                    ? 'Calculating…'
+                    : useDistanceBasedDelivery && deliveryFeeFromEstimate == null && deliveryMethod === 'delivery'
+                      ? 'Enter address'
+                      : `$${shipping.toFixed(2)}`}
+                </span>
+              </div>
               <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200">
                 <span>Total</span><span className="text-primary-600">${total.toFixed(2)}</span>
               </div>

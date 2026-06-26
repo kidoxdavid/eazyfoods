@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { ChevronLeft, ChevronRight, ZoomIn, RotateCw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ZoomIn, RotateCw, Package } from 'lucide-react'
 import { resolveImageUrl } from '../utils/imageUtils'
 
 const ProductImageGallery = ({ images, productName, mainImage, imageType = 'product' }) => {
@@ -40,19 +40,17 @@ const ProductImageGallery = ({ images, productName, mainImage, imageType = 'prod
     setRetryKey(0)
   }, [selectedIndex, current360Index, is360View])
 
-  // Timeout: if image hasn't loaded in 10s, treat as failed to avoid infinite loading
+  // Timeout: if image hasn't loaded in 30s, treat as failed to avoid infinite spinner
   useEffect(() => {
     if (!currentImage) return
     const timer = setTimeout(() => {
       setImageLoaded((loaded) => {
-        if (!loaded) {
-          setImageError(true)
-        }
+        if (!loaded) setImageError(true)
         return true
       })
-    }, 10000)
+    }, 30000)
     return () => clearTimeout(timer)
-  }, [currentImage])
+  }, [currentImage, retryKey])
 
   // Handle 360° view auto-rotation
   useEffect(() => {
@@ -163,10 +161,7 @@ const ProductImageGallery = ({ images, productName, mainImage, imageType = 'prod
               }`}
               onLoad={handleImageLoad}
               loading={selectedIndex === 0 && !is360View ? 'eager' : 'lazy'}
-              onError={(e) => {
-                e.target.style.display = 'none'
-                handleImageError()
-              }}
+              onError={() => handleImageError()}
               style={
                 isZoomed && imageLoaded
                   ? {
@@ -242,12 +237,12 @@ const ProductImageGallery = ({ images, productName, mainImage, imageType = 'prod
             )}
 
             {/* Fallback - shown when image fails to load or times out */}
-            <div 
-              className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 image-fallback" 
-              style={{ display: imageError ? 'flex' : 'none' }}
-            >
-              No Image
-            </div>
+            {imageError && (
+              <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400 gap-2">
+                <Package className="h-10 w-10 text-gray-300" />
+                <span className="text-sm text-gray-400">{productName || 'No Image'}</span>
+              </div>
+            )}
           </>
         )}
       </div>

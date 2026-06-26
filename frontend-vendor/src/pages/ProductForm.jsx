@@ -1,12 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import api, { resolveUploadUrl } from '../services/api'
 import { ArrowLeft, Upload, X } from 'lucide-react'
 
 const ProductForm = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const isEdit = !!id
+  // Support pre-filling barcode when navigated from a barcode scan
+  const prefillBarcode = location.state?.barcode || ''
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState([])
   const [stores, setStores] = useState([])
@@ -17,7 +20,7 @@ const ProductForm = () => {
     sale_price: '',
     category_id: '',
     sku: '',
-    barcode: '',
+    barcode: prefillBarcode,
     unit: 'piece',
     stock_quantity: 0,
     low_stock_threshold: 10,

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import api, { resolveUploadUrl } from '../services/api'
 import { Plus, Edit, Trash2, Package, Search, X, Camera, Barcode, Copy } from 'lucide-react'
 import { formatCurrency } from '../utils/format'
@@ -8,6 +8,7 @@ import BarcodeScanner from '../components/BarcodeScanner'
 import BarcodeGenerator from '../components/BarcodeGenerator'
 
 const Products = () => {
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const urlFilter = searchParams.get('filter') || 'all'
   const [products, setProducts] = useState([])
@@ -23,6 +24,7 @@ const Products = () => {
   const [showBarcodeGenerator, setShowBarcodeGenerator] = useState(false)
   const [selectedProductForBarcode, setSelectedProductForBarcode] = useState(null)
   const [barcodeSearch, setBarcodeSearch] = useState('')
+  const [scannedResult, setScannedResult] = useState(null) // { barcode, product } or { barcode, notFound: true }
 
   useEffect(() => {
     const f = searchParams.get('filter') || 'all'
@@ -96,17 +98,12 @@ const Products = () => {
   }
 
   const handleBarcodeScan = async (scannedBarcode) => {
+    setShowScanner(false)
     try {
       const response = await api.get('/barcode/lookup', { params: { barcode: scannedBarcode } })
-      const product = response.data
-      
-      // Set search to product name
-      setSearchQuery(product.name)
-      setBarcodeSearch(scannedBarcode)
-      fetchProducts()
-      setShowScanner(false)
-    } catch (error) {
-      alert('Product not found with this barcode')
+      setScannedResult({ barcode: scannedBarcode, product: response.data })
+    } catch {
+      setScannedResult({ barcode: scannedBarcode, notFound: true })
     }
   }
 
@@ -558,6 +555,63 @@ const Products = () => {
           onClose={() => setShowScanner(false)}
           title="Scan Product Barcode"
         />
+      )}
+
+      {scannedResult && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Barcode Scan Result</h2>
+              <button onClick={() => setScannedResult(null)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+            </div>
+            <p className="text-xs text-gray-500 font-mono mb-4">{scannedResult.barcode}</p>
+            {scannedResult.product ? (
+              <>
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-4">
+                  <p className="text-sm font-medium text-green-800">Product found</p>
+                  <p className="text-sm text-gray-700 mt-1">{scannedResult.product.name}</p>
+                  <p className="text-xs text-gray-500">SKU: {scannedResult.product.sku || '-'} · Stock: {scannedResult.product.stock_quantity ?? 0}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setSearchQuery(scannedResult.product.name); setScannedResult(null) }}
+                    className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm"
+                  >
+                    View in List
+                  </button>
+                  <Link
+                    to={`/products/${scannedResult.product.id}/edit`}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm text-center"
+                    onClick={() => setScannedResult(null)}
+                  >
+                    Edit Product
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-4">
+                  <p className="text-sm font-medium text-amber-800">No product found with this barcode</p>
+                  <p className="text-sm text-gray-600 mt-1">Would you like to create a new product with this barcode?</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setScannedResult(null); navigate('/products/new', { state: { barcode: scannedResult.barcode } }) }}
+                    className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm"
+                  >
+                    Create Product
+                  </button>
+                  <button
+                    onClick={() => setScannedResult(null)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       {showBarcodeGenerator && selectedProductForBarcode && (
