@@ -45,7 +45,7 @@ def _get_or_create_cart_row(db: Session, customer_id):
     return row
 
 
-@router.get("/cart", response_model=dict)
+@router.get("", response_model=dict)
 async def get_customer_cart(
     current_customer: dict = Depends(get_current_customer),
     db: Session = Depends(get_db)
@@ -66,7 +66,7 @@ class CartSyncBody(_BaseModel):
     cart: list
 
 
-@router.post("/cart/sync", response_model=dict)
+@router.post("/sync", response_model=dict)
 async def sync_customer_cart(
     body: CartSyncBody,
     current_customer: dict = Depends(get_current_customer),
@@ -88,7 +88,7 @@ async def sync_customer_cart(
     return {"ok": True}
 
 
-@router.delete("/cart", response_model=dict)
+@router.delete("", response_model=dict)
 async def clear_customer_cart(
     current_customer: dict = Depends(get_current_customer),
     db: Session = Depends(get_db)
