@@ -70,18 +70,20 @@ jobs:
           fi
           if [ "$RESTORED" != "true" ]; then
             keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-            echo ""
-            echo "========================================================"
-            echo "NEW KEYSTORE — copy the single long line below and save"
-            echo "it as GitHub secret DEBUG_KEYSTORE_BASE64:"
-            echo "========================================================"
-            base64 -w 0 ~/.android/debug.keystore
-            echo ""
-            echo "========================================================"
+            echo "NEW KEYSTORE GENERATED — download the artifact 'debug-keystore' after this build"
+            cp ~/.android/debug.keystore /tmp/debug.keystore
           fi
           echo ""
           echo "SHA-1 to register in Google Cloud Console (Android OAuth client):"
           keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep "SHA1:"
+
+      - name: Upload debug keystore as artifact (only present when newly generated)
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-keystore
+          path: /tmp/debug.keystore
+          if-no-files-found: ignore
+          retention-days: 1
 
       # ── Debug APK (unsigned, for quick device testing without keystore) ──
       - name: Build debug APK
