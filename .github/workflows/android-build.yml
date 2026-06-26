@@ -58,15 +58,22 @@ jobs:
       - name: Restore or create debug keystore
         run: |
           mkdir -p ~/.android
+          RESTORED=false
           if [ -n "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/debug.keystore
-            echo "Restored existing debug keystore from secret."
-          else
+            if echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/debug.keystore 2>/dev/null && [ -s ~/.android/debug.keystore ]; then
+              echo "Restored existing debug keystore from secret."
+              RESTORED=true
+            else
+              echo "WARNING: DEBUG_KEYSTORE_BASE64 secret is invalid — generating a new keystore."
+              rm -f ~/.android/debug.keystore
+            fi
+          fi
+          if [ "$RESTORED" != "true" ]; then
             keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
             echo ""
             echo "========================================================"
-            echo "NEW KEYSTORE — copy everything between the lines and"
-            echo "save it as GitHub secret DEBUG_KEYSTORE_BASE64:"
+            echo "NEW KEYSTORE — copy the single long line below and save"
+            echo "it as GitHub secret DEBUG_KEYSTORE_BASE64:"
             echo "========================================================"
             base64 -w 0 ~/.android/debug.keystore
             echo ""
