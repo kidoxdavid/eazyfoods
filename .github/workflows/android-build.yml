@@ -53,23 +53,33 @@ jobs:
         working-directory: frontend-customer/android
         run: chmod +x gradlew
 
-      # ── Debug APK (unsigned, for quick device testing without keystore) ──
-      - name: Build debug APK
-        working-directory: frontend-customer/android
-        run: ./gradlew assembleDebug
-
-      - name: Print debug keystore SHA-1 (add this to Google Cloud Console for Google Sign-In)
+      # Restore or create a stable debug keystore BEFORE the build so the APK
+      # is signed with the same key whose SHA-1 is registered in Google Cloud Console.
+      - name: Restore or create debug keystore
         run: |
           mkdir -p ~/.android
           if [ -n "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" ]; then
             echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/debug.keystore
-          elif [ ! -f ~/.android/debug.keystore ]; then
+            echo "Restored existing debug keystore from secret."
+          else
             keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-            echo "NEW KEYSTORE CREATED — save this as DEBUG_KEYSTORE_BASE64 secret:"
+            echo ""
+            echo "========================================================"
+            echo "NEW KEYSTORE — copy everything between the lines and"
+            echo "save it as GitHub secret DEBUG_KEYSTORE_BASE64:"
+            echo "========================================================"
             base64 -w 0 ~/.android/debug.keystore
+            echo ""
+            echo "========================================================"
           fi
-          echo "SHA-1 for Google Cloud Console:"
+          echo ""
+          echo "SHA-1 to register in Google Cloud Console (Android OAuth client):"
           keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep "SHA1:"
+
+      # ── Debug APK (unsigned, for quick device testing without keystore) ──
+      - name: Build debug APK
+        working-directory: frontend-customer/android
+        run: ./gradlew assembleDebug
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
