@@ -52,11 +52,15 @@ async def get_customer_cart(
 ):
     """Return the authenticated customer's server-side cart."""
     from sqlalchemy import text
-    row = db.execute(
-        text("SELECT cart_data FROM customer_carts WHERE customer_id = :cid"),
-        {"cid": current_customer["customer_id"]}
-    ).fetchone()
-    return {"cart": row[0] if row else []}
+    try:
+        row = db.execute(
+            text("SELECT cart_data FROM customer_carts WHERE customer_id = :cid"),
+            {"cid": current_customer["customer_id"]}
+        ).fetchone()
+        return {"cart": row[0] if row else []}
+    except Exception as e:
+        logger.warning("Cart fetch failed (non-critical): %s", e)
+        return {"cart": []}
 
 
 from pydantic import BaseModel as _BaseModel
@@ -75,16 +79,32 @@ async def sync_customer_cart(
     """Upsert the full cart for the authenticated customer (replace server copy)."""
     import json
     from sqlalchemy import text
-    db.execute(
-        text("""
-            INSERT INTO customer_carts (customer_id, cart_data, updated_at)
-            VALUES (:cid, :data::jsonb, NOW())
-            ON CONFLICT (customer_id) DO UPDATE
-            SET cart_data = EXCLUDED.cart_data, updated_at = NOW()
-        """),
-        {"cid": current_customer["customer_id"], "data": json.dumps(body.cart)}
-    )
-    db.commit()
+    try:
+        db.execute(
+            text("""
+                CREATE TABLE IF NOT EXISTS customer_carts (
+                    customer_id UUID PRIMARY KEY,
+                    cart_data JSONB NOT NULL DEFAULT '[]'::jsonb,
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                )
+            """)
+        )
+        db.execute(
+            text("""
+                INSERT INTO customer_carts (customer_id, cart_data, updated_at)
+                VALUES (:cid, :data::jsonb, NOW())
+                ON CONFLICT (customer_id) DO UPDATE
+                SET cart_data = EXCLUDED.cart_data, updated_at = NOW()
+            """),
+            {"cid": current_customer["customer_id"], "data": json.dumps(body.cart)}
+        )
+        db.commit()
+    except Exception as e:
+        logger.warning("Cart sync failed (non-critical): %s", e)
+        try:
+            db.rollback()
+        except Exception:
+            pass
     return {"ok": True}
 
 
@@ -95,11 +115,18 @@ async def clear_customer_cart(
 ):
     """Clear the server-side cart (called on logout)."""
     from sqlalchemy import text
-    db.execute(
-        text("UPDATE customer_carts SET cart_data = '[]'::jsonb, updated_at = NOW() WHERE customer_id = :cid"),
-        {"cid": current_customer["customer_id"]}
-    )
-    db.commit()
+    try:
+        db.execute(
+            text("UPDATE customer_carts SET cart_data = '[]'::jsonb, updated_at = NOW() WHERE customer_id = :cid"),
+            {"cid": current_customer["customer_id"]}
+        )
+        db.commit()
+    except Exception as e:
+        logger.warning("Cart clear failed (non-critical): %s", e)
+        try:
+            db.rollback()
+        except Exception:
+            pass
     return {"ok": True}
 
 

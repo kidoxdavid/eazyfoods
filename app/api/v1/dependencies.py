@@ -91,6 +91,46 @@ async def get_current_customer(token: str = Depends(customer_oauth2_scheme), db:
     }
 
 
+async def get_optional_vendor(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> Optional[dict]:
+    """Get authenticated vendor or None — never raises 401."""
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email: str = payload.get("sub")
+        vendor_id: str = payload.get("vendor_id")
+        user_id: str = payload.get("user_id")
+        role: str = payload.get("role")
+        if not email or not vendor_id or not user_id:
+            return None
+        vendor_user = db.query(VendorUser).filter(VendorUser.id == UUID(user_id)).first()
+        if vendor_user is None:
+            return None
+        return {"email": email, "vendor_id": vendor_id, "user_id": user_id, "role": role}
+    except Exception:
+        return None
+
+
+async def get_optional_admin(credentials: HTTPAuthorizationCredentials | None = Depends(admin_oauth2_scheme), db: Session = Depends(get_db)) -> Optional[dict]:
+    """Get authenticated admin or None — never raises 401."""
+    if not credentials:
+        return None
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email: str = payload.get("sub")
+        admin_id: str = payload.get("admin_id")
+        role: str = payload.get("role")
+        if not email or not admin_id:
+            return None
+        admin = db.query(AdminUser).filter(AdminUser.id == UUID(admin_id)).first()
+        if admin is None or not admin.is_active:
+            return None
+        return {"email": email, "admin_id": admin_id, "role": role, "permissions": admin.permissions}
+    except Exception:
+        return None
+
+
 async def get_optional_customer(token: str = Depends(customer_oauth2_scheme), db: Session = Depends(get_db)) -> Optional[dict]:
     """
     Get current authenticated customer from JWT token, or None if not authenticated

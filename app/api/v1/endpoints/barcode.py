@@ -7,7 +7,7 @@ from typing import Optional
 from uuid import UUID
 from app.core.database import get_db
 from app.models.product import Product
-from app.api.v1.dependencies import get_current_admin, get_current_vendor
+from app.api.v1.dependencies import get_optional_admin, get_optional_vendor
 import uuid
 
 router = APIRouter()
@@ -16,8 +16,8 @@ router = APIRouter()
 @router.get("/lookup")
 async def lookup_product_by_barcode(
     barcode: str = Query(..., description="Barcode to search for"),
-    current_admin: Optional[dict] = Depends(get_current_admin),
-    current_vendor: Optional[dict] = Depends(get_current_vendor),
+    current_admin: Optional[dict] = Depends(get_optional_admin),
+    current_vendor: Optional[dict] = Depends(get_optional_vendor),
     db: Session = Depends(get_db)
 ):
     """
@@ -63,8 +63,8 @@ async def lookup_product_by_barcode(
 async def generate_barcode(
     product_id: Optional[str] = Query(None, description="Product ID to generate barcode for"),
     sku: Optional[str] = Query(None, description="Use SKU as barcode if product_id not provided"),
-    current_admin: Optional[dict] = Depends(get_current_admin),
-    current_vendor: Optional[dict] = Depends(get_current_vendor),
+    current_admin: Optional[dict] = Depends(get_optional_admin),
+    current_vendor: Optional[dict] = Depends(get_optional_vendor),
     db: Session = Depends(get_db)
 ):
     """
@@ -147,8 +147,8 @@ async def generate_barcode(
 @router.get("/search")
 async def search_by_barcode(
     barcode: str = Query(..., description="Barcode to search for (partial match)"),
-    current_admin: Optional[dict] = Depends(get_current_admin),
-    current_vendor: Optional[dict] = Depends(get_current_vendor),
+    current_admin: Optional[dict] = Depends(get_optional_admin),
+    current_vendor: Optional[dict] = Depends(get_optional_vendor),
     db: Session = Depends(get_db)
 ):
     """
