@@ -59,7 +59,17 @@ jobs:
         run: ./gradlew assembleDebug
 
       - name: Print debug keystore SHA-1 (add this to Google Cloud Console for Google Sign-In)
-        run: keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep -E "SHA1|SHA-1"
+        run: |
+          mkdir -p ~/.android
+          if [ -n "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/debug.keystore
+          elif [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            echo "NEW KEYSTORE CREATED — save this as DEBUG_KEYSTORE_BASE64 secret:"
+            base64 -w 0 ~/.android/debug.keystore
+          fi
+          echo "SHA-1 for Google Cloud Console:"
+          keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android | grep "SHA1:"
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
