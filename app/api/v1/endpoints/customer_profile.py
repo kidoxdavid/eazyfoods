@@ -177,6 +177,13 @@ async def get_delivery_estimate(
     if (delivery_fee_type == "per_km" or use_distance) and distance_km is not None and fee_per_km >= 0:
         delivery_fee = round(distance_km * fee_per_km, 2)
         return {"distance_km": round(distance_km, 2), "delivery_fee": delivery_fee}
+
+    # Distance could not be determined — when distance-based mode is active, tell the
+    # frontend so it can prompt the customer to verify their address rather than
+    # silently showing the flat fee as if it were a calculated per-km result.
+    if use_distance and distance_km is None:
+        return {"distance_km": None, "delivery_fee": None, "distance_unavailable": True}
+
     return {"distance_km": distance_km, "delivery_fee": default_fee}
 
 
