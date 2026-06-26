@@ -575,6 +575,9 @@ const Home = () => {
                     description: 'Braai, Bobotie & More'
                   }
                 ]
+                .filter(item => nearbyStores.some(s =>
+                  (s.region || '').split(',').map(r => r.trim()).includes(item.region)
+                ))
                 .map((item, index) => (
                   <Link
                     key={item.region}
