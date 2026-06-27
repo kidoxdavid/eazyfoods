@@ -76,7 +76,11 @@ function CheckoutPaymentSection({ amount, token, onSuccess, onError, onPaymentRe
         const elements = stripe.elements({ clientSecret, appearance: { theme: 'stripe' } })
         elementsRef.current = elements
 
-        const paymentElement = elements.create('payment', { layout: 'tabs' })
+        const paymentElement = elements.create('payment', {
+          layout: 'tabs',
+          fields: { billingDetails: { address: 'never', name: 'auto' } },
+          wallets: { applePay: 'never', googlePay: 'never', link: 'never' },
+        })
         const container = containerRef.current
         if (!container) {
           setStatus('error')

@@ -240,12 +240,14 @@ const Home = () => {
         setChefs([])
         setChefDeals([])
       } else {
-        // When "All": only show categories that have products in our data
-        let categoriesToShow = categoriesData
-        if (selectedCity === 'All' || !selectedCity || selectedCity.trim().toLowerCase() === 'all') {
-          const categoryIdsInProducts = new Set(allProductsData.map(p => p.category_id).filter(Boolean).map(String))
-          categoriesToShow = categoriesData.filter(c => categoryIdsInProducts.has(String(c.id)))
-        }
+        // Only show categories that have products in the visible (nearby) stores
+        const nearbyStoreIdSet = new Set(storesData.map(s => s.id).filter(Boolean).map(String))
+        const categoryIdsInNearbyStores = new Set(
+          allProductsData
+            .filter(p => nearbyStoreIdSet.has(String(p.store_id)))
+            .map(p => p.category_id).filter(Boolean).map(String)
+        )
+        const categoriesToShow = categoriesData.filter(c => categoryIdsInNearbyStores.has(String(c.id)))
 
         setNewProducts(newProductsData)
         setDiscountedProducts(discountedProductsData)
@@ -534,41 +536,41 @@ const Home = () => {
               </div>
               <div className="space-y-3">
                 {[
-                  { 
-                    region: 'West African', 
-                    flags: ['🇳🇬', '🇬🇭', '🇸🇳', '🇨🇮', '🇧🇯', '🇹🇬'],
+                  {
+                    region: 'West African',
+                    flags: ['ng', 'gh', 'sn', 'ci', 'bj', 'tg'],
                     gradient: 'from-yellow-400 via-green-500 to-yellow-400',
                     bgGradient: 'from-yellow-50 via-green-50 to-yellow-50',
                     icon: '🥘',
                     description: 'Jollof, Fufu & More'
                   },
-                  { 
-                    region: 'East African', 
-                    flags: ['🇰🇪', '🇹🇿', '🇺🇬', '🇪🇹', '🇷🇼', '🇧🇮'],
+                  {
+                    region: 'East African',
+                    flags: ['ke', 'tz', 'ug', 'et', 'rw', 'bi'],
                     gradient: 'from-red-500 via-black-600 to-green-500',
                     bgGradient: 'from-red-50 via-gray-50 to-green-50',
                     icon: '🏔️',
                     description: 'Injera, Nyama & Spices'
                   },
-                  { 
-                    region: 'North African', 
-                    flags: ['🇪🇬', '🇲🇦', '🇹🇳', '🇩🇿', '🇱🇾', '🇸🇩'],
+                  {
+                    region: 'North African',
+                    flags: ['eg', 'ma', 'tn', 'dz', 'ly', 'sd'],
                     gradient: 'from-red-600 via-white-500 to-black-600',
                     bgGradient: 'from-red-50 via-white to-gray-50',
                     icon: '🌵',
                     description: 'Couscous, Tagines & More'
                   },
-                  { 
-                    region: 'Central African', 
-                    flags: ['🇨🇲', '🇨🇩', '🇨🇬', '🇹🇩', '🇨🇫', '🇬🇶'],
+                  {
+                    region: 'Central African',
+                    flags: ['cm', 'cd', 'cg', 'td', 'cf', 'gq'],
                     gradient: 'from-yellow-500 via-red-500 to-green-500',
                     bgGradient: 'from-yellow-50 via-red-50 to-green-50',
                     icon: '🌳',
                     description: 'Plantains, Cassava & More'
                   },
-                  { 
-                    region: 'South African', 
-                    flags: ['🇿🇦', '🇿🇼', '🇧🇼', '🇳🇦', '🇲🇿', '🇲🇼'],
+                  {
+                    region: 'South African',
+                    flags: ['za', 'zw', 'bw', 'na', 'mz', 'mw'],
                     gradient: 'from-green-500 via-yellow-400 to-blue-500',
                     bgGradient: 'from-green-50 via-yellow-50 to-blue-50',
                     icon: '🦁',
@@ -586,19 +588,26 @@ const Home = () => {
                   >
                     {/* Subtle background gradient */}
                     <div className={`absolute inset-0 bg-gradient-to-br ${item.bgGradient} opacity-30 group-hover:opacity-50 transition-opacity duration-300`}></div>
-                    
+
                     {/* Content container */}
                     <div className="relative p-4 flex items-center gap-3 w-full">
-                      {/* Flags showcase - simplified */}
+                      {/* Flags showcase — uses flagcdn.com images so Windows shows real flags */}
                       <div className="flex-shrink-0">
                         <div className="w-20 h-12 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm flex items-center justify-center p-1.5 group-hover:shadow-md transition-all duration-300">
                           <div className="grid grid-cols-3 gap-1 w-full h-full">
-                            {item.flags.slice(0, 6).map((flag, idx) => (
-                              <div 
-                                key={idx} 
-                                className="flex items-center justify-center text-lg leading-none"
+                            {item.flags.slice(0, 6).map((code, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center justify-center"
                               >
-                                {flag}
+                                <img
+                                  src={`https://flagcdn.com/24x18/${code}.png`}
+                                  srcSet={`https://flagcdn.com/48x36/${code}.png 2x`}
+                                  width="24"
+                                  height="18"
+                                  alt={code.toUpperCase()}
+                                  className="rounded-sm object-cover"
+                                />
                               </div>
                             ))}
                           </div>

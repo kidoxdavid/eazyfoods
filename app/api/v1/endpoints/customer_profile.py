@@ -9,6 +9,7 @@ from typing import List, Optional
 from app.core.database import get_db
 from app.models.customer import Customer, CustomerAddress
 from app.models.store import Store
+from app.models.order import Order
 from app.models.platform_settings import PlatformSettings
 from app.api.v1.dependencies import get_current_customer
 from app.schemas.customer import CustomerResponse, CustomerProfileUpdate, CustomerAddressCreate, CustomerAddressUpdate
@@ -402,6 +403,10 @@ async def delete_customer_address(
             detail="Address not found"
         )
     
+    # Null out orders that reference this address (FK constraint would block deletion)
+    db.query(Order).filter(Order.delivery_address_id == addr_id).update(
+        {Order.delivery_address_id: None}, synchronize_session=False
+    )
     db.delete(address)
     db.commit()
 

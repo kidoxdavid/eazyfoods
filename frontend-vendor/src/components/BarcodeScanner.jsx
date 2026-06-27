@@ -58,7 +58,26 @@ const BarcodeScanner = ({ onScan, onClose, title = 'Scan Barcode', stopAfterScan
     html5QrCode
       .start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.5 },
+        {
+          fps: 20,
+          qrbox: { width: 300, height: 180 },
+          aspectRatio: 1.7,
+          experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+          formatsToSupport: [
+            0,  // QR_CODE
+            1,  // AZTEC
+            2,  // CODABAR
+            3,  // CODE_39
+            4,  // CODE_93
+            5,  // CODE_128
+            6,  // DATA_MATRIX
+            8,  // EAN_8
+            9,  // EAN_13
+            13, // ITF
+            15, // UPC_A
+            16, // UPC_E
+          ],
+        },
         (decodedText) => {
           // Debounce: ignore the same barcode within 2 seconds
           if (lastScannedRef.current === decodedText) return

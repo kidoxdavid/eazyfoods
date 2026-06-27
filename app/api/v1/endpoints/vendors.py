@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.vendor import Vendor
+from app.models.store import Store
 from app.schemas.vendor import VendorResponse, VendorUpdate
 from app.api.v1.dependencies import get_current_vendor
 
@@ -114,7 +115,23 @@ async def update_vendor_info(
     
     db.commit()
     db.refresh(vendor)
-    
+
+    # Sync address/contact fields to the vendor's primary store (or all stores if no primary)
+    ADDRESS_FIELDS = ('street_address', 'city', 'state', 'postal_code', 'country', 'phone', 'latitude', 'longitude')
+    changed_address = {f for f in update_data if f in ADDRESS_FIELDS}
+    if changed_address:
+        stores = db.query(Store).filter(Store.vendor_id == vendor_id).all()
+        target = next((s for s in stores if s.is_primary), None) or (stores[0] if stores else None)
+        if target:
+            for field in changed_address:
+                val = getattr(vendor, field)
+                if field in ('latitude', 'longitude') and val is not None:
+                    from decimal import Decimal
+                    setattr(target, field, Decimal(str(val)))
+                else:
+                    setattr(target, field, val)
+            db.commit()
+
     # Convert to response format
     return VendorResponse(
         id=str(vendor.id),
