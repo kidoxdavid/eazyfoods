@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { GoogleMap, LoadScript, Marker, DirectionsService, DirectionsRenderer } from '@react-google-maps/api'
 import api from '../services/api'
 import { startLocationTracking, stopLocationTracking, getCurrentPosition } from '../services/locationTracking'
 import { MapPin, Clock, Navigation, CheckCircle, ArrowLeft, ChevronRight } from 'lucide-react'
+
+// Lazy-load Google Maps components only when the key is present to avoid white-screen crash
+const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''
 
 const ActiveDelivery = () => {
   const { deliveryId } = useParams()
@@ -13,6 +15,8 @@ const ActiveDelivery = () => {
   const [tripStarted, setTripStarted] = useState(false)
   const [currentLocation, setCurrentLocation] = useState(null)
   const [directionsResult, setDirectionsResult] = useState(null)
+  const [mapsError, setMapsError] = useState(false)
+  const [MapsComponents, setMapsComponents] = useState(null)
   // Callback-based ref so DirectionsRenderer gets the panel el as soon as it mounts
   const [panelEl, setPanelEl] = useState(null)
   const panelRef = useCallback((node) => { if (node) setPanelEl(node) }, [])
@@ -20,6 +24,20 @@ const ActiveDelivery = () => {
   const lastDirectionsOriginRef = useRef(null)
   // Stable ref to originForDirections so the callback doesn't need it in its deps
   const originForDirectionsRef = useRef(null)
+
+  // Dynamically import Google Maps components so a missing/broken key never crashes the page
+  useEffect(() => {
+    if (!MAPS_KEY || !tripStarted) return
+    import('@react-google-maps/api').then(mod => {
+      setMapsComponents({
+        GoogleMap: mod.GoogleMap,
+        LoadScript: mod.LoadScript,
+        Marker: mod.Marker,
+        DirectionsService: mod.DirectionsService,
+        DirectionsRenderer: mod.DirectionsRenderer,
+      })
+    }).catch(() => setMapsError(true))
+  }, [tripStarted])
 
   const mapContainerStyle = {
     width: '100%',
@@ -310,77 +328,109 @@ const ActiveDelivery = () => {
       {/* Map + Directions panel */}
       <div className="flex-1 flex overflow-hidden min-h-0 relative">
         {/* Turn-by-turn directions panel — desktop sidebar */}
-        <aside className="hidden lg:flex flex-col w-80 xl:w-96 bg-white border-r border-gray-200 overflow-hidden shrink-0">
-          <div className="p-3 border-b border-gray-200 bg-gray-50 shrink-0">
-            <h3 className="font-semibold text-gray-900">Turn-by-turn directions</h3>
-            <p className="text-sm text-gray-600 mt-0.5">
-              {directionsResult
-                ? `${etaText ?? ''} · ${distText ?? ''}`
-                : shouldFetchDirections
-                ? 'Calculating route…'
-                : 'Enable location for turn-by-turn'}
-            </p>
-          </div>
-          <div ref={panelRef} className="flex-1 overflow-auto p-2" />
-        </aside>
+        {MapsComponents && !mapsError && (
+          <aside className="hidden lg:flex flex-col w-80 xl:w-96 bg-white border-r border-gray-200 overflow-hidden shrink-0">
+            <div className="p-3 border-b border-gray-200 bg-gray-50 shrink-0">
+              <h3 className="font-semibold text-gray-900">Turn-by-turn directions</h3>
+              <p className="text-sm text-gray-600 mt-0.5">
+                {directionsResult
+                  ? `${etaText ?? ''} · ${distText ?? ''}`
+                  : shouldFetchDirections
+                  ? 'Calculating route…'
+                  : 'Enable location for turn-by-turn'}
+              </p>
+            </div>
+            <div ref={panelRef} className="flex-1 overflow-auto p-2" />
+          </aside>
+        )}
 
-        {/* Embedded map */}
+        {/* Embedded map — only when Maps key + components are available */}
         <div className="flex-1 relative min-w-0" style={{ minHeight: 400 }}>
-          <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY || ''}>
-            <GoogleMap
-              mapContainerStyle={mapContainerStyle}
-              center={mapCenter}
-              zoom={deliveryLocation ? 14 : 12}
-              options={{
-                streetViewControl: false,
-                mapTypeControl: false,
-                fullscreenControl: true,
-                zoomControl: true
-              }}
-            >
-              {/* Only fire DirectionsService when we don't already have a result — prevents infinite API calls */}
-              {shouldFetchDirections && (
-                <DirectionsService
+          {MapsComponents && !mapsError ? (() => {
+            const { GoogleMap, LoadScript, Marker, DirectionsService, DirectionsRenderer } = MapsComponents
+            return (
+              <LoadScript
+                googleMapsApiKey={MAPS_KEY}
+                onError={() => setMapsError(true)}
+              >
+                <GoogleMap
+                  mapContainerStyle={mapContainerStyle}
+                  center={mapCenter}
+                  zoom={deliveryLocation ? 14 : 12}
                   options={{
-                    origin: originForDirections,
-                    destination: deliveryLocation,
-                    travelMode: 'DRIVING'
+                    streetViewControl: false,
+                    mapTypeControl: false,
+                    fullscreenControl: true,
+                    zoomControl: true
                   }}
-                  callback={directionsCallback}
-                />
+                >
+                  {shouldFetchDirections && (
+                    <DirectionsService
+                      options={{ origin: originForDirections, destination: deliveryLocation, travelMode: 'DRIVING' }}
+                      callback={directionsCallback}
+                    />
+                  )}
+                  {directionsResult && (
+                    <DirectionsRenderer
+                      directions={directionsResult}
+                      options={{ suppressMarkers: false, panel: panelEl ?? undefined }}
+                    />
+                  )}
+                  {!directionsResult && deliveryLocation && (
+                    <Marker position={deliveryLocation} label="📍" title="Delivery Location" />
+                  )}
+                  {!directionsResult && (currentLocation || (delivery.current_latitude != null && delivery.current_longitude != null)) && (
+                    <Marker
+                      position={
+                        currentLocation
+                          ? { lat: currentLocation.latitude, lng: currentLocation.longitude }
+                          : { lat: delivery.current_latitude, lng: delivery.current_longitude }
+                      }
+                      label="🚗"
+                      title="Your Location"
+                      icon={{ url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' }}
+                    />
+                  )}
+                </GoogleMap>
+              </LoadScript>
+            )
+          })() : (
+            /* Fallback when Google Maps is unavailable */
+            <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 h-full p-8 gap-6">
+              <div className="bg-white rounded-xl shadow border border-gray-200 p-8 max-w-sm w-full text-center">
+                <MapPin className="h-16 w-16 text-primary-600 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Navigation Ready</h3>
+                <p className="text-gray-600 text-sm mb-6">
+                  {mapsError
+                    ? 'Interactive map unavailable. Open your phone\'s navigation app to get directions.'
+                    : 'Loading map…'}
+                </p>
+                {navUrl && (
+                  <a
+                    href={navUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700"
+                  >
+                    <Navigation className="h-5 w-5" />
+                    Open in Google Maps
+                  </a>
+                )}
+                {delivery.delivery_address && (
+                  <p className="mt-4 text-xs text-gray-500">
+                    {[delivery.delivery_address.street, delivery.delivery_address.city, delivery.delivery_address.state].filter(Boolean).join(', ')}
+                  </p>
+                )}
+              </div>
+              {!MapsComponents && !mapsError && (
+                <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full" />
               )}
-
-              {/* Route polyline + markers rendered from directions result */}
-              {directionsResult && (
-                <DirectionsRenderer
-                  directions={directionsResult}
-                  options={{ suppressMarkers: false, panel: panelEl ?? undefined }}
-                />
-              )}
-
-              {/* Fallback markers before directions load */}
-              {!directionsResult && deliveryLocation && (
-                <Marker position={deliveryLocation} label="📍" title="Delivery Location" />
-              )}
-              {!directionsResult && (currentLocation || (delivery.current_latitude != null && delivery.current_longitude != null)) && (
-                <Marker
-                  position={
-                    currentLocation
-                      ? { lat: currentLocation.latitude, lng: currentLocation.longitude }
-                      : { lat: delivery.current_latitude, lng: delivery.current_longitude }
-                  }
-                  label="🚗"
-                  title="Your Location"
-                  icon={{ url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png' }}
-                />
-              )}
-            </GoogleMap>
-          </LoadScript>
+            </div>
+          )}
 
           {/* Mobile turn-by-turn overlay — shown only when directions are loaded */}
-          {directionsResult && (
+          {directionsResult && MapsComponents && !mapsError && (
             <div className="lg:hidden absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-10">
-              {/* ETA / distance summary bar */}
               <div className="flex items-center justify-between px-4 py-2 bg-primary-600 text-white">
                 <div className="flex items-center gap-4">
                   {etaText && (
@@ -397,17 +447,11 @@ const ActiveDelivery = () => {
                   )}
                 </div>
                 {navUrl && (
-                  <a
-                    href={navUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs underline font-medium"
-                  >
+                  <a href={navUrl} target="_blank" rel="noopener noreferrer" className="text-xs underline font-medium">
                     Open Maps
                   </a>
                 )}
               </div>
-              {/* Next maneuver instruction */}
               {nextInstruction && (
                 <div className="flex items-center gap-3 px-4 py-3">
                   <ChevronRight className="h-5 w-5 text-primary-600 shrink-0" />

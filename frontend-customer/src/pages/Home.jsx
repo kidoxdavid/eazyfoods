@@ -13,6 +13,17 @@ import PageBanner from '../components/PageBanner'
 import StarRating from '../components/StarRating'
 import { resolveImageUrl } from '../utils/imageUtils'
 
+const FALLBACK_OCCASIONS = [
+  { id: 'ramadan',       month: 3,  day: 1,  window: 21, emoji: '🌙', title: 'Ramadan Season',          sub: 'Stock up for Iftar & Suhoor',                  search: 'dates rice lamb chicken',   color: 'from-purple-600 to-indigo-700',  enabled: true },
+  { id: 'eid',           month: 4,  day: 10, window: 14, emoji: '🎊', title: 'Eid al-Fitr',              sub: 'Celebrate with family favourites',              search: 'lamb biryani sweets dates',  color: 'from-amber-500 to-orange-600',   enabled: true },
+  { id: 'juneteenth',    month: 6,  day: 16, window: 21, emoji: '✊', title: 'Juneteenth',               sub: 'Celebrate with soul food essentials',           search: 'cornbread greens yams',      color: 'from-red-600 to-black',          enabled: true },
+  { id: 'caribana',      month: 8,  day: 1,  window: 31, emoji: '🥁', title: 'Caribana Season',          sub: 'Caribbean & African flavours all month',        search: 'scotch bonnet plantain jerk', color: 'from-yellow-400 to-red-500',   enabled: true },
+  { id: 'nigeria_ind',   month: 10, day: 1,  window: 14, emoji: '🦅', title: "Nigeria's Independence",   sub: 'Taste of home — shop Nigerian staples',         search: 'egusi ogbono stockfish',     color: 'from-green-600 to-green-800',   enabled: true },
+  { id: 'kwanzaa',       month: 12, day: 26, window: 7,  emoji: '🕯️', title: 'Kwanzaa',                  sub: 'Shop for the seven-day celebration',            search: 'yam cassava greens',         color: 'from-red-700 to-black',          enabled: true },
+  { id: 'gena',          month: 12, day: 25, window: 10, emoji: '⛪', title: 'Ethiopian Gena (Christmas)',sub: 'Traditional Doro Wat & Injera ingredients',    search: 'berbere injera lentils',     color: 'from-yellow-500 to-red-600',    enabled: true },
+  { id: 'african_heritage', month: 2, day: 1, window: 28, emoji: '✊', title: 'African Heritage Month',  sub: 'Discover authentic African cuisine all month',  search: '',                           color: 'from-amber-600 to-orange-700',   enabled: true },
+]
+
 const Home = () => {
   const [newProducts, setNewProducts] = useState([])
   const [discountedProducts, setDiscountedProducts] = useState([])
@@ -23,6 +34,7 @@ const Home = () => {
   const [promotions, setPromotions] = useState([])
   const [chefs, setChefs] = useState([])
   const [chefDeals, setChefDeals] = useState([])
+  const [occasionsConfig, setOccasionsConfig] = useState(null)
   const [loading, setLoading] = useState(true)
   const { addToCart } = useCart()
   const { coordinates, selectedCity, selectedProvince } = useLocation()
@@ -161,7 +173,8 @@ const Home = () => {
         promotionsRes,
         chefsRes,
         recipesRes,
-        chefDealsRes
+        chefDealsRes,
+        occasionsRes
       ] = await Promise.all([
         api.get('/customer/home-products', { params: { ...productParams, limit: 100 } }),
         api.get('/customer/categories', { params: cityParam }),
@@ -171,7 +184,8 @@ const Home = () => {
         api.get('/customer/promotions', { params: { limit: 10, ...cityParam } }),
         api.get('/customer/chefs', { params: { limit: 5, ...cityParam } }),
         api.get('/customer/recipes/', { params: { limit: 5 } }),
-        api.get('/customer/chef-cuisines-deals', { params: { limit: 20, ...cityParam } }).catch(() => ({ data: { cuisines: [] } }))
+        api.get('/customer/chef-cuisines-deals', { params: { limit: 20, ...cityParam } }).catch(() => ({ data: { cuisines: [] } })),
+        api.get('/customer/marketing/occasions').catch(() => ({ data: null }))
       ])
 
       // Extract from the combined home-products response
@@ -224,6 +238,7 @@ const Home = () => {
         setPromotions(promotionsFiltered)
         setChefs(chefsFiltered)
         setChefDeals(chefDealsData)
+        if (occasionsRes?.data) setOccasionsConfig(occasionsRes.data)
         setLoading(false)
         return
       }
@@ -258,8 +273,9 @@ const Home = () => {
         setPromotions(promotionsData)
         setChefs(chefsData)
         setChefDeals(chefDealsData)
+        if (occasionsRes?.data) setOccasionsConfig(occasionsRes.data)
       }
-      
+
     } catch (error) {
       console.error('Failed to fetch data:', error)
       console.error('Error details:', {
@@ -451,27 +467,22 @@ const Home = () => {
         onToggleFavorite={toggleFavorite}
       />
 
-      {/* Cultural Occasions */}
+      {/* Cultural Occasions — controlled from Admin Marketing → Cultural Occasions */}
       {(() => {
+        const cfg = occasionsConfig
+        if (cfg && cfg.enabled === false) return null
+        const allOccasions = (cfg?.occasions?.length ? cfg.occasions : FALLBACK_OCCASIONS).filter(o => o.enabled !== false)
         const now = new Date()
-        const month = now.getMonth() + 1  // 1-12
-        const day = now.getDate()
-        // Show an occasion banner if we're within ~3 weeks of it
-        const occasions = [
-          { month: 3, day: 1,  window: 21, emoji: '🌙', title: 'Ramadan Season', sub: 'Stock up for Iftar & Suhoor', search: 'dates rice lamb chicken', color: 'from-purple-600 to-indigo-700' },
-          { month: 4, day: 10, window: 14, emoji: '🎊', title: 'Eid al-Fitr', sub: 'Celebrate with family favourites', search: 'lamb biryani sweets dates', color: 'from-amber-500 to-orange-600' },
-          { month: 6, day: 16, window: 21, emoji: '🎉', title: 'Juneteenth', sub: 'Celebrate with soul food essentials', search: 'cornbread greens yams', color: 'from-red-600 to-black' },
-          { month: 8, day: 1,  window: 31, emoji: '🥁', title: 'Caribana Season', sub: 'Caribbean & African flavours all month', search: 'scotch bonnet plantain jerk', color: 'from-yellow-400 to-red-500' },
-          { month: 10, day: 1, window: 14, emoji: '🦅', title: "Nigeria's Independence", sub: 'Taste of home — shop Nigerian staples', search: 'egusi ogbono stockfish', color: 'from-green-600 to-green-800' },
-          { month: 12, day: 26, window: 7, emoji: '🕯️', title: 'Kwanzaa', sub: 'Shop for the seven-day celebration', search: 'yam cassava greens', color: 'from-red-700 to-black' },
-          { month: 12, day: 25, window: 10, emoji: '⛪', title: 'Ethiopian Gena (Christmas)', sub: 'Traditional Doro Wat & Injera ingredients', search: 'berbere injera lentils chicken', color: 'from-yellow-500 to-red-600' },
-          { month: 2, day: 1,  window: 28, emoji: '✊', title: 'African Heritage Month', sub: 'Discover authentic African cuisine all month', search: '', color: 'from-amber-600 to-orange-700' },
-        ]
-        const active = occasions.find(o => {
-          const oDate = new Date(now.getFullYear(), o.month - 1, o.day)
-          const diff = (oDate - now) / 86400000
-          return diff >= -3 && diff <= o.window
-        })
+        let active
+        if (cfg?.force_occasion_id) {
+          active = allOccasions.find(o => o.id === cfg.force_occasion_id)
+        } else {
+          active = allOccasions.find(o => {
+            const oDate = new Date(now.getFullYear(), o.month - 1, o.day)
+            const diff = (oDate - now) / 86400000
+            return diff >= -3 && diff <= o.window
+          })
+        }
         if (!active) return null
         return (
           <section className="w-full px-4 sm:px-6 lg:px-8 py-3">

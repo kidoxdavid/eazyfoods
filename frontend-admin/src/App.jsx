@@ -32,6 +32,7 @@ import MarketingCampaigns from './pages/MarketingCampaigns'
 import MarketingAds from './pages/MarketingAds'
 import MarketingBudgets from './pages/MarketingBudgets'
 import MarketingRecipesMealPlans from './pages/MarketingRecipesMealPlans'
+import MarketingOccasions from './pages/MarketingOccasions'
 import Barcode from './pages/Barcode'
 import Chat from './pages/Chat'
 import Documentation from './pages/Documentation'
@@ -88,6 +89,7 @@ function AppRoutes() {
         <Route path="marketing/budgets" element={<MarketingBudgets />} />
         <Route path="marketing/pending-approvals" element={<MarketingPendingApprovals />} />
         <Route path="marketing/recipes-meal-plans" element={<MarketingRecipesMealPlans />} />
+        <Route path="marketing/occasions" element={<MarketingOccasions />} />
         <Route path="barcode" element={<Barcode />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="reviews" element={<Reviews />} />

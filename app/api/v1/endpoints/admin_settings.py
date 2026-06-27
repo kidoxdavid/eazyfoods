@@ -57,7 +57,7 @@ async def update_settings(
     admin_id = UUID(current_admin["admin_id"])
     
     # Validate setting type
-    valid_types = ['general', 'commission', 'pricing', 'orders', 'payment', 'notifications', 'security', 'vendor', 'customer', 'ad', 'documentation']
+    valid_types = ['general', 'commission', 'pricing', 'orders', 'payment', 'notifications', 'security', 'vendor', 'customer', 'ad', 'documentation', 'marketing_occasions']
     if setting_type not in valid_types:
         raise HTTPException(status_code=400, detail=f"Invalid setting type. Must be one of: {', '.join(valid_types)}")
     
@@ -104,7 +104,7 @@ async def get_all_settings(
         }
     
     # Include defaults for missing types
-    valid_types = ['general', 'commission', 'pricing', 'orders', 'payment', 'notifications', 'security', 'vendor', 'customer', 'ad', 'documentation']
+    valid_types = ['general', 'commission', 'pricing', 'orders', 'payment', 'notifications', 'security', 'vendor', 'customer', 'ad', 'documentation', 'marketing_occasions']
     for setting_type in valid_types:
         if setting_type not in result:
             result[setting_type] = {

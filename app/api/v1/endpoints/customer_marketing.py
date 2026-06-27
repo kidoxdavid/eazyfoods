@@ -12,6 +12,7 @@ from app.core.config import resolve_upload_url
 from app.models.marketing import Ad
 from app.models.vendor import Vendor
 from app.models.store import Store
+from app.models.platform_settings import PlatformSettings
 from app.api.v1.dependencies import get_optional_customer
 
 router = APIRouter()
@@ -206,4 +207,16 @@ async def track_ad_click(
     db.commit()
     
     return {"message": "Click tracked", "cta_link": ad.cta_link}
+
+
+@router.get("/occasions")
+async def get_occasions(db: Session = Depends(get_db)):
+    """Public endpoint — returns active cultural occasions banner settings for the customer home page."""
+    row = db.query(PlatformSettings).filter(
+        PlatformSettings.setting_type == "marketing_occasions"
+    ).first()
+    if row:
+        return row.settings_data
+    # Default — all occasions enabled, date-driven
+    return {"enabled": True, "force_occasion_id": None, "occasions": []}
 
