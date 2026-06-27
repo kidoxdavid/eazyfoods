@@ -102,54 +102,64 @@ async def get_delivery_estimate(
     Get delivery distance (km) and delivery fee. Uses admin setting delivery_fee_type:
     - flat: default_delivery_fee
     - per_km: distance_km * delivery_fee_per_km
-    - dynamic: base_fee + tiered distance + traffic/demand multipliers + small order fee (needs order_value for accuracy)
+    - dynamic: base_fee + tiered distance + traffic/demand multipliers + small order fee
     """
-    store = db.query(Store).filter(Store.id == UUID(store_id), Store.is_active == True).first()
-    if not store:
-        raise HTTPException(status_code=404, detail="Store not found")
-    ps_orders = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "orders").first()
-    orders_data = (ps_orders.settings_data or {}) if ps_orders else {}
-    default_fee = float(orders_data.get("delivery_fee", 5.99))
-    delivery_fee_type = (orders_data.get("delivery_fee_type") or "flat").strip().lower()
-    if delivery_fee_type not in ("flat", "per_km", "dynamic"):
-        delivery_fee_type = "flat"
-    use_distance = delivery_fee_type in ("per_km", "dynamic") or bool(orders_data.get("use_distance_based_delivery", False))
-    fee_per_km = float(orders_data.get("delivery_fee_per_km", 1.0))
+    try:
+        store = db.query(Store).filter(Store.id == UUID(store_id), Store.is_active == True).first()
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        ps_orders = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "orders").first()
+        orders_data = (ps_orders.settings_data or {}) if ps_orders else {}
 
-    store_address = f"{store.street_address or ''}, {store.city or ''}, {store.state or ''} {store.postal_code or ''}, {store.country or 'Canada'}".replace(", ,", ",").strip()
-    delivery_address = f"{street_address}, {city}, {state} {postal_code}, {country}".replace(", ,", ",").strip()
-    store_country = store.country or "Canada"
-    postal_only = f"{postal_code}, {country}".strip()
-    store_postal_only = f"{store.postal_code}, {store_country}".strip() if store.postal_code else None
+        def _safe_float(val, default):
+            try:
+                return float(val) if val is not None else default
+            except (TypeError, ValueError):
+                return default
 
-    # Use stored store coordinates when available
-    store_lat_raw = getattr(store, "latitude", None)
-    store_lng_raw = getattr(store, "longitude", None)
-    store_lat = float(store_lat_raw) if store_lat_raw is not None else None
-    store_lng = float(store_lng_raw) if store_lng_raw is not None else None
+        default_fee = _safe_float(orders_data.get("delivery_fee"), 5.99)
+        delivery_fee_type = (orders_data.get("delivery_fee_type") or "flat").strip().lower()
+        if delivery_fee_type not in ("flat", "per_km", "dynamic"):
+            delivery_fee_type = "flat"
+        use_distance = delivery_fee_type in ("per_km", "dynamic") or bool(orders_data.get("use_distance_based_delivery", False))
+        fee_per_km = _safe_float(orders_data.get("delivery_fee_per_km"), 1.0)
 
-    distance_km = None
-    from app.services.maps_service import maps_service
+        if not use_distance:
+            return {"distance_km": None, "delivery_fee": default_fee}
 
-    # ── Resolve delivery coordinates ─────────────────────────────────────
-    # Fast path: frontend passed exact coords from Google Places Autocomplete
-    d_coords = (lat, lng) if lat is not None and lng is not None else None
+        store_address = f"{store.street_address or ''}, {store.city or ''}, {store.state or ''} {store.postal_code or ''}, {store.country or 'Canada'}".replace(", ,", ",").strip()
+        delivery_address = f"{street_address}, {city}, {state} {postal_code}, {country}".replace(", ,", ",").strip()
+        store_country = store.country or "Canada"
+        postal_only = f"{postal_code}, {country}".strip()
+        store_postal_only = f"{store.postal_code}, {store_country}".strip() if store.postal_code else None
 
-    # Slow path: geocode the address string through every available method
-    if d_coords is None:
-        if maps_service.is_available():
+        store_lat_raw = getattr(store, "latitude", None)
+        store_lng_raw = getattr(store, "longitude", None)
+        store_lat = _safe_float(store_lat_raw, None)
+        store_lng = _safe_float(store_lng_raw, None)
+
+        distance_km = None
+        from app.services.maps_service import maps_service
+
+        # ── Resolve delivery coordinates ──────────────────────────────────
+        # Fast path: exact coords from Google Places Autocomplete
+        d_coords = (lat, lng) if lat is not None and lng is not None else None
+
+        # Geocode via Google Maps if available (billing must be enabled)
+        if d_coords is None and maps_service.is_available():
             d_coords = maps_service.geocode_address(delivery_address)
             if d_coords is None and postal_code:
                 d_coords = maps_service.geocode_address(postal_only)
+
+        # Nominatim fallback (free, no billing required)
         if d_coords is None:
             d_coords = await _geocode_address(delivery_address)
         if d_coords is None and postal_code:
             d_coords = await _geocode_address(postal_only)
 
-    # ── Resolve store coordinates ─────────────────────────────────────────
-    s_coords = (store_lat, store_lng) if store_lat is not None and store_lng is not None else None
-    if s_coords is None:
-        if maps_service.is_available():
+        # ── Resolve store coordinates ─────────────────────────────────────
+        s_coords = (store_lat, store_lng) if store_lat is not None and store_lng is not None else None
+        if s_coords is None and maps_service.is_available():
             s_coords = maps_service.geocode_address(store_address)
             if s_coords is None and store_postal_only:
                 s_coords = maps_service.geocode_address(store_postal_only)
@@ -158,38 +168,45 @@ async def get_delivery_estimate(
         if s_coords is None and store_postal_only:
             s_coords = await _geocode_address(store_postal_only)
 
-    # ── Calculate distance ────────────────────────────────────────────────
-    if d_coords and s_coords:
-        if maps_service.is_available():
-            driving = maps_service.get_distance_km(s_coords[0], s_coords[1], d_coords[0], d_coords[1])
-            if driving is not None:
-                distance_km = driving
-        if distance_km is None:
-            distance_km = round(_haversine_km(s_coords[0], s_coords[1], d_coords[0], d_coords[1]) * 1.35, 2)
+        # ── Calculate distance ────────────────────────────────────────────
+        if d_coords and s_coords:
+            if maps_service.is_available():
+                driving = maps_service.get_distance_km(s_coords[0], s_coords[1], d_coords[0], d_coords[1])
+                if driving is not None:
+                    distance_km = driving
+            if distance_km is None:
+                distance_km = round(_haversine_km(s_coords[0], s_coords[1], d_coords[0], d_coords[1]) * 1.35, 2)
 
-    # ── Last resort: Distance Matrix (address strings → postal codes) ─────
-    if distance_km is None and maps_service.is_available():
-        distance_km = maps_service.get_distance_km_from_addresses(store_address, delivery_address)
-    if distance_km is None and maps_service.is_available() and postal_code:
-        distance_km = maps_service.get_distance_km_from_addresses(
-            store_postal_only or store_address, postal_only
-        )
+        if distance_km is None and maps_service.is_available():
+            distance_km = maps_service.get_distance_km_from_addresses(store_address, delivery_address)
+        if distance_km is None and maps_service.is_available() and postal_code:
+            distance_km = maps_service.get_distance_km_from_addresses(store_postal_only or store_address, postal_only)
 
-    if delivery_fee_type == "dynamic" and distance_km is not None:
-        from app.services.delivery_fee_service import calculate_dynamic_delivery_fee
-        order_val = float(order_value) if order_value is not None else 0.0
-        traffic = orders_data.get("dynamic_current_traffic") or "normal"
-        demand = orders_data.get("dynamic_current_demand") or "low"
-        delivery_fee = calculate_dynamic_delivery_fee(
-            distance_km, order_val, traffic, demand, orders_data
-        )
-        return {"distance_km": round(distance_km, 2), "delivery_fee": delivery_fee}
+        if distance_km is not None:
+            if delivery_fee_type == "dynamic":
+                from app.services.delivery_fee_service import calculate_dynamic_delivery_fee
+                order_val = _safe_float(order_value, 0.0)
+                traffic = orders_data.get("dynamic_current_traffic") or "normal"
+                demand = orders_data.get("dynamic_current_demand") or "low"
+                delivery_fee = calculate_dynamic_delivery_fee(distance_km, order_val, traffic, demand, orders_data)
+                return {"distance_km": round(distance_km, 2), "delivery_fee": delivery_fee}
+            else:
+                delivery_fee = round(distance_km * fee_per_km, 2)
+                return {"distance_km": round(distance_km, 2), "delivery_fee": delivery_fee}
 
-    if (delivery_fee_type == "per_km" or use_distance) and distance_km is not None and fee_per_km >= 0:
-        delivery_fee = round(distance_km * fee_per_km, 2)
-        return {"distance_km": round(distance_km, 2), "delivery_fee": delivery_fee}
+        return {"distance_km": None, "delivery_fee": default_fee}
 
-    return {"distance_km": distance_km, "delivery_fee": default_fee}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("delivery-estimate unexpected error: %s", e, exc_info=True)
+        try:
+            ps_orders = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "orders").first()
+            orders_data = (ps_orders.settings_data or {}) if ps_orders else {}
+            fallback_fee = float(orders_data.get("delivery_fee") or 5.99)
+        except Exception:
+            fallback_fee = 5.99
+        return {"distance_km": None, "delivery_fee": fallback_fee}
 
 
 @router.get("/me", response_model=CustomerResponse)
