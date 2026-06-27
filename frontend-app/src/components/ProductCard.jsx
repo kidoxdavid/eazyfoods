@@ -2,14 +2,8 @@ import { useState } from 'react'
 import { Plus, Check, Star } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
 import { useToast } from '../contexts/ToastContext'
+import { resolveImg } from '../services/imageUtils'
 
-const IMG_BASE = 'https://eazyfoods-api.onrender.com'
-
-function resolveImg(url) {
-  if (!url) return null
-  if (url.startsWith('http')) return url
-  return IMG_BASE + (url.startsWith('/') ? '' : '/') + url
-}
 
 export default function ProductCard({ product, onPress }) {
   const { addToCart, items } = useCart()

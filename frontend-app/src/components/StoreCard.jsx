@@ -1,12 +1,6 @@
 import { Star, Clock, MapPin } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-
-const IMG_BASE = 'https://eazyfoods-api.onrender.com'
-function resolveImg(url) {
-  if (!url) return null
-  if (url.startsWith('http')) return url
-  return IMG_BASE + (url.startsWith('/') ? '' : '/') + url
-}
+import { resolveImg } from '../services/imageUtils'
 
 function isOpen(hours) {
   if (!hours || typeof hours !== 'object') return false

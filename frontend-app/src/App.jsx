@@ -3,6 +3,8 @@ import { useAuth } from './contexts/AuthContext'
 import BottomTabBar from './components/BottomTabBar'
 import LoginScreen from './screens/LoginScreen'
 import RegisterScreen from './screens/RegisterScreen'
+import StoresScreen from './screens/StoresScreen'
+import ChefsScreen from './screens/ChefsScreen'
 import HomeScreen from './screens/HomeScreen'
 import ShopScreen from './screens/ShopScreen'
 import ProductDetailScreen from './screens/ProductDetailScreen'
@@ -64,6 +66,9 @@ export default function App() {
         <Route path="/home" element={<OptionalAuth><HomeScreen /></OptionalAuth>} />
         <Route path="/shop" element={<OptionalAuth><ShopScreen /></OptionalAuth>} />
         <Route path="/shop/product/:productId" element={<OptionalAuth><ProductDetailScreen /></OptionalAuth>} />
+        <Route path="/stores" element={<OptionalAuth><StoresScreen /></OptionalAuth>} />
+        <Route path="/chefs" element={<OptionalAuth><ChefsScreen /></OptionalAuth>} />
+        <Route path="/chefs/:chefId" element={<OptionalAuth><ChefsScreen /></OptionalAuth>} />
 
         {/* Requires real account */}
         <Route path="/cart"     element={<RequireAuth><CartScreen /></RequireAuth>} />

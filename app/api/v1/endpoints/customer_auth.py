@@ -44,14 +44,14 @@ async def customer_signup(
             detail="Email already registered"
         )
     
-    # Create customer
+    # Create customer — auto-verified so they can log in immediately
     customer = Customer(
         email=customer_data.email,
         password_hash=get_password_hash(customer_data.password),
         first_name=customer_data.first_name,
         last_name=customer_data.last_name,
         phone=customer_data.phone,
-        is_email_verified=False
+        is_email_verified=True
     )
     
     db.add(customer)
