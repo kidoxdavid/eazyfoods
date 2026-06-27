@@ -408,6 +408,7 @@ const CheckoutPage = () => {
                 key={`pay-${total}`}
                 amount={total}
                 token={token}
+                billingAddress={address}
                 onSuccess={handlePaymentSuccess}
                 onError={handlePaymentError}
                 onPaymentReady={handlePaymentReady}

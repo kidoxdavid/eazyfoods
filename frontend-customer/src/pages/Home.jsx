@@ -451,6 +451,47 @@ const Home = () => {
         onToggleFavorite={toggleFavorite}
       />
 
+      {/* Cultural Occasions */}
+      {(() => {
+        const now = new Date()
+        const month = now.getMonth() + 1  // 1-12
+        const day = now.getDate()
+        // Show an occasion banner if we're within ~3 weeks of it
+        const occasions = [
+          { month: 3, day: 1,  window: 21, emoji: '🌙', title: 'Ramadan Season', sub: 'Stock up for Iftar & Suhoor', search: 'dates rice lamb chicken', color: 'from-purple-600 to-indigo-700' },
+          { month: 4, day: 10, window: 14, emoji: '🎊', title: 'Eid al-Fitr', sub: 'Celebrate with family favourites', search: 'lamb biryani sweets dates', color: 'from-amber-500 to-orange-600' },
+          { month: 6, day: 16, window: 21, emoji: '🎉', title: 'Juneteenth', sub: 'Celebrate with soul food essentials', search: 'cornbread greens yams', color: 'from-red-600 to-black' },
+          { month: 8, day: 1,  window: 31, emoji: '🥁', title: 'Caribana Season', sub: 'Caribbean & African flavours all month', search: 'scotch bonnet plantain jerk', color: 'from-yellow-400 to-red-500' },
+          { month: 10, day: 1, window: 14, emoji: '🦅', title: "Nigeria's Independence", sub: 'Taste of home — shop Nigerian staples', search: 'egusi ogbono stockfish', color: 'from-green-600 to-green-800' },
+          { month: 12, day: 26, window: 7, emoji: '🕯️', title: 'Kwanzaa', sub: 'Shop for the seven-day celebration', search: 'yam cassava greens', color: 'from-red-700 to-black' },
+          { month: 12, day: 25, window: 10, emoji: '⛪', title: 'Ethiopian Gena (Christmas)', sub: 'Traditional Doro Wat & Injera ingredients', search: 'berbere injera lentils chicken', color: 'from-yellow-500 to-red-600' },
+          { month: 2, day: 1,  window: 28, emoji: '✊', title: 'African Heritage Month', sub: 'Discover authentic African cuisine all month', search: '', color: 'from-amber-600 to-orange-700' },
+        ]
+        const active = occasions.find(o => {
+          const oDate = new Date(now.getFullYear(), o.month - 1, o.day)
+          const diff = (oDate - now) / 86400000
+          return diff >= -3 && diff <= o.window
+        })
+        if (!active) return null
+        return (
+          <section className="w-full px-4 sm:px-6 lg:px-8 py-3">
+            <Link
+              to={active.search ? `/groceries?q=${encodeURIComponent(active.search)}` : '/groceries'}
+              className={`flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r ${active.color} text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]`}
+            >
+              <span className="text-4xl flex-shrink-0">{active.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-base sm:text-lg leading-tight">{active.title}</p>
+                <p className="text-white/85 text-xs sm:text-sm mt-0.5">{active.sub}</p>
+              </div>
+              <span className="flex-shrink-0 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-colors">
+                Shop Now →
+              </span>
+            </Link>
+          </section>
+        )
+      })()}
+
       {/* Redesigned Grid: Shop by Category, Shop by Region, Special Offers, and Nearby Stores */}
       <section className="py-4 sm:py-6 bg-white w-full relative overflow-hidden">
         {/* Decorative background elements */}

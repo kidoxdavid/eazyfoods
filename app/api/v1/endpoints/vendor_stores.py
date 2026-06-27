@@ -293,7 +293,21 @@ async def update_store(
     
     db.commit()
     db.refresh(store)
-    
+
+    # Sync address fields back to the vendor profile so both stay in lock-step
+    ADDRESS_FIELDS = ('street_address', 'city', 'state', 'postal_code', 'country', 'phone', 'latitude', 'longitude')
+    changed = {f for f in ADDRESS_FIELDS if getattr(store_data, f, None) is not None}
+    if changed:
+        vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
+        if vendor:
+            for field in changed:
+                val = getattr(store, field)
+                if field in ('latitude', 'longitude') and val is not None:
+                    setattr(vendor, field, Decimal(str(val)))
+                else:
+                    setattr(vendor, field, val)
+            db.commit()
+
     return {"message": "Store updated successfully"}
 
 

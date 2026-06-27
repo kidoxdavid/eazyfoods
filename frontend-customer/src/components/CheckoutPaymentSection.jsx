@@ -27,7 +27,10 @@ function loadStripeScript() {
   })
 }
 
-function CheckoutPaymentSection({ amount, token, onSuccess, onError, onPaymentReady, onCardReady }) {
+const COUNTRY_TO_ISO = { canada: 'CA', 'united states': 'US', usa: 'US', us: 'US', uk: 'GB', 'united kingdom': 'GB' }
+const toIsoCountry = (c) => COUNTRY_TO_ISO[(c || '').toLowerCase()] || (c || 'CA').toUpperCase().slice(0, 2)
+
+function CheckoutPaymentSection({ amount, token, billingAddress, onSuccess, onError, onPaymentReady, onCardReady }) {
   const containerRef = useRef(null)
   const elementsRef = useRef(null)
   const [status, setStatus] = useState('loading') // 'loading' | 'ready' | 'error'
@@ -35,6 +38,8 @@ function CheckoutPaymentSection({ amount, token, onSuccess, onError, onPaymentRe
   const [processing, setProcessing] = useState(false)
   const stripeRef = useRef(null)
   const clientSecretRef = useRef(null)
+  const billingAddressRef = useRef(billingAddress)
+  useEffect(() => { billingAddressRef.current = billingAddress }, [billingAddress])
 
   // Load Stripe script, get key, create payment intent, mount Payment Element
   useEffect(() => {
@@ -123,9 +128,23 @@ function CheckoutPaymentSection({ amount, token, onSuccess, onError, onPaymentRe
     setProcessing(true)
     setMessage('')
     try {
+      const addr = billingAddressRef.current || {}
       const result = await stripe.confirmPayment({
         elements,
-        confirmParams: { return_url: window.location.origin + '/orders', payment_method_data: {} },
+        confirmParams: {
+          return_url: window.location.origin + '/orders',
+          payment_method_data: {
+            billing_details: {
+              address: {
+                country: toIsoCountry(addr.country),
+                city: addr.city || undefined,
+                line1: addr.street_address || undefined,
+                postal_code: addr.postal_code || undefined,
+                state: addr.state || undefined,
+              }
+            }
+          }
+        },
         redirect: 'if_required'
       })
       if (result.error) {

@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
-import { Package, Clock, CheckCircle, XCircle, Sparkles, TrendingUp, Users, Navigation } from 'lucide-react'
+import { useCart } from '../contexts/CartContext'
+import { useToast } from '../contexts/ToastContext'
+import { Package, Clock, CheckCircle, XCircle, Sparkles, TrendingUp, Users, Navigation, RotateCcw } from 'lucide-react'
 import { formatDateTime } from '../utils/format'
 import PrivateRoute from '../components/PrivateRoute'
 import PageBanner from '../components/PageBanner'
@@ -10,9 +12,34 @@ import { OrderCardSkeleton } from '../components/SkeletonLoader'
 
 const Orders = () => {
   const { token } = useAuth()
+  const { addToCart } = useCart()
+  const { success: showSuccess } = useToast()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [reordering, setReordering] = useState(null)
+
+  const handleReorder = async (e, order) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!order.items?.length) return
+    setReordering(order.id)
+    for (const item of order.items) {
+      try {
+        await addToCart({
+          id: item.product_id || item.id,
+          name: item.product_name || item.name,
+          price: parseFloat(item.unit_price || item.price || 0),
+          store_id: order.store_id,
+          vendor_id: order.vendor_id,
+          image_url: item.image_url,
+          quantity: item.quantity || 1,
+        })
+      } catch (_) {}
+    }
+    setReordering(null)
+    showSuccess(`${order.items.length} item${order.items.length !== 1 ? 's' : ''} added to cart`)
+  }
 
   useEffect(() => {
     fetchOrders()
@@ -282,11 +309,22 @@ const Orders = () => {
                         )}
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0 flex flex-col items-end justify-start">
+                    <div className="text-right flex-shrink-0 flex flex-col items-end justify-start gap-1.5">
                       <p className="text-sm sm:text-xl font-bold text-gray-900 leading-tight">
                         ${parseFloat(order.total_amount).toFixed(2)}
                       </p>
                       <p className="text-[10px] sm:text-xs text-gray-500">Total</p>
+                      {['delivered', 'picked_up', 'cancelled'].includes(order.status) && order.items?.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleReorder(e, order)}
+                          disabled={reordering === order.id}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-[10px] sm:text-xs font-semibold rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-200 transition-colors disabled:opacity-60"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          {reordering === order.id ? 'Adding…' : 'Reorder'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
