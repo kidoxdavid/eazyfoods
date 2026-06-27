@@ -61,6 +61,23 @@ async def get_customer_orders(
         except Exception as e:
             print(f"[customer_orders] Warning: could not load deliveries: {e}")
 
+        # Batch-load delivery addresses and store addresses for the Track button
+        delivery_addresses = {}
+        store_addresses = {}
+        try:
+            from app.models.customer import CustomerAddress
+            from app.models.store import Store
+            addr_ids = [order.delivery_address_id for order in orders if getattr(order, "delivery_address_id", None)]
+            if addr_ids:
+                for addr in db.query(CustomerAddress).filter(CustomerAddress.id.in_(addr_ids)).all():
+                    delivery_addresses[str(addr.id)] = addr
+            store_ids = [order.store_id for order in orders if getattr(order, "store_id", None)]
+            if store_ids:
+                for store in db.query(Store).filter(Store.id.in_(store_ids)).all():
+                    store_addresses[str(store.id)] = store
+        except Exception as e:
+            print(f"[customer_orders] Warning: could not load addresses: {e}")
+
         orders_list = []
         for order in orders:
             delivery = deliveries.get(str(order.id))
@@ -79,13 +96,39 @@ async def get_customer_orders(
             # Safely build items list - handle None or missing items
             order_items = getattr(order, "items", None) or []
 
+            # Build address strings for the Google Maps Track button
+            _da = delivery_addresses.get(str(order.delivery_address_id)) if getattr(order, "delivery_address_id", None) else None
+            _sa = store_addresses.get(str(order.store_id)) if getattr(order, "store_id", None) else None
+            def _addr_str(obj):
+                if not obj:
+                    return None
+                parts = [
+                    getattr(obj, "street_address", None),
+                    getattr(obj, "city", None),
+                    getattr(obj, "state", None),
+                    getattr(obj, "postal_code", None),
+                ]
+                return ", ".join(p for p in parts if p) or None
+            def _coords(obj):
+                lat = getattr(obj, "latitude", None)
+                lng = getattr(obj, "longitude", None)
+                if lat is not None and lng is not None:
+                    return {"lat": float(lat), "lng": float(lng)}
+                return None
+
             order_dict = {
                 "id": str(order.id),
                 "order_number": getattr(order, "order_number", "") or "",
                 "customer_id": str(order.customer_id) if getattr(order, "customer_id", None) else None,
                 "chef_id": str(order.chef_id) if getattr(order, "chef_id", None) else None,
                 "vendor_id": str(order.vendor_id) if getattr(order, "vendor_id", None) else None,
+                "store_id": str(order.store_id) if getattr(order, "store_id", None) else None,
                 "status": getattr(order, "status", None) or "new",
+                "delivery_address": _addr_str(_da),
+                "delivery_coords": _coords(_da),
+                "store_address": _addr_str(_sa),
+                "store_coords": _coords(_sa),
+                "store_name": getattr(_sa, "name", None),
                 "delivery_status": delivery_info.get("status") if delivery_info else None,
                 "delivery_method": getattr(order, "delivery_method", None) or "delivery",
                 "subtotal": _decimal_to_float(getattr(order, "subtotal", None)),

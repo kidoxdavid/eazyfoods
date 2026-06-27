@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
-import { Megaphone, Image, Mail, Users, DollarSign, TrendingUp, AlertCircle, Shield, Settings, BarChart3, Eye, ChefHat, Sparkles } from 'lucide-react'
+import { Megaphone, Image, Mail, Users, DollarSign, TrendingUp, AlertCircle, Shield, Settings, BarChart3, Eye, ChefHat } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const Marketing = () => {
@@ -158,14 +158,6 @@ const Marketing = () => {
             <ChefHat className="h-6 w-6 text-primary-500 mx-auto mb-2" />
             <p className="text-sm font-medium text-gray-900">Recipes & Meal Plans</p>
             <p className="text-xs text-gray-500">Featured & order</p>
-          </Link>
-          <Link
-            to="/marketing/occasions"
-            className="p-4 border-2 border-purple-200 bg-purple-50 rounded-lg hover:bg-purple-100 text-center transition-colors"
-          >
-            <Sparkles className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-            <p className="text-sm font-medium text-gray-900">Cultural Occasions</p>
-            <p className="text-xs text-gray-500">Home banner control</p>
           </Link>
         </div>
       </div>

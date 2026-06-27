@@ -296,17 +296,36 @@ const Orders = () => {
                             ETA: {order.delivery.current_eta_minutes} min
                           </span>
                         )}
-                        {order.delivery && order.delivery.id && 
-                         ['accepted', 'picked_up', 'in_transit'].includes(order.delivery.status) && (
-                          <Link
-                            to={`/orders/${order.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary-600 text-white hover:bg-primary-700 flex items-center gap-1.5 transition-colors"
-                          >
-                            <Navigation className="h-3.5 w-3.5" />
-                            Track
-                          </Link>
-                        )}
+                        {order.delivery && order.delivery.id &&
+                         ['accepted', 'picked_up', 'in_transit'].includes(order.delivery.status) && (() => {
+                          // Build Google Maps directions URL: store → delivery address
+                          const origin = order.store_coords
+                            ? `${order.store_coords.lat},${order.store_coords.lng}`
+                            : order.store_address
+                            ? encodeURIComponent(order.store_address)
+                            : null
+                          const dest = order.delivery_coords
+                            ? `${order.delivery_coords.lat},${order.delivery_coords.lng}`
+                            : order.delivery_address
+                            ? encodeURIComponent(order.delivery_address)
+                            : null
+                          const mapsUrl = dest
+                            ? `https://www.google.com/maps/dir/?api=1${origin ? `&origin=${origin}` : ''}&destination=${dest}&travelmode=driving`
+                            : null
+                          if (!mapsUrl) return null
+                          return (
+                            <a
+                              href={mapsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary-600 text-white hover:bg-primary-700 flex items-center gap-1.5 transition-colors"
+                            >
+                              <Navigation className="h-3.5 w-3.5" />
+                              Track
+                            </a>
+                          )
+                        })()}
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0 flex flex-col items-end justify-start gap-1.5">

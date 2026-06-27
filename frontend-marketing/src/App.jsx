@@ -30,6 +30,7 @@ import AdminControl from './pages/AdminControl'
 import Settings from './pages/Settings'
 import ContentLibrary from './pages/ContentLibrary'
 import RecipesAndMealPlans from './pages/RecipesAndMealPlans'
+import CulturalOccasions from './pages/CulturalOccasions'
 import RecipesRedirect from './pages/RecipesRedirect'
 import MealPlansRedirect from './pages/MealPlansRedirect'
 import RecipeCreate from './pages/RecipeCreate'
@@ -98,6 +99,7 @@ function AppRoutes() {
         <Route path="meal-plans/new" element={<MealPlanCreate />} />
         <Route path="meal-plans/:id/edit" element={<MealPlanCreate />} />
         <Route path="analytics" element={<Analytics />} />
+        <Route path="cultural-occasions" element={<CulturalOccasions />} />
         <Route path="admin-control" element={<AdminControl />} />
         <Route path="settings" element={<Settings />} />
       </Route>

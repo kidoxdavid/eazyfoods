@@ -1,10 +1,10 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
-import { 
-  LayoutDashboard, Megaphone, Mail, Image, BarChart3, 
+import {
+  LayoutDashboard, Megaphone, Mail, Image, BarChart3,
   LogOut, Menu, X, FileText, Palette, Target, Users, User,
-  FlaskConical, Share2, Bell, Workflow, DollarSign, Settings, Shield, Utensils, Calendar
+  FlaskConical, Share2, Bell, Workflow, DollarSign, Settings, Shield, Utensils, Calendar, Sparkles
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -34,6 +34,7 @@ const Layout = () => {
     { name: 'Automation', href: '/automation', icon: Workflow },
     { name: 'Budget', href: '/budget', icon: DollarSign, badge: notifications.budgets },
     { name: 'Recipes & Meal Plans', href: '/recipes-meal-plans', icon: Utensils },
+    { name: 'Cultural Occasions', href: '/cultural-occasions', icon: Sparkles },
     { name: 'Content Library', href: '/content-library', icon: FileText },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Admin Control', href: '/admin-control', icon: Shield },
