@@ -14,14 +14,29 @@ import ProfileScreen from './screens/ProfileScreen'
 
 const TAB_ROOTS = ['/home', '/shop', '/cart', '/orders', '/profile']
 
+// Redirects to login only if not signed in AND not in guest mode
 function RequireAuth({ children }) {
-  const { user, loading } = useAuth()
+  const { user, guest, loading } = useAuth()
   if (loading) return (
     <div className="h-screen flex items-center justify-center bg-white">
       <div className="w-10 h-10 border-[3px] border-primary-600 border-t-transparent rounded-full animate-spin" />
     </div>
   )
-  if (!user) return <Navigate to="/login" replace />
+  if (!user && !guest) return <Navigate to="/login" replace />
+  // Guest trying to reach auth-only screen — send to login
+  if (guest && !user) return <Navigate to="/login" replace />
+  return children
+}
+
+// For screens guests can browse (Home, Shop, ProductDetail)
+function OptionalAuth({ children }) {
+  const { user, guest, loading } = useAuth()
+  if (loading) return (
+    <div className="h-screen flex items-center justify-center bg-white">
+      <div className="w-10 h-10 border-[3px] border-primary-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+  if (!user && !guest) return <Navigate to="/login" replace />
   return children
 }
 
@@ -45,9 +60,12 @@ export default function App() {
         <Route path="/login"    element={<LoginScreen />} />
         <Route path="/register" element={<RegisterScreen />} />
 
-        <Route path="/home" element={<RequireAuth><HomeScreen /></RequireAuth>} />
-        <Route path="/shop" element={<RequireAuth><ShopScreen /></RequireAuth>} />
-        <Route path="/shop/product/:productId" element={<RequireAuth><ProductDetailScreen /></RequireAuth>} />
+        {/* Browsable without full account (guests allowed) */}
+        <Route path="/home" element={<OptionalAuth><HomeScreen /></OptionalAuth>} />
+        <Route path="/shop" element={<OptionalAuth><ShopScreen /></OptionalAuth>} />
+        <Route path="/shop/product/:productId" element={<OptionalAuth><ProductDetailScreen /></OptionalAuth>} />
+
+        {/* Requires real account */}
         <Route path="/cart"     element={<RequireAuth><CartScreen /></RequireAuth>} />
         <Route path="/checkout" element={<RequireAuth><CheckoutScreen /></RequireAuth>} />
         <Route path="/orders"   element={<RequireAuth><OrdersScreen /></RequireAuth>} />

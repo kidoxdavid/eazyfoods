@@ -1,7 +1,10 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Home, Search, ShoppingCart, ClipboardList, User } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
+import { useAuth } from '../contexts/AuthContext'
 import { haptic } from '../services/haptics'
+
+const AUTH_REQUIRED = new Set(['/cart', '/orders', '/profile'])
 
 const TABS = [
   { path: '/home',    icon: Home,          label: 'Home' },
@@ -15,9 +18,14 @@ export default function BottomTabBar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { cartCount } = useCart()
+  const { user, guest } = useAuth()
 
   const tap = async (path) => {
     await haptic('light')
+    if (guest && !user && AUTH_REQUIRED.has(path)) {
+      navigate('/login')
+      return
+    }
     navigate(path)
   }
 
