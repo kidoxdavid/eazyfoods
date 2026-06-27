@@ -102,11 +102,18 @@ const Chatbot = () => {
         products: d.products || [],
         suggestions: d.suggestions || [],
       }])
-    } catch {
+    } catch (err) {
+      const status = err?.response?.status
+      const detail = err?.response?.data?.detail || ''
+      const text = status === 503
+        ? "The AI assistant isn't configured yet. If you're the site owner, add your ANTHROPIC_API_KEY in the Render environment settings."
+        : status === 429
+        ? "Too many requests — please wait a moment and try again."
+        : "Sorry, I couldn't reach the AI right now. Please try again in a moment."
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
-        text: "Sorry, I'm having trouble right now. Please try again in a moment.",
+        text,
         products: [],
         suggestions: [],
       }])
