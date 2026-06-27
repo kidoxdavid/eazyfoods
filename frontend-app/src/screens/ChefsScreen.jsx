@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Star, MapPin, Search, X } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
+import { useLocation } from '../contexts/LocationContext'
 import api from '../services/api'
 import { resolveImg } from '../services/imageUtils'
 
@@ -44,16 +45,20 @@ function ChefCard({ chef, onPress }) {
 
 export default function ChefsScreen() {
   const navigate = useNavigate()
+  const { selectedCity, locationLabel } = useLocation()
   const [chefs, setChefs]     = useState([])
   const [loading, setLoading] = useState(true)
   const [q, setQ]             = useState('')
 
   useEffect(() => {
-    api.get('/customer/chefs', { params: { limit: 50 } })
+    setLoading(true)
+    const params = { limit: 50 }
+    if (selectedCity) params.city = selectedCity
+    api.get('/customer/chefs', { params })
       .then(r => setChefs(Array.isArray(r.data) ? r.data : (r.data?.chefs || [])))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }, [selectedCity])
 
   const filtered = q
     ? chefs.filter(c => (c.name || c.business_name || '').toLowerCase().includes(q.toLowerCase()) || (c.cuisine_type || '').toLowerCase().includes(q.toLowerCase()))

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, MapPin, LogOut, ChevronRight, Edit2, Plus, Trash2, Check, Eye, EyeOff, Package, Loader2, AlertCircle } from 'lucide-react'
+import { User, MapPin, LogOut, ChevronRight, Edit2, Plus, Trash2, Check, Eye, EyeOff, Package, Loader2, AlertCircle, Heart } from 'lucide-react'
 import AppHeader from '../components/AppHeader'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
@@ -253,6 +253,22 @@ export default function ProfileScreen() {
                 </div>
               </div>
             )}
+
+            {/* Quick links */}
+            <div className="bg-white rounded-2xl overflow-hidden shadow-sm divide-y divide-gray-50">
+              <button onClick={() => navigate('/favorites')}
+                className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-gray-50">
+                <Heart className="h-4 w-4 text-red-500" />
+                <span className="flex-1 text-sm font-medium text-gray-800 text-left">Saved Items</span>
+                <ChevronRight className="h-4 w-4 text-gray-300" />
+              </button>
+              <button onClick={() => navigate('/orders')}
+                className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-gray-50">
+                <Package className="h-4 w-4 text-primary-500" />
+                <span className="flex-1 text-sm font-medium text-gray-800 text-left">All Orders</span>
+                <ChevronRight className="h-4 w-4 text-gray-300" />
+              </button>
+            </div>
 
             {/* Sign out */}
             <button onClick={handleLogout}

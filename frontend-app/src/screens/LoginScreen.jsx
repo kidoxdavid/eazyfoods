@@ -92,6 +92,12 @@ export default function LoginScreen() {
             </div>
           </div>
 
+          <div className="flex justify-end">
+            <button type="button" onClick={() => navigate('/forgot-password')} className="text-xs text-primary-600 font-semibold">
+              Forgot password?
+            </button>
+          </div>
+
           <button type="submit" disabled={loading}
             className="w-full py-3.5 bg-primary-600 text-white font-bold text-base rounded-xl press-scale disabled:opacity-70 flex items-center justify-center gap-2 mt-2">
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Sign In'}

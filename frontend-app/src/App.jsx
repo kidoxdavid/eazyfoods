@@ -4,11 +4,12 @@ import { Suspense, lazy } from 'react'
 import BottomTabBar from './components/BottomTabBar'
 
 // Eagerly-loaded (always needed)
-import LoginScreen    from './screens/LoginScreen'
-import RegisterScreen from './screens/RegisterScreen'
-import HomeScreen     from './screens/HomeScreen'
-import ShopScreen     from './screens/ShopScreen'
-import CartScreen     from './screens/CartScreen'
+import LoginScreen          from './screens/LoginScreen'
+import RegisterScreen       from './screens/RegisterScreen'
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen'
+import HomeScreen           from './screens/HomeScreen'
+import ShopScreen           from './screens/ShopScreen'
+import CartScreen           from './screens/CartScreen'
 
 // Lazy-loaded screens (split-bundle to keep boot fast)
 const ProductDetailScreen = lazy(() => import('./screens/ProductDetailScreen'))
@@ -23,6 +24,7 @@ const CheckoutScreen      = lazy(() => import('./screens/CheckoutScreen'))
 const OrdersScreen        = lazy(() => import('./screens/OrdersScreen'))
 const OrderDetailScreen   = lazy(() => import('./screens/OrderDetailScreen'))
 const ProfileScreen       = lazy(() => import('./screens/ProfileScreen'))
+const FavoritesScreen     = lazy(() => import('./screens/FavoritesScreen'))
 
 const TAB_ROOTS = ['/home', '/shop', '/cart', '/orders', '/profile']
 
@@ -68,8 +70,9 @@ export default function App() {
     <AppShell>
       <Routes>
         {/* Auth */}
-        <Route path="/login"    element={<LoginScreen />} />
-        <Route path="/register" element={<RegisterScreen />} />
+        <Route path="/login"            element={<LoginScreen />} />
+        <Route path="/register"         element={<RegisterScreen />} />
+        <Route path="/forgot-password"  element={<ForgotPasswordScreen />} />
 
         {/* Browsable by guests */}
         <Route path="/home"                          element={<OptionalAuth><HomeScreen /></OptionalAuth>} />
@@ -82,6 +85,9 @@ export default function App() {
         <Route path="/meals"                         element={<OptionalAuth><MealsScreen /></OptionalAuth>} />
         <Route path="/meals/recipe/:recipeId"        element={<OptionalAuth><RecipeDetailScreen /></OptionalAuth>} />
         <Route path="/top-deals"                     element={<OptionalAuth><TopDealsScreen /></OptionalAuth>} />
+
+        {/* Browsable by all */}
+        <Route path="/favorites"  element={<OptionalAuth><FavoritesScreen /></OptionalAuth>} />
 
         {/* Requires real account */}
         <Route path="/cart"                element={<RequireAuth><CartScreen /></RequireAuth>} />

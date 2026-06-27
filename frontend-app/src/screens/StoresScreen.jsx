@@ -3,21 +3,26 @@ import { useNavigate } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import StoreCard from '../components/StoreCard'
 import { StoreSkeleton } from '../components/Skeleton'
+import { useLocation } from '../contexts/LocationContext'
 import api from '../services/api'
 import { Search, X } from 'lucide-react'
 
 export default function StoresScreen() {
   const navigate = useNavigate()
+  const { selectedCity, locationLabel } = useLocation()
   const [stores, setStores]   = useState([])
   const [loading, setLoading] = useState(true)
   const [q, setQ]             = useState('')
 
   useEffect(() => {
-    api.get('/customer/stores/')
+    setLoading(true)
+    const params = {}
+    if (selectedCity) params.city = selectedCity
+    api.get('/customer/stores/', { params })
       .then(r => setStores(Array.isArray(r.data) ? r.data : (r.data?.stores || [])))
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }, [selectedCity])
 
   const filtered = q
     ? stores.filter(s => (s.name || '').toLowerCase().includes(q.toLowerCase()) || (s.city || '').toLowerCase().includes(q.toLowerCase()))
@@ -26,6 +31,11 @@ export default function StoresScreen() {
   return (
     <div className="h-full flex flex-col pt-safe screen-enter">
       <AppHeader title="All Stores" back />
+      {selectedCity && (
+        <div className="px-4 py-1.5 bg-primary-50 border-b border-primary-100 flex-shrink-0">
+          <p className="text-xs text-primary-700 font-medium">Showing stores in <span className="font-bold">{locationLabel}</span></p>
+        </div>
+      )}
       <div className="px-4 py-3 bg-white border-b border-gray-100 flex-shrink-0">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -43,7 +53,7 @@ export default function StoresScreen() {
           {!loading && filtered.length === 0 && (
             <div className="text-center py-20 text-gray-400">
               <p className="text-5xl mb-3">🏪</p>
-              <p>No stores found</p>
+              <p>No stores found{selectedCity ? ` in ${selectedCity}` : ''}</p>
             </div>
           )}
         </div>

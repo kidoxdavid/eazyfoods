@@ -5,6 +5,7 @@ import AppHeader from '../components/AppHeader'
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { useFavorites } from '../contexts/FavoritesContext'
 import api from '../services/api'
 import { resolveImg } from '../services/imageUtils'
 
@@ -16,14 +17,17 @@ export default function ChefDetailScreen() {
   const { addToCart } = useCart()
   const { token }  = useAuth()
   const { success, error: showError } = useToast()
+  const { isChefFav, toggleChef } = useFavorites()
   const [chef, setChef]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [quantities, setQuantities] = useState({})
   const [saved, setSaved]     = useState(false)
 
+  const favLocal = isChefFav(chefId)
+
   useEffect(() => {
     api.get(`/customer/chefs/${chefId}`)
-      .then(r => { setChef(r.data); setSaved(r.data?.is_saved || false) })
+      .then(r => { setChef(r.data); setSaved(r.data?.is_saved || favLocal) })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [chefId])
@@ -31,9 +35,16 @@ export default function ChefDetailScreen() {
   const handleSave = async () => {
     if (!token) { navigate('/login'); return }
     try {
-      if (saved) { await api.delete(`/customer/saved-chefs/${chefId}`); setSaved(false) }
-      else        { await api.post(`/customer/saved-chefs/${chefId}`);   setSaved(true)  }
-    } catch (_) {}
+      if (saved) {
+        await api.delete(`/customer/saved-chefs/${chefId}`)
+        setSaved(false)
+        if (favLocal) toggleChef(chefId)
+      } else {
+        await api.post(`/customer/saved-chefs/${chefId}`)
+        setSaved(true)
+        if (!favLocal) toggleChef(chefId)
+      }
+    } catch {}
   }
 
   const setQty = (id, val) => setQuantities(prev => ({ ...prev, [id]: Math.max(1, val) }))
