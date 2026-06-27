@@ -93,6 +93,8 @@ async def get_delivery_estimate(
     state: Optional[str] = Query("", description="Delivery state/province"),
     postal_code: str = Query(..., description="Delivery postal code"),
     country: str = Query("Canada", description="Delivery country"),
+    lat: Optional[float] = Query(None, description="Delivery latitude (from frontend autocomplete — skips geocoding)"),
+    lng: Optional[float] = Query(None, description="Delivery longitude (from frontend autocomplete — skips geocoding)"),
     order_value: Optional[float] = Query(None, description="Order subtotal for dynamic fee (optional)"),
     db: Session = Depends(get_db)
 ):
@@ -129,20 +131,22 @@ async def get_delivery_estimate(
     distance_km = None
     from app.services.maps_service import maps_service
 
-    # ── Resolve delivery coordinates ──────────────────────────────────────
-    # Try: full address → postal code only (Google Maps then Nominatim)
-    d_coords = None
-    if maps_service.is_available():
-        d_coords = maps_service.geocode_address(delivery_address)
-        if d_coords is None and postal_code:
-            d_coords = maps_service.geocode_address(postal_only)
+    # ── Resolve delivery coordinates ─────────────────────────────────────
+    # Fast path: frontend passed exact coords from Google Places Autocomplete
+    d_coords = (lat, lng) if lat is not None and lng is not None else None
+
+    # Slow path: geocode the address string through every available method
     if d_coords is None:
-        d_coords = await _geocode_address(delivery_address)
-    if d_coords is None and postal_code:
-        d_coords = await _geocode_address(postal_only)
+        if maps_service.is_available():
+            d_coords = maps_service.geocode_address(delivery_address)
+            if d_coords is None and postal_code:
+                d_coords = maps_service.geocode_address(postal_only)
+        if d_coords is None:
+            d_coords = await _geocode_address(delivery_address)
+        if d_coords is None and postal_code:
+            d_coords = await _geocode_address(postal_only)
 
     # ── Resolve store coordinates ─────────────────────────────────────────
-    # Use stored lat/lng when available — avoids geocoding on every request
     s_coords = (store_lat, store_lng) if store_lat is not None and store_lng is not None else None
     if s_coords is None:
         if maps_service.is_available():
@@ -156,16 +160,14 @@ async def get_delivery_estimate(
 
     # ── Calculate distance ────────────────────────────────────────────────
     if d_coords and s_coords:
-        # Prefer actual driving distance from Google Maps Directions API
         if maps_service.is_available():
             driving = maps_service.get_distance_km(s_coords[0], s_coords[1], d_coords[0], d_coords[1])
             if driving is not None:
                 distance_km = driving
         if distance_km is None:
-            # Haversine straight-line × 1.35 road factor
             distance_km = round(_haversine_km(s_coords[0], s_coords[1], d_coords[0], d_coords[1]) * 1.35, 2)
 
-    # ── Last resort: Distance Matrix with progressively simpler addresses ─
+    # ── Last resort: Distance Matrix (address strings → postal codes) ─────
     if distance_km is None and maps_service.is_available():
         distance_km = maps_service.get_distance_km_from_addresses(store_address, delivery_address)
     if distance_km is None and maps_service.is_available() and postal_code:

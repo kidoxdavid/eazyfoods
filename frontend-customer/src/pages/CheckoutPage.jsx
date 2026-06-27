@@ -4,12 +4,15 @@
  */
 const STRIPE_DISCONNECTED = false
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import { MapPin, CreditCard, Truck, Lock, ChefHat } from 'lucide-react'
+import { useJsApiLoader, Autocomplete } from '@react-google-maps/api'
+
+const MAPS_LIBRARIES = ['places']
 
 const CheckoutPage = () => {
   const { cart, getCartTotal, clearCart } = useCart()
@@ -37,6 +40,33 @@ const CheckoutPage = () => {
   const [address, setAddress] = useState({
     street_address: '', city: '', state: '', postal_code: '', country: 'Canada'
   })
+  const [deliveryLatLng, setDeliveryLatLng] = useState(null)
+  const autocompleteRef = useRef(null)
+
+  const { isLoaded: mapsLoaded } = useJsApiLoader({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+    libraries: MAPS_LIBRARIES,
+  })
+
+  const onPlaceChanged = useCallback(() => {
+    const place = autocompleteRef.current?.getPlace()
+    if (!place?.geometry?.location) return
+    const lat = place.geometry.location.lat()
+    const lng = place.geometry.location.lng()
+    setDeliveryLatLng({ lat, lng })
+    // Parse address components from the selected place
+    const comp = {}
+    for (const c of place.address_components || []) {
+      for (const t of c.types) comp[t] = { long: c.long_name, short: c.short_name }
+    }
+    const streetNum = comp.street_number?.long || ''
+    const route = comp.route?.long || ''
+    const city = comp.locality?.long || comp.sublocality_level_1?.long || comp.administrative_area_level_3?.long || ''
+    const state = comp.administrative_area_level_1?.short || ''
+    const postalCode = comp.postal_code?.long || ''
+    const country = comp.country?.long || 'Canada'
+    setAddress({ street_address: `${streetNum} ${route}`.trim(), city, state, postal_code: postalCode, country })
+  }, [])
 
   // Load payment section only when Stripe connected (when disconnected, this chunk is never loaded)
   useEffect(() => {
@@ -106,6 +136,10 @@ const CheckoutPage = () => {
       country: (address.country || 'Canada').trim()
     })
     if (subtotal > 0) params.set('order_value', String(subtotal))
+    if (deliveryLatLng) {
+      params.set('lat', String(deliveryLatLng.lat))
+      params.set('lng', String(deliveryLatLng.lng))
+    }
     api.get(`/customer/delivery-estimate?${params}`)
       .then((r) => {
         if (typeof r.data?.delivery_fee === 'number') setDeliveryFeeFromEstimate(r.data.delivery_fee)
@@ -113,7 +147,7 @@ const CheckoutPage = () => {
       })
       .catch(() => setDeliveryFeeFromEstimate(null))
       .finally(() => setEstimatingDelivery(false))
-  }, [useDistanceBasedDelivery, selectedStoreId, address.street_address, address.city, address.state, address.postal_code, address.country, subtotal])
+  }, [useDistanceBasedDelivery, selectedStoreId, address.street_address, address.city, address.state, address.postal_code, address.country, subtotal, deliveryLatLng])
 
   const hasStoreItems = cart.some((i) => i.store_id)
   const hasChefItems = cart.some((i) => i.chef_id && i.cuisine_id)
@@ -329,7 +363,17 @@ const CheckoutPage = () => {
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Street Address *</label>
-                  <input type="text" required value={address.street_address} onChange={(e) => setAddress((a) => ({ ...a, street_address: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="123 Main Street" />
+                  {mapsLoaded && import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
+                    <Autocomplete
+                      onLoad={(ac) => { autocompleteRef.current = ac }}
+                      onPlaceChanged={onPlaceChanged}
+                      options={{ types: ['address'], componentRestrictions: { country: ['ca', 'us'] } }}
+                    >
+                      <input type="text" required value={address.street_address} onChange={(e) => { setAddress((a) => ({ ...a, street_address: e.target.value })); setDeliveryLatLng(null) }} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="Start typing your address…" />
+                    </Autocomplete>
+                  ) : (
+                    <input type="text" required value={address.street_address} onChange={(e) => setAddress((a) => ({ ...a, street_address: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="123 Main Street" />
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
