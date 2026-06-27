@@ -54,9 +54,16 @@ class EnsureCORSHeadersMiddleware(BaseHTTPMiddleware):
             if "*" in origins or not origins:
                 response.headers["Access-Control-Allow-Origin"] = "*"
             elif origin and origin in origins:
+                # Echo back the exact requesting origin (required for credentialed requests)
                 response.headers["Access-Control-Allow-Origin"] = origin
-            elif origins:
-                response.headers["Access-Control-Allow-Origin"] = origins[0]
+                response.headers["Vary"] = "Origin"
+            else:
+                # Unknown origin — still echo it if it looks like localhost/Capacitor
+                if origin and ("localhost" in origin or "capacitor://" in origin):
+                    response.headers["Access-Control-Allow-Origin"] = origin
+                    response.headers["Vary"] = "Origin"
+                elif origins:
+                    response.headers["Access-Control-Allow-Origin"] = origins[0]
         return response
 
 
@@ -68,10 +75,10 @@ def _cors_headers(origin: str) -> dict:
     if "*" in origins or not origins:
         return {"Access-Control-Allow-Origin": "*"}
     if origin and origin in origins:
-        return {"Access-Control-Allow-Origin": origin}
-    if origins:
-        return {"Access-Control-Allow-Origin": origins[0]}
-    return {"Access-Control-Allow-Origin": "*"}
+        return {"Access-Control-Allow-Origin": origin, "Vary": "Origin"}
+    if origin and ("localhost" in origin or "capacitor://" in origin):
+        return {"Access-Control-Allow-Origin": origin, "Vary": "Origin"}
+    return {"Access-Control-Allow-Origin": origins[0] if origins else "*"}
 
 
 @app.exception_handler(Exception)

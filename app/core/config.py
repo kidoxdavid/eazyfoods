@@ -34,7 +34,13 @@ class Settings(BaseSettings):
         if not raw or raw == "*":
             return ["*"]
         origins = [x.strip() for x in raw.split(",") if x.strip()]
-        return origins if origins else ["*"]
+        result = origins if origins else ["*"]
+        # Always permit Capacitor Android/iOS native app origins — these only
+        # appear in sideloaded APK traffic, not from the public internet.
+        for cap in ["https://localhost", "http://localhost", "capacitor://localhost"]:
+            if cap not in result and "*" not in result:
+                result.append(cap)
+        return result
     
     # File uploads
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
