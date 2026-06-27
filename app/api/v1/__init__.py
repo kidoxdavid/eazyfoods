@@ -13,7 +13,8 @@ from app.api.v1.endpoints import (
     admin_analytics, admin_reviews, admin_support, admin_activity, admin_users, admin_promotions, admin_export, admin_drivers, admin_deliveries, admin_settings, admin_barcode, admin_chefs,
     restore_backup, marketing, marketing_extended, marketing_admin, marketing_recipes, marketing_coupons,
     customer_coupons, barcode, payments_helcim,
-    customer_chat_messages, vendor_chat, driver_chat, admin_chat
+    customer_chat_messages, vendor_chat, driver_chat, admin_chat,
+    ai_features,
 )
 
 api_router = APIRouter()
@@ -111,4 +112,7 @@ api_router.include_router(marketing_coupons.router, prefix="/admin/marketing/cou
 
 # Customer coupon endpoints
 api_router.include_router(customer_coupons.router, prefix="/customer/coupons", tags=["Customer Coupons"])
+
+# AI features (shopping assistant, description generator, semantic search)
+api_router.include_router(ai_features.router, prefix="/ai", tags=["AI Features"])
 

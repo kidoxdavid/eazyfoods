@@ -32,7 +32,7 @@ const SearchAutocomplete = ({
     }
   }, [])
 
-  // Fetch suggestions when query changes
+  // Fetch suggestions when query changes — uses semantic AI search for natural language queries
   useEffect(() => {
     if (!query || query.trim().length < 2) {
       setSuggestions([])
@@ -42,18 +42,33 @@ const SearchAutocomplete = ({
     const fetchSuggestions = async () => {
       setLoading(true)
       try {
-        const response = await api.get('/customer/products', {
-          params: {
-            search: query,
-            limit: 5,
-            skip: 0
+        // Use semantic search for longer natural-language queries (e.g. "ingredients for jollof")
+        const isNaturalLanguage = query.trim().split(' ').length > 2 || query.trim().length > 10
+        let searchTerm = query
+        let extraParams = {}
+
+        if (isNaturalLanguage) {
+          try {
+            const aiRes = await api.post('/ai/search', { query: query.trim() })
+            searchTerm = aiRes.data.search_term || query
+            const filters = aiRes.data.filters || {}
+            if (filters.discounted) extraParams.discounted = true
+            if (filters.new_arrivals) extraParams.new_arrivals = true
+            if (filters.min_price) extraParams.min_price = filters.min_price
+            if (filters.max_price) extraParams.max_price = filters.max_price
+          } catch {
+            // Fall back to raw query
           }
+        }
+
+        const response = await api.get('/customer/products', {
+          params: { search: searchTerm, limit: 6, skip: 0, ...extraParams }
         })
-        
-        const products = Array.isArray(response.data) 
-          ? response.data 
+
+        const products = Array.isArray(response.data)
+          ? response.data
           : (response.data?.products || [])
-        
+
         setSuggestions(products)
       } catch (error) {
         console.error('Failed to fetch search suggestions:', error)
@@ -63,7 +78,7 @@ const SearchAutocomplete = ({
       }
     }
 
-    const debounceTimer = setTimeout(fetchSuggestions, 300)
+    const debounceTimer = setTimeout(fetchSuggestions, 400)
     return () => clearTimeout(debounceTimer)
   }, [query])
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import api, { resolveUploadUrl } from '../services/api'
-import { ArrowLeft, Upload, X } from 'lucide-react'
+import { ArrowLeft, Upload, X, Sparkles, Loader2 } from 'lucide-react'
 
 const ProductForm = () => {
   const { id } = useParams()
@@ -37,6 +37,7 @@ const ProductForm = () => {
   const [additionalImages, setAdditionalImages] = useState([''])
   const [uploadingMain, setUploadingMain] = useState(false)
   const [uploadingAdditional, setUploadingAdditional] = useState({})
+  const [generatingDesc, setGeneratingDesc] = useState(false)
 
   const fetchCategories = async () => {
     try {
@@ -144,10 +145,31 @@ const ProductForm = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
-    setFormData({ 
-      ...formData, 
-      [name]: type === 'checkbox' ? checked : value 
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value
     })
+  }
+
+  const handleGenerateDescription = async () => {
+    if (!formData.name.trim()) {
+      alert('Please enter a product name first.')
+      return
+    }
+    setGeneratingDesc(true)
+    try {
+      const catName = categories.find(c => String(c.id) === String(formData.category_id))?.name
+      const res = await api.post('/ai/generate-description', {
+        name: formData.name,
+        category: catName || undefined,
+        price: formData.price ? parseFloat(formData.price) : undefined,
+        unit: formData.unit || undefined,
+      })
+      setFormData(prev => ({ ...prev, description: res.data.description }))
+    } catch {
+      alert('Failed to generate description. Please try again.')
+    }
+    setGeneratingDesc(false)
   }
 
   const handleMainImageUpload = async (e) => {
@@ -365,12 +387,27 @@ const ProductForm = () => {
           </div>
 
           <div className="sm:col-span-2">
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Description</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700">Description</label>
+              <button
+                type="button"
+                onClick={handleGenerateDescription}
+                disabled={generatingDesc || !formData.name.trim()}
+                className="flex items-center gap-1.5 text-xs px-3 py-1 bg-primary-50 border border-primary-200 text-primary-700 rounded-lg hover:bg-primary-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                {generatingDesc
+                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                  : <Sparkles className="h-3 w-3" />
+                }
+                {generatingDesc ? 'Generating…' : 'Generate with AI'}
+              </button>
+            </div>
             <textarea
               name="description"
               rows={4}
               value={formData.description}
               onChange={handleChange}
+              placeholder="Describe your product, or click 'Generate with AI' above…"
               className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>

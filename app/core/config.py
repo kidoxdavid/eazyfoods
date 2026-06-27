@@ -94,6 +94,9 @@ class Settings(BaseSettings):
     # Base URL for customer password reset link (e.g. https://eazyfoods.ca or http://localhost:5173)
     CUSTOMER_RESET_PASSWORD_BASE_URL: Optional[str] = None
 
+    # Anthropic Claude API (AI features: shopping assistant, description generator, semantic search)
+    ANTHROPIC_API_KEY: Optional[str] = None
+
     # Admin/Marketing: set to False to disable public signup (invite-only)
     ADMIN_SIGNUP_ENABLED: bool = True
 
