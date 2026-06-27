@@ -1,0 +1,60 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend-app/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend-app/package-lock.json
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install npm dependencies
+        working-directory: frontend-app
+        run: npm ci
+
+      - name: Build web assets
+        working-directory: frontend-app
+        run: npm run build
+
+      - name: Sync Capacitor to Android
+        working-directory: frontend-app
+        run: npx cap sync android
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make Gradle executable
+        working-directory: frontend-app/android
+        run: chmod +x gradlew
+
+      - name: Build debug APK
+        working-directory: frontend-app/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: eazyfoods-debug-apk
+          path: frontend-app/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
