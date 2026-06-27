@@ -23,7 +23,7 @@ export default function StoreCard({ store }) {
 
   return (
     <div
-      onClick={() => navigate(`/shop?store=${store.id}`)}
+      onClick={() => navigate(`/stores/${store.id}`)}
       className="bg-white rounded-2xl overflow-hidden shadow-sm press-scale active:shadow-md"
     >
       {/* Banner */}

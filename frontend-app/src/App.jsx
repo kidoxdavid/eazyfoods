@@ -1,43 +1,49 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
+import { Suspense, lazy } from 'react'
 import BottomTabBar from './components/BottomTabBar'
-import LoginScreen from './screens/LoginScreen'
+
+// Eagerly-loaded (always needed)
+import LoginScreen    from './screens/LoginScreen'
 import RegisterScreen from './screens/RegisterScreen'
-import StoresScreen from './screens/StoresScreen'
-import ChefsScreen from './screens/ChefsScreen'
-import HomeScreen from './screens/HomeScreen'
-import ShopScreen from './screens/ShopScreen'
-import ProductDetailScreen from './screens/ProductDetailScreen'
-import CartScreen from './screens/CartScreen'
-import CheckoutScreen from './screens/CheckoutScreen'
-import OrdersScreen from './screens/OrdersScreen'
-import OrderDetailScreen from './screens/OrderDetailScreen'
-import ProfileScreen from './screens/ProfileScreen'
+import HomeScreen     from './screens/HomeScreen'
+import ShopScreen     from './screens/ShopScreen'
+import CartScreen     from './screens/CartScreen'
+
+// Lazy-loaded screens (split-bundle to keep boot fast)
+const ProductDetailScreen = lazy(() => import('./screens/ProductDetailScreen'))
+const StoresScreen        = lazy(() => import('./screens/StoresScreen'))
+const StoreDetailScreen   = lazy(() => import('./screens/StoreDetailScreen'))
+const ChefsScreen         = lazy(() => import('./screens/ChefsScreen'))
+const ChefDetailScreen    = lazy(() => import('./screens/ChefDetailScreen'))
+const MealsScreen         = lazy(() => import('./screens/MealsScreen'))
+const RecipeDetailScreen  = lazy(() => import('./screens/RecipeDetailScreen'))
+const TopDealsScreen      = lazy(() => import('./screens/TopDealsScreen'))
+const CheckoutScreen      = lazy(() => import('./screens/CheckoutScreen'))
+const OrdersScreen        = lazy(() => import('./screens/OrdersScreen'))
+const OrderDetailScreen   = lazy(() => import('./screens/OrderDetailScreen'))
+const ProfileScreen       = lazy(() => import('./screens/ProfileScreen'))
 
 const TAB_ROOTS = ['/home', '/shop', '/cart', '/orders', '/profile']
 
-// Redirects to login only if not signed in AND not in guest mode
-function RequireAuth({ children }) {
-  const { user, guest, loading } = useAuth()
-  if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-white">
+function Spinner() {
+  return (
+    <div className="h-full flex items-center justify-center bg-white">
       <div className="w-10 h-10 border-[3px] border-primary-600 border-t-transparent rounded-full animate-spin" />
     </div>
   )
-  if (!user && !guest) return <Navigate to="/login" replace />
-  // Guest trying to reach auth-only screen — send to login
-  if (guest && !user) return <Navigate to="/login" replace />
+}
+
+function RequireAuth({ children }) {
+  const { user, guest, loading } = useAuth()
+  if (loading) return <Spinner />
+  if (!user) return <Navigate to="/login" replace />
   return children
 }
 
-// For screens guests can browse (Home, Shop, ProductDetail)
 function OptionalAuth({ children }) {
   const { user, guest, loading } = useAuth()
-  if (loading) return (
-    <div className="h-screen flex items-center justify-center bg-white">
-      <div className="w-10 h-10 border-[3px] border-primary-600 border-t-transparent rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <Spinner />
   if (!user && !guest) return <Navigate to="/login" replace />
   return children
 }
@@ -48,7 +54,9 @@ function AppShell({ children }) {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
       <div className="flex-1 overflow-hidden relative">
-        {children}
+        <Suspense fallback={<Spinner />}>
+          {children}
+        </Suspense>
       </div>
       {isTab && <BottomTabBar />}
     </div>
@@ -59,23 +67,28 @@ export default function App() {
   return (
     <AppShell>
       <Routes>
+        {/* Auth */}
         <Route path="/login"    element={<LoginScreen />} />
         <Route path="/register" element={<RegisterScreen />} />
 
-        {/* Browsable without full account (guests allowed) */}
-        <Route path="/home" element={<OptionalAuth><HomeScreen /></OptionalAuth>} />
-        <Route path="/shop" element={<OptionalAuth><ShopScreen /></OptionalAuth>} />
-        <Route path="/shop/product/:productId" element={<OptionalAuth><ProductDetailScreen /></OptionalAuth>} />
-        <Route path="/stores" element={<OptionalAuth><StoresScreen /></OptionalAuth>} />
-        <Route path="/chefs" element={<OptionalAuth><ChefsScreen /></OptionalAuth>} />
-        <Route path="/chefs/:chefId" element={<OptionalAuth><ChefsScreen /></OptionalAuth>} />
+        {/* Browsable by guests */}
+        <Route path="/home"                          element={<OptionalAuth><HomeScreen /></OptionalAuth>} />
+        <Route path="/shop"                          element={<OptionalAuth><ShopScreen /></OptionalAuth>} />
+        <Route path="/shop/product/:productId"       element={<OptionalAuth><ProductDetailScreen /></OptionalAuth>} />
+        <Route path="/stores"                        element={<OptionalAuth><StoresScreen /></OptionalAuth>} />
+        <Route path="/stores/:storeId"               element={<OptionalAuth><StoreDetailScreen /></OptionalAuth>} />
+        <Route path="/chefs"                         element={<OptionalAuth><ChefsScreen /></OptionalAuth>} />
+        <Route path="/chefs/:chefId"                 element={<OptionalAuth><ChefDetailScreen /></OptionalAuth>} />
+        <Route path="/meals"                         element={<OptionalAuth><MealsScreen /></OptionalAuth>} />
+        <Route path="/meals/recipe/:recipeId"        element={<OptionalAuth><RecipeDetailScreen /></OptionalAuth>} />
+        <Route path="/top-deals"                     element={<OptionalAuth><TopDealsScreen /></OptionalAuth>} />
 
         {/* Requires real account */}
-        <Route path="/cart"     element={<RequireAuth><CartScreen /></RequireAuth>} />
-        <Route path="/checkout" element={<RequireAuth><CheckoutScreen /></RequireAuth>} />
-        <Route path="/orders"   element={<RequireAuth><OrdersScreen /></RequireAuth>} />
-        <Route path="/orders/:orderId" element={<RequireAuth><OrderDetailScreen /></RequireAuth>} />
-        <Route path="/profile"  element={<RequireAuth><ProfileScreen /></RequireAuth>} />
+        <Route path="/cart"                element={<RequireAuth><CartScreen /></RequireAuth>} />
+        <Route path="/checkout"            element={<RequireAuth><CheckoutScreen /></RequireAuth>} />
+        <Route path="/orders"              element={<RequireAuth><OrdersScreen /></RequireAuth>} />
+        <Route path="/orders/:orderId"     element={<RequireAuth><OrderDetailScreen /></RequireAuth>} />
+        <Route path="/profile"             element={<RequireAuth><ProfileScreen /></RequireAuth>} />
 
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="*" element={<Navigate to="/home" replace />} />

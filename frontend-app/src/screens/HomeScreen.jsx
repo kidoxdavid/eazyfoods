@@ -339,6 +339,22 @@ export default function HomeScreen() {
           </Section>
         )}
 
+        {/* Quick access to Meals / Deals */}
+        <div className="px-4 pt-5 grid grid-cols-2 gap-3">
+          <button onClick={() => navigate('/meals')}
+            className="bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl p-4 text-left shadow-sm press-scale">
+            <span className="text-3xl block mb-2">🍽️</span>
+            <p className="text-white font-bold text-sm">Recipes &amp; Meal Plans</p>
+            <p className="text-white/80 text-xs mt-0.5">Cook with ease</p>
+          </button>
+          <button onClick={() => navigate('/top-deals')}
+            className="bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl p-4 text-left shadow-sm press-scale">
+            <span className="text-3xl block mb-2">🏷️</span>
+            <p className="text-white font-bold text-sm">Top Deals</p>
+            <p className="text-white/80 text-xs mt-0.5">Market &amp; Chef offers</p>
+          </button>
+        </div>
+
         <div className="h-6" />
       </div>
     </div>
