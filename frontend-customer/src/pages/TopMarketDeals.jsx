@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
-import { ShoppingCart, Eye, Heart, Zap, Filter, Package, Sparkles, TrendingUp, Users, Search, Grid3x3, List, SlidersHorizontal, MapPin, Clock } from 'lucide-react'
+import { ShoppingCart, Eye, Heart, Zap, Filter, Package, Sparkles, TrendingUp, Users, Search, Grid3x3, List, SlidersHorizontal, MapPin, Clock, Wand2, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
 import { useFavorites } from '../contexts/FavoritesContext'
 import { useLocation } from '../contexts/LocationContext'
@@ -31,6 +31,13 @@ const TopMarketDeals = () => {
   const [priceMax, setPriceMax] = useState('')
   const [minRating, setMinRating] = useState('')
   const { addToCart } = useCart()
+
+  // AI meal ideas from deals
+  const [aiIdea, setAiIdea] = useState(null)
+  const [aiIdeaLoading, setAiIdeaLoading] = useState(false)
+  const [aiIdeaOpen, setAiIdeaOpen] = useState(true)
+  const [aiIdeaDealIds, setAiIdeaDealIds] = useState([])
+  const [aiIdeaAdded, setAiIdeaAdded] = useState(false)
   const { selectedCity, selectedProvince } = useLocation()
   const provinceCities = selectedProvince && selectedCity === 'All' ? getCitiesForProvince(selectedProvince) : null
   const effectiveCity = selectedProvince && selectedCity === 'All' ? null : selectedCity
@@ -162,12 +169,36 @@ const TopMarketDeals = () => {
       }
 
       setProducts(sorted)
+      // Generate AI meal idea from the top deals (non-blocking)
+      if (sorted.length > 0 && !aiIdea) {
+        generateDealMealIdea(sorted)
+      }
     } catch (error) {
       console.error('Failed to fetch deals:', error)
       setProducts([])
     } finally {
       setLoading(false)
     }
+  }
+
+  const generateDealMealIdea = async (deals) => {
+    if (!deals?.length || aiIdeaLoading) return
+    setAiIdeaLoading(true)
+    try {
+      const top = deals.slice(0, 8)
+      const names = top.map(p => p.name).join(', ')
+      const res = await api.post('/ai/chat', {
+        message: `Today's grocery deals include: ${names}. Suggest one simple, delicious meal I can make using some of these — keep it to 2-3 sentences and name which deal products to use.`,
+        conversation_history: [],
+      })
+      setAiIdea(res.data.response || '')
+      // Highlight deal products the AI mentioned by name
+      const mentioned = top.filter(p =>
+        res.data.response?.toLowerCase().includes(p.name.split(' ')[0].toLowerCase())
+      )
+      setAiIdeaDealIds(mentioned.map(p => p.id))
+    } catch {}
+    setAiIdeaLoading(false)
   }
 
   const getDiscountPercentage = (product) => {
@@ -279,6 +310,73 @@ const TopMarketDeals = () => {
       />
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4">
+
+        {/* AI Meal Idea from Deals */}
+        {(aiIdea || aiIdeaLoading) && (
+          <div className="mb-5 bg-gradient-to-br from-orange-50 via-white to-amber-50 border border-orange-100 rounded-2xl shadow-sm overflow-hidden">
+            <button onClick={() => setAiIdeaOpen(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-orange-50/50 transition-colors">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 bg-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Wand2 className="h-4 w-4 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-gray-900">AI Meal Idea</p>
+                  <p className="text-xs text-gray-500">What you can cook with today's deals</p>
+                </div>
+              </div>
+              {aiIdeaOpen ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+            </button>
+
+            {aiIdeaOpen && (
+              <div className="px-4 pb-4">
+                {aiIdeaLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+                    <RefreshCw className="h-4 w-4 animate-spin text-orange-500" />
+                    Analysing today's deals for meal ideas…
+                  </div>
+                ) : aiIdea ? (
+                  <>
+                    <p className="text-sm text-gray-700 leading-relaxed mb-3">{aiIdea}</p>
+                    {aiIdeaDealIds.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {products.filter(p => aiIdeaDealIds.includes(p.id)).map(p => (
+                          <div key={p.id} className="flex items-center gap-1.5 bg-white border border-orange-100 rounded-full px-2.5 py-1 shadow-sm">
+                            {p.image_url && <img src={resolveImageUrl(p.image_url)} alt="" className="w-5 h-5 rounded-full object-cover" />}
+                            <span className="text-xs font-semibold text-gray-700 max-w-[120px] truncate">{p.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex gap-2 flex-wrap">
+                      {aiIdeaDealIds.length > 0 && (
+                        <button
+                          onClick={async () => {
+                            for (const p of products.filter(p => aiIdeaDealIds.includes(p.id))) {
+                              try { await addToCart({ ...p, quantity: 1 }) } catch {}
+                            }
+                            setAiIdeaAdded(true)
+                            setTimeout(() => setAiIdeaAdded(false), 2000)
+                          }}
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors ${
+                            aiIdeaAdded ? 'bg-green-500 text-white' : 'bg-orange-500 text-white hover:bg-orange-600'
+                          }`}>
+                          <ShoppingCart className="h-3.5 w-3.5" />
+                          {aiIdeaAdded ? 'Added!' : 'Add these deals to cart'}
+                        </button>
+                      )}
+                      <button onClick={() => { setAiIdea(null); setAiIdeaDealIds([]); generateDealMealIdea(products) }}
+                        className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-gray-600 rounded-xl text-xs font-semibold hover:border-orange-300 hover:text-orange-600 transition-colors">
+                        <RefreshCw className="h-3 w-3" /> New idea
+                      </button>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Back to Groceries + Location */}
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           <Link to="/groceries" className="text-sm font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1">

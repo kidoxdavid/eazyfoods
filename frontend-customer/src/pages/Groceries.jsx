@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
-import { ShoppingCart, Eye, Heart, Package, Search, Filter, Grid3x3, List, Sparkles, TrendingUp, Users, SlidersHorizontal, Zap, MapPin } from 'lucide-react'
+import { ShoppingCart, Eye, Heart, Package, Search, Filter, Grid3x3, List, Sparkles, TrendingUp, Users, SlidersHorizontal, Zap, MapPin, Wand2, RefreshCw, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
 import { useFavorites } from '../contexts/FavoritesContext'
 import { useToast } from '../contexts/ToastContext'
@@ -225,6 +225,42 @@ const Groceries = () => {
     }
   }
 
+  // Smart Basket AI state
+  const [smartOpen, setSmartOpen] = useState(true)
+  const [smartQuery, setSmartQuery] = useState('')
+  const [smartLoading, setSmartLoading] = useState(false)
+  const [smartProducts, setSmartProducts] = useState([])
+  const [smartResponse, setSmartResponse] = useState('')
+  const [smartDone, setSmartDone] = useState(false)
+
+  const SMART_DISHES = ['Jollof Rice 🍚', 'Egusi Soup 🥘', 'Puff Puff 🍩', 'Jerk Chicken 🍗', 'Suya 🍢', 'Pounded Yam 🫙']
+
+  const handleSmartBasket = async (query) => {
+    const q = (query || smartQuery).trim()
+    if (!q) return
+    setSmartQuery(q)
+    setSmartLoading(true)
+    setSmartProducts([])
+    setSmartResponse('')
+    setSmartDone(false)
+    try {
+      const res = await api.post('/ai/chat', {
+        message: `I want to buy grocery ingredients to cook ${q}. What should I buy?`,
+        conversation_history: [],
+      })
+      setSmartProducts(res.data.products || [])
+      setSmartResponse(res.data.response || '')
+      setSmartDone(true)
+    } catch { setSmartResponse('Could not reach AI right now. Try again.'); setSmartDone(true) }
+    setSmartLoading(false)
+  }
+
+  const handleAddAllSmart = async () => {
+    for (const p of smartProducts) {
+      try { await addToCart({ ...p, quantity: 1 }) } catch {}
+    }
+  }
+
   const clearAllFilters = () => {
     setCategoryFilter('')
     setSearchQuery('')
@@ -316,6 +352,97 @@ const Groceries = () => {
       />
 
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4">
+
+        {/* Smart Basket AI */}
+        <div className="mb-5 bg-gradient-to-br from-primary-50 via-white to-amber-50 border border-primary-100 rounded-2xl shadow-sm overflow-hidden">
+          <button onClick={() => setSmartOpen(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-primary-50/50 transition-colors">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Wand2 className="h-4 w-4 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-bold text-gray-900">Smart Basket</p>
+                <p className="text-xs text-gray-500">Tell AI what you're cooking — it finds the ingredients</p>
+              </div>
+            </div>
+            {smartOpen ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
+          </button>
+
+          {smartOpen && (
+            <div className="px-4 pb-4">
+              {/* Quick dish chips */}
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {SMART_DISHES.map(d => (
+                  <button key={d} onClick={() => handleSmartBasket(d.replace(/\s*[^\w\s].*/,'').trim())} disabled={smartLoading}
+                    className="text-xs px-2.5 py-1 bg-white border border-gray-200 rounded-full text-gray-700 hover:border-primary-400 hover:text-primary-700 hover:bg-primary-50 transition-colors shadow-sm disabled:opacity-50">
+                    {d}
+                  </button>
+                ))}
+              </div>
+
+              {/* Input */}
+              <div className="flex gap-2">
+                <input type="text" value={smartQuery}
+                  onChange={e => { setSmartQuery(e.target.value); setSmartDone(false) }}
+                  onKeyDown={e => e.key === 'Enter' && handleSmartBasket()}
+                  placeholder="e.g. egusi soup, jollof rice, puff puff…"
+                  className="flex-1 px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-200 focus:border-primary-400 bg-white outline-none"
+                  disabled={smartLoading} />
+                <button onClick={() => handleSmartBasket()} disabled={!smartQuery.trim() || smartLoading}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-bold hover:bg-primary-700 disabled:opacity-40 transition-colors flex-shrink-0">
+                  {smartLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {smartLoading ? 'Finding…' : 'Find'}
+                </button>
+              </div>
+
+              {/* AI response */}
+              {smartDone && smartResponse && (
+                <div className="mt-3 text-sm text-gray-700 bg-white border border-gray-100 rounded-xl px-3 py-2 leading-relaxed">
+                  {smartResponse}
+                </div>
+              )}
+
+              {/* Product results */}
+              {smartProducts.length > 0 && (
+                <div className="mt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Matching products</p>
+                    <button onClick={handleAddAllSmart}
+                      className="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">
+                      <ShoppingCart className="h-3.5 w-3.5" /> Add all to cart
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {smartProducts.map(p => (
+                      <div key={p.id} className="bg-white border border-gray-100 rounded-xl p-2 flex items-center gap-2 shadow-sm">
+                        {p.image_url && (
+                          <img src={resolveImageUrl(p.image_url)} alt={p.name}
+                            className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-gray-800 truncate">{p.name}</p>
+                          <p className="text-xs text-primary-600 font-bold">${p.price?.toFixed(2)}</p>
+                        </div>
+                        <button onClick={() => addToCart({ ...p, quantity: 1 })}
+                          className="w-7 h-7 bg-primary-600 text-white rounded-lg flex items-center justify-center flex-shrink-0 hover:bg-primary-700 transition-colors">
+                          <ShoppingCart className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {smartProducts.length > 0 && (
+                    <button onClick={() => { setSmartProducts([]); setSmartResponse(''); setSmartQuery(''); setSmartDone(false) }}
+                      className="mt-2 text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 mx-auto">
+                      <X className="h-3 w-3" /> Clear results
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Location note */}
         {(effectiveCity && effectiveCity !== 'All') && (
           <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">

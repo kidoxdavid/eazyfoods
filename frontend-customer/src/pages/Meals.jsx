@@ -4,7 +4,7 @@ import api from '../services/api'
 import {
   Utensils, Clock, Users, Search, Filter, ChefHat, Calendar,
   Sparkles, TrendingUp, Plus, ShoppingCart, ChevronDown, ChevronUp,
-  Wand2, Check, RefreshCw, AlertCircle
+  Wand2, Check, RefreshCw, AlertCircle, X, Info
 } from 'lucide-react'
 import PageBanner from '../components/PageBanner'
 import { ProductCardSkeleton } from '../components/SkeletonLoader'
@@ -113,6 +113,7 @@ const Meals = () => {
   const [filters, setFilters] = useState({ meal_type: '', cuisine_type: '', difficulty: '', prep_time_max: '', search: '' })
   const [planTypeFilter, setPlanTypeFilter] = useState('all')
   const [addingSuggested, setAddingSuggested] = useState(null)
+  const [selectedSuggestedPlan, setSelectedSuggestedPlan] = useState(null)
 
   // Manual builder
   const [buildPlanOpen, setBuildPlanOpen] = useState(false)
@@ -522,7 +523,7 @@ const Meals = () => {
               </button>
             </div>
 
-            {/* Suggested plans (marketing portal) */}
+            {/* Suggested plans */}
             {suggestedPlans.length > 0 && (
               <div className="mb-8">
                 <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
@@ -530,32 +531,147 @@ const Meals = () => {
                   Suggested for you
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {suggestedPlans.map(plan => (
-                    <div key={plan.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                      <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-amber-50 to-primary-50">
-                        {plan.image_url
-                          ? <img src={resolveImageUrl(plan.image_url)} alt={plan.name} className="w-full h-full object-cover" />
-                          : <div className="w-full h-full flex items-center justify-center"><Calendar className="h-12 w-12 text-primary-300" /></div>
-                        }
-                        <div className="absolute top-2 right-2">
-                          <span className="px-2 py-1 bg-primary-600 text-white text-xs font-bold rounded-full">Suggested</span>
+                  {suggestedPlans.map(plan => {
+                    const imgs = plan.preview_images?.length ? plan.preview_images : (plan.image_url ? [plan.image_url] : [])
+                    return (
+                      <div key={plan.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                        <button className="relative w-full aspect-[4/3] overflow-hidden bg-gradient-to-br from-amber-50 to-primary-50 group"
+                          onClick={() => setSelectedSuggestedPlan(plan)}>
+                          {imgs.length >= 4 ? (
+                            <div className="grid grid-cols-2 w-full h-full">
+                              {imgs.slice(0, 4).map((img, i) => (
+                                <img key={i} src={resolveImageUrl(img)} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                              ))}
+                            </div>
+                          ) : imgs.length > 0 ? (
+                            <img src={resolveImageUrl(imgs[0])} alt={plan.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center"><Calendar className="h-12 w-12 text-primary-300" /></div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                          <div className="absolute bottom-0 left-0 right-0 p-3">
+                            <p className="text-white font-bold text-sm leading-tight">{plan.name}</p>
+                            <p className="text-white/75 text-xs">{plan.meal_count} meals</p>
+                          </div>
+                          <div className="absolute top-2 right-2">
+                            <span className="px-2 py-0.5 bg-primary-600 text-white text-xs font-bold rounded-full shadow">Suggested</span>
+                          </div>
+                        </button>
+                        <div className="p-3">
+                          {plan.description && <p className="text-xs text-gray-500 mb-3 line-clamp-2">{plan.description}</p>}
+                          <div className="flex gap-2">
+                            <button onClick={() => setSelectedSuggestedPlan(plan)}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-gray-200 text-gray-700 rounded-lg hover:border-primary-400 hover:text-primary-700 text-xs font-semibold transition-colors">
+                              <Info className="h-3.5 w-3.5" /> View plan
+                            </button>
+                            <button onClick={() => handleSuggestedAddToCart(plan)} disabled={addingSuggested === plan.id}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-xs font-semibold disabled:opacity-50 transition-colors">
+                              <ShoppingCart className="h-3.5 w-3.5" />
+                              {addingSuggested === plan.id ? 'Adding…' : 'Add to cart'}
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <div className="p-4">
-                        <h4 className="font-bold text-gray-900 mb-1">{plan.name}</h4>
-                        {plan.description && <p className="text-sm text-gray-600 mb-3 line-clamp-2">{plan.description}</p>}
-                        <p className="text-xs text-gray-500 mb-3">{plan.meal_count} meals</p>
-                        <button onClick={() => handleSuggestedAddToCart(plan)} disabled={addingSuggested === plan.id}
-                          className="w-full flex items-center justify-center gap-2 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-semibold disabled:opacity-50">
-                          <ShoppingCart className="h-4 w-4" />
-                          {addingSuggested === plan.id ? 'Adding…' : 'Add to cart'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
+
+            {/* Suggested plan detail modal */}
+            {selectedSuggestedPlan && (() => {
+              const plan = selectedSuggestedPlan
+              const imgs = plan.preview_images?.length ? plan.preview_images : (plan.image_url ? [plan.image_url] : [])
+              const byDay = {}
+              for (const m of (plan.meals || [])) {
+                const d = m.day_number || 1
+                if (!byDay[d]) byDay[d] = []
+                byDay[d].push(m)
+              }
+              const DAY_LABELS = ['','Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+              const MT_EMOJI = { breakfast: '🌅', lunch: '🌞', dinner: '🌙' }
+              return (
+                <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setSelectedSuggestedPlan(null)}>
+                  <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+                    {/* Image mosaic */}
+                    <div className="relative h-48 flex-shrink-0 overflow-hidden bg-gray-100">
+                      {imgs.length >= 4 ? (
+                        <div className="grid grid-cols-2 w-full h-full">
+                          {imgs.slice(0, 4).map((img, i) => <img key={i} src={resolveImageUrl(img)} alt="" className="w-full h-full object-cover" />)}
+                        </div>
+                      ) : imgs.length > 0 ? (
+                        <img src={resolveImageUrl(imgs[0])} alt={plan.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary-50 to-amber-50">
+                          <Calendar className="h-16 w-16 text-primary-200" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                      <div className="absolute bottom-0 left-0 p-4">
+                        <p className="text-white font-bold text-xl leading-tight drop-shadow-lg">{plan.name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-white/80 text-sm">{plan.meal_count} meals</span>
+                          <span className="px-2 py-0.5 bg-white/25 text-white text-xs font-semibold rounded-full border border-white/30">
+                            {plan.plan_type === 'one_day' ? '1 Day' : plan.plan_type === 'one_week' ? 'Weekly' : 'Monthly'}
+                          </span>
+                        </div>
+                      </div>
+                      <button onClick={() => setSelectedSuggestedPlan(null)}
+                        className="absolute top-3 right-3 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition-colors">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {/* Meal list */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                      {plan.description && <p className="text-sm text-gray-600 leading-relaxed">{plan.description}</p>}
+                      {Object.keys(byDay).sort((a, b) => Number(a) - Number(b)).map(day => (
+                        <div key={day} className="bg-gray-50 rounded-xl p-3">
+                          <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                            {DAY_LABELS[Number(day)] ? `${DAY_LABELS[Number(day)]} — Day ${day}` : `Day ${day}`}
+                          </p>
+                          <div className="space-y-2">
+                            {byDay[day].map((meal, mi) => (
+                              <div key={mi} className="flex items-center gap-2.5">
+                                <span className="text-base flex-shrink-0">{MT_EMOJI[meal.meal_type] || '🍽️'}</span>
+                                {meal.recipe?.image_url && (
+                                  <img src={resolveImageUrl(meal.recipe.image_url)} alt=""
+                                    className="w-9 h-9 rounded-lg object-cover flex-shrink-0 border border-gray-100" />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-[10px] text-gray-400 capitalize leading-none mb-0.5">{meal.meal_type}</p>
+                                  <p className="text-sm font-semibold text-gray-800 leading-tight truncate">{meal.recipe?.name || 'Recipe'}</p>
+                                  {meal.recipe?.cuisine_type && <p className="text-[10px] text-primary-600">{meal.recipe.cuisine_type}</p>}
+                                </div>
+                                {meal.recipe?.difficulty && (
+                                  <span className={`flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                                    meal.recipe.difficulty === 'easy' ? 'bg-green-100 text-green-700'
+                                    : meal.recipe.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700'
+                                    : 'bg-red-100 text-red-700'
+                                  }`}>{meal.recipe.difficulty}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Footer */}
+                    <div className="p-4 border-t flex gap-2 flex-shrink-0">
+                      <button onClick={() => setSelectedSuggestedPlan(null)}
+                        className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+                        Close
+                      </button>
+                      <button onClick={() => { handleSuggestedAddToCart(plan); setSelectedSuggestedPlan(null) }}
+                        disabled={addingSuggested === plan.id}
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-bold hover:bg-primary-700 disabled:opacity-50 transition-colors">
+                        <ShoppingCart className="h-4 w-4" />
+                        {addingSuggested === plan.id ? 'Adding…' : 'Add all to cart'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* All meal plans */}
             {mealPlans.length === 0 && suggestedPlans.length === 0 ? (

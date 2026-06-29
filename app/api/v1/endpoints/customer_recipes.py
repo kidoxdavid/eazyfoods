@@ -214,72 +214,130 @@ async def add_recipe_to_cart(
 async def get_suggested_meal_plans(
     db: Session = Depends(get_db)
 ):
-    """Suggest meal plans built from available recipes (e.g. breakfast week, easy dinners)."""
-    recipes = db.query(Recipe).filter(Recipe.is_active == True).order_by(Recipe.name).limit(50).all()
+    """
+    Return up to 3 auto-generated suggested meal plans built from active recipes.
+    Each plan includes per-meal recipe details and a preview_images list (up to 4
+    distinct recipe images) so the frontend can render a mosaic thumbnail.
+
+    Plans refresh automatically as the recipe catalogue changes — there is no
+    fixed schedule; the response always reflects the current DB state.
+    """
+    def _unique_images(recipe_list, limit=4):
+        """Return up to `limit` distinct non-null image URLs from a recipe list."""
+        seen = set()
+        out = []
+        for r in recipe_list:
+            img = r.image_url
+            if img and img not in seen:
+                seen.add(img)
+                out.append(img)
+            if len(out) == limit:
+                break
+        return out
+
+    recipes = (
+        db.query(Recipe)
+        .filter(Recipe.is_active == True)
+        .order_by(Recipe.is_featured.desc(), Recipe.name)
+        .limit(60)
+        .all()
+    )
     if not recipes:
         return []
+
     by_meal = {"breakfast": [], "lunch": [], "dinner": []}
     for r in recipes:
         mt = (r.meal_type or "dinner").lower()
         if mt in by_meal:
             by_meal[mt].append(r)
+
     suggestions = []
-    # "7-Day Breakfast" – first 7 breakfast recipes
-    if len(by_meal["breakfast"]) >= 7:
+
+    # Plan 1 — 7-Day Breakfast Ideas
+    if len(by_meal["breakfast"]) >= 3:
+        take = by_meal["breakfast"][:7]
         meals = [
-            {"recipe_id": str(by_meal["breakfast"][i].id), "day_number": i + 1, "meal_type": "breakfast",
-             "recipe": {"id": str(by_meal["breakfast"][i].id), "name": by_meal["breakfast"][i].name, "image_url": by_meal["breakfast"][i].image_url, "meal_type": "breakfast"}}
-            for i in range(7)
+            {
+                "recipe_id": str(r.id), "day_number": i + 1, "meal_type": "breakfast",
+                "recipe": {"id": str(r.id), "name": r.name, "image_url": r.image_url,
+                           "description": (r.description or "")[:80], "meal_type": "breakfast",
+                           "cuisine_type": r.cuisine_type or "", "difficulty": r.difficulty or ""}
+            }
+            for i, r in enumerate(take)
         ]
+        imgs = _unique_images(take)
         suggestions.append({
             "id": "suggested-breakfast-week",
             "name": "7-Day Breakfast Ideas",
-            "description": "A week of breakfast recipes from our collection.",
+            "description": "Kick-start every morning with a different recipe from our collection.",
             "plan_type": "one_week",
-            "image_url": by_meal["breakfast"][0].image_url if by_meal["breakfast"] else None,
-            "meal_count": 7,
+            "image_url": imgs[0] if imgs else None,
+            "preview_images": imgs,
+            "meal_count": len(meals),
             "suggested": True,
-            "meals": meals
+            "meals": meals,
         })
-    # "Easy Dinners" – up to 5 easy dinner recipes
-    easy_dinners = [r for r in recipes if (r.difficulty or "").lower() == "easy" and (r.meal_type or "").lower() == "dinner"][:5]
-    if not easy_dinners and by_meal["dinner"]:
+
+    # Plan 2 — Easy Dinners
+    easy_dinners = [
+        r for r in recipes
+        if (r.difficulty or "").lower() == "easy" and (r.meal_type or "").lower() == "dinner"
+    ][:5]
+    if not easy_dinners:
         easy_dinners = by_meal["dinner"][:5]
     if easy_dinners:
         meals = [
-            {"recipe_id": str(r.id), "day_number": i + 1, "meal_type": "dinner",
-             "recipe": {"id": str(r.id), "name": r.name, "image_url": r.image_url, "meal_type": "dinner"}}
+            {
+                "recipe_id": str(r.id), "day_number": i + 1, "meal_type": "dinner",
+                "recipe": {"id": str(r.id), "name": r.name, "image_url": r.image_url,
+                           "description": (r.description or "")[:80], "meal_type": "dinner",
+                           "cuisine_type": r.cuisine_type or "", "difficulty": r.difficulty or ""}
+            }
             for i, r in enumerate(easy_dinners)
         ]
+        imgs = _unique_images(easy_dinners)
         suggestions.append({
             "id": "suggested-easy-dinners",
-            "name": "Easy Dinners (5 days)",
-            "description": "Simple dinner recipes for the week.",
+            "name": "Easy Dinners (5 nights)",
+            "description": "Fuss-free dinner recipes for busy weeknights.",
             "plan_type": "one_week",
-            "image_url": easy_dinners[0].image_url if easy_dinners else None,
+            "image_url": imgs[0] if imgs else None,
+            "preview_images": imgs,
             "meal_count": len(meals),
             "suggested": True,
-            "meals": meals
+            "meals": meals,
         })
-    # "This week's picks" – mix of 7 recipes
-    mix = recipes[:7] if len(recipes) >= 7 else recipes
+
+    # Plan 3 — Full-Day Mix (use recipes not already in plan 1 or 2 where possible)
+    used_ids = {m["recipe_id"] for s in suggestions for m in s["meals"]}
+    fresh = [r for r in recipes if str(r.id) not in used_ids]
+    mix = (fresh[:7] if len(fresh) >= 7 else fresh) or recipes[3:10] or recipes[:7]
     if mix:
         meal_types = ["breakfast", "lunch", "dinner"]
         meals = [
-            {"recipe_id": str(r.id), "day_number": (i % 7) + 1, "meal_type": (r.meal_type or meal_types[i % 3]).lower()[:10] or "dinner",
-             "recipe": {"id": str(r.id), "name": r.name, "image_url": r.image_url, "meal_type": r.meal_type or "dinner"}}
+            {
+                "recipe_id": str(r.id), "day_number": (i % 7) + 1,
+                "meal_type": (r.meal_type or meal_types[i % 3]).lower() or "dinner",
+                "recipe": {"id": str(r.id), "name": r.name, "image_url": r.image_url,
+                           "description": (r.description or "")[:80],
+                           "meal_type": r.meal_type or "dinner",
+                           "cuisine_type": r.cuisine_type or "", "difficulty": r.difficulty or ""}
+            }
             for i, r in enumerate(mix)
         ]
+        imgs = _unique_images(mix)
         suggestions.append({
             "id": "suggested-week-picks",
             "name": "This Week's Picks",
-            "description": "Curated recipes from our collection.",
+            "description": "A curated mix of breakfast, lunch, and dinner recipes to try this week.",
             "plan_type": "one_week",
-            "image_url": mix[0].image_url if mix else None,
+            "image_url": imgs[0] if imgs else None,
+            "preview_images": imgs,
             "meal_count": len(meals),
             "suggested": True,
-            "meals": meals
+            "meals": meals,
         })
+
     return suggestions
 
 
