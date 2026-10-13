@@ -5,7 +5,6 @@ import { useCart } from '../contexts/CartContext'
 import { Package, MapPin, Clock, CheckCircle, Star, Truck, User, Phone, Car, Camera, ShoppingCart } from 'lucide-react'
 import { formatDateTime } from '../utils/format'
 import { resolveImageUrl } from '../utils/imageUtils'
-import PrivateRoute from '../components/PrivateRoute'
 import DeliveryTracker from '../components/DeliveryTracker'
 import { OrderDetailSkeleton } from '../components/SkeletonLoader'
 
@@ -134,15 +133,15 @@ const OrderDetail = () => {
 
   if (loading) {
     return (
-      <PrivateRoute>
+      
         <OrderDetailSkeleton />
-      </PrivateRoute>
+      
     )
   }
 
   if (!order) {
     return (
-      <PrivateRoute>
+      
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
             <Package className="h-24 w-24 text-gray-400 mx-auto mb-4" />
@@ -154,7 +153,7 @@ const OrderDetail = () => {
             </Link>
           </div>
         </div>
-      </PrivateRoute>
+      
     )
   }
 
@@ -162,7 +161,7 @@ const OrderDetail = () => {
   const orderPlaced = location.state?.orderPlaced || false
 
   return (
-    <PrivateRoute>
+    
       <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         {orderPlaced && (
           <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3">
@@ -378,7 +377,7 @@ const OrderDetail = () => {
           </div>
         )}
       </div>
-    </PrivateRoute>
+    
   )
 }
 

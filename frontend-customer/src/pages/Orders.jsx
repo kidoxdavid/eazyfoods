@@ -6,7 +6,6 @@ import { useCart } from '../contexts/CartContext'
 import { useToast } from '../contexts/ToastContext'
 import { Package, Clock, CheckCircle, XCircle, Sparkles, TrendingUp, Users, Navigation, RotateCcw } from 'lucide-react'
 import { formatDateTime } from '../utils/format'
-import PrivateRoute from '../components/PrivateRoute'
 import PageBanner from '../components/PageBanner'
 import { OrderCardSkeleton } from '../components/SkeletonLoader'
 
@@ -111,7 +110,7 @@ const Orders = () => {
 
   if (loading) {
     return (
-      <PrivateRoute>
+      
         <div className="w-full">
           <PageBanner
             title="My Orders"
@@ -127,7 +126,7 @@ const Orders = () => {
             </div>
           </div>
         </div>
-      </PrivateRoute>
+      
     )
   }
 
@@ -153,7 +152,7 @@ const Orders = () => {
   }
 
   return (
-    <PrivateRoute>
+    
       <div className="w-full">
         {/* Banner Header with Ad Support */}
         <PageBanner
@@ -225,11 +224,6 @@ const Orders = () => {
               <button type="button" onClick={fetchOrders} className="btn-primary">
                 Try again
               </button>
-              {error.includes('Session expired') && (
-                <Link to="/login" className="px-4 py-2 border border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50">
-                  Log in
-                </Link>
-              )}
             </div>
           </div>
         ) : orders.length === 0 ? (
@@ -353,7 +347,7 @@ const Orders = () => {
         )}
         </div>
       </div>
-    </PrivateRoute>
+    
   )
 }
 

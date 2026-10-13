@@ -1,869 +1,250 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { useState, useEffect, lazy, Suspense } from 'react'
+import { MapPin, Menu, X, Search, Sparkles, Truck, ArrowRight, Mail, Package } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
-import { ShoppingCart, User, LogOut, Search, Home, Store, Package, ShoppingBag, Settings, Menu, X, Utensils, MapPin, Info, Mail, Zap, ChefHat, Truck, DollarSign, Clock, ArrowRight } from 'lucide-react'
-import { useState, useEffect, useRef, lazy, Suspense } from 'react'
-import { createPortal } from 'react-dom'
-import Breadcrumbs from './Breadcrumbs'
-
-const PageBanner = lazy(() => import('./PageBanner'))
 import { useLocation as useLocationContext } from '../contexts/LocationContext'
-import { CANADA_PROVINCES, getCitiesForProvince } from '../constants/canadaLocations'
+import Breadcrumbs from './Breadcrumbs'
 import AnimatedCartIcon from './AnimatedCartIcon'
 import CartPreview from './CartPreview'
 import SearchAutocomplete from './SearchAutocomplete'
-import { getAvatarIcon, getAvatarStyle, AVATAR_ICON_KEY, getAvatarStorageKey } from '../constants/avatarIcons'
+import LocationPicker from './LocationPicker'
+
+const PageBanner = lazy(() => import('./PageBanner'))
+
+const NAV = [
+  { name: 'Groceries', href: '/groceries' },
+  { name: 'Meals', href: '/meals' },
+  { name: 'Chefs', href: '/chefs' },
+  { name: 'Markets', href: '/stores' },
+  { name: 'Deals', href: '/top-market-deals' },
+]
+
+const MORE = [
+  { name: 'Chef deals', href: '/top-chef-deals' },
+  { name: 'Orders', href: '/orders' },
+  { name: 'Profile & addresses', href: '/profile' },
+  { name: 'Drive with us', href: '/become-a-driver' },
+  { name: 'About', href: '/about' },
+  { name: 'Contact', href: '/contact' },
+]
+
+const BANNER_PLACEMENTS = {
+  '/': 'home_bottom_banner',
+  '/groceries': 'products_bottom_banner',
+  '/stores': 'stores_bottom_banner',
+  '/chefs': 'chefs_bottom_banner',
+  '/cart': 'cart_bottom_banner',
+  '/orders': 'orders_bottom_banner',
+  '/profile': 'profile_bottom_banner',
+  '/about': 'about_bottom_banner',
+  '/contact': 'contact_bottom_banner',
+  '/meals': 'meals_bottom_banner',
+  '/top-market-deals': 'top_market_deals_bottom_banner',
+  '/top-chef-deals': 'top_chef_deals_bottom_banner',
+  '/checkout': 'checkout_bottom_banner',
+}
+
+const driverCta = (
+  <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-6 text-center sm:flex-row sm:px-6 sm:text-left lg:px-8">
+    <div className="flex items-center gap-4">
+      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15"><Truck className="h-6 w-6" /></span>
+      <div>
+        <h3 className="font-display text-xl font-bold sm:text-2xl">Drive with eazyfoods</h3>
+        <p className="text-sm text-white/85">Deliver groceries and meals on your own schedule.</p>
+      </div>
+    </div>
+    <Link to="/become-a-driver" className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-primary-800 shadow-soft transition hover:shadow-lift">
+      Apply to drive <ArrowRight className="h-4 w-4" />
+    </Link>
+  </div>
+)
 
 const Layout = ({ children }) => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false) // Default to closed, opens only when hamburger is clicked
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showLocationModal, setShowLocationModal] = useState(false)
-  const [locationProvOpen, setLocationProvOpen] = useState(false)
-  const [locationCityOpen, setLocationCityOpen] = useState(false)
-  const [cartPreviewOpen, setCartPreviewOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [cartOpen, setCartOpen] = useState(false)
+  const [locationOpen, setLocationOpen] = useState(false)
+  const [query, setQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
-  const profileButtonRef = useRef(null)
-  const profileDropdownRef = useRef(null)
-  const [profileDropdownPosition, setProfileDropdownPosition] = useState({ top: 0, right: 0 })
-  const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches)
-
-  // Close profile dropdown when clicking outside (anywhere on page)
-  useEffect(() => {
-    if (!profileDropdownOpen) return
-    const handleClickOutside = (e) => {
-      if (
-        profileButtonRef.current && !profileButtonRef.current.contains(e.target) &&
-        profileDropdownRef.current && !profileDropdownRef.current.contains(e.target)
-      ) {
-        setProfileDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [profileDropdownOpen])
-  const authContext = useAuth()
-  const user = (authContext && authContext.user) ? authContext.user : null
-  const avatarStorageKey = getAvatarStorageKey(user?.id)
-  const [avatarKey, setAvatarKey] = useState(() => localStorage.getItem(AVATAR_ICON_KEY) || 'user')
+  const [scrolled, setScrolled] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
-  useEffect(() => {
-    const key = getAvatarStorageKey(user?.id)
-    let v = localStorage.getItem(key)
-    if (!v && user?.id && (v = localStorage.getItem(AVATAR_ICON_KEY))) {
-      localStorage.setItem(key, v)
-    }
-    setAvatarKey(v || 'user')
-  }, [user?.id])
-  useEffect(() => {
-    const mql = window.matchMedia('(min-width: 1024px)')
-    const handler = () => setIsDesktop(mql.matches)
-    mql.addEventListener('change', handler)
-    return () => mql.removeEventListener('change', handler)
-  }, [])
-  useEffect(() => {
-    const onAvatarUpdated = (e) => {
-      const key = getAvatarStorageKey(user?.id)
-      const v = (e && e.detail && e.detail.key) || localStorage.getItem(key) || 'user'
-      if (key) localStorage.setItem(key, v)
-      setAvatarKey(v)
-    }
-    window.addEventListener('avatar-updated', onAvatarUpdated)
-    return () => window.removeEventListener('avatar-updated', onAvatarUpdated)
-  }, [user?.id])
+  const { getCartItemCount } = useCart()
+  const { selectedCity, selectedProvince } = useLocationContext()
+  const count = getCartItemCount()
+  const place = selectedCity && selectedCity !== 'All' ? selectedCity : selectedProvince || 'All Canada'
 
-  const cartContext = useCart()
-  const locationContext = useLocationContext()
-
-  const logout = (authContext && authContext.logout) ? authContext.logout : (() => {})
-  const token = (authContext && authContext.token) ? authContext.token : null
-  const getCartItemCount = (cartContext && cartContext.getCartItemCount) ? cartContext.getCartItemCount : (() => 0)
-  const deliveryAddress = (locationContext && locationContext.deliveryAddress) ? locationContext.deliveryAddress : null
-  const updateAddress = (locationContext && locationContext.updateAddress) ? locationContext.updateAddress : (() => {})
-  const selectedCity = (locationContext && locationContext.selectedCity) ? locationContext.selectedCity : 'All'
-  const selectedProvince = (locationContext && locationContext.selectedProvince) ? locationContext.selectedProvince : ''
-  const updateCity = (locationContext && locationContext.updateCity) ? locationContext.updateCity : (() => {})
-  const updateProvince = (locationContext && locationContext.updateProvince) ? locationContext.updateProvince : (() => {})
-  
-  // Initialize city from context (which reads from localStorage)
+  useEffect(() => { setMenuOpen(false); setCartOpen(false); window.scrollTo(0, 0) }, [location.pathname])
   useEffect(() => {
-    if (!selectedCity || selectedCity === '') {
-      updateCity('All') // Default to 'All' to show all stores/products
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const handleSearch = (e) => {
-    if (e) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
-    const trimmedQuery = searchQuery.trim()
-    if (trimmedQuery) {
-      navigate(`/groceries?search=${encodeURIComponent(trimmedQuery)}`)
-    } else {
-      navigate('/groceries')
-    }
-  }
-  
-  // Handle real-time search as user types (debounced)
+  // Keep the box in sync with ?search= on the groceries page
   useEffect(() => {
-    // Only trigger search if we're on the groceries page or navigating to it
-    if (location.pathname === '/groceries' || searchQuery.trim()) {
-      const timeoutId = setTimeout(() => {
-        const trimmedQuery = searchQuery.trim()
-        const currentSearch = new URLSearchParams(location.search).get('search') || ''
-        
-        // Only navigate if the search query has actually changed
-        if (trimmedQuery !== currentSearch) {
-          const newParams = new URLSearchParams(location.search)
-          if (trimmedQuery) {
-            newParams.set('search', trimmedQuery)
-          } else {
-            newParams.delete('search')
-          }
-          navigate(`/groceries?${newParams.toString()}`, { replace: true })
-        }
-      }, 500) // 500ms debounce delay
-      
-      return () => clearTimeout(timeoutId)
-    }
-  }, [searchQuery, location.pathname])
-  
-  // Also handle Enter key press in search input
-  const handleSearchKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSearch(e)
-    }
-  }
-  
-  // Sync search query with URL params when on groceries page
-  useEffect(() => {
-    if (location.pathname === '/groceries') {
-      const searchParam = new URLSearchParams(location.search).get('search') || ''
-      if (searchParam !== searchQuery) {
-        setSearchQuery(searchParam)
-      }
-    } else if (location.pathname !== '/groceries' && searchQuery) {
-      // Clear search when navigating away from groceries page
-      setSearchQuery('')
-    }
-  }, [location])
+    if (location.pathname === '/groceries') setQuery(new URLSearchParams(location.search).get('search') || '')
+    else setQuery('')
+  }, [location.pathname, location.search])
 
-  const handleLogout = () => {
-    logout()
-    navigate('/')
+  const submitSearch = (e) => {
+    e?.preventDefault()
+    const q = query.trim()
+    navigate(q ? `/groceries?search=${encodeURIComponent(q)}` : '/groceries')
+    setSearchFocused(false)
   }
 
-  const navigationLinks = [
-    { name: 'Home', href: '/', icon: Home },
-    { name: 'Top Market Deals', href: '/top-market-deals', icon: Zap },
-    { name: 'Top Chef Deals', href: '/top-chef-deals', icon: ChefHat },
-    { name: 'Local Markets', href: '/stores', icon: Store },
-    { name: 'Groceries', href: '/groceries', icon: Package },
-    { name: 'Meals', href: '/meals', icon: Utensils },
-    { name: 'Chefs', href: '/chefs', icon: ChefHat },
-    { name: 'Cart', href: '/cart', icon: ShoppingCart },
-    { name: 'eazydrive', href: '/become-a-driver', icon: Truck },
-    { name: 'About', href: '/about', icon: Info },
-    { name: 'Contact Us', href: '/contact', icon: Mail },
-    { name: 'Orders', href: '/orders', icon: ShoppingBag },
-    ...(token ? [{ name: 'Profile', href: '/profile', icon: Settings }] : [])
-  ]
+  const askBot = () => window.dispatchEvent(new CustomEvent('eazybot:ask', { detail: {} }))
+  const placement = BANNER_PLACEMENTS[location.pathname] || (location.pathname.startsWith('/products') ? 'products_bottom_banner' : 'home_bottom_banner')
+  const dealsPage = location.pathname === '/top-chef-deals' || location.pathname === '/top-market-deals'
+
+  const navClass = ({ isActive }) =>
+    `rounded-full px-3.5 py-2 text-sm font-semibold transition ${isActive ? 'bg-primary-100 text-primary-900' : 'text-ink-600 hover:bg-ink-50 hover:text-ink-900'}`
 
   return (
-    <div className="min-h-screen flex">
-      {/* Sidebar Overlay - Shows on all screen sizes when sidebar is open */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <div className="flex min-h-screen flex-col" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+      <header className={`sticky top-0 z-50 border-b bg-cream-50/90 backdrop-blur transition-shadow ${scrolled ? 'border-ink-100 shadow-soft' : 'border-transparent'}`}>
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
+          <button type="button" aria-label="Open menu" onClick={() => setMenuOpen(true)} className="-ml-2 rounded-full p-2 text-ink-700 hover:bg-ink-50 lg:hidden">
+            <Menu className="h-6 w-6" />
+          </button>
 
-      {/* Sidebar - Mobile: ~65% width (extra beyond half); desktop: w-72 */}
-      <aside 
-        className={`fixed inset-y-0 left-0 z-[60] w-[65%] max-w-[280px] md:w-72 bg-gradient-to-b from-primary-50 to-white shadow-2xl transform transition-transform duration-300 ease-in-out flex-shrink-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex flex-col h-full">
-          {/* Sidebar Header */}
-          <div className="flex items-center justify-between p-1 h-20 bg-white border-b border-gray-200">
-            <Link to="/" className="flex items-center w-full h-full" onClick={() => setSidebarOpen(false)}>
-              <img 
-                src="/eazy.PNG" 
-                alt="EAZY Foods" 
-                className="h-[65%] w-[65%] object-cover mx-auto"
-              />
-            </Link>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden text-gray-600 hover:text-gray-800 transition-colors z-10"
-              type="button"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
+          <Link to="/" className="flex shrink-0 items-center" aria-label="eazyfoods home">
+            <img src="/eazy.PNG" alt="eazyfoods" className="h-14 w-14 object-contain" />
+          </Link>
 
-          {/* Navigation Links */}
-          <nav className="flex-1 p-3 md:p-4 space-y-0.5 md:space-y-1 overflow-y-auto bg-white">
-            {navigationLinks.map((link, index) => {
-              const Icon = link.icon
-              const isActive = location.pathname === link.href || 
-                (link.href !== '/' && location.pathname.startsWith(link.href))
-              const isEven = index % 2 === 0
-              return (
-                <Link
-                  key={link.href}
-                  to={link.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2.5 md:py-3 rounded-xl transition-all duration-200 ${
-                    isActive
-                      ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg transform scale-105'
-                      : isEven
-                        ? 'text-gray-700 hover:bg-gradient-to-r hover:from-nude-100 hover:to-nude-200 hover:shadow-md bg-nude-50/50'
-                        : 'text-gray-700 hover:bg-gradient-to-r hover:from-nude-100 hover:to-nude-200 hover:shadow-md bg-white'
-                  }`}
-                >
-                  <Icon className={`h-4 w-4 md:h-5 md:w-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-600'}`} />
-                  <span className="font-medium text-sm md:text-base whitespace-nowrap truncate">{link.name}</span>
-                </Link>
-              )
-            })}
+          <nav className="ml-4 hidden items-center gap-1 lg:flex" aria-label="Primary">
+            {NAV.map((n) => <NavLink key={n.href} to={n.href} className={navClass}>{n.name}</NavLink>)}
           </nav>
 
-          {/* Portals link — always visible in sidebar on mobile/tablet */}
-          <div className="px-4 py-3 border-t border-gray-100">
-            <a
-              href={(import.meta.env.VITE_PORTALS_URL || 'https://portals.eazyfoods.ca').trim()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center space-x-2 px-3 py-2.5 rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors text-sm font-medium"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <Store className="h-4 w-4 flex-shrink-0" />
-              <span>For vendors &amp; partners – Portals</span>
+          <form onSubmit={submitSearch} className="relative mx-2 hidden min-w-0 flex-1 md:block lg:max-w-md xl:max-w-lg">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+              placeholder="Search egusi, plantain, palm oil…"
+              aria-label="Search groceries"
+              className="w-full rounded-full border border-ink-200 bg-white py-2.5 pl-10 pr-4 text-sm placeholder:text-ink-300 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+            <SearchAutocomplete
+              query={query}
+              onQueryChange={setQuery}
+              onSelect={(p) => { if (p) navigate(`/products/${p.id}`); else submitSearch(); setSearchFocused(false) }}
+              isOpen={searchFocused}
+              onClose={() => setSearchFocused(false)}
+            />
+          </form>
+
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+            <button type="button" onClick={() => setLocationOpen(true)} className="flex items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 py-2 text-sm font-semibold text-ink-700 transition hover:border-primary-600" aria-label="Change location">
+              <MapPin className="h-4 w-4 text-nude-600" />
+              <span className="max-w-[84px] truncate">{place}</span>
+            </button>
+            <button type="button" onClick={askBot} className="hidden items-center gap-1.5 rounded-full bg-primary-800 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-primary-900 sm:flex">
+              <Sparkles className="h-4 w-4 text-nude-300" /> Ask EazyBot
+            </button>
+            <div className="relative">
+              <button type="button" onClick={() => setCartOpen((v) => !v)} aria-label={`Cart, ${count} items`} className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white text-ink-800 shadow-soft transition hover:text-primary-800">
+                <AnimatedCartIcon />
+                {count > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-nude-600 px-1 text-[11px] font-bold text-white">{count > 99 ? '99+' : count}</span>
+                )}
+              </button>
+              <CartPreview isOpen={cartOpen} onClose={() => setCartOpen(false)} />
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={submitSearch} className="relative px-4 pb-3 md:hidden">
+          <Search className="pointer-events-none absolute left-7 top-1/2 h-4 w-4 -translate-y-[70%] text-ink-400" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+            placeholder="Search groceries…"
+            aria-label="Search groceries"
+            className="w-full rounded-full border border-ink-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+        </form>
+      </header>
+
+      {/* Mobile / tablet drawer */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-[70] lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+          <div className="absolute inset-0 bg-ink-900/50 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 flex w-[82%] max-w-xs animate-fade-up flex-col bg-cream-50 p-5 shadow-lift">
+            <div className="mb-6 flex items-center justify-between">
+              <img src="/eazy.PNG" alt="eazyfoods" className="h-9 w-auto" />
+              <button type="button" aria-label="Close menu" onClick={() => setMenuOpen(false)} className="rounded-full p-2 text-ink-500 hover:bg-ink-50"><X className="h-5 w-5" /></button>
+            </div>
+            <button type="button" onClick={() => { setMenuOpen(false); askBot() }} className="btn-primary mb-5 w-full"><Sparkles className="h-4 w-4" /> Ask EazyBot</button>
+            <nav className="flex-1 space-y-1 overflow-y-auto">
+              {[{ name: 'Home', href: '/' }, ...NAV, ...MORE].map((n) => (
+                <NavLink key={n.href} to={n.href} end={n.href === '/'} className={({ isActive }) => `block rounded-xl px-4 py-3 text-base font-semibold ${isActive ? 'bg-primary-100 text-primary-900' : 'text-ink-700 hover:bg-ink-50'}`}>{n.name}</NavLink>
+              ))}
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      <Breadcrumbs />
+
+      <main className="w-full flex-1">{children}</main>
+
+      <Suspense fallback={<div className="min-h-[96px]" aria-hidden="true" />}>
+        <PageBanner placement={placement} defaultContent={driverCta} variant={dealsPage ? 'orange' : 'primary'} size="tall" />
+      </Suspense>
+
+      <footer className="bg-ink-900 pb-16 text-ink-200 md:pb-0">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-4 lg:px-8">
+          <div className="md:col-span-1">
+            <p className="font-display text-2xl font-bold text-white">eazyfoods</p>
+            <p className="mt-3 text-sm leading-relaxed text-ink-300">Authentic African groceries and chef-made meals from local stores and kitchens, delivered to your door.</p>
+          </div>
+          <div>
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">Shop</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link className="hover:text-white" to="/groceries">Groceries</Link></li>
+              <li><Link className="hover:text-white" to="/meals">Meals &amp; plans</Link></li>
+              <li><Link className="hover:text-white" to="/chefs">Chefs</Link></li>
+              <li><Link className="hover:text-white" to="/stores">Local markets</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">Your orders</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link className="hover:text-white" to="/orders">Order history</Link></li>
+              <li><Link className="hover:text-white" to="/profile">Profile &amp; addresses</Link></li>
+              <li><Link className="hover:text-white" to="/become-a-driver">Drive with us</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">Help</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link className="hover:text-white" to="/about">About</Link></li>
+              <li><Link className="hover:text-white" to="/contact">Contact us</Link></li>
+              <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> support@eazyfoods.ca</li>
+            </ul>
+          </div>
+        </div>
+        <div className="border-t border-white/10">
+          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-ink-400 sm:flex-row sm:px-6 lg:px-8">
+            <p>&copy; {new Date().getFullYear()} eazyfoods. All rights reserved.</p>
+            <a href={(import.meta.env.VITE_PORTALS_URL || 'https://portals.eazyfoods.ca').trim()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-primary-300 hover:text-primary-200">
+              <Package className="h-4 w-4" /> For vendors &amp; partners
             </a>
           </div>
-
-          {/* User Section */}
-          {token && (() => {
-            const AvatarIcon = getAvatarIcon(avatarKey)
-            const { bg, text } = getAvatarStyle(avatarKey)
-            return (
-            <div className="p-4 border-t border-primary-200 bg-gradient-to-b from-white to-primary-50">
-              <div className="flex items-center space-x-3 mb-3 p-3 bg-gradient-to-r from-primary-100 to-white rounded-xl shadow-sm">
-                <div className={`h-10 w-10 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 ${bg} ${text}`}>
-                  <AvatarIcon className="h-6 w-6" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
-                    {user?.first_name} {user?.last_name}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                </div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 text-sm text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg"
-                type="button"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
-              </button>
-            </div>
-          )})()}
         </div>
-      </aside>
+      </footer>
 
-      {/* Main Content Wrapper: header fixed at top (non-scrollable), main scrolls below */}
-      <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-x-hidden">
-        {/* Orange strip - fixed so it never scrolls; stays in place */}
-        <header className="flex-shrink-0 z-50 w-full shadow-lg backdrop-blur-sm bg-opacity-95 left-0 right-0 top-0" style={{ backgroundColor: '#ff6b35', position: 'fixed', paddingTop: 'env(safe-area-inset-top, 44px)' }} role="banner">
-          <div className="w-full px-2 sm:px-4 lg:px-8">
-            {/* Mobile Layout - Stacked */}
-            <div className="md:hidden">
-              {/* Top Row: Menu, Search, Cart */}
-              <div className="flex items-center py-1.5 gap-2">
-                {/* Hamburger Menu */}
-                <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="p-2 text-white hover:text-gray-100 transition-colors flex-shrink-0 z-10"
-                  type="button"
-                  aria-label="Toggle menu"
-                >
-                  {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                </button>
-
-                {/* Search Bar - Takes remaining space */}
-                <form onSubmit={handleSearch} className="flex-1 min-w-0 relative">
-                  <div className="relative w-full">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value)
-                        if (location.pathname !== '/groceries') {
-                          navigate('/groceries')
-                        }
-                      }}
-                      onFocus={() => setSearchFocused(true)}
-                      onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-                      onKeyPress={handleSearchKeyPress}
-                      placeholder="Search for groceries..."
-                      className="w-full pl-8 pr-8 py-1.5 border border-white/30 bg-white/90 rounded-lg focus:ring-2 focus:ring-white focus:border-white focus:bg-white text-gray-900 placeholder-gray-500 text-sm"
-                    />
-                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                  </div>
-                  <SearchAutocomplete
-                    query={searchQuery}
-                    onQueryChange={setSearchQuery}
-                    onSelect={(product) => {
-                      if (product) {
-                        navigate(`/products/${product.id}`)
-                      } else {
-                        handleSearch()
-                      }
-                      setSearchFocused(false)
-                    }}
-                    isOpen={searchFocused}
-                    onClose={() => setSearchFocused(false)}
-                  />
-                </form>
-
-                {/* Right Icons */}
-                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                  <button
-                    onClick={() => setShowLocationModal(true)}
-                    className="flex items-center gap-1.5 px-2.5 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all"
-                    type="button"
-                    aria-label="Change location"
-                  >
-                    <MapPin className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
-                    <span className="text-sm font-medium truncate max-w-[60px] sm:max-w-[80px]">{selectedProvince && selectedCity !== 'All' ? `${selectedCity}` : selectedCity || 'All'}</span>
-                  </button>
-                  {token ? (
-                    <>
-                      <div className="relative">
-                        <button
-                          onClick={() => setCartPreviewOpen(!cartPreviewOpen)}
-                          className="p-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all"
-                          type="button"
-                        >
-                          <AnimatedCartIcon />
-                        </button>
-                        <CartPreview
-                          isOpen={cartPreviewOpen}
-                          onClose={() => setCartPreviewOpen(false)}
-                        />
-                      </div>
-                      <div className="relative">
-                        <button
-                          onClick={() => { setProfileDropdownOpen(!profileDropdownOpen); setCartPreviewOpen(false) }}
-                          className="rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 overflow-hidden p-0"
-                          type="button"
-                          aria-label="Profile menu"
-                        >
-                          {(() => {
-                            const AvatarIcon = getAvatarIcon(avatarKey)
-                            const { bg, text } = getAvatarStyle(avatarKey)
-                            return (
-                              <span className={`inline-flex rounded-full w-full h-full items-center justify-center flex-shrink-0 ${bg} ${text}`}>
-                                <AvatarIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-                              </span>
-                            )
-                          })()}
-                        </button>
-                        {profileDropdownOpen && !isDesktop && (
-                          <>
-                            <div className="fixed inset-0 z-40" onClick={() => setProfileDropdownOpen(false)} aria-hidden="true" />
-                            <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden ring-1 ring-black/5">
-                              <div className="p-4 bg-gradient-to-br from-primary-50 to-primary-100/50 border-b border-gray-100">
-                                <p className="text-sm font-semibold text-gray-900 truncate">
-                                  {user?.first_name || user?.email?.split('@')[0] || 'User'}
-                                </p>
-                                <p className="text-xs text-gray-500 truncate mt-0.5">{user?.email}</p>
-                              </div>
-                              <Link
-                                to="/profile"
-                                onClick={() => setProfileDropdownOpen(false)}
-                                className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary-50/50 font-medium transition-colors"
-                              >
-                                <User className="h-4 w-4 text-primary-600 flex-shrink-0" />
-                                Profile
-                              </Link>
-                              <button
-                                onClick={() => { handleLogout(); setProfileDropdownOpen(false) }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-red-50 font-medium transition-colors border-t border-gray-100"
-                                type="button"
-                              >
-                                <LogOut className="h-4 w-4 text-red-500 flex-shrink-0" />
-                                Log out
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="relative">
-                        <button
-                          onClick={() => setCartPreviewOpen(!cartPreviewOpen)}
-                          className="p-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all"
-                          type="button"
-                        >
-                          <AnimatedCartIcon />
-                        </button>
-                        <CartPreview
-                          isOpen={cartPreviewOpen}
-                          onClose={() => setCartPreviewOpen(false)}
-                        />
-                      </div>
-                      <Link
-                        to="/login"
-                        className="px-3 py-2 text-sm font-medium text-white hover:bg-white/25 rounded-full transition-all"
-                      >
-                        Login
-                      </Link>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Desktop Layout */}
-            <div className="hidden md:flex items-center py-1.5 gap-4">
-              {/* Hamburger Menu - Left */}
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 text-white hover:text-gray-100 transition-colors flex-shrink-0"
-                type="button"
-                aria-label="Toggle menu"
-              >
-                {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
-
-              {/* Search Bar - Centered */}
-              <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-4 relative">
-                <div className="relative w-full">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value)
-                      if (location.pathname !== '/groceries') {
-                        navigate('/groceries')
-                      }
-                    }}
-                    onFocus={() => setSearchFocused(true)}
-                    onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-                    onKeyPress={handleSearchKeyPress}
-                    placeholder="Search for products..."
-                    className="w-full pl-10 pr-20 py-2 border border-white/30 bg-white/90 rounded-lg focus:ring-2 focus:ring-white focus:border-white focus:bg-white text-gray-900 placeholder-gray-500"
-                  />
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
-                  <button
-                    type="submit"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary-600 hover:text-primary-700 font-medium text-sm px-2 py-1"
-                  >
-                    Search
-                  </button>
-                </div>
-                <SearchAutocomplete
-                  query={searchQuery}
-                  onQueryChange={setSearchQuery}
-                  onSelect={(product) => {
-                    if (product) {
-                      navigate(`/products/${product.id}`)
-                    } else {
-                      handleSearch()
-                    }
-                    setSearchFocused(false)
-                  }}
-                  isOpen={searchFocused}
-                  onClose={() => setSearchFocused(false)}
-                />
-              </form>
-
-              {/* Right Menu - Location, Cart, User */}
-              <div className="flex items-center gap-3 flex-shrink-0 ml-auto">
-                {/* Location Selector */}
-                <button
-                  onClick={() => setShowLocationModal(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all min-w-0"
-                  type="button"
-                >
-                  <MapPin className="h-5 w-5 flex-shrink-0" />
-                  <span className="text-sm font-medium truncate max-w-[90px]">{selectedProvince && selectedCity !== 'All' ? `${selectedCity}, ${selectedProvince}` : selectedCity || 'All'}</span>
-                  <span className="text-sm font-medium underline decoration-white/70 underline-offset-2">Change</span>
-                </button>
-
-                {token ? (
-                  <>
-                    <div className="relative">
-                      <button
-                        onClick={() => setCartPreviewOpen(!cartPreviewOpen)}
-                        className="p-3 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex-shrink-0"
-                        type="button"
-                      >
-                        <AnimatedCartIcon />
-                      </button>
-                      <CartPreview
-                        isOpen={cartPreviewOpen}
-                        onClose={() => setCartPreviewOpen(false)}
-                      />
-                    </div>
-                    <div className="relative flex-shrink-0 flex items-center">
-                      <button
-                        ref={profileButtonRef}
-                        onClick={() => {
-                          if (!profileDropdownOpen && profileButtonRef.current) {
-                            const rect = profileButtonRef.current.getBoundingClientRect()
-                            setProfileDropdownPosition({ top: rect.bottom + 6, right: window.innerWidth - rect.right })
-                          }
-                          setProfileDropdownOpen(!profileDropdownOpen)
-                          setCartPreviewOpen(false)
-                        }}
-                        className="rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex items-center justify-center gap-2 min-h-0 h-9 w-9 sm:h-10 sm:w-10 lg:w-auto lg:min-w-0 lg:pl-2 lg:pr-3 lg:py-2 overflow-hidden p-0 lg:p-2"
-                        type="button"
-                        aria-label="Profile menu"
-                      >
-                        {(() => {
-                          const AvatarIcon = getAvatarIcon(avatarKey)
-                          const { bg, text } = getAvatarStyle(avatarKey)
-                          return (
-                            <span className={`inline-flex rounded-full h-9 w-9 sm:h-10 sm:w-10 lg:h-8 lg:w-8 items-center justify-center flex-shrink-0 ${bg} ${text}`}>
-                              <AvatarIcon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-4 lg:w-4" />
-                            </span>
-                          )
-                        })()}
-                        <span className="hidden lg:inline text-sm font-medium truncate max-w-[120px]">
-                          Hello, {user?.first_name || user?.email?.split('@')[0] || 'User'}
-                        </span>
-                      </button>
-                      {profileDropdownOpen && isDesktop && (
-                        <>
-                          <div className="fixed inset-0 z-[9998]" onClick={() => setProfileDropdownOpen(false)} aria-hidden="true" />
-                          {createPortal(
-                            <div
-                              ref={profileDropdownRef}
-                              className="fixed w-64 bg-white rounded-2xl shadow-xl border border-gray-100 z-[9999] overflow-hidden ring-1 ring-black/5"
-                              style={{ top: profileDropdownPosition.top, right: profileDropdownPosition.right, left: 'auto' }}
-                            >
-                              <div className="p-4 bg-gradient-to-br from-primary-50 to-primary-100/50 border-b border-gray-100">
-                                <p className="text-sm font-semibold text-gray-900 truncate">
-                                  {user?.first_name || user?.email?.split('@')[0] || 'User'}
-                                </p>
-                                <p className="text-xs text-gray-500 truncate mt-0.5">{user?.email}</p>
-                              </div>
-                              <Link
-                                to="/profile"
-                                onClick={() => setProfileDropdownOpen(false)}
-                                className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary-50/50 font-medium transition-colors"
-                              >
-                                <User className="h-4 w-4 text-primary-600 flex-shrink-0" />
-                                Profile
-                              </Link>
-                              <button
-                                onClick={() => { handleLogout(); setProfileDropdownOpen(false) }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-red-50 font-medium transition-colors border-t border-gray-100"
-                                type="button"
-                              >
-                                <LogOut className="h-4 w-4 text-red-500 flex-shrink-0" />
-                                Log out
-                              </button>
-                            </div>,
-                            document.body
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="relative">
-                      <button
-                        onClick={() => setCartPreviewOpen(!cartPreviewOpen)}
-                        className="p-3 rounded-full bg-white/15 hover:bg-white/25 text-white transition-all flex-shrink-0"
-                        type="button"
-                      >
-                        <AnimatedCartIcon />
-                      </button>
-                      <CartPreview
-                        isOpen={cartPreviewOpen}
-                        onClose={() => setCartPreviewOpen(false)}
-                      />
-                    </div>
-                    <Link
-                      to="/login"
-                      className="px-4 py-2.5 text-sm font-medium text-white hover:bg-white/25 rounded-full transition-all"
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      to="/signup"
-                      className="px-4 py-2.5 text-sm font-medium bg-white text-primary-600 rounded-full hover:bg-gray-100 transition-all shadow-sm"
-                    >
-                      Sign Up
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <div className="md:hidden border-t border-gray-200">
-              <div className="px-4 py-4 space-y-4">
-                <form onSubmit={handleSearch}>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={handleSearchKeyPress}
-                    placeholder="Search for products..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  />
-                </form>
-                {token && (
-                  <div className="space-y-2">
-                    <Link
-                      to="/cart"
-                      className="block px-4 py-2 text-gray-700 hover:bg-nude-100 rounded-lg"
-                    >
-                      Cart ({getCartItemCount()})
-                    </Link>
-                    <Link
-                      to="/orders"
-                      className="block px-4 py-2 text-gray-700 hover:bg-nude-100 rounded-lg"
-                    >
-                      Orders
-                    </Link>
-                    <Link
-                      to="/profile"
-                      className="block px-4 py-2 text-gray-700 hover:bg-nude-100 rounded-lg"
-                    >
-                      Profile
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </header>
-
-        {/* Spacer so content starts below the fixed header */}
-        <div className="flex-shrink-0 h-14 min-h-[3.5rem]" style={{ paddingTop: 'env(safe-area-inset-top, 44px)' }} aria-hidden="true" />
-
-        {/* Breadcrumbs */}
-        <Breadcrumbs />
-
-        {/* Main Content - scrollable below fixed orange header */}
-        <main className="flex-1 w-full min-h-0 overflow-y-auto">{children}</main>
-
-        {/* Bottom Banner - Shows ads when available, else Driver Signup default */}
-        {(() => {
-          const pathToPlacement = {
-            '/': 'home_bottom_banner',
-            '/groceries': 'products_bottom_banner',
-            '/stores': 'stores_bottom_banner',
-            '/chefs': 'chefs_bottom_banner',
-            '/cart': 'cart_bottom_banner',
-            '/orders': 'orders_bottom_banner',
-            '/profile': 'profile_bottom_banner',
-            '/about': 'about_bottom_banner',
-            '/contact': 'contact_bottom_banner',
-            '/meals': 'meals_bottom_banner',
-            '/top-market-deals': 'top_market_deals_bottom_banner',
-            '/top-chef-deals': 'top_chef_deals_bottom_banner',
-            '/checkout': 'checkout_bottom_banner'
-          }
-          const placement = pathToPlacement[location.pathname] || (location.pathname.startsWith('/products') ? 'products_bottom_banner' : 'home_bottom_banner')
-          const isDealsPage = location.pathname === '/top-chef-deals' || location.pathname === '/top-market-deals'
-          const bottomBannerVariant = isDealsPage ? 'orange' : 'primary'
-          const driverSignupContent = (
-            <div className="relative max-w-7xl mx-auto w-full py-4 sm:py-5 px-2 sm:px-4">
-              <div className="flex flex-col lg:flex-row items-center justify-between gap-3 sm:gap-4 lg:gap-8">
-                <div className="flex-1 text-center lg:text-left w-full min-w-0">
-                  <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-2 sm:gap-3">
-                    <div className="relative flex-shrink-0">
-                      <div className="absolute inset-0 bg-white/20 rounded-full blur-xl" />
-                      <div className="relative w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20">
-                        <Truck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 text-white" />
-                      </div>
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-base sm:text-xl lg:text-3xl font-bold mb-0.5 sm:mb-1">Drive with eazyfoods</h3>
-                      <p className="text-xs sm:text-sm lg:text-base text-white/90">Deliver groceries and meals — set your own hours</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-3 lg:gap-6 mt-2 sm:mt-3 lg:mt-4">
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 flex-shrink-0">
-                        <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
-                      </div>
-                      <span className="font-medium whitespace-nowrap">Earn per delivery</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 flex-shrink-0">
-                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
-                      </div>
-                      <span className="font-medium whitespace-nowrap">Your schedule</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 flex-shrink-0">
-                        <Zap className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
-                      </div>
-                      <span className="font-medium whitespace-nowrap">Start in minutes</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex-shrink-0 mt-2 sm:mt-0">
-                  <a
-                    href={(import.meta.env.VITE_DRIVER_SIGNUP_URL || import.meta.env.VITE_PORTAL_DELIVERY_URL || 'https://delivery.eazyfoods.ca').trim()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group relative inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 lg:py-4 bg-white text-primary-600 rounded-xl font-bold text-sm sm:text-base lg:text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                    <span className="relative z-10">Apply to drive</span>
-                    <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 relative z-10 transform group-hover:translate-x-1 transition-transform" />
-                  </a>
-                </div>
-              </div>
-            </div>
-          )
-          return (
-            <Suspense fallback={<div className="min-h-[120px] bg-primary-900/30" aria-hidden="true" />}>
-              <PageBanner
-                placement={placement}
-                defaultContent={driverSignupContent}
-                variant={bottomBannerVariant}
-                size="tall"
-              />
-            </Suspense>
-          )
-        })()}
-
-        {/* Footer */}
-        <footer className="bg-gray-900 text-white mt-12">
-          <div className="w-full px-4 sm:px-6 lg:px-8 py-12">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div>
-                <h3 className="text-xl font-bold mb-4 text-primary-600">eazyfoods</h3>
-                <p className="text-gray-400">
-                  Your trusted source for authentic African groceries
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-4">Shop</h4>
-                <ul className="space-y-2 text-gray-400">
-                  <li><Link to="/groceries" className="hover:text-white">All Groceries</Link></li>
-                  <li><Link to="/groceries?featured=true" className="hover:text-white">Featured</Link></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-4">Account</h4>
-                <ul className="space-y-2 text-gray-400">
-                  {token ? (
-                    <>
-                      <li><Link to="/orders" className="hover:text-white">Orders</Link></li>
-                      <li><Link to="/profile" className="hover:text-white">Profile</Link></li>
-                    </>
-                  ) : (
-                    <>
-                      <li><Link to="/login" className="hover:text-white">Login</Link></li>
-                      <li><Link to="/signup" className="hover:text-white">Sign Up</Link></li>
-                    </>
-                  )}
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-4">Contact</h4>
-                <ul className="space-y-2 text-gray-400">
-                  <li>support@eazyfoods.ca</li>
-                  <li>1-800-EAZYFOOD</li>
-                </ul>
-              </div>
-            </div>
-            <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-gray-400 text-sm">
-              <p>&copy; 2024 eazyfoods. All rights reserved.</p>
-              <a
-                href={(import.meta.env.VITE_PORTALS_URL || 'https://portals.eazyfoods.ca').trim()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-500 hover:text-primary-400 transition-colors underline"
-              >
-                For vendors & partners – Portals
-              </a>
-            </div>
-          </div>
-        </footer>
-
-        {/* Location Selection Modal - Province then City (dropdown popups) */}
-        {showLocationModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => { setShowLocationModal(false); setLocationProvOpen(false); setLocationCityOpen(false) }}>
-            <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-              <h2 className="text-lg font-bold mb-3">Select location</h2>
-              <p className="text-xs text-gray-500 mb-4">Choose province, then city.</p>
-              <div className="space-y-3">
-                <div className="relative">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Province</label>
-                  <button
-                    type="button"
-                    onClick={() => { setLocationCityOpen(false); setLocationProvOpen(!locationProvOpen) }}
-                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg border-2 border-gray-200 hover:border-primary-300 text-left text-sm"
-                  >
-                    <span>{selectedProvince || 'Select province'}</span>
-                    <span className="text-gray-400">{locationProvOpen ? '▲' : '▼'}</span>
-                  </button>
-                  {locationProvOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border-2 border-gray-200 bg-white shadow-lg z-10">
-                      <button type="button" onClick={() => { updateProvince(''); updateCity('All'); setLocationProvOpen(false); setShowLocationModal(false); window.location.reload() }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-primary-50 border-b border-gray-100">All Canada</button>
-                      {CANADA_PROVINCES.map((prov) => (
-                        <button key={prov} type="button" onClick={() => { updateProvince(prov); setLocationProvOpen(false) }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-primary-50 border-b border-gray-100 last:border-0">{prov}</button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {selectedProvince && (
-                  <div className="relative">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">City</label>
-                    <button
-                      type="button"
-                      onClick={() => { setLocationProvOpen(false); setLocationCityOpen(!locationCityOpen) }}
-                      className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg border-2 border-gray-200 hover:border-primary-300 text-left text-sm"
-                    >
-                      <span>{selectedCity || 'Select city'}</span>
-                      <span className="text-gray-400">{locationCityOpen ? '▲' : '▼'}</span>
-                    </button>
-                    {locationCityOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border-2 border-gray-200 bg-white shadow-lg z-10">
-                        <button type="button" onClick={() => { updateCity('All'); setLocationCityOpen(false); setShowLocationModal(false); window.location.reload() }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-primary-50 border-b border-gray-100">All cities</button>
-                        {getCitiesForProvince(selectedProvince).map((city) => (
-                          <button key={city} type="button" onClick={() => { updateCity(city); updateAddress({ address: `${city}, ${selectedProvince}` }, { lat: 0, lng: 0 }); setLocationCityOpen(false); setShowLocationModal(false); window.location.reload() }} className="w-full text-left px-4 py-2.5 text-sm hover:bg-primary-50 border-b border-gray-100 last:border-0">{city}</button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="flex justify-end pt-4 mt-4 border-t border-gray-100">
-                <button type="button" onClick={() => { setShowLocationModal(false); setLocationProvOpen(false); setLocationCityOpen(false) }} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Cancel</button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      <LocationPicker open={locationOpen} onClose={() => setLocationOpen(false)} />
     </div>
   )
 }
 
 export default Layout
-

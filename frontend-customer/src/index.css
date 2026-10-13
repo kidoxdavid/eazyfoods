@@ -84,7 +84,7 @@ html {
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-cream-100 text-ink-900 antialiased font-sans;
   }
   
   body.modal-open {
@@ -95,29 +95,28 @@ html {
 
 @layer components {
   .btn-primary {
-    @apply bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors;
+    @apply inline-flex items-center justify-center gap-2 bg-primary-700 text-white px-6 py-3 rounded-xl font-semibold shadow-soft hover:bg-primary-800 active:scale-[.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed;
   }
-  
   .btn-secondary {
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem;
-    font-weight: 500;
-    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms;
-    background-color: #ffcc80; /* nude-200 - vibrant orange */
-    color: #111827; /* gray-900 */
+    @apply inline-flex items-center justify-center gap-2 bg-white text-ink-800 px-6 py-3 rounded-xl font-semibold border border-ink-200 hover:border-ink-400 hover:bg-cream-50 active:scale-[.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 transition;
   }
-  .btn-secondary:hover {
-    background-color: #ffb84d; /* nude-300 - vibrant orange */
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2 bg-nude-600 text-white px-6 py-3 rounded-xl font-semibold shadow-soft hover:bg-nude-700 active:scale-[.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-nude-500 focus-visible:ring-offset-2 transition;
   }
-  
   .card {
-    @apply bg-white rounded-lg shadow-md border border-gray-200 p-6;
+    @apply bg-white rounded-2xl shadow-soft border border-ink-100 p-6;
   }
-  
   .input {
-    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-4 py-3 bg-white border border-ink-200 rounded-xl placeholder:text-ink-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-ink-200 bg-white px-4 py-2 text-sm font-medium text-ink-700 hover:border-primary-600 hover:text-primary-800 transition;
+  }
+  .section-title {
+    @apply font-display text-2xl sm:text-3xl font-bold tracking-tight text-ink-900;
+  }
+  .skeleton {
+    @apply relative overflow-hidden rounded-xl bg-ink-100 before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent;
   }
   
   .scrollbar-hide {

@@ -5,7 +5,6 @@ import { useCart } from '../contexts/CartContext'
 import api from '../services/api'
 import { User, Mail, Phone, MapPin, Edit, Plus, Trash2, Package, CreditCard, Settings, Eye, EyeOff, Sparkles, TrendingUp, Users as UsersIcon } from 'lucide-react'
 import { AVATAR_ICONS, AVATAR_ICON_KEY, getAvatarStorageKey, getAvatarIcon, getAvatarStyle } from '../constants/avatarIcons'
-import PrivateRoute from '../components/PrivateRoute'
 import PageBanner from '../components/PageBanner'
 import { PageSkeleton } from '../components/SkeletonLoader'
 import { Link } from 'react-router-dom'
@@ -153,14 +152,14 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <PrivateRoute>
+      
         <PageSkeleton />
-      </PrivateRoute>
+      
     )
   }
 
   return (
-    <PrivateRoute>
+    
       <div className="w-full">
         {/* Banner Header with Ad Support */}
         <PageBanner
@@ -731,7 +730,7 @@ const Profile = () => {
         </div>
         </div>
       </div>
-    </PrivateRoute>
+    
   )
 }
 

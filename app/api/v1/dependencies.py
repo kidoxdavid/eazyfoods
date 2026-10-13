@@ -7,6 +7,7 @@ instead of decoding a JWT they resolve "who is acting" like this:
 
 1. If the request carries an ``X-<Role>-Id`` header (X-Customer-Id, X-Vendor-Id,
    X-Chef-Id, X-Driver-Id, X-Admin-Id) with a valid UUID of an existing row, act as that row.
+   A new X-Customer-Id is auto-provisioned as its own guest customer (one per browser/device).
 2. Otherwise act as the default row for the role: the oldest active one. Customers and
    admins are auto-provisioned (a guest customer / a system admin) so a fresh database works.
    Vendors, chefs and drivers must exist already (seed them or sign them up via the
@@ -19,6 +20,7 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import Depends, Header, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -56,6 +58,23 @@ def _resolve_customer(db: Session, header_id: Optional[str]) -> Customer:
         found = db.query(Customer).filter(Customer.id == customer_id).first()
         if found:
             return found
+        # Each browser/device sends its own generated id, so give it its own guest customer
+        # (private cart, orders, addresses) instead of sharing one global guest.
+        device_guest = Customer(
+            id=customer_id,
+            email=f"guest-{customer_id}@eazyfoods.local",
+            first_name="Guest",
+            last_name="Shopper",
+            is_email_verified=True,
+        )
+        db.add(device_guest)
+        try:
+            db.commit()
+        except IntegrityError:  # a parallel request from the same device created it first
+            db.rollback()
+            return db.query(Customer).filter(Customer.id == customer_id).one()
+        db.refresh(device_guest)
+        return device_guest
     guest = db.query(Customer).filter(Customer.email == GUEST_EMAIL).first()
     if guest:
         return guest

@@ -38,11 +38,6 @@ const ContactUs = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!token) {
-      setMessage({ type: 'error', text: 'Please login to send a message' })
-      setTimeout(() => navigate('/login'), 2000)
-      return
-    }
     if (!formData.subject.trim() || !formData.message.trim()) {
       setMessage({ type: 'error', text: 'Please fill in all required fields' })
       return
@@ -119,19 +114,6 @@ const ContactUs = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Main Form */}
         <div className="lg:col-span-2 space-y-4">
-          {!token && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <div className="flex items-center">
-                <AlertCircle className="h-4 w-4 text-yellow-600 mr-2 flex-shrink-0" />
-                <div>
-                  <p className="text-xs font-medium text-yellow-900">Login Required</p>
-                  <p className="text-xs text-yellow-700">
-                    Please <button onClick={() => navigate('/login')} className="underline font-medium">login</button> to send us a message.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
           {message.text && (
             <div className={`p-3 rounded-lg flex items-start ${

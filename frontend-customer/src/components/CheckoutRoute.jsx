@@ -1,79 +1,39 @@
 import { useState, useEffect } from 'react'
-import { Navigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
-import api from '../services/api'
 
-const checkoutFallback = (
-  <div className="flex items-center justify-center min-h-[40vh]">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
+const fallback = (
+  <div className="flex min-h-[40vh] items-center justify-center">
+    <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primary-600" />
   </div>
 )
 
 /**
- * Allows access to checkout when:
- * - User is logged in, or
- * - allow_guest_checkout is true in admin customer settings.
+ * Loads the checkout page. Guest checkout is always allowed (there is no sign-in).
  *
- * Load Checkout via import() in useEffect (not React.lazy) so the chunk is evaluated
- * after mount and avoids "Cannot access 'Tt' before initialization" in the bundle.
+ * Checkout is loaded via import() in an effect (not React.lazy) so the chunk is evaluated
+ * after mount; this avoids a "Cannot access 'Tt' before initialization" error in the bundle.
  */
 const CheckoutRoute = () => {
-  const { token, loading: authLoading } = useAuth()
-  const [config, setConfig] = useState({ allow_guest_checkout: false })
-  const [configLoading, setConfigLoading] = useState(true)
-  const [CheckoutComponent, setCheckoutComponent] = useState(null)
-  const [checkoutLoadError, setCheckoutLoadError] = useState(null)
+  const [Checkout, setCheckout] = useState(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    api.get('/customer/config').then((r) => setConfig(r.data || {})).catch(() => {}).finally(() => setConfigLoading(false))
-  }, [])
-
-  const hasToken = token || localStorage.getItem('token')
-  const shouldShowCheckout = hasToken || config.allow_guest_checkout
-
-  useEffect(() => {
-    if (!shouldShowCheckout || CheckoutComponent || checkoutLoadError) return
+    if (Checkout || error) return
     let cancelled = false
     import('../pages/CheckoutPage')
-      .then((m) => {
-        if (!cancelled) setCheckoutComponent(() => m.default)
-      })
-      .catch((err) => {
-        if (!cancelled) setCheckoutLoadError(err)
-      })
+      .then((m) => { if (!cancelled) setCheckout(() => m.default) })
+      .catch((err) => { if (!cancelled) setError(err) })
     return () => { cancelled = true }
-  }, [shouldShowCheckout, CheckoutComponent, checkoutLoadError])
+  }, [Checkout, error])
 
-  if (authLoading || configLoading) {
-    return checkoutFallback
-  }
-
-  if (!shouldShowCheckout) {
-    return <Navigate to="/login" replace />
-  }
-
-  if (checkoutLoadError) {
+  if (error) {
     return (
-      <div className="min-h-[40vh] flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-red-600 mb-2">Could not load checkout.</p>
-          <button
-            type="button"
-            onClick={() => { setCheckoutLoadError(null); setCheckoutComponent(null) }}
-            className="text-sm text-primary-600 hover:underline"
-          >
-            Try again
-          </button>
-        </div>
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 p-4 text-center">
+        <p className="text-red-600">Could not load checkout.</p>
+        <button type="button" className="btn-secondary" onClick={() => { setError(null); setCheckout(null) }}>Try again</button>
       </div>
     )
   }
-
-  if (!CheckoutComponent) {
-    return checkoutFallback
-  }
-
-  return <CheckoutComponent />
+  return Checkout ? <Checkout /> : fallback
 }
 
 export default CheckoutRoute
