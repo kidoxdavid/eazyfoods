@@ -14,12 +14,13 @@ from app.api.v1.endpoints import (
     restore_backup, marketing, marketing_extended, marketing_admin, marketing_recipes, marketing_coupons,
     customer_coupons, barcode, payments_helcim,
     customer_chat_messages, vendor_chat, driver_chat, admin_chat,
-    ai_features,
+    ai_features, identities,
 )
 
 api_router = APIRouter()
 
 # Include endpoint routers
+api_router.include_router(identities.router, prefix="/identities", tags=["Identities (login-free mode)"])
 api_router.include_router(auth.router, prefix="/auth", tags=["Vendor Onboarding"])
 api_router.include_router(vendors.router, prefix="/vendors", tags=["Vendors"])
 api_router.include_router(stripe_connect.router, prefix="/vendors/me/stripe-connect", tags=["Vendor Stripe Connect"])

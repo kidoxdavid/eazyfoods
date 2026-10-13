@@ -29,13 +29,10 @@ async def get_support_messages(
     )
     
     # Try to filter by chef_id if the column exists
-    try:
-        chef_id = UUID(current_chef["chef_id"])
-        # Check if chef_id column exists (it might not be in the model yet)
-        if hasattr(SupportMessage, 'chef_id'):
-            query = query.filter(SupportMessage.chef_id == chef_id)
-    except:
-        pass
+    # Scope to this chef (when the model has the column). A malformed id raises instead of
+    # silently returning every chef's messages.
+    if hasattr(SupportMessage, 'chef_id'):
+        query = query.filter(SupportMessage.chef_id == UUID(current_chef["chef_id"]))
     
     if status_filter:
         query = query.filter(SupportMessage.status == status_filter)

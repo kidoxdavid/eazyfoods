@@ -1,5 +1,6 @@
 """
-Seed a small demo catalogue so the storefront has something to show.
+Seed demo data so every app has something to show: a vendor with a store and products, a chef, a driver,
+categories and recipes. (The admin identity is created automatically on first use.)
 
     python scripts/seed_demo.py
 
@@ -17,6 +18,7 @@ from app.models.vendor import Vendor, VendorUser  # noqa: E402
 from app.models.store import Store  # noqa: E402
 from app.models.product import Product, Category  # noqa: E402
 from app.models.chef import Chef  # noqa: E402
+from app.models.driver import Driver  # noqa: E402
 from app.models.recipe import Recipe  # noqa: E402
 
 CATEGORIES = ["Grains & Flours", "Spices & Seasoning", "Oils & Sauces", "Fresh Produce", "Frozen & Fish", "Snacks & Drinks"]
@@ -93,6 +95,13 @@ def main() -> None:
                 email="demo.chef@eazyfoods.local", phone="4165550102", first_name="Adaeze", last_name="Eze", chef_name="Chef Adaeze",
                 bio="Nigerian home cooking, made to order.", street_address="45 King St E", city="Toronto", state="Ontario",
                 postal_code="M5C 1E9", cuisines=["Nigerian", "West African"], verification_status="verified", is_active=True,
+            ))
+
+        if not db.query(Driver).filter(Driver.email == "demo.driver@eazyfoods.local").first():
+            db.add(Driver(
+                email="demo.driver@eazyfoods.local", phone="4165550103", first_name="Tayo", last_name="Bright",
+                street_address="12 Wheel Ave", city="Toronto", state="Ontario", postal_code="M4B 1B3",
+                vehicle_type="car", verification_status="verified", is_active=True, is_available=True,
             ))
 
         for name, meal, prep, cook, serves in RECIPES:

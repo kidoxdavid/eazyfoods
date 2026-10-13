@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ActingAs from './ActingAs'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
@@ -124,6 +125,7 @@ const Layout = ({ children }) => {
 
           {/* User section */}
           <div className="p-3 sm:p-4 border-t border-gray-200 bg-gray-50">
+            <ActingAs role="vendor" label="Default vendor" />
             <div className="flex items-center px-3 sm:px-4 py-2 mb-2">
               <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary-100 flex items-center justify-center">
                 <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary-600" />

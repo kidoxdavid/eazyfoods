@@ -31,7 +31,14 @@ Authentication has been removed on purpose, for now. How it works:
 - **Customers:** each browser/device generates a UUID and sends it as `X-Customer-Id`. The API creates a private guest
   customer for it on first use, so every device has its own cart, orders and addresses. Orders therefore live with the
   device; clearing browser storage loses access to them.
+- **Contact details:** checkout always asks for first name, last name, email and phone. The API saves them onto
+  the device's customer, so the store, chef and driver can see who the order is for. They are remembered on the device.
+  The device cart, favourites and saved-for-later live in browser storage (one set per device).
 - **Admin:** a `system@eazyfoods.local` super-admin is created on first use. Its password hash is unusable.
+- **Portals choose who they act as:** vendor, chef and driver portals show an "Acting as" selector (fed by
+  `GET /api/v1/identities/{vendor|chef|driver}`) when more than one account exists. The choice is stored in the
+  browser (`acting_as`) and sent as `X-Vendor-Id` / `X-Chef-Id` / `X-Driver-Id`. Pending drivers (inactive until
+  an admin approves them) cannot be acted as.
 - **Partners:** vendor/chef/driver *signup* endpoints still exist as onboarding. Without any vendor/chef/driver
   row, their portals return a 404 explaining that none exists yet.
 - Removed: all login, Google sign-in, forgot/reset-password, email verification, customer and admin signup routes.
@@ -50,7 +57,14 @@ reimplement the resolvers in `dependencies.py` to verify a token and nothing els
   `ink` neutrals, `cream` backgrounds, Fraunces display + Inter) with shared classes in `src/index.css`
   (`btn-primary`, `btn-secondary`, `btn-accent`, `card`, `input`, `chip`, `section-title`, `skeleton`).
 
+## Payments
+
+Card payments use Stripe (or Helcim). When an admin sets `payments_suspended` in the payment settings, checkout
+places the order as cash / pay-on-delivery, which is also the easiest way to test the whole flow locally.
+Known gap: the checkout endpoint trusts a client-supplied payment id (it does not verify it with Stripe/Helcim yet).
+
 ## Database
 
 Schema changes go through Alembic (`alembic revision --autogenerate -m "..."`, then review). The `customer_carts` table
-that used to be created by raw SQL at request time is now a model.
+that used to be created by raw SQL at request time is now a model, and is also created at startup if missing
+(databases adopted with `alembic stamp head` may never have had it).

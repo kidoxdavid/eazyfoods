@@ -87,7 +87,7 @@ def _get_platform_delivery_fee(db: Session) -> Decimal:
             try:
                 return Decimal(str(fee))
             except Exception:
-                pass
+                logger.warning("Ignoring invalid delivery_fee setting %r; using the default", fee)
     return Decimal("5.00")
 
 

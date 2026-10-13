@@ -15,7 +15,7 @@ marketing run the platform. An AI assistant (EazyBot) turns "what's for dinner?"
 | `app/` | FastAPI backend (SQLAlchemy 2, Postgres). Endpoints are under `app/api/v1/endpoints/`, grouped by role. |
 | `alembic/` | Database migrations. The baseline is generated from the models. |
 | `tests/` | pytest suite (needs a Postgres database). |
-| `scripts/seed_demo.py` | Seeds a small demo catalogue (store, products, chef, recipes). |
+| `scripts/seed_demo.py` | Seeds demo data: vendor, store, products, chef, driver, recipes. |
 | `scripts/legacy/`, `db/legacy-sql/` | The old ad-hoc migration/setup scripts and SQL. Kept for reference; not maintained. |
 | `frontend-customer/` | Customer web storefront (React 19, Vite, Tailwind) with an Android wrapper (Capacitor). |
 | `frontend-app/` | Mobile app (React, Vite, Capacitor), including the EazyBot assistant screen. |
@@ -46,7 +46,11 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1 npm run dev   # http://localhost:
 
 Dev ports: customer 3003, admin 3002, vendor 3000. Each portal has its own `package.json`.
 
-### Tests
+### Tests and CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs pytest against Postgres, checks that `alembic upgrade head` applies
+and matches the models, and builds all eight frontends.
+
 
 ```bash
 TEST_DATABASE_URL=postgresql://postgres:<pw>@localhost:5432/easyfoods_test pytest

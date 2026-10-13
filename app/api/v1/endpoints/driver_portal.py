@@ -1,6 +1,7 @@
 """
 Driver portal endpoints
 """
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
@@ -19,6 +20,7 @@ from app.schemas.driver import (
 from uuid import UUID
 from decimal import Decimal
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -372,7 +374,7 @@ async def get_available_orders(
             try:
                 driver_pct = Decimal(str(val))
             except Exception:
-                pass
+                logger.warning("Ignoring invalid driver_earnings_percent %r; using the default", val)
     result = []
     for order in orders:
         delivery_address = None
@@ -476,7 +478,7 @@ def _do_accept_delivery(order_id: str, body: Optional[dict], current_driver: dic
                 pickup_lat = v.latitude
                 pickup_lon = v.longitude
     except Exception:
-        pass
+        logger.warning("Could not read vendor pickup coordinates for order %s", getattr(order, "id", None), exc_info=True)
 
     shipping = order.shipping_amount if order.shipping_amount is not None else Decimal("0")
     delivery_fee_val = float(shipping)
@@ -490,7 +492,7 @@ def _do_accept_delivery(order_id: str, body: Optional[dict], current_driver: dic
             try:
                 driver_pct = Decimal(str(val))
             except Exception:
-                pass
+                logger.warning("Ignoring invalid driver_earnings_percent %r; using the default", val)
     driver_earnings_val = float(shipping * (driver_pct / Decimal("100")))
 
     # Safe delivery lat/lon from address

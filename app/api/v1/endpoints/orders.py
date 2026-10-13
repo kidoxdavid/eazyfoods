@@ -1,6 +1,7 @@
 """
 Order management endpoints
 """
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_
@@ -15,6 +16,7 @@ from app.models.driver import Delivery
 from app.schemas.order import OrderResponse, OrderUpdate, OrderListResponse
 from app.api.v1.dependencies import get_current_vendor
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -145,7 +147,9 @@ async def get_orders(
             for d in db.query(Delivery).filter(Delivery.order_id.in_(order_ids)).all():
                 deliveries_by_order[d.order_id] = d
     except Exception:
-        pass
+        # A failed query leaves the Postgres transaction aborted; reset it so later queries still work.
+        logger.exception("Could not load deliveries for the order list")
+        db.rollback()
 
     orders_list = []
     for order in orders:

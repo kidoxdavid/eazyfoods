@@ -62,6 +62,11 @@ if (token) {
 
 // Request interceptor: FormData must not have Content-Type set (browser sets multipart/form-data with boundary)
 api.interceptors.request.use((config) => {
+  // Login-free mode: the portal's chosen account (see components/ActingAs.jsx)
+  try {
+    const actingAs = localStorage.getItem('acting_as')
+    if (actingAs) config.headers['X-Vendor-Id'] = actingAs
+  } catch { /* storage unavailable */ }
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type']
   }

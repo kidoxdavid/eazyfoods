@@ -17,6 +17,11 @@ const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
+  // Login-free mode: the portal's chosen account (see components/ActingAs.jsx)
+  try {
+    const actingAs = localStorage.getItem('acting_as')
+    if (actingAs) config.headers['X-Driver-Id'] = actingAs
+  } catch { /* storage unavailable */ }
   const token = localStorage.getItem('driver_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`

@@ -45,6 +45,11 @@ const api = axios.create({
 
 // Add token to requests if available
 api.interceptors.request.use((config) => {
+  // Login-free mode: the portal's chosen account (see components/ActingAs.jsx)
+  try {
+    const actingAs = localStorage.getItem('acting_as')
+    if (actingAs) config.headers['X-Chef-Id'] = actingAs
+  } catch { /* storage unavailable */ }
   const token = localStorage.getItem('token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`

@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: pw
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:pw@localhost:5432/easyfoods_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt pytest
+      - name: Tests
+        run: pytest -q
+      - name: Migrations apply cleanly and match the models
+        env:
+          DATABASE_URL: postgresql://postgres:pw@localhost:5432/easyfoods_migrate
+        run: |
+          PGPASSWORD=pw psql -h localhost -U postgres -c 'CREATE DATABASE easyfoods_migrate'
+          alembic upgrade head
+          alembic check
+
+  frontends:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [customer, app, admin, vendor, chef, delivery, marketing, portals]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend-${{ matrix.app }}/package-lock.json
+      - run: npm ci
+        working-directory: frontend-${{ matrix.app }}
+      - run: npm run build
+        working-directory: frontend-${{ matrix.app }}
