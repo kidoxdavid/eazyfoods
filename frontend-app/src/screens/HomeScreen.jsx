@@ -94,7 +94,7 @@ function ChefCard({ chef, onPress }) {
       <div className="w-28 h-28 rounded-2xl bg-gray-100 overflow-hidden mb-1.5">
         {img ? <img src={img} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-3xl">👨‍🍳</div>}
       </div>
-      <p className="text-[11px] font-semibold text-gray-900 truncate">{chef.chef_name || chef.name || chef.business_name}</p>
+      <p className="text-[11px] font-semibold text-gray-900 truncate">{chef.chef_name || chef.chef_name || chef.name || chef.business_name}</p>
       <p className="text-[10px] text-gray-400 truncate">{chef.cuisine_type || 'Chef'}</p>
       {chef.rating > 0 && (
         <div className="flex items-center gap-0.5 mt-0.5">

@@ -58,7 +58,8 @@ export default function OrderDetailScreen() {
     return `https://www.google.com/maps/dir/?api=1${origin ? `&origin=${origin}` : ''}&destination=${dest}&travelmode=driving`
   })()
 
-  const currentStep = STATUS_STEPS.indexOf(order.status)
+  // New orders start as 'new'; treat that as the first step ('Order Placed').
+  const currentStep = STATUS_STEPS.indexOf(order.status === 'new' ? 'pending' : order.status)
   const subtotal = parseFloat(order.subtotal || order.total_amount || 0)
   const tax      = parseFloat(order.tax_amount || 0)
   const delivery = parseFloat(order.shipping_amount || order.delivery_fee || 0)
@@ -67,7 +68,7 @@ export default function OrderDetailScreen() {
   const handleReorder = async () => {
     if (!order.items?.length) return
     for (const item of order.items) {
-      await addToCart({ id: item.product_id, name: item.name, price: item.unit_price, image_url: item.image_url }, item.quantity)
+      await addToCart({ id: item.product_id, name: item.product_name || item.name, price: item.product_price ?? item.unit_price, image_url: item.image_url }, item.quantity)
     }
     success('Items added to cart!')
     navigate('/cart')
@@ -75,7 +76,7 @@ export default function OrderDetailScreen() {
 
   return (
     <div className="h-full flex flex-col pt-safe screen-enter">
-      <AppHeader title={`Order #${String(order.id).slice(-6).toUpperCase()}`} back />
+      <AppHeader title={`Order #${order.order_number || String(order.id).slice(-6).toUpperCase()}`} back />
 
       <div className="flex-1 scroll-content mb-tab px-4 py-4 space-y-4">
         {/* Status timeline */}
@@ -121,13 +122,13 @@ export default function OrderDetailScreen() {
               return (
                 <div key={i} className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
-                    {img ? <img src={img} alt={item.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">🛒</div>}
+                    {img ? <img src={img} alt={item.product_name || item.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">🛒</div>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 leading-tight truncate">{item.name}</p>
-                    <p className="text-xs text-gray-400">×{item.quantity} · ${parseFloat(item.unit_price || 0).toFixed(2)} each</p>
+                    <p className="text-sm font-semibold text-gray-900 leading-tight truncate">{item.product_name || item.name}</p>
+                    <p className="text-xs text-gray-400">×{item.quantity} · ${parseFloat(item.product_price ?? item.unit_price ?? 0).toFixed(2)} each</p>
                   </div>
-                  <p className="text-sm font-bold text-gray-900 flex-shrink-0">${(item.quantity * parseFloat(item.unit_price || 0)).toFixed(2)}</p>
+                  <p className="text-sm font-bold text-gray-900 flex-shrink-0">${parseFloat(item.subtotal ?? item.quantity * parseFloat(item.product_price ?? item.unit_price ?? 0)).toFixed(2)}</p>
                 </div>
               )
             })}

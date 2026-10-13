@@ -8,6 +8,7 @@ import { useToast } from '../contexts/ToastContext'
 import api from '../services/api'
 
 const STATUS_META = {
+  new:          { icon: Clock,        color: 'text-amber-500', bg: 'bg-amber-50',   label: 'Order placed' },
   pending:      { icon: Clock,        color: 'text-amber-500', bg: 'bg-amber-50',   label: 'Pending' },
   confirmed:    { icon: CheckCircle,  color: 'text-blue-500',  bg: 'bg-blue-50',    label: 'Confirmed' },
   preparing:    { icon: Package,      color: 'text-purple-500',bg: 'bg-purple-50',  label: 'Preparing' },
@@ -21,7 +22,7 @@ const STATUS_META = {
 const ACTIVE_STEPS = ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered']
 
 function ActiveOrderSteps({ status }) {
-  const currentIdx = ACTIVE_STEPS.indexOf(status)
+  const currentIdx = ACTIVE_STEPS.indexOf(status === 'new' ? 'pending' : status)
   if (currentIdx < 0 || status === 'cancelled') return null
   return (
     <div className="flex items-center gap-1 mt-3 px-1">
@@ -64,7 +65,7 @@ export default function OrdersScreen() {
 
   useEffect(() => { fetchOrders() }, [fetchOrders])
 
-  const activeStatuses = new Set(['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'])
+  const activeStatuses = new Set(['new', 'pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'])
   const active = orders.filter(o => activeStatuses.has(o.status))
   const past   = orders.filter(o => !activeStatuses.has(o.status))
   const shown  = tab === 'active' ? active : past
@@ -72,7 +73,7 @@ export default function OrdersScreen() {
   const handleReorder = async (order) => {
     if (!order.items?.length) return
     for (const item of order.items) {
-      await addToCart({ id: item.product_id, name: item.name, price: item.unit_price, image_url: item.image_url }, item.quantity)
+      await addToCart({ id: item.product_id, name: item.product_name || item.name, price: item.product_price ?? item.unit_price, image_url: item.image_url }, item.quantity)
     }
     success('Items added to cart!')
     navigate('/cart')
@@ -156,7 +157,7 @@ export default function OrdersScreen() {
                         </span>
                       </div>
                       <p className="text-xs text-gray-400">
-                        {order.store_name || 'EazyFoods'} · #{String(order.id).slice(-6).toUpperCase()}
+                        {order.store_name || 'EazyFoods'} · #{order.order_number || String(order.id).slice(-6).toUpperCase()}
                       </p>
                       <p className="text-xs text-gray-400 mt-0.5">
                         {new Date(order.created_at).toLocaleDateString()} · ${parseFloat(order.total_amount || 0).toFixed(2)}

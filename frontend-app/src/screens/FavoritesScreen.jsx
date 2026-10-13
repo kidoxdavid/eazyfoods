@@ -20,7 +20,7 @@ function ChefFavCard({ chefId, onPress }) {
         {img ? <img src={img} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-2xl">👨‍🍳</div>}
       </div>
       <div className="min-w-0">
-        <p className="font-semibold text-sm text-gray-900 truncate">{chef.chef_name || chef.name || chef.business_name}</p>
+        <p className="font-semibold text-sm text-gray-900 truncate">{chef.chef_name || chef.chef_name || chef.name || chef.business_name}</p>
         <p className="text-xs text-gray-400 truncate">{chef.cuisine_type || 'Chef'}</p>
         {chef.rating > 0 && <p className="text-xs text-amber-500">★ {parseFloat(chef.rating).toFixed(1)}</p>}
       </div>

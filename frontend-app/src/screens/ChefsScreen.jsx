@@ -13,12 +13,12 @@ function ChefCard({ chef, onPress }) {
       className="bg-white rounded-2xl overflow-hidden shadow-sm press-scale flex gap-3 p-3">
       <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
         {img
-          ? <img src={img} alt={chef.name} className="w-full h-full object-cover" />
+          ? <img src={img} alt={chef.chef_name || chef.name} className="w-full h-full object-cover" />
           : <div className="w-full h-full flex items-center justify-center text-3xl">👨‍🍳</div>
         }
       </div>
       <div className="flex-1 min-w-0 text-left">
-        <p className="font-bold text-gray-900 text-sm leading-tight">{chef.name || chef.business_name}</p>
+        <p className="font-bold text-gray-900 text-sm leading-tight">{chef.chef_name || chef.name || chef.business_name}</p>
         <p className="text-xs text-gray-500 mt-0.5">{chef.cuisine_type || 'Chef'}</p>
         {chef.city && (
           <p className="text-xs text-gray-400 flex items-center gap-0.5 mt-0.5">
@@ -61,7 +61,7 @@ export default function ChefsScreen() {
   }, [selectedCity])
 
   const filtered = q
-    ? chefs.filter(c => (c.name || c.business_name || '').toLowerCase().includes(q.toLowerCase()) || (c.cuisine_type || '').toLowerCase().includes(q.toLowerCase()))
+    ? chefs.filter(c => (c.chef_name || c.name || c.business_name || '').toLowerCase().includes(q.toLowerCase()) || (c.cuisine_type || '').toLowerCase().includes(q.toLowerCase()))
     : chefs
 
   return (

@@ -10,6 +10,9 @@ const TABS = ['Overview', 'Addresses']
 
 const BLANK_ADDR = { street_address: '', city: '', state: '', postal_code: '', country: 'Canada', is_default: false }
 
+// Guests have a synthetic address; don't present it as theirs.
+const showEmail = (e) => (!e || e.endsWith('@eazyfoods.local') ? 'Guest (saved on this device)' : e)
+
 export default function ProfileScreen() {
   const { user, token } = useAuth()
   const { success, error: showError } = useToast()
@@ -110,7 +113,7 @@ export default function ProfileScreen() {
   const avatar = (profile?.first_name || profile?.full_name || user?.email || 'U').charAt(0).toUpperCase()
   const displayName = profile?.first_name
     ? `${profile.first_name} ${profile.last_name || ''}`.trim()
-    : (profile?.full_name || profile?.email || user?.email || '')
+    : (profile?.full_name || showEmail(profile?.email || user?.email))
 
   const STATUS_COLORS = {
     pending: 'bg-amber-100 text-amber-700',
@@ -132,7 +135,7 @@ export default function ProfileScreen() {
           </div>
           <div className="text-center">
             <p className="text-white font-bold text-lg leading-tight">{displayName}</p>
-            <p className="text-primary-200 text-sm">{profile?.email || user?.email}</p>
+            <p className="text-primary-200 text-sm">{showEmail(profile?.email || user?.email)}</p>
           </div>
           <button onClick={() => { setEditing(true); setTab('Overview') }}
             className="flex items-center gap-1.5 bg-white/20 text-white text-xs font-semibold px-4 py-2 rounded-full press-scale">
@@ -187,7 +190,7 @@ export default function ProfileScreen() {
               <div className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
                 {[
                   { label: 'Name', value: displayName },
-                  { label: 'Email', value: profile?.email || user?.email },
+                  { label: 'Email', value: showEmail(profile?.email || user?.email) },
                   { label: 'Phone', value: profile?.phone || 'Not set' },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex items-center justify-between">
