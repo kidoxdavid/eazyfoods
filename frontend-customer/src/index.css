@@ -83,52 +83,82 @@ html {
 }
 
 @layer base {
+  html { -webkit-text-size-adjust: 100%; }
+
   body {
-    @apply bg-cream-100 text-ink-900 antialiased font-sans;
+    @apply bg-paper-100 text-ink-900 antialiased font-sans;
+    font-feature-settings: 'cv11', 'ss01';
+    text-rendering: optimizeLegibility;
   }
-  
-  body.modal-open {
-    overflow: hidden;
+
+  body.modal-open { overflow: hidden; }
+
+  /* Editorial headings: a light serif, tight tracking. Utility weights on h1/h2 are normalised below. */
+  h1, h2 { @apply font-display text-ink-900; letter-spacing: -0.015em; font-weight: 500; }
+  h1.font-bold, h1.font-extrabold, h1.font-semibold,
+  h2.font-bold, h2.font-extrabold, h2.font-semibold { font-weight: 500; }
+  h3, h4 { letter-spacing: -0.005em; }
+
+  ::selection { background: #D9E8DC; color: #0B2016; }
+
+  :focus-visible { outline: 2px solid #1F4D36; outline-offset: 2px; }
+
+  input::placeholder, textarea::placeholder { @apply text-ink-300; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   }
 }
 
-
 @layer components {
+  /* ── Buttons ─────────────────────────────────────────────────────────── */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 bg-primary-700 text-white px-6 py-3 rounded-xl font-semibold shadow-soft hover:bg-primary-800 active:scale-[.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-primary-600 px-6 py-3 text-sm font-semibold tracking-wide text-white transition hover:bg-primary-700 active:translate-y-px focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 bg-white text-ink-800 px-6 py-3 rounded-xl font-semibold border border-ink-200 hover:border-ink-400 hover:bg-cream-50 active:scale-[.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 transition;
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-ink-900 bg-transparent px-6 py-3 text-sm font-semibold tracking-wide text-ink-900 transition hover:bg-ink-900 hover:text-paper-100 active:translate-y-px focus:outline-none focus-visible:ring-2 focus-visible:ring-ink-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-accent {
-    @apply inline-flex items-center justify-center gap-2 bg-nude-700 text-white px-6 py-3 rounded-xl font-semibold shadow-soft hover:bg-nude-800 active:scale-[.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-nude-500 focus-visible:ring-offset-2 transition;
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-nude-600 px-6 py-3 text-sm font-semibold tracking-wide text-white transition hover:bg-nude-700 active:translate-y-px focus:outline-none focus-visible:ring-2 focus-visible:ring-nude-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
   }
-  .card {
-    @apply bg-white rounded-2xl shadow-soft border border-ink-100 p-6;
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-ink-100 hover:text-ink-900;
   }
+  .btn-shop-all { @apply bg-nude-600 text-white hover:bg-nude-700; }
+
+  /* ── Surfaces ────────────────────────────────────────────────────────── */
+  .card { @apply rounded-lg border border-paper-300 bg-white p-6; }
+  .panel { @apply rounded-lg border border-paper-300 bg-white; }
+  .hairline { @apply border-paper-300; }
+
+  /* ── Form controls ───────────────────────────────────────────────────── */
   .input {
-    @apply w-full px-4 py-3 bg-white border border-ink-200 rounded-xl placeholder:text-ink-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition;
+    @apply w-full rounded-md border border-ink-200 bg-white px-3.5 py-2.5 text-sm text-ink-900 placeholder:text-ink-300 transition focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-600;
   }
+  select.input, select {
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2357534C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 0.7rem center; background-size: 1rem; padding-right: 2.25rem;
+  }
+  .label { @apply mb-1.5 block text-xs font-semibold uppercase tracking-eyebrow text-ink-600; }
+
+  /* ── Type helpers ────────────────────────────────────────────────────── */
+  .eyebrow { @apply text-[11px] font-semibold uppercase tracking-eyebrow text-nude-700; }
+  .section-title { @apply font-display text-2xl font-medium tracking-tight text-ink-900 sm:text-[1.75rem]; }
+  .display-xl { @apply font-display font-medium leading-[1.04] tracking-tight text-ink-900; }
+  .price { @apply font-semibold tabular-nums text-ink-900; }
+
+  /* ── Chips / pills ───────────────────────────────────────────────────── */
   .chip {
-    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-ink-200 bg-white px-4 py-2 text-sm font-medium text-ink-700 hover:border-primary-600 hover:text-primary-800 transition;
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-ink-200 bg-white px-4 py-1.5 text-sm font-medium text-ink-700 transition hover:border-ink-900 hover:text-ink-900;
   }
-  .section-title {
-    @apply font-display text-2xl sm:text-3xl font-bold tracking-tight text-ink-900;
-  }
+  .chip-active { @apply border-ink-900 bg-ink-900 text-paper-100 hover:text-paper-100; }
+
   .skeleton {
-    @apply relative overflow-hidden rounded-xl bg-ink-100 before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent;
+    @apply relative overflow-hidden rounded-md bg-paper-200 before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent;
   }
-  
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-  
-  .btn-shop-all {
-    @apply bg-nude-700 text-white hover:bg-nude-800;
-  }
+
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
 }

@@ -7,8 +7,8 @@ import './index.css'
 if (window.Capacitor?.isNativePlatform?.()) {
   import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
     StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {})
-    StatusBar.setStyle({ style: Style.Dark }).catch(() => {})
-    StatusBar.setBackgroundColor({ color: '#ff6b35' }).catch(() => {})
+    StatusBar.setStyle({ style: Style.Light }).catch(() => {})
+    StatusBar.setBackgroundColor({ color: '#FAF7F2' }).catch(() => {})
   }).catch(() => {})
 }
 

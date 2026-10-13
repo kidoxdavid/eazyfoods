@@ -23,12 +23,13 @@ const LocationPicker = ({ open, onClose }) => {
         role="dialog"
         aria-modal="true"
         aria-label="Choose your location"
-        className="w-full max-w-md animate-fade-up rounded-t-3xl bg-white p-6 shadow-lift sm:rounded-3xl"
+        className="w-full max-w-md animate-fade-up rounded-t-xl bg-paper-100 p-6 shadow-xl sm:rounded-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between">
           <div>
-            <h2 className="font-display text-xl font-bold text-ink-900">Where should we deliver?</h2>
+            <p className="eyebrow mb-1">Delivery area</p>
+            <h2 className="font-display text-2xl font-medium text-ink-900">Where should we deliver?</h2>
             <p className="mt-1 text-sm text-ink-500">Pick a province, then your city, to see stores and chefs near you.</p>
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="rounded-full p-2 text-ink-400 hover:bg-ink-50">
@@ -36,7 +37,7 @@ const LocationPicker = ({ open, onClose }) => {
           </button>
         </div>
 
-        <label className="mb-1 block text-xs font-semibold text-ink-600" htmlFor="loc-prov">Province</label>
+        <label className="label" htmlFor="loc-prov">Province</label>
         <select id="loc-prov" className="input mb-4" value={province} onChange={(e) => setProvince(e.target.value)}>
           <option value="">All of Canada</option>
           {CANADA_PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -44,7 +45,7 @@ const LocationPicker = ({ open, onClose }) => {
 
         {province && (
           <>
-            <label className="mb-1 block text-xs font-semibold text-ink-600" htmlFor="loc-city">City</label>
+            <label className="label" htmlFor="loc-city">City</label>
             <select
               id="loc-city"
               className="input mb-4"

@@ -18,7 +18,7 @@ const isInternal = (link) => typeof link === 'string' && link.startsWith('/')
  * filtered to the shopper's city by the API. Renders nothing when there are no ads, so it never takes space
  * for an empty banner. Autoplay pauses on hover/focus/hidden tab and is off for reduced-motion users.
  */
-const AdCarousel = () => {
+const AdCarousel = ({ placements = PLACEMENTS, fallback = null, className = '' }) => {
   const { selectedCity } = useLocation()
   const [ads, setAds] = useState([])
   const [index, setIndex] = useState(0)
@@ -30,7 +30,7 @@ const AdCarousel = () => {
     let cancelled = false
     const city = selectedCity && selectedCity !== 'All' ? { city: selectedCity } : {}
     Promise.all(
-      PLACEMENTS.map((placement) =>
+      placements.filter(Boolean).map((placement) =>
         api.get('/customer/marketing/ads', { params: { placement, status: 'active', approval_status: 'approved', ...city } })
           .then((r) => (Array.isArray(r.data) ? r.data : []))
           .catch(() => []),
@@ -44,7 +44,7 @@ const AdCarousel = () => {
       setIndex(0)
     })
     return () => { cancelled = true }
-  }, [selectedCity])
+  }, [selectedCity, placements.join('|')]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const goTo = useCallback((i) => {
     const track = trackRef.current
@@ -76,7 +76,7 @@ const AdCarousel = () => {
     return () => document.removeEventListener('visibilitychange', onVisibility)
   }, [])
 
-  if (!ads.length) return null
+  if (!ads.length) return fallback
 
   const trackClick = (ad) => api.post(`/customer/marketing/ads/${ad.id}/click`).catch(() => {})
 
@@ -85,7 +85,7 @@ const AdCarousel = () => {
       role="region"
       aria-roledescription="carousel"
       aria-label="Promotions"
-      className="mx-auto mt-6 w-full max-w-7xl px-4 sm:px-6 lg:px-8"
+      className={`mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 ${className || 'mt-6'}`}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -95,7 +95,7 @@ const AdCarousel = () => {
         if (e.key === 'ArrowRight') { e.preventDefault(); goTo(index + 1) }
       }}
     >
-      <div className="relative overflow-hidden rounded-3xl bg-primary-900 shadow-soft">
+      <div className="relative overflow-hidden rounded-lg bg-primary-800">
         <div
           ref={trackRef}
           onScroll={onScroll}
@@ -126,10 +126,10 @@ const AdCarousel = () => {
                   </div>
                 )}
                 <div className="relative z-10 max-w-xl px-6 py-8 text-white sm:pl-16 sm:pr-10 md:py-10">
-                  {ad.title && <h2 className="font-display text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">{ad.title}</h2>}
+                  {ad.title && <h2 className="font-display text-2xl font-medium leading-tight tracking-tight text-white sm:text-4xl">{ad.title}</h2>}
                   {ad.description && <p className="mt-2 line-clamp-3 text-sm text-white/85 sm:text-base">{ad.description}</p>}
                   {cta && (
-                    <Cta {...ctaProps} onClick={() => trackClick(ad)} tabIndex={i === index ? 0 : -1} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-primary-900 shadow-soft transition hover:shadow-lift">
+                    <Cta {...ctaProps} onClick={() => trackClick(ad)} tabIndex={i === index ? 0 : -1} className="mt-5 inline-flex items-center gap-2 rounded-md bg-paper-100 px-5 py-3 text-sm font-semibold tracking-wide text-primary-900 transition hover:bg-white">
                       {ad.cta_text}
                     </Cta>
                   )}

@@ -16,7 +16,7 @@ const config: CapacitorConfig = {
   android: {
     // Minimum SDK 24 = Android 7.0 (2016); covers 99%+ of active devices.
     minWebViewVersion: 87,
-    backgroundColor: '#ff6b35',
+    backgroundColor: '#FAF7F2',
     // Keep the splash screen visible until Angular/React bootstrap is done.
     hideLogs: false,
   },
@@ -27,16 +27,16 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,
-      backgroundColor: '#ff6b35',
+      backgroundColor: '#FAF7F2',
       androidSplashResourceName: 'splash',
       showSpinner: true,
-      spinnerColor: '#ffffff',
+      spinnerColor: '#1F4D36',
       // Use native resize mode so splash fills the full screen.
       androidScaleType: 'CENTER_CROP',
     },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#ff6b35',
+      backgroundColor: '#FAF7F2',
       overlaysWebView: false,
     },
     PushNotifications: {

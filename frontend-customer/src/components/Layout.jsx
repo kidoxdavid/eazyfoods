@@ -1,26 +1,24 @@
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { useState, useEffect, lazy, Suspense } from 'react'
-import { MapPin, Menu, X, Search, Sparkles, Truck, ArrowRight, Mail, Package } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { MapPin, Menu, X, Search, Sparkles, ShoppingBag, ArrowUpRight, ClipboardList } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
 import { useLocation as useLocationContext } from '../contexts/LocationContext'
 import Breadcrumbs from './Breadcrumbs'
-import AnimatedCartIcon from './AnimatedCartIcon'
 import CartPreview from './CartPreview'
 import SearchAutocomplete from './SearchAutocomplete'
 import LocationPicker from './LocationPicker'
-
-const PageBanner = lazy(() => import('./PageBanner'))
+import PageBanner from './PageBanner'
 
 const NAV = [
   { name: 'Groceries', href: '/groceries' },
-  { name: 'Meals', href: '/meals' },
+  { name: 'Meals & recipes', href: '/meals' },
   { name: 'Chefs', href: '/chefs' },
-  { name: 'Markets', href: '/stores' },
-  { name: 'Deals', href: '/top-market-deals' },
+  { name: 'Local markets', href: '/stores' },
+  { name: 'Market deals', href: '/top-market-deals' },
+  { name: 'Chef deals', href: '/top-chef-deals' },
 ]
 
 const MORE = [
-  { name: 'Chef deals', href: '/top-chef-deals' },
   { name: 'Orders', href: '/orders' },
   { name: 'Profile & addresses', href: '/profile' },
   { name: 'Drive with us', href: '/become-a-driver' },
@@ -29,34 +27,26 @@ const MORE = [
 ]
 
 const BANNER_PLACEMENTS = {
-  '/': 'home_bottom_banner',
-  '/groceries': 'products_bottom_banner',
-  '/stores': 'stores_bottom_banner',
-  '/chefs': 'chefs_bottom_banner',
-  '/cart': 'cart_bottom_banner',
-  '/orders': 'orders_bottom_banner',
-  '/profile': 'profile_bottom_banner',
-  '/about': 'about_bottom_banner',
-  '/contact': 'contact_bottom_banner',
-  '/meals': 'meals_bottom_banner',
-  '/top-market-deals': 'top_market_deals_bottom_banner',
-  '/top-chef-deals': 'top_chef_deals_bottom_banner',
-  '/checkout': 'checkout_bottom_banner',
+  '/': 'home_bottom_banner', '/groceries': 'products_bottom_banner', '/stores': 'stores_bottom_banner',
+  '/chefs': 'chefs_bottom_banner', '/cart': 'cart_bottom_banner', '/orders': 'orders_bottom_banner',
+  '/profile': 'profile_bottom_banner', '/about': 'about_bottom_banner', '/contact': 'contact_bottom_banner',
+  '/meals': 'meals_bottom_banner', '/top-market-deals': 'top_market_deals_bottom_banner',
+  '/top-chef-deals': 'top_chef_deals_bottom_banner', '/checkout': 'checkout_bottom_banner',
 }
 
+const portalsUrl = () => (import.meta.env.VITE_PORTALS_URL || 'https://portals.eazyfoods.ca').trim()
+
 const driverCta = (
-  <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-6 text-center sm:flex-row sm:px-6 sm:text-left lg:px-8">
-    <div className="flex items-center gap-4">
-      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15"><Truck className="h-6 w-6" /></span>
+  <section className="mx-auto mt-16 max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="flex flex-col items-start justify-between gap-6 border-y border-paper-300 py-10 sm:flex-row sm:items-center">
       <div>
-        <h3 className="font-display text-xl font-bold sm:text-2xl">Drive with eazyfoods</h3>
-        <p className="text-sm text-white/85">Deliver groceries and meals on your own schedule.</p>
+        <p className="eyebrow mb-2">eazydrive</p>
+        <h2 className="font-display text-3xl font-medium tracking-tight text-ink-900">Deliver with eazyfoods</h2>
+        <p className="mt-2 max-w-md text-ink-600">Drive on your own schedule and deliver groceries and meals from local African stores and chefs.</p>
       </div>
+      <Link to="/become-a-driver" className="btn-primary shrink-0">Apply to drive <ArrowUpRight className="h-4 w-4" /></Link>
     </div>
-    <Link to="/become-a-driver" className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold text-primary-800 shadow-soft transition hover:shadow-lift">
-      Apply to drive <ArrowRight className="h-4 w-4" />
-    </Link>
-  </div>
+  </section>
 )
 
 const Layout = ({ children }) => {
@@ -65,23 +55,15 @@ const Layout = ({ children }) => {
   const [locationOpen, setLocationOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const { getCartItemCount } = useCart()
   const { selectedCity, selectedProvince } = useLocationContext()
   const count = getCartItemCount()
-  const place = selectedCity && selectedCity !== 'All' ? selectedCity : selectedProvince || 'All Canada'
+  const place = selectedCity && selectedCity !== 'All' ? selectedCity : selectedProvince || 'All of Canada'
 
   useEffect(() => { setMenuOpen(false); setCartOpen(false); window.scrollTo(0, 0) }, [location.pathname])
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
 
-  // Keep the box in sync with ?search= on the groceries page
   useEffect(() => {
     if (location.pathname === '/groceries') setQuery(new URLSearchParams(location.search).get('search') || '')
     else setQuery('')
@@ -96,98 +78,112 @@ const Layout = ({ children }) => {
 
   const askBot = () => window.dispatchEvent(new CustomEvent('eazybot:ask', { detail: {} }))
   const placement = BANNER_PLACEMENTS[location.pathname] || (location.pathname.startsWith('/products') ? 'products_bottom_banner' : 'home_bottom_banner')
-  const dealsPage = location.pathname === '/top-chef-deals' || location.pathname === '/top-market-deals'
 
   const navClass = ({ isActive }) =>
-    `rounded-full px-3.5 py-2 text-sm font-semibold transition ${isActive ? 'bg-primary-100 text-primary-900' : 'text-ink-600 hover:bg-ink-50 hover:text-ink-900'}`
+    `relative whitespace-nowrap py-3 text-[13px] font-medium tracking-wide transition ${isActive ? 'text-ink-900 after:absolute after:inset-x-0 after:-bottom-px after:h-[2px] after:bg-ink-900' : 'text-ink-600 hover:text-ink-900'}`
+
+  const searchBox = (
+    <form onSubmit={submitSearch} className="relative w-full" role="search">
+      <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" />
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => setSearchFocused(true)}
+        onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+        placeholder="Search for egusi, plantain, palm oil…"
+        aria-label="Search groceries"
+        className="w-full rounded-md border border-ink-200 bg-white py-2.5 pl-10 pr-4 text-sm placeholder:text-ink-400 focus:border-primary-600 focus:outline-none focus:ring-1 focus:ring-primary-600"
+      />
+      <SearchAutocomplete
+        query={query}
+        onQueryChange={setQuery}
+        onSelect={(p) => { if (p) navigate(`/products/${p.id}`); else submitSearch(); setSearchFocused(false) }}
+        isOpen={searchFocused}
+        onClose={() => setSearchFocused(false)}
+      />
+    </form>
+  )
 
   return (
     <div className="flex min-h-screen flex-col" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-      <header className={`sticky top-0 z-50 border-b bg-cream-50/90 backdrop-blur transition-shadow ${scrolled ? 'border-ink-100 shadow-soft' : 'border-transparent'}`}>
-        <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
-          <button type="button" aria-label="Open menu" onClick={() => setMenuOpen(true)} className="-ml-2 rounded-full p-2 text-ink-700 hover:bg-ink-50 lg:hidden">
+      {/* Utility bar */}
+      <div className="hidden bg-ink-900 text-paper-200 lg:block">
+        <div className="mx-auto flex h-9 max-w-7xl items-center justify-between px-8 text-xs">
+          <button type="button" onClick={() => setLocationOpen(true)} className="inline-flex items-center gap-1.5 hover:text-white" aria-label="Change delivery location">
+            <MapPin className="h-3.5 w-3.5" /> Delivering to <span className="font-semibold text-white underline decoration-white/40 underline-offset-4">{place}</span>
+          </button>
+          <nav aria-label="Secondary" className="flex items-center gap-6">
+            <a href={portalsUrl()} target="_blank" rel="noopener noreferrer" className="hover:text-white">Sell on eazyfoods</a>
+            <Link to="/become-a-driver" className="hover:text-white">Drive with us</Link>
+            <Link to="/contact" className="hover:text-white">Help</Link>
+          </nav>
+        </div>
+      </div>
+
+      <header className="sticky top-0 z-50 border-b border-paper-300 bg-paper-100/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:h-[72px] lg:gap-8 lg:px-8">
+          <button type="button" aria-label="Open menu" onClick={() => setMenuOpen(true)} className="-ml-2 rounded-md p-2 text-ink-800 hover:bg-ink-100 lg:hidden">
             <Menu className="h-6 w-6" />
           </button>
 
           <Link to="/" className="flex shrink-0 items-center" aria-label="eazyfoods home">
-            <img src="/eazy.PNG" alt="eazyfoods" className="h-10 w-32 object-cover mix-blend-multiply sm:h-11 sm:w-40" style={{ objectPosition: "center 46%" }} />
+            <img src="/eazy.PNG" alt="eazyfoods" className="h-10 w-32 object-cover mix-blend-multiply lg:h-11 lg:w-40" style={{ objectPosition: 'center 46%' }} />
           </Link>
 
-          <nav className="ml-4 hidden items-center gap-1 lg:flex" aria-label="Primary">
-            {NAV.map((n) => <NavLink key={n.href} to={n.href} className={navClass}>{n.name}</NavLink>)}
-          </nav>
+          <div className="mx-auto hidden w-full max-w-xl flex-1 md:block">{searchBox}</div>
 
-          <form onSubmit={submitSearch} className="relative mx-2 hidden min-w-0 flex-1 md:block lg:max-w-md xl:max-w-lg">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-300" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-              placeholder="Search egusi, plantain, palm oil…"
-              aria-label="Search groceries"
-              className="w-full rounded-full border border-ink-200 bg-white py-2.5 pl-10 pr-4 text-sm placeholder:text-ink-300 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-            <SearchAutocomplete
-              query={query}
-              onQueryChange={setQuery}
-              onSelect={(p) => { if (p) navigate(`/products/${p.id}`); else submitSearch(); setSearchFocused(false) }}
-              isOpen={searchFocused}
-              onClose={() => setSearchFocused(false)}
-            />
-          </form>
-
-          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-            <button type="button" onClick={() => setLocationOpen(true)} className="flex items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 py-2 text-sm font-semibold text-ink-700 transition hover:border-primary-600" aria-label="Change location">
-              <MapPin className="h-4 w-4 text-nude-600" />
-              <span className="max-w-[84px] truncate">{place}</span>
+          <div className="ml-auto flex items-center gap-1 md:ml-0 sm:gap-2">
+            <button type="button" onClick={() => setLocationOpen(true)} className="inline-flex items-center gap-1.5 rounded-md px-2 py-2 text-sm font-medium text-ink-800 hover:bg-ink-100 lg:hidden" aria-label="Change delivery location">
+              <MapPin className="h-5 w-5 text-nude-600" /><span className="hidden max-w-[88px] truncate sm:inline">{place}</span>
             </button>
-            <button type="button" onClick={askBot} className="hidden items-center gap-1.5 rounded-full bg-primary-800 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-primary-900 sm:flex">
-              <Sparkles className="h-4 w-4 text-nude-300" /> Ask EazyBot
+            <button type="button" onClick={askBot} className="hidden items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-ink-800 hover:bg-ink-100 md:inline-flex">
+              <Sparkles className="h-4 w-4 text-nude-600" /> Ask EazyBot
             </button>
+            <Link to="/orders" className="hidden rounded-md p-2 text-ink-800 hover:bg-ink-100 md:inline-flex" aria-label="Your orders"><ClipboardList className="h-5 w-5" /></Link>
             <div className="relative">
-              <button type="button" onClick={() => setCartOpen((v) => !v)} aria-label={`Cart, ${count} items`} className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white text-ink-800 shadow-soft transition hover:text-primary-800">
-                <AnimatedCartIcon />
-                {count > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-nude-700 px-1 text-[11px] font-bold text-white">{count > 99 ? '99+' : count}</span>
-                )}
+              <button type="button" onClick={() => setCartOpen((v) => !v)} aria-label={`Cart, ${count} items`} aria-expanded={cartOpen} className="relative inline-flex items-center gap-2 rounded-md bg-ink-900 px-3.5 py-2 text-sm font-semibold text-paper-100 transition hover:bg-primary-700">
+                <ShoppingBag className="h-[18px] w-[18px]" />
+                <span className="tabular-nums">{count}</span>
               </button>
               <CartPreview isOpen={cartOpen} onClose={() => setCartOpen(false)} />
             </div>
           </div>
         </div>
 
-        <form onSubmit={submitSearch} className="relative px-4 pb-3 md:hidden">
-          <Search className="pointer-events-none absolute left-7 top-1/2 h-4 w-4 -translate-y-[70%] text-ink-300" />
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-            placeholder="Search groceries…"
-            aria-label="Search groceries"
-            className="w-full rounded-full border border-ink-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        </form>
+        <div className="px-4 pb-3 md:hidden">{searchBox}</div>
+
+        <nav aria-label="Primary" className="hidden border-t border-paper-300 lg:block">
+          <div className="mx-auto flex max-w-7xl items-center gap-8 px-8">
+            {NAV.map((n) => <NavLink key={n.href} to={n.href} className={navClass}>{n.name}</NavLink>)}
+          </div>
+        </nav>
       </header>
 
-      {/* Mobile / tablet drawer */}
+      {/* Drawer */}
       {menuOpen && (
         <div className="fixed inset-0 z-[70] lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
-          <div className="absolute inset-0 bg-ink-900/50 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-[82%] max-w-xs animate-fade-up flex-col bg-cream-50 p-5 shadow-lift">
-            <div className="mb-6 flex items-center justify-between">
-              <img src="/eazy.PNG" alt="eazyfoods" className="h-10 w-36 object-cover mix-blend-multiply" style={{ objectPosition: "center 46%" }} />
-              <button type="button" aria-label="Close menu" onClick={() => setMenuOpen(false)} className="rounded-full p-2 text-ink-500 hover:bg-ink-50"><X className="h-5 w-5" /></button>
+          <div className="absolute inset-0 bg-ink-900/50" onClick={() => setMenuOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 flex w-[86%] max-w-sm animate-fade-up flex-col bg-paper-100 shadow-xl">
+            <div className="flex items-center justify-between border-b border-paper-300 px-5 py-4">
+              <img src="/eazy.PNG" alt="eazyfoods" className="h-10 w-36 object-cover mix-blend-multiply" style={{ objectPosition: 'center 46%' }} />
+              <button type="button" aria-label="Close menu" onClick={() => setMenuOpen(false)} className="rounded-md p-2 text-ink-700 hover:bg-ink-100"><X className="h-5 w-5" /></button>
             </div>
-            <button type="button" onClick={() => { setMenuOpen(false); askBot() }} className="btn-primary mb-5 w-full"><Sparkles className="h-4 w-4" /> Ask EazyBot</button>
-            <nav className="flex-1 space-y-1 overflow-y-auto">
-              {[{ name: 'Home', href: '/' }, ...NAV, ...MORE].map((n) => (
-                <NavLink key={n.href} to={n.href} end={n.href === '/'} className={({ isActive }) => `block rounded-xl px-4 py-3 text-base font-semibold ${isActive ? 'bg-primary-100 text-primary-900' : 'text-ink-700 hover:bg-ink-50'}`}>{n.name}</NavLink>
-              ))}
+            <nav className="flex-1 overflow-y-auto px-5 py-4">
+              <p className="eyebrow mb-2">Shop</p>
+              <ul className="mb-6">
+                {[{ name: 'Home', href: '/' }, ...NAV].map((n) => (
+                  <li key={n.href}><NavLink to={n.href} end={n.href === '/'} className={({ isActive }) => `block border-b border-paper-300 py-3 font-display text-xl ${isActive ? 'text-primary-600' : 'text-ink-900'}`}>{n.name}</NavLink></li>
+                ))}
+              </ul>
+              <p className="eyebrow mb-2">Account & help</p>
+              <ul>
+                {MORE.map((n) => <li key={n.href}><NavLink to={n.href} className="block py-2.5 text-[15px] text-ink-700 hover:text-ink-900">{n.name}</NavLink></li>)}
+              </ul>
             </nav>
+            <div className="border-t border-paper-300 p-5">
+              <button type="button" onClick={() => { setMenuOpen(false); askBot() }} className="btn-primary w-full"><Sparkles className="h-4 w-4" /> Ask EazyBot</button>
+            </div>
           </aside>
         </div>
       )}
@@ -196,48 +192,49 @@ const Layout = ({ children }) => {
 
       <main className="w-full flex-1">{children}</main>
 
-      <Suspense fallback={<div className="min-h-[96px]" aria-hidden="true" />}>
-        <PageBanner placement={placement} defaultContent={driverCta} variant={dealsPage ? 'orange' : 'primary'} size="tall" />
-      </Suspense>
+      <PageBanner placement={placement} defaultContent={location.pathname === '/' ? null : driverCta} size="tall" />
 
-      <footer className="bg-ink-900 pb-16 text-ink-200 md:pb-0">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-4 lg:px-8">
-          <div className="md:col-span-1">
-            <p className="font-display text-2xl font-bold text-white">eazyfoods</p>
-            <p className="mt-3 text-sm leading-relaxed text-ink-300">Authentic African groceries and chef-made meals from local stores and kitchens, delivered to your door.</p>
+      <footer className="mt-20 bg-primary-900 pb-16 text-paper-200 md:pb-0">
+        <div className="mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6 lg:px-8">
+          <div className="grid gap-12 md:grid-cols-12">
+            <div className="md:col-span-5">
+              <p className="font-display text-4xl font-medium tracking-tight text-white">eazyfoods</p>
+              <p className="mt-4 max-w-sm leading-relaxed text-paper-300">Authentic African groceries and chef-made meals from local stores and kitchens, delivered to your door.</p>
+              <button type="button" onClick={askBot} className="mt-6 inline-flex items-center gap-2 border-b border-white/40 pb-1 text-sm font-medium text-white hover:border-white"><Sparkles className="h-4 w-4" /> Not sure what to cook? Ask EazyBot</button>
+            </div>
+            <div className="grid grid-cols-2 gap-8 md:col-span-7 md:grid-cols-3">
+              <div>
+                <h4 className="eyebrow mb-4 !text-paper-300">Shop</h4>
+                <ul className="space-y-2.5 text-sm">
+                  <li><Link className="hover:text-white" to="/groceries">Groceries</Link></li>
+                  <li><Link className="hover:text-white" to="/meals">Meals &amp; recipes</Link></li>
+                  <li><Link className="hover:text-white" to="/chefs">Chefs</Link></li>
+                  <li><Link className="hover:text-white" to="/stores">Local markets</Link></li>
+                  <li><Link className="hover:text-white" to="/top-market-deals">Deals</Link></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="eyebrow mb-4 !text-paper-300">Your account</h4>
+                <ul className="space-y-2.5 text-sm">
+                  <li><Link className="hover:text-white" to="/orders">Orders</Link></li>
+                  <li><Link className="hover:text-white" to="/profile">Profile &amp; addresses</Link></li>
+                  <li><Link className="hover:text-white" to="/cart">Cart</Link></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="eyebrow mb-4 !text-paper-300">Company</h4>
+                <ul className="space-y-2.5 text-sm">
+                  <li><Link className="hover:text-white" to="/about">About</Link></li>
+                  <li><Link className="hover:text-white" to="/contact">Contact</Link></li>
+                  <li><Link className="hover:text-white" to="/become-a-driver">Drive with us</Link></li>
+                  <li><a className="hover:text-white" href={portalsUrl()} target="_blank" rel="noopener noreferrer">Sell on eazyfoods</a></li>
+                </ul>
+              </div>
+            </div>
           </div>
-          <div>
-            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">Shop</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link className="hover:text-white" to="/groceries">Groceries</Link></li>
-              <li><Link className="hover:text-white" to="/meals">Meals &amp; plans</Link></li>
-              <li><Link className="hover:text-white" to="/chefs">Chefs</Link></li>
-              <li><Link className="hover:text-white" to="/stores">Local markets</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">Your orders</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link className="hover:text-white" to="/orders">Order history</Link></li>
-              <li><Link className="hover:text-white" to="/profile">Profile &amp; addresses</Link></li>
-              <li><Link className="hover:text-white" to="/become-a-driver">Drive with us</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">Help</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link className="hover:text-white" to="/about">About</Link></li>
-              <li><Link className="hover:text-white" to="/contact">Contact us</Link></li>
-              <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> support@eazyfoods.ca</li>
-            </ul>
-          </div>
-        </div>
-        <div className="border-t border-white/10">
-          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-ink-300 sm:flex-row sm:px-6 lg:px-8">
+          <div className="mt-14 flex flex-col items-start justify-between gap-3 border-t border-white/15 pt-6 text-xs text-paper-300 sm:flex-row sm:items-center">
             <p>&copy; {new Date().getFullYear()} eazyfoods. All rights reserved.</p>
-            <a href={(import.meta.env.VITE_PORTALS_URL || 'https://portals.eazyfoods.ca').trim()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-primary-300 hover:text-primary-200">
-              <Package className="h-4 w-4" /> For vendors &amp; partners
-            </a>
+            <p>support@eazyfoods.ca</p>
           </div>
         </div>
       </footer>
