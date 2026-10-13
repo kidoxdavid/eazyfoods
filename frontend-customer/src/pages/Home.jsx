@@ -6,6 +6,7 @@ import { useLocation } from '../contexts/LocationContext'
 import { resolveImageUrl } from '../utils/imageUtils'
 import ProductTile from '../components/ProductTile'
 import Section from '../components/Section'
+import AdCarousel from '../components/AdCarousel'
 
 const PROMPTS = [
   { emoji: '🍲', label: 'Egusi soup tonight', ask: 'What do I need to make egusi soup for 4 people?' },
@@ -129,6 +130,7 @@ const Home = () => {
     <div className="pb-16">
       <AskHero />
       <TrustStrip />
+      <AdCarousel />
 
       <div className="mt-10 space-y-14">
         {(loading || data.categories.length > 0) && (
