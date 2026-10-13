@@ -49,7 +49,8 @@ const Breadcrumbs = () => {
           // From product detail (/products/123), "Groceries" should link to /groceries, not /products (no route)
           const path = seg === 'products' && !isLast ? '/groceries' : buildPath(index)
           const mapped = segmentNameMap[seg]
-          const segmentInfo = mapped || { name: seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' '), icon: Package }
+          const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(seg) || /^\d+$/.test(seg)
+          const segmentInfo = mapped || { name: isId ? 'Details' : seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' '), icon: Package }
           const Icon = segmentInfo.icon || Package
           const label = segmentInfo.name || segmentInfo
 

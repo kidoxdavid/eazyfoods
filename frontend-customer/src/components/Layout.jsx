@@ -110,7 +110,7 @@ const Layout = ({ children }) => {
           </button>
 
           <Link to="/" className="flex shrink-0 items-center" aria-label="eazyfoods home">
-            <img src="/eazy.PNG" alt="eazyfoods" className="h-14 w-14 object-contain" />
+            <img src="/eazy.PNG" alt="eazyfoods" className="h-10 w-32 object-cover mix-blend-multiply sm:h-11 sm:w-40" style={{ objectPosition: "center 46%" }} />
           </Link>
 
           <nav className="ml-4 hidden items-center gap-1 lg:flex" aria-label="Primary">
@@ -179,7 +179,7 @@ const Layout = ({ children }) => {
           <div className="absolute inset-0 bg-ink-900/50 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
           <aside className="absolute inset-y-0 left-0 flex w-[82%] max-w-xs animate-fade-up flex-col bg-cream-50 p-5 shadow-lift">
             <div className="mb-6 flex items-center justify-between">
-              <img src="/eazy.PNG" alt="eazyfoods" className="h-9 w-auto" />
+              <img src="/eazy.PNG" alt="eazyfoods" className="h-10 w-36 object-cover mix-blend-multiply" style={{ objectPosition: "center 46%" }} />
               <button type="button" aria-label="Close menu" onClick={() => setMenuOpen(false)} className="rounded-full p-2 text-ink-500 hover:bg-ink-50"><X className="h-5 w-5" /></button>
             </div>
             <button type="button" onClick={() => { setMenuOpen(false); askBot() }} className="btn-primary mb-5 w-full"><Sparkles className="h-4 w-4" /> Ask EazyBot</button>

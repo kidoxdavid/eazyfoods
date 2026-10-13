@@ -193,10 +193,10 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
 
   // primary = green only; orange = current orange/green mix (for top chef & top market deals only)
   const defaultBannerClass = variant === 'orange'
-    ? 'bg-gradient-to-r from-primary-600 via-orange-600 to-primary-700'
-    : 'bg-gradient-to-r from-primary-600 to-primary-700'
-  const bannerHeight = size === 'tall' ? 'auto' : '240px'
-  const bannerMinHeight = size === 'tall' ? '200px' : '240px'
+    ? 'bg-nude-800 bg-[radial-gradient(circle_at_12%_18%,rgba(255,184,77,0.45),transparent_40%),radial-gradient(circle_at_88%_82%,rgba(20,83,45,0.55),transparent_45%)]'
+    : 'bg-primary-900 bg-[radial-gradient(circle_at_12%_18%,rgba(255,140,0,0.30),transparent_38%),radial-gradient(circle_at_88%_82%,rgba(34,197,94,0.32),transparent_42%)]'
+  const bannerHeight = size === 'tall' ? 'auto' : '200px'
+  const bannerMinHeight = size === 'tall' ? '200px' : '200px'
 
   // Show default banner only when dismissed or no ads (keep showing existing ads while refetching)
   // Use same centered layout from first paint to avoid left-then-center flash on load
@@ -204,7 +204,7 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
     <div className="max-w-7xl mx-auto w-full flex flex-col items-center justify-center text-center min-h-[100px]">
       {defaultContent || (
         <>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2">{title}</h1>
+          <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">{title}</h1>
           {subtitle && <p className="text-white/90 text-sm sm:text-base">{subtitle}</p>}
         </>
       )}
@@ -213,14 +213,14 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
   // While loading and no ads yet, show stable empty shell to avoid flash when ads load (no default text that then gets replaced)
   if (loading && !dismissed && ads.length === 0) {
     return (
-      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden ${size === 'tall' ? 'py-4 sm:py-5' : ''}`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
+      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden ${size === 'tall' ? 'py-4 sm:py-5' : ''}`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} aria-hidden="true">
         <div className="max-w-7xl mx-auto w-full flex flex-col items-center justify-center text-center min-h-[100px]" />
       </div>
     )
   }
   if (dismissed || ads.length === 0) {
     return (
-      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden ${size === 'tall' ? 'py-4 sm:py-5' : ''}`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden ${size === 'tall' ? 'py-4 sm:py-5' : ''}`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {defaultBannerInner}
       </div>
     )
@@ -232,7 +232,7 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
   
   if (!currentAd) {
     return (
-      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden ${size === 'tall' ? 'py-4 sm:py-5' : ''}`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className={`${defaultBannerClass} text-white px-4 sm:px-6 lg:px-8 mb-6 overflow-hidden ${size === 'tall' ? 'py-4 sm:py-5' : ''}`} style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {defaultBannerInner}
       </div>
     )
@@ -282,8 +282,8 @@ const PageBanner = ({ title, subtitle, placement, defaultContent, variant = 'pri
   return (
     <div 
       ref={bannerRef}
-      className={`relative w-full text-white overflow-hidden mb-6 ${variant === 'orange' ? 'bg-gradient-to-r from-primary-600 via-orange-600 to-primary-700' : 'bg-gradient-to-r from-primary-600 to-primary-700'}`} 
-      style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '240px', display: 'block', width: '100%', position: 'relative', zIndex: 1 }}
+      className={`relative w-full text-white overflow-hidden mb-6 ${defaultBannerClass}`} 
+      style={{ height: bannerHeight, minHeight: bannerMinHeight, maxHeight: size === 'tall' ? 'none' : '200px', display: 'block', width: '100%', position: 'relative', zIndex: 1 }}
     >
       {/* Dismiss button */}
       <button

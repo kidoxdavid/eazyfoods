@@ -9,6 +9,9 @@ import PageBanner from '../components/PageBanner'
 import { PageSkeleton } from '../components/SkeletonLoader'
 import { Link } from 'react-router-dom'
 
+// Guests have a synthetic address; don't show it as if it were theirs.
+const showEmail = (email) => (!email || email.endsWith('@eazyfoods.local') ? 'Guest (saved on this device)' : email)
+
 const Profile = () => {
   const { user, token } = useAuth()
   const { deliveryAddress, updateAddress } = useLocation()
@@ -211,7 +214,7 @@ const Profile = () => {
                   <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 truncate sm:truncate-none">
                     {profile?.first_name} {profile?.last_name}
                   </h2>
-                  <p className="text-xs sm:text-sm text-gray-600 break-all line-clamp-2 sm:line-clamp-none">{profile?.email}</p>
+                  <p className="text-xs sm:text-sm text-gray-600 break-all line-clamp-2 sm:line-clamp-none">{showEmail(profile?.email)}</p>
                   <button
                     type="button"
                     onClick={() => setActiveTab('settings')}
@@ -251,7 +254,7 @@ const Profile = () => {
                       <Mail className="h-5 w-5 text-gray-400" />
                       <div>
                         <p className="text-sm text-gray-600">Email</p>
-                        <p className="font-semibold text-gray-900">{profile?.email}</p>
+                        <p className="font-semibold text-gray-900">{showEmail(profile?.email)}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">

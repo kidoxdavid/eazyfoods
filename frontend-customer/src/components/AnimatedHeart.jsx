@@ -9,23 +9,25 @@ const AnimatedHeart = ({
 }) => {
   const [isAnimating, setIsAnimating] = useState(false)
 
+  // With its own onClick it acts as a button. Without one it is purely visual, and the click
+  // bubbles to the wrapping button/link (which owns the toggle); nesting <button> in <button> is invalid HTML.
   const handleClick = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
     setIsAnimating(true)
     setTimeout(() => setIsAnimating(false), 600)
-    
     if (onClick) {
+      e.preventDefault()
+      e.stopPropagation()
       onClick(e)
     }
   }
 
   return (
-    <button
+    <span
       onClick={handleClick}
-      className={`relative ${className}`}
-      type="button"
+      onKeyDown={(e) => { if (onClick && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleClick(e) } }}
+      className={`relative inline-flex ${className}`}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
       aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
     >
       <Heart
@@ -61,7 +63,7 @@ const AnimatedHeart = ({
           ))}
         </>
       )}
-    </button>
+    </span>
   )
 }
 
