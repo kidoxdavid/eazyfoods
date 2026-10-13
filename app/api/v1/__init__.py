@@ -6,10 +6,10 @@ from app.api.v1.endpoints import (
     auth, vendors, products, orders, inventory, payouts, dashboard, config,
     support, reviews, promotions, staff, analytics, upload, vendor_deliveries, vendor_marketing, vendor_stores,
     stripe_connect, stripe_webhooks, chef_stripe_connect, driver_stripe_connect,
-    customer_auth, customer_products, customer_orders, customer_stores, customer_cart, customer_profile, customer_recipes, customer_reviews, customer_promotions, customer_chat, customer_deliveries, customer_support, customer_marketing, customer_chefs,
+    customer_products, customer_orders, customer_stores, customer_cart, customer_profile, customer_recipes, customer_reviews, customer_promotions, customer_chat, customer_deliveries, customer_support, customer_marketing, customer_chefs,
     driver_auth, driver_portal, delivery_tracking,
     chef_auth, chef_portal, chef_marketing, chef_support, chef_chat, chef_cuisines, chef_orders, chef_promotions, chef_payouts, chef_dashboard, chef_analytics,
-    admin_auth, admin_vendors, admin_categories, admin_customers, admin_products, admin_orders, admin_dashboard,
+    admin_vendors, admin_categories, admin_customers, admin_products, admin_orders, admin_dashboard,
     admin_analytics, admin_reviews, admin_support, admin_activity, admin_users, admin_promotions, admin_export, admin_drivers, admin_deliveries, admin_settings, admin_barcode, admin_chefs,
     restore_backup, marketing, marketing_extended, marketing_admin, marketing_recipes, marketing_coupons,
     customer_coupons, barcode, payments_helcim,
@@ -20,7 +20,7 @@ from app.api.v1.endpoints import (
 api_router = APIRouter()
 
 # Include endpoint routers
-api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+api_router.include_router(auth.router, prefix="/auth", tags=["Vendor Onboarding"])
 api_router.include_router(vendors.router, prefix="/vendors", tags=["Vendors"])
 api_router.include_router(stripe_connect.router, prefix="/vendors/me/stripe-connect", tags=["Vendor Stripe Connect"])
 api_router.include_router(stripe_webhooks.router, prefix="/webhooks", tags=["Webhooks"])
@@ -43,7 +43,6 @@ api_router.include_router(vendor_stores.router, prefix="/stores", tags=["Vendor 
 api_router.include_router(vendor_chat.router, prefix="/vendor/chat", tags=["Vendor Chat"])
 
 # Customer endpoints
-api_router.include_router(customer_auth.router, prefix="/customer/auth", tags=["Customer Auth"])
 api_router.include_router(customer_products.router, prefix="/customer", tags=["Customer Products"])
 api_router.include_router(customer_orders.router, prefix="/customer/orders", tags=["Customer Orders"])
 api_router.include_router(customer_stores.router, prefix="/customer/stores", tags=["Customer Stores"])
@@ -60,14 +59,14 @@ api_router.include_router(customer_support.router, prefix="/customer/support", t
 api_router.include_router(customer_marketing.router, prefix="/customer/marketing", tags=["Customer Marketing"])
 
 # Driver endpoints
-api_router.include_router(driver_auth.router, prefix="/driver/auth", tags=["Driver Auth"])
+api_router.include_router(driver_auth.router, prefix="/driver/auth", tags=["Driver Onboarding"])
 api_router.include_router(driver_portal.router, prefix="/driver", tags=["Driver Portal"])
 api_router.include_router(driver_chat.router, prefix="/driver/chat", tags=["Driver Chat"])
 api_router.include_router(driver_stripe_connect.router, prefix="/driver/me/stripe-connect", tags=["Driver Stripe Connect"])
 api_router.include_router(delivery_tracking.router, tags=["Delivery Tracking"])
 
 # Chef endpoints
-api_router.include_router(chef_auth.router, prefix="/chef/auth", tags=["Chef Auth"])
+api_router.include_router(chef_auth.router, prefix="/chef/auth", tags=["Chef Onboarding"])
 api_router.include_router(chef_portal.router, prefix="/chef", tags=["Chef Portal"])
 api_router.include_router(chef_marketing.router, prefix="/chef/marketing", tags=["Chef Marketing"])
 api_router.include_router(chef_support.router, prefix="/chef/support", tags=["Chef Support"])
@@ -82,7 +81,6 @@ api_router.include_router(chef_stripe_connect.router, prefix="/chef/me/stripe-co
 api_router.include_router(customer_chefs.router, prefix="/customer", tags=["Customer Chefs"])
 
 # Admin endpoints
-api_router.include_router(admin_auth.router, prefix="/admin/auth", tags=["Admin Auth"])
 api_router.include_router(admin_dashboard.router, prefix="/admin/dashboard", tags=["Admin Dashboard"])
 # Register categories before vendors so GET /admin/vendors/categories hits categories, not vendors/{vendor_id}
 api_router.include_router(admin_categories.router, prefix="/admin/vendors/categories", tags=["Admin Categories"])

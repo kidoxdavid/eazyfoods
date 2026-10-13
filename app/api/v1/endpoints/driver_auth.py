@@ -2,58 +2,13 @@
 Driver authentication endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
 from app.core.database import get_db
 from app.models.driver import Driver
-from app.core.security import verify_password, get_password_hash, create_access_token, create_password_reset_token, decode_access_token
-from app.core.config import settings
+from app.core.security import get_password_hash
 from app.schemas.driver import DriverSignup
 
 router = APIRouter()
-
-
-class GoogleTokenBody(BaseModel):
-    id_token: str
-
-
-class ForgotPasswordRequest(BaseModel):
-    email: str
-
-
-class ResetPasswordRequest(BaseModel):
-    token: str
-    new_password: str
-
-
-@router.post("/forgot-password", response_model=dict)
-async def driver_forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    """Request password reset. Always returns success to avoid email enumeration."""
-    driver = db.query(Driver).filter(Driver.email == body.email.strip().lower()).first()
-    if driver and driver.password_hash:
-        token = create_password_reset_token(driver.email)
-        # TODO: send email with reset link
-        pass
-    return {"message": "If an account exists with this email, you will receive a password reset link."}
-
-
-@router.post("/reset-password", response_model=dict)
-async def driver_reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
-    """Reset password using token from email link."""
-    payload = decode_access_token(body.token)
-    if not payload or payload.get("purpose") != "password_reset":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset link.")
-    email = payload.get("sub")
-    if not email:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset link.")
-    driver = db.query(Driver).filter(Driver.email == email).first()
-    if not driver:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found.")
-    driver.password_hash = get_password_hash(body.new_password)
-    db.commit()
-    return {"message": "Password updated. You can now log in with your new password."}
 
 
 @router.post("/signup", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -181,68 +136,4 @@ async def driver_signup(
             detail=f"Failed to create driver account: {str(e)}"
         )
 
-
-@router.post("/login", response_model=dict)
-async def driver_login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
-):
-    """Driver login"""
-    driver = db.query(Driver).filter(Driver.email == form_data.username).first()
-    
-    if not driver:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    if not driver.password_hash:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This account uses Google sign-in. Please use Sign in with Google.",
-        )
-    if not verify_password(form_data.password, driver.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    # Check document expiry and deactivate if expired
-    now = datetime.utcnow()
-    expiry_cutoff = now + timedelta(days=14)
-    for attr in ("driver_license_validity", "vehicle_registration_validity", "insurance_validity"):
-        val = getattr(driver, attr, None)
-        if val and val <= now:
-            driver.is_active = False
-            db.commit()
-            break
-    if not driver.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your documents have expired. Please resubmit documents from your profile to be reactivated."
-        )
-    
-    # Create access token
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": driver.email, "driver_id": str(driver.id)},
-        expires_delta=access_token_expires
-    )
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "driver_id": str(driver.id)
-    }
-
-
-@router.post("/google", response_model=dict)
-async def driver_google(body: GoogleTokenBody):
-    """Google sign-in disabled temporarily."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Google sign-in is temporarily disabled. Please use email and password.",
-    )
 
