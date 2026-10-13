@@ -100,14 +100,6 @@ api.interceptors.response.use(
       console.error('3. Check browser console Network tab for failed requests')
     }
     
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('chef_id')
-      // Only redirect if not already on login page
-      if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
-        window.location.href = '/login'
-      }
-    }
     return Promise.reject(error)
   }
 )

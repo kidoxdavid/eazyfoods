@@ -1,6 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../services/api'
 
+/**
+ * Login-free identity provider.
+ *
+ * Authentication is disabled for now: there is no sign-in, no token and no route guard.
+ * The API resolves the acting customer on its own (see app/api/v1/dependencies.py).
+ * This provider keeps the old `useAuth()` shape so existing components keep working,
+ * and exposes `token` as a truthy constant so legacy `token ? ... : ...` checks pass.
+ */
 const AuthContext = createContext()
 
 export const useAuth = () => {
@@ -11,126 +19,31 @@ export const useAuth = () => {
   return context
 }
 
+const PLACEHOLDER = { first_name: 'Guest', last_name: 'Shopper', email: 'guest@eazyfoods.local' }
+const noop = async () => ({ success: true })
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [token, setToken] = useState(localStorage.getItem('token'))
+  const [user, setUser] = useState(PLACEHOLDER)
 
   useEffect(() => {
-    // Check localStorage on mount
-    const storedToken = localStorage.getItem('token')
-    if (storedToken && !token) {
-      setToken(storedToken)
-    }
+    let cancelled = false
+    api.get('/customer/me', { timeout: 10000 })
+      .then((res) => { if (!cancelled && res.data) setUser({ ...PLACEHOLDER, ...(res.data.data || res.data) }) })
+      .catch(() => { /* keep placeholder */ })
+    return () => { cancelled = true }
   }, [])
-
-  useEffect(() => {
-    const initAuth = async () => {
-      // Safety timeout - always set loading to false after 15 seconds max
-      const safetyTimeout = setTimeout(() => {
-        setLoading(false)
-      }, 15000)
-
-      try {
-        if (token) {
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-          await fetchUser()
-        } else {
-          setLoading(false)
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error)
-        setLoading(false)
-      } finally {
-        clearTimeout(safetyTimeout)
-      }
-    }
-    initAuth()
-  }, [token])
-
-  const fetchUser = async () => {
-    try {
-      // Call the /customer/me endpoint to verify token and get user data
-      // Add timeout to prevent hanging
-      const response = await api.get('/customer/me', { timeout: 10000 })
-      setUser(response.data)
-    } catch (error) {
-      console.error('Failed to fetch user:', error)
-      // If token is invalid, clear it and logout
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        logout()
-      } else {
-        // For other errors (network, timeout), still set loading to false but keep token
-        setUser(null)
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loginWithGoogle = async (idToken) => {
-    const response = await api.post('/customer/auth/google', { id_token: idToken })
-    const { access_token, customer_id } = response.data
-    setToken(access_token)
-    localStorage.setItem('token', access_token)
-    localStorage.setItem('customer_id', customer_id)
-    api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-    await fetchUser()
-    return response.data
-  }
-
-  const login = async (email, password) => {
-    // Use URLSearchParams for proper form-urlencoded format
-    const params = new URLSearchParams()
-    params.append('username', email)
-    params.append('password', password)
-
-    const response = await api.post('/customer/auth/login', params.toString(), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    })
-
-    const { access_token, customer_id, is_email_verified } = response.data
-    setToken(access_token)
-    localStorage.setItem('token', access_token)
-    localStorage.setItem('customer_id', customer_id)
-    if (is_email_verified === false) {
-      localStorage.setItem('email_unverified', email)
-    } else {
-      localStorage.removeItem('email_unverified')
-    }
-    api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-
-    await fetchUser()
-    return response.data
-  }
-
-  const signup = async (customerData) => {
-    const response = await api.post('/customer/auth/signup', customerData)
-    return response.data
-  }
-
-  const logout = () => {
-    setToken(null)
-    setUser(null)
-    setLoading(false)
-    localStorage.removeItem('token')
-    localStorage.removeItem('customer_id')
-    localStorage.removeItem('email_unverified')
-    delete api.defaults.headers.common['Authorization']
-  }
 
   const value = {
     user,
-    token,
-    login,
-    loginWithGoogle,
-    signup,
-    logout,
-    loading,
+    token: 'no-auth',
+    loading: false,
+    isAuthenticated: true,
+    login: noop,
+    loginWithGoogle: noop,
+    signup: noop,
+    register: noop,
+    logout: () => {},
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-

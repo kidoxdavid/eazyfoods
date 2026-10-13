@@ -122,23 +122,6 @@ api.interceptors.response.use(
                             url.includes('/customer/categories') ||
                             url.includes('/driver/auth/signup')
     
-    if (error.response?.status === 401 && !isPublicEndpoint) {
-      // Only redirect if we're not already on the login page
-      // and if the request wasn't for /customer/me (to avoid redirect loops)
-      if (!url.includes('/login') && !url.includes('/customer/me')) {
-        // Use a friendlier message for auth errors (backend returns "Could not validate credentials")
-        const isAuthError = error.response?.data?.detail?.toLowerCase?.().includes('credential')
-        if (isAuthError) {
-          error.userMessage = 'Your session has expired or the link was opened in a different browser. Please log in again.'
-        }
-        localStorage.removeItem(CUSTOMER_TOKEN_KEY)
-        localStorage.removeItem(CUSTOMER_ID_KEY)
-        // Only redirect if not already on login/signup pages
-        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
-          window.location.href = '/login'
-        }
-      }
-    }
     return Promise.reject(error)
   }
 )

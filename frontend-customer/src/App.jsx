@@ -13,9 +13,6 @@ import Chatbot from './components/Chatbot'
 import PageTransition from './components/PageTransition'
 import StickyBottomNav from './components/StickyBottomNav'
 import Home from './pages/Home'
-import Login from './pages/Login'
-import Signup from './pages/Signup'
-import VerifyEmail from './pages/VerifyEmail'
 import DriverSignup from './pages/DriverSignup'
 import BecomeADriver from './pages/BecomeADriver'
 import ProductDetail from './pages/ProductDetail'
@@ -36,7 +33,6 @@ import TopChefDeals from './pages/TopChefDeals'
 import Chefs from './pages/Chefs'
 import ChefDetail from './pages/ChefDetail'
 import Groceries from './pages/Groceries'
-import PrivateRoute from './components/PrivateRoute'
 import CheckoutRoute from './components/CheckoutRoute'
 
 const googleClientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID || ''
@@ -64,11 +60,6 @@ function App() {
                           <StickyBottomNav />
                           <Routes>
                             <Route path="/" element={<Home />} />
-                            <Route path="/login" element={<Login />} />
-                            <Route path="/signup" element={<Signup />} />
-                            <Route path="/verify-email" element={<VerifyEmail />} />
-                            <Route path="/forgot-password" element={<Navigate to="/login?forgot=1" replace />} />
-                            <Route path="/reset-password" element={<ResetRedirect />} />
                             <Route path="/driver-signup" element={<DriverSignup />} />
                             <Route path="/become-a-driver" element={<BecomeADriver />} />
                             <Route path="/stores" element={<Stores />} />
@@ -88,9 +79,9 @@ function App() {
                             <Route path="/cart" element={<Cart />} />
                             <Route path="/checkout" element={<CheckoutRoute />} />
                             <Route path="/order-confirmation" element={<OrderConfirmation />} />
-                            <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
-                            <Route path="/orders/:id" element={<PrivateRoute><OrderDetail /></PrivateRoute>} />
-                            <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+                            <Route path="/orders" element={<Orders />} />
+                            <Route path="/orders/:id" element={<OrderDetail />} />
+                            <Route path="/profile" element={<Profile />} />
                           </Routes>
                         </PageTransition>
                       </Layout>
@@ -103,11 +94,6 @@ function App() {
                           <StickyBottomNav />
                           <Routes>
                             <Route path="/" element={<Home />} />
-                            <Route path="/login" element={<Login />} />
-                            <Route path="/signup" element={<Signup />} />
-                            <Route path="/verify-email" element={<VerifyEmail />} />
-                            <Route path="/forgot-password" element={<Navigate to="/login?forgot=1" replace />} />
-                            <Route path="/reset-password" element={<ResetRedirect />} />
                             <Route path="/driver-signup" element={<DriverSignup />} />
                             <Route path="/become-a-driver" element={<BecomeADriver />} />
                             <Route path="/stores" element={<Stores />} />
@@ -127,9 +113,9 @@ function App() {
                             <Route path="/cart" element={<Cart />} />
                             <Route path="/checkout" element={<CheckoutRoute />} />
                             <Route path="/order-confirmation" element={<OrderConfirmation />} />
-                            <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
-                            <Route path="/orders/:id" element={<PrivateRoute><OrderDetail /></PrivateRoute>} />
-                            <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+                            <Route path="/orders" element={<Orders />} />
+                            <Route path="/orders/:id" element={<OrderDetail />} />
+                            <Route path="/profile" element={<Profile />} />
                           </Routes>
                         </PageTransition>
                       </Layout>

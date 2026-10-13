@@ -108,11 +108,6 @@ axiosInstance.interceptors.response.use(
   err => {
     const url = err.config?.url || ''
     const isPublic = /\/(customer\/products|customer\/stores|customer\/categories|auth\/login|auth\/signup|home-products|chefs|promotions|recipes)/.test(url)
-    if (err.response?.status === 401 && !isPublic && !url.includes('/customer/me') && !url.includes('/login')) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('customer_id')
-      window.location.href = '/login'
-    }
     return Promise.reject(err)
   }
 )

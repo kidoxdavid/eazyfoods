@@ -1,6 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../services/api'
 
+/**
+ * Login-free identity provider.
+ *
+ * Authentication is disabled for now: there is no sign-in, no token and no route guard.
+ * The API resolves the acting chef on its own (see app/api/v1/dependencies.py).
+ * This provider keeps the old `useAuth()` shape so existing components keep working,
+ * and exposes `token` as a truthy constant so legacy `token ? ... : ...` checks pass.
+ */
 const AuthContext = createContext()
 
 export const useAuth = () => {
@@ -11,121 +19,31 @@ export const useAuth = () => {
   return context
 }
 
+const PLACEHOLDER = { first_name: 'Chef', last_name: '', email: 'chef@eazyfoods.local' }
+const noop = async () => ({ success: true })
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [token, setToken] = useState(localStorage.getItem('token'))
+  const [user, setUser] = useState(PLACEHOLDER)
 
   useEffect(() => {
-    const initAuth = async () => {
-      const safetyTimeout = setTimeout(() => {
-        setLoading(false)
-      }, 15000)
-
-      try {
-        if (token) {
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-          await fetchUser()
-        } else {
-          setLoading(false)
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error)
-        setLoading(false)
-      } finally {
-        clearTimeout(safetyTimeout)
-      }
-    }
-    initAuth()
-  }, [token])
-
-  const fetchUser = async () => {
-    try {
-      const response = await api.get('/chef/auth/me', { timeout: 10000 })
-      setUser(response.data)
-    } catch (error) {
-      console.error('Failed to fetch user:', error)
-      setUser(null)
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        setToken(null)
-        localStorage.removeItem('token')
-        localStorage.removeItem('chef_id')
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loginWithGoogle = async (idToken) => {
-    const response = await api.post('/chef/auth/google', { id_token: idToken })
-    const { access_token, chef } = response.data
-    setToken(access_token)
-    localStorage.setItem('token', access_token)
-    if (chef?.id) localStorage.setItem('chef_id', chef.id)
-    api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-    await fetchUser()
-    return response.data
-  }
-
-  const login = async (email, password) => {
-    try {
-      const params = new URLSearchParams()
-      params.append('username', email)
-      params.append('password', password)
-
-      const response = await api.post('/chef/auth/login', params.toString(), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      })
-
-      const { access_token, chef } = response.data
-      setToken(access_token)
-      localStorage.setItem('token', access_token)
-      if (chef?.id) {
-        localStorage.setItem('chef_id', chef.id)
-      }
-      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-
-      try {
-        const userResponse = await api.get('/chef/auth/me')
-        setUser(userResponse.data)
-        setLoading(false)
-      } catch (userError) {
-        console.error('Failed to fetch user after login:', userError)
-        setLoading(false)
-      }
-      
-      return response.data
-    } catch (error) {
-      console.error('Login error:', error)
-      throw error
-    }
-  }
-
-  const signup = async (chefData) => {
-    const response = await api.post('/chef/auth/signup', chefData)
-    return response.data
-  }
-
-  const logout = () => {
-    setToken(null)
-    setUser(null)
-    localStorage.removeItem('token')
-    localStorage.removeItem('chef_id')
-    delete api.defaults.headers.common['Authorization']
-  }
+    let cancelled = false
+    api.get('/chef/auth/me', { timeout: 10000 })
+      .then((res) => { if (!cancelled && res.data) setUser({ ...PLACEHOLDER, ...(res.data.data || res.data) }) })
+      .catch(() => { /* keep placeholder */ })
+    return () => { cancelled = true }
+  }, [])
 
   const value = {
     user,
-    token,
-    login,
-    loginWithGoogle,
-    signup,
-    logout,
-    loading,
+    token: 'no-auth',
+    loading: false,
+    isAuthenticated: true,
+    login: noop,
+    loginWithGoogle: noop,
+    signup: noop,
+    register: noop,
+    logout: () => {},
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-

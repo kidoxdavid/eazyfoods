@@ -2,23 +2,17 @@ import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
 import {
-  LayoutDashboard, Megaphone, Mail, Image, BarChart3,
-  LogOut, Menu, X, FileText, Palette, Target, Users, User,
+  LayoutDashboard, Megaphone, Mail, Image, BarChart3, Menu, X, FileText, Palette, Target, Users, User,
   FlaskConical, Share2, Bell, Workflow, DollarSign, Settings, Shield, Utensils, Calendar, Sparkles
 } from 'lucide-react'
 import { useState } from 'react'
 
 const Layout = () => {
   const location = useLocation()
-  const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const { notifications } = useNotifications()
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -109,13 +103,6 @@ const Layout = () => {
                 <p className="text-[10px] sm:text-xs text-gray-500 truncate">{user?.email}</p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center justify-center w-full px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-200 rounded-lg transition-colors font-medium"
-            >
-              <LogOut className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-              Logout
-            </button>
           </div>
         </div>
       </aside>

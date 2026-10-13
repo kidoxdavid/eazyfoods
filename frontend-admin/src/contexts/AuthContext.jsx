@@ -1,6 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../services/api'
 
+/**
+ * Login-free identity provider.
+ *
+ * Authentication is disabled for now: there is no sign-in, no token and no route guard.
+ * The API resolves the acting admin on its own (see app/api/v1/dependencies.py).
+ * This provider keeps the old `useAuth()` shape so existing components keep working,
+ * and exposes `token` as a truthy constant so legacy `token ? ... : ...` checks pass.
+ */
 const AuthContext = createContext()
 
 export const useAuth = () => {
@@ -11,71 +19,23 @@ export const useAuth = () => {
   return context
 }
 
+const PLACEHOLDER = { first_name: 'Admin', last_name: '', email: 'admin@eazyfoods.local', role: 'super_admin' }
+const noop = async () => ({ success: true })
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [token, setToken] = useState(localStorage.getItem('admin_token'))
+  const [user, setUser] = useState(PLACEHOLDER)
 
-  useEffect(() => {
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      try {
-        const savedUser = localStorage.getItem('admin_user')
-        if (savedUser) {
-          setUser(JSON.parse(savedUser))
-        }
-      } catch (e) {
-        console.error('Error loading saved user:', e)
-        localStorage.removeItem('admin_user')
-        localStorage.removeItem('admin_token')
-      }
-    }
-    setLoading(false)
-  }, [token])
-
-  const login = async (email, password) => {
-    try {
-      const response = await api.post('/admin/auth/login-json', {
-        email,
-        password
-      })
-      
-      const { access_token, admin } = response.data
-      setToken(access_token)
-      setUser(admin)
-      localStorage.setItem('admin_token', access_token)
-      localStorage.setItem('admin_user', JSON.stringify(admin))
-      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-      
-      return { success: true }
-    } catch (error) {
-      // Check for network errors
-      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || !error.response) {
-        return {
-          success: false,
-          error: 'Cannot connect to server. Please ensure the backend server is running on port 8000.'
-        }
-      }
-      
-      return {
-        success: false,
-        error: error.response?.data?.detail || error.message || 'Login failed'
-      }
-    }
+  const value = {
+    user,
+    token: 'no-auth',
+    loading: false,
+    isAuthenticated: true,
+    login: noop,
+    loginWithGoogle: noop,
+    signup: noop,
+    register: noop,
+    logout: () => {},
   }
 
-  const logout = () => {
-    setToken(null)
-    setUser(null)
-    localStorage.removeItem('admin_token')
-    localStorage.removeItem('admin_user')
-    delete api.defaults.headers.common['Authorization']
-  }
-
-  return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-

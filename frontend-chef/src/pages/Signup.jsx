@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import api from '../services/api'
 import { UserPlus, Eye, EyeOff } from 'lucide-react'
 import { CANADIAN_PROVINCES, getCitiesForProvince } from '../constants/locations'
 import { AFRICAN_CUISINE_TYPES } from '../constants/cuisines'
-import api from '../services/api'
 
 const Signup = () => {
   const [doc1File, setDoc1File] = useState(null)  // Government ID
@@ -28,7 +27,6 @@ const Signup = () => {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [requireDocs, setRequireDocs] = useState(true)
-  const { signup } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -102,9 +100,9 @@ const Signup = () => {
         }
       }
 
-      await signup(payload)
+      await api.post('/chef/auth/signup', payload)
       setLoading(false)
-      navigate('/login', { state: { message: 'Account created successfully! Please wait for admin verification.' } })
+      navigate('/', { state: { message: 'Account created successfully! Please wait for admin verification.' } })
     } catch (err) {
       setError(getErrorMessage(err))
     } finally {
@@ -360,15 +358,6 @@ const Signup = () => {
               </>
             )}
           </button>
-
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{' '}
-              <Link to="/login" className="text-primary-600 hover:underline">
-                Sign in
-              </Link>
-            </p>
-          </div>
         </form>
       </div>
     </div>

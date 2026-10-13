@@ -31,13 +31,6 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('driver_token')
-      localStorage.removeItem('driver_id')
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login'
-      }
-    }
     return Promise.reject(error)
   }
 )

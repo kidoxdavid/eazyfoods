@@ -1,6 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../services/api'
 
+/**
+ * Login-free identity provider.
+ *
+ * Authentication is disabled for now: there is no sign-in, no token and no route guard.
+ * The API resolves the acting driver on its own (see app/api/v1/dependencies.py).
+ * This provider keeps the old `useAuth()` shape so existing components keep working,
+ * and exposes `token` as a truthy constant so legacy `token ? ... : ...` checks pass.
+ */
 const AuthContext = createContext()
 
 export const useAuth = () => {
@@ -11,110 +19,32 @@ export const useAuth = () => {
   return context
 }
 
+const PLACEHOLDER = { first_name: 'Driver', last_name: '', email: 'driver@eazyfoods.local' }
+const noop = async () => ({ success: true })
+
 export const AuthProvider = ({ children }) => {
-  const [driver, setDriver] = useState(null)
-  const [token, setToken] = useState(localStorage.getItem('driver_token'))
-  const [loading, setLoading] = useState(true)
+  const [driver, setDriver] = useState(PLACEHOLDER)
 
   useEffect(() => {
-    const initAuth = async () => {
-      // Safety timeout - always set loading to false after 15 seconds max
-      const safetyTimeout = setTimeout(() => {
-        setLoading(false)
-      }, 15000)
-
-      try {
-        if (token) {
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-          await fetchDriver()
-        } else {
-          setLoading(false)
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error)
-        setLoading(false)
-      } finally {
-        clearTimeout(safetyTimeout)
-      }
-    }
-    initAuth()
-  }, [token])
-
-  const fetchDriver = async () => {
-    try {
-      // Add timeout to prevent hanging
-      const response = await api.get('/driver/me', { timeout: 10000 })
-      setDriver(response.data)
-    } catch (error) {
-      console.error('Failed to fetch driver:', error)
-      // Only clear token on auth errors, not network errors
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        setToken(null)
-        localStorage.removeItem('driver_token')
-        localStorage.removeItem('driver_id')
-      }
-      setDriver(null)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loginWithGoogle = async (idToken) => {
-    const response = await api.post('/driver/auth/google', { id_token: idToken })
-    const { access_token, driver_id } = response.data
-    setToken(access_token)
-    localStorage.setItem('driver_token', access_token)
-    localStorage.setItem('driver_id', driver_id)
-    api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-    await fetchDriver()
-    return response.data
-  }
-
-  const login = async (email, password) => {
-    const params = new URLSearchParams()
-    params.append('username', email)
-    params.append('password', password)
-
-    const response = await api.post('/driver/auth/login', params.toString(), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    })
-
-    const { access_token, driver_id } = response.data
-    setToken(access_token)
-    localStorage.setItem('driver_token', access_token)
-    localStorage.setItem('driver_id', driver_id)
-    api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-
-    await fetchDriver()
-    return response.data
-  }
-
-  const logout = () => {
-    setToken(null)
-    setDriver(null)
-    localStorage.removeItem('driver_token')
-    localStorage.removeItem('driver_id')
-    delete api.defaults.headers.common['Authorization']
-  }
-
-  const refreshDriver = async () => {
-    if (token) {
-      await fetchDriver()
-    }
-  }
+    let cancelled = false
+    api.get('/driver/me', { timeout: 10000 })
+      .then((res) => { if (!cancelled && res.data) setDriver({ ...PLACEHOLDER, ...(res.data.data || res.data) }) })
+      .catch(() => { /* keep placeholder */ })
+    return () => { cancelled = true }
+  }, [])
 
   const value = {
     driver,
-    token,
-    login,
-    loginWithGoogle,
-    logout,
-    loading,
-    refreshDriver,
+    token: 'no-auth',
+    loading: false,
+    isAuthenticated: true,
+    login: noop,
+    loginWithGoogle: noop,
+    signup: noop,
+    register: noop,
+    logout: () => {},
+    refreshDriver: async () => {},
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-

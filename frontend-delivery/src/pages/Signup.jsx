@@ -259,7 +259,7 @@ const Signup = () => {
       console.log('Submitting driver signup with data:', cleanedData)
       const response = await api.post('/driver/auth/signup', cleanedData)
       alert('Driver application submitted successfully! You will be notified once your application is reviewed.')
-      navigate('/login')
+      navigate('/')
     } catch (err) {
       console.error('Driver signup error:', err)
       console.error('Error response:', err.response)
@@ -654,7 +654,7 @@ const Signup = () => {
               {loading ? 'Submitting...' : 'Submit Application'}
             </button>
             <Link
-              to="/login"
+              to="/"
               className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-center"
             >
               Cancel
