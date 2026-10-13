@@ -6,12 +6,12 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import api from '../services/api'
 
-const TABS = ['Overview', 'Addresses', 'Security']
+const TABS = ['Overview', 'Addresses']
 
 const BLANK_ADDR = { street_address: '', city: '', state: '', postal_code: '', country: 'Canada', is_default: false }
 
 export default function ProfileScreen() {
-  const { user, logout, token } = useAuth()
+  const { user, token } = useAuth()
   const { success, error: showError } = useToast()
   const navigate = useNavigate()
 
@@ -33,12 +33,6 @@ export default function ProfileScreen() {
   const [addrForm, setAddrForm]         = useState(BLANK_ADDR)
   const [savingAddr, setSavingAddr]     = useState(false)
   const [deletingId, setDeletingId]     = useState(null)
-
-  // Password change
-  const [pwForm, setPwForm] = useState({ current_password: '', new_password: '', confirm_password: '' })
-  const [showPw, setShowPw] = useState({ cur: false, new: false, con: false })
-  const [savingPw, setSavingPw] = useState(false)
-  const [pwError, setPwError]   = useState('')
 
   useEffect(() => {
     if (!token) return
@@ -111,29 +105,6 @@ export default function ProfileScreen() {
       setAddresses(prev => prev.map(a => ({ ...a, is_default: a.id === id })))
       success('Default address updated')
     } catch (_) {}
-  }
-
-  const handleChangePassword = async (e) => {
-    e.preventDefault()
-    setPwError('')
-    if (pwForm.new_password !== pwForm.confirm_password) { setPwError('Passwords do not match'); return }
-    if (pwForm.new_password.length < 6) { setPwError('New password must be at least 6 characters'); return }
-    setSavingPw(true)
-    try {
-      await api.post('/customer/password-change', {
-        current_password: pwForm.current_password,
-        new_password: pwForm.new_password,
-      })
-      success('Password changed!')
-      setPwForm({ current_password: '', new_password: '', confirm_password: '' })
-    } catch (e) {
-      setPwError(e?.response?.data?.detail || 'Could not change password')
-    } finally { setSavingPw(false) }
-  }
-
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login', { replace: true })
   }
 
   const avatar = (profile?.first_name || profile?.full_name || user?.email || 'U').charAt(0).toUpperCase()
@@ -270,12 +241,6 @@ export default function ProfileScreen() {
               </button>
             </div>
 
-            {/* Sign out */}
-            <button onClick={handleLogout}
-              className="w-full py-3.5 bg-red-50 text-red-600 font-bold rounded-2xl press-scale flex items-center justify-center gap-2">
-              <LogOut className="h-5 w-5" />Sign Out
-            </button>
-
             <div className="text-center py-2">
               <p className="text-xs text-gray-300">EazyFoods · v1.0</p>
             </div>
@@ -368,44 +333,7 @@ export default function ProfileScreen() {
           </div>
         )}
 
-        {/* ── SECURITY TAB ── */}
-        {!loading && tab === 'Security' && (
-          <div className="p-4">
-            <form onSubmit={handleChangePassword} className="bg-white rounded-2xl p-4 shadow-sm space-y-3">
-              <p className="text-sm font-bold text-gray-900">Change Password</p>
-              {pwError && (
-                <div className="flex items-center gap-2 p-2.5 bg-red-50 rounded-xl">
-                  <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                  <p className="text-xs text-red-700">{pwError}</p>
-                </div>
-              )}
-              {[
-                { key: 'current_password', label: 'Current Password', vis: showPw.cur, toggle: () => setShowPw(p => ({ ...p, cur: !p.cur })) },
-                { key: 'new_password',     label: 'New Password',     vis: showPw.new, toggle: () => setShowPw(p => ({ ...p, new: !p.new })) },
-                { key: 'confirm_password', label: 'Confirm Password', vis: showPw.con, toggle: () => setShowPw(p => ({ ...p, con: !p.con })) },
-              ].map(({ key, label, vis, toggle }) => (
-                <div key={key}>
-                  <label className="block text-xs text-gray-500 mb-1">{label}</label>
-                  <div className="relative">
-                    <input type={vis ? 'text' : 'password'} value={pwForm[key]}
-                      onChange={e => setPwForm(f => ({ ...f, [key]: e.target.value }))}
-                      placeholder="••••••••"
-                      className="w-full h-11 px-3 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-400" />
-                    <button type="button" onClick={toggle}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                      {vis ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-              ))}
-              <button type="submit" disabled={savingPw}
-                className="w-full py-3 bg-primary-600 text-white font-bold rounded-xl press-scale disabled:opacity-60 flex items-center justify-center gap-2">
-                {savingPw ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Update Password'}
-              </button>
-            </form>
-          </div>
-        )}
-      </div>
+              </div>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, ChevronRight, Search, Star, Tag, MapPin, ChevronDown, X } from 'lucide-react'
+import { Bell, ChevronRight, Search, Star, Tag, MapPin, ChevronDown, X, Sparkles, ArrowUp } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useLocation, PROVINCES, CITIES_BY_PROVINCE } from '../contexts/LocationContext'
 import { useCart } from '../contexts/CartContext'
@@ -225,6 +225,23 @@ export default function HomeScreen() {
       </div>
 
       <div className="flex-1 scroll-content mb-tab">
+
+        {/* ── Ask EazyBot ── */}
+        <div className="px-3 pt-3">
+          <div className="rounded-3xl bg-primary-800 p-4 text-white shadow-sm">
+            <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-nude-300"><Sparkles className="h-3.5 w-3.5" /> EazyBot</p>
+            <p className="mt-1 text-lg font-extrabold leading-snug">What are you cooking this week?</p>
+            <button onClick={() => navigate('/assistant')} className="mt-3 flex h-11 w-full items-center justify-between rounded-full bg-white pl-4 pr-1.5 text-left">
+              <span className="text-sm text-gray-400">Ask for a recipe, plan or ingredients…</span>
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-nude-600 text-white"><ArrowUp className="h-4 w-4" /></span>
+            </button>
+            <div className="mt-3 flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+              {['Egusi soup tonight', 'Plan my week', 'Under $30'].map((t) => (
+                <button key={t} onClick={() => navigate('/assistant', { state: { ask: t === 'Egusi soup tonight' ? 'What do I need to make egusi soup for 4?' : t === 'Plan my week' ? 'Build me a weekly meal plan for 2' : 'A budget dinner under $30' } })} className="flex-shrink-0 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-medium">{t}</button>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {/* ── Categories ── */}
         <div className="pt-3 pb-1">

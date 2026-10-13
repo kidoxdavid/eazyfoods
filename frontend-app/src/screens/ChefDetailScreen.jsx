@@ -33,7 +33,6 @@ export default function ChefDetailScreen() {
   }, [chefId])
 
   const handleSave = async () => {
-    if (!token) { navigate('/login'); return }
     try {
       if (saved) {
         await api.delete(`/customer/saved-chefs/${chefId}`)

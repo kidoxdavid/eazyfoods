@@ -1,12 +1,8 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from './contexts/AuthContext'
 import { Suspense, lazy } from 'react'
 import BottomTabBar from './components/BottomTabBar'
 
 // Eagerly-loaded (always needed)
-import LoginScreen          from './screens/LoginScreen'
-import RegisterScreen       from './screens/RegisterScreen'
-import ForgotPasswordScreen from './screens/ForgotPasswordScreen'
 import HomeScreen           from './screens/HomeScreen'
 import ShopScreen           from './screens/ShopScreen'
 import CartScreen           from './screens/CartScreen'
@@ -25,6 +21,7 @@ const OrdersScreen        = lazy(() => import('./screens/OrdersScreen'))
 const OrderDetailScreen   = lazy(() => import('./screens/OrderDetailScreen'))
 const ProfileScreen       = lazy(() => import('./screens/ProfileScreen'))
 const FavoritesScreen     = lazy(() => import('./screens/FavoritesScreen'))
+const AssistantScreen     = lazy(() => import('./screens/AssistantScreen'))
 
 const TAB_ROOTS = ['/home', '/shop', '/cart', '/orders', '/profile']
 
@@ -34,20 +31,6 @@ function Spinner() {
       <div className="w-10 h-10 border-[3px] border-primary-600 border-t-transparent rounded-full animate-spin" />
     </div>
   )
-}
-
-function RequireAuth({ children }) {
-  const { user, guest, loading } = useAuth()
-  if (loading) return <Spinner />
-  if (!user) return <Navigate to="/login" replace />
-  return children
-}
-
-function OptionalAuth({ children }) {
-  const { user, guest, loading } = useAuth()
-  if (loading) return <Spinner />
-  if (!user && !guest) return <Navigate to="/login" replace />
-  return children
 }
 
 function AppShell({ children }) {
@@ -69,32 +52,33 @@ export default function App() {
   return (
     <AppShell>
       <Routes>
-        {/* Auth */}
-        <Route path="/login"            element={<LoginScreen />} />
-        <Route path="/register"         element={<RegisterScreen />} />
-        <Route path="/forgot-password"  element={<ForgotPasswordScreen />} />
+        {/* No sign-in: old auth URLs go home */}
+        <Route path="/login"           element={<Navigate to="/home" replace />} />
+        <Route path="/register"        element={<Navigate to="/home" replace />} />
+        <Route path="/forgot-password" element={<Navigate to="/home" replace />} />
 
-        {/* Browsable by guests */}
-        <Route path="/home"                          element={<OptionalAuth><HomeScreen /></OptionalAuth>} />
-        <Route path="/shop"                          element={<OptionalAuth><ShopScreen /></OptionalAuth>} />
-        <Route path="/shop/product/:productId"       element={<OptionalAuth><ProductDetailScreen /></OptionalAuth>} />
-        <Route path="/stores"                        element={<OptionalAuth><StoresScreen /></OptionalAuth>} />
-        <Route path="/stores/:storeId"               element={<OptionalAuth><StoreDetailScreen /></OptionalAuth>} />
-        <Route path="/chefs"                         element={<OptionalAuth><ChefsScreen /></OptionalAuth>} />
-        <Route path="/chefs/:chefId"                 element={<OptionalAuth><ChefDetailScreen /></OptionalAuth>} />
-        <Route path="/meals"                         element={<OptionalAuth><MealsScreen /></OptionalAuth>} />
-        <Route path="/meals/recipe/:recipeId"        element={<OptionalAuth><RecipeDetailScreen /></OptionalAuth>} />
-        <Route path="/top-deals"                     element={<OptionalAuth><TopDealsScreen /></OptionalAuth>} />
+        {/* Storefront */}
+        <Route path="/home"                          element={<HomeScreen />} />
+        <Route path="/shop"                          element={<ShopScreen />} />
+        <Route path="/shop/product/:productId"       element={<ProductDetailScreen />} />
+        <Route path="/stores"                        element={<StoresScreen />} />
+        <Route path="/stores/:storeId"               element={<StoreDetailScreen />} />
+        <Route path="/chefs"                         element={<ChefsScreen />} />
+        <Route path="/chefs/:chefId"                 element={<ChefDetailScreen />} />
+        <Route path="/meals"                         element={<MealsScreen />} />
+        <Route path="/meals/recipe/:recipeId"        element={<RecipeDetailScreen />} />
+        <Route path="/top-deals"                     element={<TopDealsScreen />} />
 
         {/* Browsable by all */}
-        <Route path="/favorites"  element={<OptionalAuth><FavoritesScreen /></OptionalAuth>} />
+        <Route path="/favorites"  element={<FavoritesScreen />} />
+        <Route path="/assistant"  element={<AssistantScreen />} />
 
-        {/* Requires real account */}
-        <Route path="/cart"                element={<RequireAuth><CartScreen /></RequireAuth>} />
-        <Route path="/checkout"            element={<RequireAuth><CheckoutScreen /></RequireAuth>} />
-        <Route path="/orders"              element={<RequireAuth><OrdersScreen /></RequireAuth>} />
-        <Route path="/orders/:orderId"     element={<RequireAuth><OrderDetailScreen /></RequireAuth>} />
-        <Route path="/profile"             element={<RequireAuth><ProfileScreen /></RequireAuth>} />
+        {/* Cart, checkout and orders (per-device guest) */}
+        <Route path="/cart"                element={<CartScreen />} />
+        <Route path="/checkout"            element={<CheckoutScreen />} />
+        <Route path="/orders"              element={<OrdersScreen />} />
+        <Route path="/orders/:orderId"     element={<OrderDetailScreen />} />
+        <Route path="/profile"             element={<ProfileScreen />} />
 
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="*" element={<Navigate to="/home" replace />} />

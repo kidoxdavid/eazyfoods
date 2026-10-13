@@ -59,7 +59,6 @@ export default function ProductDetailScreen() {
 
   const handleSubmitReview = async (e) => {
     e.preventDefault()
-    if (!token) { navigate('/login'); return }
     if (!reviewForm.comment.trim()) { showError('Please write a comment'); return }
     setSubmitting(true)
     try {
