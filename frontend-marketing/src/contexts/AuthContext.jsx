@@ -1,6 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../services/api'
 
+/**
+ * Login-free identity provider.
+ *
+ * Authentication is disabled for now: there is no sign-in, no token and no route guard.
+ * The API resolves the acting marketing admin on its own (see app/api/v1/dependencies.py).
+ * This provider keeps the old `useAuth()` shape so existing components keep working,
+ * and exposes `token` as a truthy constant so legacy `token ? ... : ...` checks pass.
+ */
 const AuthContext = createContext()
 
 export const useAuth = () => {
@@ -11,82 +19,23 @@ export const useAuth = () => {
   return context
 }
 
+const PLACEHOLDER = { first_name: 'Marketing', last_name: '', email: 'marketing@eazyfoods.local', role: 'admin' }
+const noop = async () => ({ success: true })
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [token, setToken] = useState(() => {
-    try {
-      return localStorage.getItem('admin_token')
-    } catch (e) {
-      console.error('Error accessing localStorage:', e)
-      return null
-    }
-  })
+  const [user, setUser] = useState(PLACEHOLDER)
 
-  useEffect(() => {
-    let isMounted = true
-    const safetyTimeout = setTimeout(() => {
-      if (isMounted && loading) {
-        setLoading(false)
-      }
-    }, 15000)
-
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      const savedUser = localStorage.getItem('admin_user')
-      if (savedUser) {
-        try {
-          setUser(JSON.parse(savedUser))
-        } catch (e) {
-          console.error('Error parsing saved user:', e)
-        }
-      }
-      setLoading(false)
-    } else {
-      setLoading(false)
-    }
-
-    return () => {
-      isMounted = false
-      clearTimeout(safetyTimeout)
-    }
-  }, [token])
-
-  const login = async (email, password) => {
-    try {
-      const response = await api.post('/admin/auth/login-json', {
-        email,
-        password
-      })
-      
-      const { access_token, admin } = response.data
-      setToken(access_token)
-      setUser(admin)
-      localStorage.setItem('admin_token', access_token)
-      localStorage.setItem('admin_user', JSON.stringify(admin))
-      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-      
-      return { success: true }
-    } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.detail || 'Login failed'
-      }
-    }
+  const value = {
+    user,
+    token: 'no-auth',
+    loading: false,
+    isAuthenticated: true,
+    login: noop,
+    loginWithGoogle: noop,
+    signup: noop,
+    register: noop,
+    logout: () => {},
   }
 
-  const logout = () => {
-    setToken(null)
-    setUser(null)
-    localStorage.removeItem('admin_token')
-    localStorage.removeItem('admin_user')
-    delete api.defaults.headers.common['Authorization']
-  }
-
-  return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-

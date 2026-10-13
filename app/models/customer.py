@@ -1,7 +1,8 @@
 """
 Customer database models
 """
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, DECIMAL
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, DECIMAL, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -58,3 +59,12 @@ class CustomerSavedChef(Base):
     customer = relationship("Customer", backref="saved_chefs")
     chef = relationship("Chef", backref="saved_by_customers")
 
+
+
+class CustomerCart(Base):
+    """Server-side copy of a customer's cart: one JSON array per customer (products, cuisines, meals...)."""
+    __tablename__ = "customer_carts"
+
+    customer_id = Column(UUID(as_uuid=True), primary_key=True)
+    cart_data = Column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
+    updated_at = Column(DateTime(timezone=True), server_default=text("NOW()"))

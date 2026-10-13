@@ -72,13 +72,6 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('token')
-      localStorage.removeItem('vendor_id')
-      localStorage.removeItem('role')
-      window.location.href = '/login'
-    }
     return Promise.reject(error)
   }
 )

@@ -1,7 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
-import Login from './pages/Login'
-import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
 import Campaigns from './pages/Campaigns'
 import CampaignDetail from './pages/CampaignDetail'
@@ -38,31 +36,19 @@ import MealPlanCreate from './pages/MealPlanCreate'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
 
-const PrivateRoute = ({ children }) => {
-  const { token, loading } = useAuth()
-  
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    )
-  }
-  
-  return token ? children : <Navigate to="/login" />
-}
-
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
+      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="/signup" element={<Navigate to="/" replace />} />
+      <Route path="/forgot-password" element={<Navigate to="/" replace />} />
+      <Route path="/reset-password" element={<Navigate to="/" replace />} />
       <Route
         path="/"
         element={
-          <PrivateRoute>
+          
             <Layout />
-          </PrivateRoute>
+          
         }
       >
         <Route index element={<Dashboard />} />

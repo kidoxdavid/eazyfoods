@@ -2,69 +2,17 @@
 Authentication endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from datetime import timedelta, datetime
 from app.core.database import get_db
-from app.core.security import verify_password, get_password_hash, create_access_token, create_password_reset_token, decode_access_token
-from app.core.config import settings
-from app.schemas.auth import Token, VendorLogin, VendorSignup
+from app.core.security import get_password_hash
+from app.schemas.auth import VendorSignup
 from app.models.vendor import Vendor, VendorUser
 from app.models.store import Store
 from decimal import Decimal
-from uuid import UUID
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
-
-
-class GoogleTokenBody(BaseModel):
-    id_token: str
-
-
-class ForgotPasswordRequest(BaseModel):
-    email: str
-
-
-class ResetPasswordRequest(BaseModel):
-    token: str
-    new_password: str
-
-
-@router.post("/forgot-password", response_model=dict)
-async def vendor_forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    """Request password reset. Always returns success to avoid email enumeration."""
-    email = body.email.strip().lower()
-    vendor_user = db.query(VendorUser).filter(VendorUser.email == email).first()
-    vendor = db.query(Vendor).filter(Vendor.email == email).first()
-    if (vendor_user and vendor_user.password_hash) or (vendor and vendor.password_hash):
-        token = create_password_reset_token(email)
-        # TODO: send email with reset link
-        pass
-    return {"message": "If an account exists with this email, you will receive a password reset link."}
-
-
-@router.post("/reset-password", response_model=dict)
-async def vendor_reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
-    """Reset password using token from email link."""
-    payload = decode_access_token(body.token)
-    if not payload or payload.get("purpose") != "password_reset":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset link.")
-    email = payload.get("sub")
-    if not email:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset link.")
-    new_hash = get_password_hash(body.new_password)
-    vendor_user = db.query(VendorUser).filter(VendorUser.email == email).first()
-    if vendor_user:
-        vendor_user.password_hash = new_hash
-    vendor = db.query(Vendor).filter(Vendor.email == email).first()
-    if vendor:
-        vendor.password_hash = new_hash
-    if not vendor_user and not vendor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found.")
-    db.commit()
-    return {"message": "Password updated. You can now log in with your new password."}
 
 
 @router.post("/signup", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -157,103 +105,4 @@ async def vendor_signup(
         "status": "onboarding"
     }
 
-
-@router.post("/login", response_model=Token)
-async def vendor_login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
-):
-    """
-    Vendor login endpoint
-    Returns JWT access token
-    """
-    # Try to find vendor user first, then vendor
-    vendor_user = db.query(VendorUser).filter(VendorUser.email == form_data.username).first()
-    
-    if not vendor_user:
-        # Try vendor email
-        vendor = db.query(Vendor).filter(Vendor.email == form_data.username).first()
-        if not vendor:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        if not vendor.password_hash:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This account uses Google sign-in. Please use Sign in with Google.",
-            )
-        if not verify_password(form_data.password, vendor.password_hash):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        vendor_id = vendor.id
-        user_id = None
-        role = "store_owner"
-    else:
-        if not vendor_user.password_hash:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This account uses Google sign-in. Please use Sign in with Google.",
-            )
-        if not verify_password(form_data.password, vendor_user.password_hash):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        vendor_id = vendor_user.vendor_id
-        user_id = str(vendor_user.id)
-        role = vendor_user.role
-    
-    # Check if vendor is active
-    vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
-    if vendor.status != "active" and vendor.status != "onboarding":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Vendor account is not active"
-        )
-    
-    # Update last_login_at for vendor users (staff or owner)
-    if user_id:
-        vendor_user = db.query(VendorUser).filter(VendorUser.id == UUID(user_id)).first()
-    else:
-        vendor_user = db.query(VendorUser).filter(
-            VendorUser.vendor_id == vendor_id,
-            VendorUser.email == form_data.username
-        ).first()
-    if vendor_user:
-        vendor_user.last_login_at = datetime.utcnow()
-        db.commit()
-    
-    # Create access token
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={
-            "sub": form_data.username,
-            "vendor_id": str(vendor_id),
-            "user_id": user_id,
-            "role": role
-        },
-        expires_delta=access_token_expires
-    )
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "vendor_id": str(vendor_id),
-        "role": role
-    }
-
-
-@router.post("/google", response_model=Token)
-async def vendor_google(body: GoogleTokenBody):
-    """Google sign-in disabled temporarily."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Google sign-in is temporarily disabled. Please use email and password.",
-    )
 

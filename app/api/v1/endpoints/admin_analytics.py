@@ -455,7 +455,7 @@ async def get_analytics_overview(
 async def get_revenue_analytics(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
-    group_by: str = Query("day", regex="^(day|week|month)$"),
+    group_by: str = Query("day", pattern="^(day|week|month)$"),
     current_admin: dict = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):

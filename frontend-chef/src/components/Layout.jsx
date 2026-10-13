@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   Menu,
   X,
-  LogOut,
   User,
   Star,
   Settings as SettingsIcon,
@@ -27,8 +26,7 @@ import {
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
-  const navigate = useNavigate()
-  const { user, logout, loading: authLoading } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { ordersCount, newOrderAlert, dismissNewOrderAlert } = useNotifications()
 
   // Show loading while auth is being checked
@@ -65,10 +63,6 @@ const Layout = ({ children }) => {
     return location.pathname.startsWith(path)
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -141,13 +135,6 @@ const Layout = ({ children }) => {
                 <p className="text-[10px] sm:text-xs text-gray-500 truncate">{user?.email}</p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center justify-center w-full px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-200 rounded-lg transition-colors font-medium"
-            >
-              <LogOut className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-              Logout
-            </button>
           </div>
         </div>
       </aside>

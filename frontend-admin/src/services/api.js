@@ -76,12 +76,6 @@ api.interceptors.response.use(
       error.networkMessage = 'Cannot connect to server. Please ensure the backend server is running on port 8000.'
     }
     
-    if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('admin_token')
-      localStorage.removeItem('admin_user')
-      window.location.href = '/login'
-    }
     return Promise.reject(error)
   }
 )

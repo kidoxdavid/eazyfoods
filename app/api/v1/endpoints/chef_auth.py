@@ -2,60 +2,16 @@
 Chef authentication endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import timedelta
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from app.core.database import get_db
 from app.models.chef import Chef
-from app.core.security import verify_password, get_password_hash, create_access_token, create_password_reset_token, decode_access_token
-from app.core.config import settings
+from app.core.security import get_password_hash
 from app.schemas.chef import ChefResponse
 from app.api.v1.dependencies import get_current_chef
 
 router = APIRouter()
-
-
-class GoogleTokenBody(BaseModel):
-    id_token: str
-
-
-class ForgotPasswordRequest(BaseModel):
-    email: str
-
-
-class ResetPasswordRequest(BaseModel):
-    token: str
-    new_password: str
-
-
-@router.post("/forgot-password", response_model=dict)
-async def chef_forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    """Request password reset. Always returns success to avoid email enumeration."""
-    chef = db.query(Chef).filter(Chef.email == body.email.strip().lower()).first()
-    if chef and chef.password_hash:
-        token = create_password_reset_token(chef.email)
-        # TODO: send email with reset link
-        pass
-    return {"message": "If an account exists with this email, you will receive a password reset link."}
-
-
-@router.post("/reset-password", response_model=dict)
-async def chef_reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
-    """Reset password using token from email link."""
-    payload = decode_access_token(body.token)
-    if not payload or payload.get("purpose") != "password_reset":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset link.")
-    email = payload.get("sub")
-    if not email:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid reset link.")
-    chef = db.query(Chef).filter(Chef.email == email).first()
-    if not chef:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found.")
-    chef.password_hash = get_password_hash(body.new_password)
-    db.commit()
-    return {"message": "Password updated. You can now log in with your new password."}
 
 
 class ChefSignup(BaseModel):
@@ -140,77 +96,6 @@ async def chef_signup(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error creating chef account: {str(e)}"
         )
-
-
-@router.post("/login", response_model=dict)
-async def chef_login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
-):
-    """Chef login"""
-    try:
-        chef = db.query(Chef).filter(Chef.email == form_data.username).first()
-        if not chef:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        if not chef.password_hash:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This account uses Google sign-in. Please use Sign in with Google.",
-            )
-        if not verify_password(form_data.password, chef.password_hash):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        
-        if not chef.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Chef account is not active. Please wait for admin verification."
-            )
-        
-        # Create access token
-        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": chef.email, "role": "chef", "chef_id": str(chef.id)},
-            expires_delta=access_token_expires
-        )
-        
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "chef": {
-                "id": str(chef.id),
-                "email": chef.email,
-                "chef_name": chef.chef_name,
-                "verification_status": chef.verification_status,
-                "is_available": chef.is_available
-            }
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error in chef login: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error during login: {str(e)}"
-        )
-
-
-@router.post("/google", response_model=dict)
-async def chef_google(body: GoogleTokenBody):
-    """Google sign-in disabled temporarily."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Google sign-in is temporarily disabled. Please use email and password.",
-    )
 
 
 @router.get("/me", response_model=ChefResponse)

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { UserPlus, Eye, EyeOff, FileText } from 'lucide-react'
 import { CANADIAN_PROVINCES, getCitiesForProvince } from '../constants/locations'
@@ -32,7 +31,6 @@ const Signup = () => {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [requireDocs, setRequireDocs] = useState(true)
-  const { signup } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -76,8 +74,8 @@ const Signup = () => {
         if (r2.data?.url) payload.business_registration_url = r2.data.url
         if (r3.data?.url) payload.tax_permit_url = r3.data.url
       }
-      await signup(payload)
-      navigate('/login', { state: { message: 'Account created successfully! Please login.' } })
+      await api.post('/auth/signup', payload)
+      navigate('/', { state: { message: 'Account created successfully! Please login.' } })
     } catch (err) {
       setError(err.response?.data?.detail || 'Signup failed. Please try again.')
     } finally {
@@ -335,15 +333,6 @@ const Signup = () => {
               </>
             )}
           </button>
-
-          <div className="text-center">
-            <p className="text-xs sm:text-sm text-gray-600">
-              Already have an account?{' '}
-              <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium">
-                Sign in
-              </Link>
-            </p>
-          </div>
         </form>
       </div>
     </div>

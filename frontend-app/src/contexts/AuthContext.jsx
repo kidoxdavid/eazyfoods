@@ -1,97 +1,51 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../services/api'
 
-const AuthContext = createContext(null)
+/**
+ * Login-free identity provider.
+ *
+ * Authentication is disabled for now: there is no sign-in, no token and no route guard.
+ * The API resolves the acting customer on its own (see app/api/v1/dependencies.py).
+ * This provider keeps the old `useAuth()` shape so existing components keep working,
+ * and exposes `token` as a truthy constant so legacy `token ? ... : ...` checks pass.
+ */
+const AuthContext = createContext()
 
-export function AuthProvider({ children }) {
-  const [user, setUser]   = useState(null)
-  const [token, setToken] = useState(() => localStorage.getItem('token'))
-  const [loading, setLoading] = useState(true)
-  const [guest, setGuest] = useState(() => localStorage.getItem('guest_mode') === '1')
-
-  useEffect(() => {
-    if (token) {
-      api.get('/customer/me')
-        .then(r => {
-          const u = r.data?.data || r.data
-          setUser(u)
-        })
-        .catch(() => {
-          localStorage.removeItem('token')
-          localStorage.removeItem('customer_id')
-          setToken(null)
-        })
-        .finally(() => setLoading(false))
-    } else {
-      setLoading(false)
-    }
-  }, [token])
-
-  const login = async (email, password) => {
-    const r = await api.post('/customer/auth/login', { email, password })
-    const t = r.data.access_token
-    if (!t) throw new Error('No access token returned from server')
-    localStorage.setItem('token', t)
-    localStorage.removeItem('guest_mode')
-    if (r.data.customer_id) localStorage.setItem('customer_id', r.data.customer_id)
-    setToken(t)
-    setGuest(false)
-    // Fetch full user profile
-    try {
-      const me = await api.get('/customer/me')
-      setUser(me.data?.data || me.data)
-    } catch {
-      setUser(r.data.user || r.data)
-    }
-    return r.data
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
   }
-
-  const register = async (name, email, password) => {
-    const parts = name.trim().split(/\s+/)
-    const first_name = parts[0]
-    const last_name = parts.slice(1).join(' ') || '.'
-
-    // Create the account
-    const r = await api.post('/customer/auth/signup', {
-      first_name,
-      last_name,
-      email,
-      password,
-    })
-
-    // Auto-verify when SMTP is not configured (backend puts link in response)
-    if (r.data?.verification_link) {
-      try {
-        const url = new URL(r.data.verification_link)
-        const tok = url.searchParams.get('token')
-        if (tok) await api.get(`/customer/auth/verify-email?token=${tok}`)
-      } catch (_) {
-        // Not fatal — account is already created with is_email_verified=True
-      }
-    }
-
-    return login(email, password)
-  }
-
-  const enterGuestMode = () => {
-    localStorage.setItem('guest_mode', '1')
-    setGuest(true)
-  }
-
-  const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('customer_id')
-    localStorage.removeItem('guest_mode')
-    setToken(null)
-    setUser(null)
-    setGuest(false)
-  }
-
-  return (
-    <AuthContext.Provider value={{ user, token, loading, guest, login, register, logout, enterGuestMode }}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return context
 }
 
-export const useAuth = () => useContext(AuthContext)
+const PLACEHOLDER = { first_name: 'Guest', last_name: 'Shopper', email: 'guest@eazyfoods.local' }
+const noop = async () => ({ success: true })
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(PLACEHOLDER)
+
+  useEffect(() => {
+    let cancelled = false
+    api.get('/customer/me', { timeout: 10000 })
+      .then((res) => { if (!cancelled && res.data) setUser({ ...PLACEHOLDER, ...(res.data.data || res.data) }) })
+      .catch(() => { /* keep placeholder */ })
+    return () => { cancelled = true }
+  }, [])
+
+  const value = {
+    user,
+    token: 'no-auth',
+    loading: false,
+    isAuthenticated: true,
+    login: noop,
+    loginWithGoogle: noop,
+    signup: noop,
+    register: noop,
+    logout: () => {},
+    guest: false,
+    enterGuestMode: () => {},
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}

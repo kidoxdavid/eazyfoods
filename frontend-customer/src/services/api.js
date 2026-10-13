@@ -48,18 +48,29 @@ const api = axios.create({
   },
 })
 
-// Customer app: use 'token' from localStorage (customer JWT from /customer/auth/login)
-const CUSTOMER_TOKEN_KEY = 'token'
-const CUSTOMER_ID_KEY = 'customer_id'
-
-// Add token to requests if available
-api.interceptors.request.use((config) => {
-  // Allow callers to pass token explicitly (e.g. checkout) so we use the same token as AuthContext
-  const explicitToken = config.headers?.Authorization?.replace(/^Bearer\s+/i, '') || null
-  const token = explicitToken || localStorage.getItem(CUSTOMER_TOKEN_KEY)
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+// Login-free identity: every browser/device gets its own guest id, sent as X-Customer-Id.
+// The API provisions a private guest customer for it (cart, orders, addresses).
+const GUEST_ID_KEY = 'eazy_guest_id'
+export function getGuestId() {
+  try {
+    let id = localStorage.getItem(GUEST_ID_KEY)
+    if (!id) {
+      id = (globalThis.crypto?.randomUUID?.() ||
+        'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = (Math.random() * 16) | 0
+          return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+        }))
+      localStorage.setItem(GUEST_ID_KEY, id)
+    }
+    return id
+  } catch {
+    return null
   }
+}
+
+api.interceptors.request.use((config) => {
+  const guestId = getGuestId()
+  if (guestId) config.headers['X-Customer-Id'] = guestId
   // FormData must not have Content-Type set - browser sets multipart/form-data with boundary
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type']
@@ -122,23 +133,6 @@ api.interceptors.response.use(
                             url.includes('/customer/categories') ||
                             url.includes('/driver/auth/signup')
     
-    if (error.response?.status === 401 && !isPublicEndpoint) {
-      // Only redirect if we're not already on the login page
-      // and if the request wasn't for /customer/me (to avoid redirect loops)
-      if (!url.includes('/login') && !url.includes('/customer/me')) {
-        // Use a friendlier message for auth errors (backend returns "Could not validate credentials")
-        const isAuthError = error.response?.data?.detail?.toLowerCase?.().includes('credential')
-        if (isAuthError) {
-          error.userMessage = 'Your session has expired or the link was opened in a different browser. Please log in again.'
-        }
-        localStorage.removeItem(CUSTOMER_TOKEN_KEY)
-        localStorage.removeItem(CUSTOMER_ID_KEY)
-        // Only redirect if not already on login/signup pages
-        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/signup')) {
-          window.location.href = '/login'
-        }
-      }
-    }
     return Promise.reject(error)
   }
 )

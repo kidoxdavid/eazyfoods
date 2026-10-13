@@ -198,6 +198,19 @@ const Chatbot = () => {
     setIsTyping(false)
   }
 
+  // Let any page (e.g. the home hero) open EazyBot with a prompt: window.dispatchEvent(new CustomEvent('eazybot:ask', { detail: { message } }))
+  const sendRef = useRef(sendMessage)
+  sendRef.current = sendMessage
+  useEffect(() => {
+    const onAsk = (e) => {
+      setIsOpen(true)
+      const message = e?.detail?.message
+      if (message) setTimeout(() => sendRef.current(message), 120)
+    }
+    window.addEventListener('eazybot:ask', onAsk)
+    return () => window.removeEventListener('eazybot:ask', onAsk)
+  }, [])
+
   const handleAddProduct = async (product) => {
     try { await addToCart({ ...product, quantity: 1 }) } catch {}
   }

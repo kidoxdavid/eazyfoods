@@ -1,10 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
-import Login from './pages/Login'
 import Signup from './pages/Signup'
-import ForgotPassword from './pages/ForgotPassword'
-import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import AvailableDeliveries from './pages/AvailableDeliveries'
 import MyDeliveries from './pages/MyDeliveries'
@@ -21,33 +18,19 @@ import Documentation from './pages/Documentation'
 import Layout from './components/Layout'
 import './index.css'
 
-const PrivateRoute = ({ children }) => {
-  const { token, loading } = useAuth()
-  
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    )
-  }
-  
-  return token ? children : <Navigate to="/login" />
-}
-
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<Navigate to="/" replace />} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/forgot-password" element={<Navigate to="/" replace />} />
+      <Route path="/reset-password" element={<Navigate to="/" replace />} />
       <Route
         path="/"
         element={
-          <PrivateRoute>
+          
             <Layout />
-          </PrivateRoute>
+          
         }
       >
         <Route index element={<Dashboard />} />

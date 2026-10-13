@@ -38,14 +38,30 @@ function buildUrl(path) {
   return `${base}/${p}`
 }
 
-function getToken() {
-  try { return localStorage.getItem('token') } catch { return null }
+// Login-free identity: every browser/device gets its own guest id, sent as X-Customer-Id.
+// The API provisions a private guest customer for it (cart, orders, addresses).
+const GUEST_ID_KEY = 'eazy_guest_id'
+export function getGuestId() {
+  try {
+    let id = localStorage.getItem(GUEST_ID_KEY)
+    if (!id) {
+      id = (globalThis.crypto?.randomUUID?.() ||
+        'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = (Math.random() * 16) | 0
+          return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+        }))
+      localStorage.setItem(GUEST_ID_KEY, id)
+    }
+    return id
+  } catch {
+    return null
+  }
 }
 
 // ── Native path: CapacitorHttp (no CORS at all) ────────────────────────────
 async function nativeRequest(method, url, data, params, extraHeaders = {}) {
   const { CapacitorHttp } = await import('@capacitor/core')
-  const token = getToken()
+  const guestId = getGuestId()
 
   // Build query string for GET params
   let fullUrl = url
@@ -60,7 +76,7 @@ async function nativeRequest(method, url, data, params, extraHeaders = {}) {
   const headers = {
     'Content-Type': 'application/json',
     ...extraHeaders,
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(guestId ? { 'X-Customer-Id': guestId } : {}),
   }
 
   // CapacitorHttp cannot send FormData as JSON; detect and let it handle natively
@@ -97,8 +113,8 @@ const axiosInstance = axios.create({ timeout: 30000, headers: { 'Content-Type': 
 
 axiosInstance.interceptors.request.use((config) => {
   if (!config.url?.startsWith('http')) config.url = buildUrl(config.url)
-  const token = getToken()
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  const guestId = getGuestId()
+  if (guestId) config.headers['X-Customer-Id'] = guestId
   if (config.data instanceof FormData) delete config.headers['Content-Type']
   return config
 })
@@ -108,11 +124,6 @@ axiosInstance.interceptors.response.use(
   err => {
     const url = err.config?.url || ''
     const isPublic = /\/(customer\/products|customer\/stores|customer\/categories|auth\/login|auth\/signup|home-products|chefs|promotions|recipes)/.test(url)
-    if (err.response?.status === 401 && !isPublic && !url.includes('/customer/me') && !url.includes('/login')) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('customer_id')
-      window.location.href = '/login'
-    }
     return Promise.reject(err)
   }
 )

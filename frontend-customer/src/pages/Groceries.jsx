@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { ShoppingCart, Eye, Heart, Package, Search, Filter, Grid3x3, List, Sparkles, TrendingUp, Users, SlidersHorizontal, Zap, MapPin, Wand2, RefreshCw, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { useCart } from '../contexts/CartContext'
@@ -28,10 +28,11 @@ const Groceries = () => {
   const [itemsPerPage, setItemsPerPage] = useState(20)
 
   // Filters
-  const [categoryFilter, setCategoryFilter] = useState('')
-  const [searchQuery, setSearchQuery] = useState('')
+  const [urlParams] = useSearchParams()
+  const [categoryFilter, setCategoryFilter] = useState(urlParams.get('category') || '')
+  const [searchQuery, setSearchQuery] = useState(urlParams.get('search') || '')
   const [sortBy, setSortBy] = useState('newest')
-  const [featuredFilter, setFeaturedFilter] = useState(false)
+  const [featuredFilter, setFeaturedFilter] = useState(urlParams.get('featured') === 'true')
   const [priceMin, setPriceMin] = useState('')
   const [priceMax, setPriceMax] = useState('')
   const [stockFilter, setStockFilter] = useState('all') // 'all', 'in_stock', 'out_of_stock'
@@ -39,6 +40,13 @@ const Groceries = () => {
   const [viewMode, setViewMode] = useState('grid') // 'grid' or 'list'
   const [showFilters, setShowFilters] = useState(false)
   const [dealProducts, setDealProducts] = useState([])
+
+  // Header search and deep links (?search=, ?category=, ?featured=) update the filters
+  useEffect(() => {
+    setSearchQuery(urlParams.get('search') || '')
+    setCategoryFilter(urlParams.get('category') || '')
+    setFeaturedFilter(urlParams.get('featured') === 'true')
+  }, [urlParams])
 
   const { addToCart } = useCart()
   const { selectedCity, selectedProvince } = useLocation()

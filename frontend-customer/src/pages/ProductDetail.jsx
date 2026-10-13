@@ -96,12 +96,6 @@ const ProductDetail = () => {
 
   const handleSubmitReview = async (e) => {
     e.preventDefault()
-    if (!token) {
-      alert('Please login to submit a review')
-      navigate('/login')
-      return
-    }
-
     setSubmittingReview(true)
     try {
       await api.post(`/customer/reviews/products/${id}`, {

@@ -1,6 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../services/api'
 
+/**
+ * Login-free identity provider.
+ *
+ * Authentication is disabled for now: there is no sign-in, no token and no route guard.
+ * The API resolves the acting vendor on its own (see app/api/v1/dependencies.py).
+ * This provider keeps the old `useAuth()` shape so existing components keep working,
+ * and exposes `token` as a truthy constant so legacy `token ? ... : ...` checks pass.
+ */
 const AuthContext = createContext()
 
 export const useAuth = () => {
@@ -11,131 +19,31 @@ export const useAuth = () => {
   return context
 }
 
+const PLACEHOLDER = { first_name: 'Store', last_name: 'Owner', email: 'vendor@eazyfoods.local', role: 'store_owner' }
+const noop = async () => ({ success: true })
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [token, setToken] = useState(localStorage.getItem('token'))
+  const [user, setUser] = useState(PLACEHOLDER)
 
   useEffect(() => {
-    const initAuth = async () => {
-      // Safety timeout - always set loading to false after 15 seconds max
-      const safetyTimeout = setTimeout(() => {
-        setLoading(false)
-      }, 15000)
-
-      try {
-        if (token) {
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-          // Fetch user info with timeout
-          await fetchUser()
-        } else {
-          setLoading(false)
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error)
-        setLoading(false)
-      } finally {
-        clearTimeout(safetyTimeout)
-      }
-    }
-    initAuth()
-  }, [token])
-
-  const fetchUser = async () => {
-    try {
-      // Add timeout to prevent hanging
-      const response = await api.get('/vendors/me', { timeout: 10000 })
-      setUser(response.data)
-    } catch (error) {
-      console.error('Failed to fetch user:', error)
-      // Don't logout on error, just set user to null
-      // The token might still be valid
-      setUser(null)
-      // Clear invalid token if it's an auth error
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        setToken(null)
-        localStorage.removeItem('token')
-        localStorage.removeItem('vendor_id')
-        localStorage.removeItem('role')
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loginWithGoogle = async (idToken) => {
-    const response = await api.post('/auth/google', { id_token: idToken })
-    const { access_token, vendor_id, role } = response.data
-    setToken(access_token)
-    localStorage.setItem('token', access_token)
-    localStorage.setItem('vendor_id', vendor_id)
-    localStorage.setItem('role', role)
-    api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-    await fetchUser()
-    return response.data
-  }
-
-  const login = async (email, password) => {
-    try {
-      const params = new URLSearchParams()
-      params.append('username', email)
-      params.append('password', password)
-
-      const response = await api.post('/auth/login', params.toString(), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      })
-
-      const { access_token, vendor_id, role } = response.data
-      setToken(access_token)
-      localStorage.setItem('token', access_token)
-      localStorage.setItem('vendor_id', vendor_id)
-      localStorage.setItem('role', role)
-      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
-
-      // Fetch user info after login
-      try {
-        const userResponse = await api.get('/vendors/me')
-        setUser(userResponse.data)
-        setLoading(false)
-      } catch (userError) {
-        console.error('Failed to fetch user after login:', userError)
-        // Don't fail login if user fetch fails, we still have the token
-        setLoading(false)
-      }
-      
-      return response.data
-    } catch (error) {
-      console.error('Login error:', error)
-      throw error
-    }
-  }
-
-  const signup = async (vendorData) => {
-    const response = await api.post('/auth/signup', vendorData)
-    return response.data
-  }
-
-  const logout = () => {
-    setToken(null)
-    setUser(null)
-    localStorage.removeItem('token')
-    localStorage.removeItem('vendor_id')
-    localStorage.removeItem('role')
-    delete api.defaults.headers.common['Authorization']
-  }
+    let cancelled = false
+    api.get('/vendors/me', { timeout: 10000 })
+      .then((res) => { if (!cancelled && res.data) setUser({ ...PLACEHOLDER, ...(res.data.data || res.data) }) })
+      .catch(() => { /* keep placeholder */ })
+    return () => { cancelled = true }
+  }, [])
 
   const value = {
     user,
-    token,
-    login,
-    loginWithGoogle,
-    signup,
-    logout,
-    loading,
+    token: 'no-auth',
+    loading: false,
+    isAuthenticated: true,
+    login: noop,
+    loginWithGoogle: noop,
+    signup: noop,
+    register: noop,
+    logout: () => {},
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-

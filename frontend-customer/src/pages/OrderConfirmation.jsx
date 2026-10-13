@@ -8,39 +8,23 @@ const OrderConfirmation = () => {
   const orderId = state?.orderId
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-12 text-center">
-      <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Order placed successfully</h1>
-      <p className="text-gray-600 mb-6">
-        Your order <strong>#{orderNumber}</strong> has been received.
-      </p>
-      <p className="text-sm text-gray-500 mb-8">
-        Create an account or log in to track your order and manage future orders.
+    <div className="max-w-lg mx-auto px-4 py-16 text-center">
+      <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100">
+        <CheckCircle className="h-10 w-10 text-primary-600" />
+      </div>
+      <h1 className="font-display text-3xl font-bold text-ink-900 mb-2">Order placed</h1>
+      <p className="text-ink-600 mb-8">
+        Your order <strong>#{orderNumber}</strong> is in. We&apos;ll keep you posted as it&apos;s prepared and delivered.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <button
-          type="button"
-          onClick={() => navigate('/login')}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700"
-        >
-          Log in
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
-        >
-          Continue shopping
-        </button>
         {orderId && (
-          <button
-            type="button"
-            onClick={() => navigate('/signup', { state: { afterOrder: true } })}
-            className="px-4 py-2 border border-primary-600 text-primary-600 rounded-lg font-medium hover:bg-primary-50"
-          >
-            Create account
+          <button type="button" onClick={() => navigate(`/orders/${orderId}`)} className="btn-primary">
+            Track order
           </button>
         )}
+        <button type="button" onClick={() => navigate('/')} className="btn-secondary">
+          Keep shopping
+        </button>
       </div>
     </div>
   )

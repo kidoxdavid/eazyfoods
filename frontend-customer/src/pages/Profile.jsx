@@ -5,7 +5,6 @@ import { useCart } from '../contexts/CartContext'
 import api from '../services/api'
 import { User, Mail, Phone, MapPin, Edit, Plus, Trash2, Package, CreditCard, Settings, Eye, EyeOff, Sparkles, TrendingUp, Users as UsersIcon } from 'lucide-react'
 import { AVATAR_ICONS, AVATAR_ICON_KEY, getAvatarStorageKey, getAvatarIcon, getAvatarStyle } from '../constants/avatarIcons'
-import PrivateRoute from '../components/PrivateRoute'
 import PageBanner from '../components/PageBanner'
 import { PageSkeleton } from '../components/SkeletonLoader'
 import { Link } from 'react-router-dom'
@@ -153,14 +152,14 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <PrivateRoute>
+      
         <PageSkeleton />
-      </PrivateRoute>
+      
     )
   }
 
   return (
-    <PrivateRoute>
+    
       <div className="w-full">
         {/* Banner Header with Ad Support */}
         <PageBanner
@@ -656,82 +655,14 @@ const Profile = () => {
                   </div>
                 </div>
 
-                <div className="card">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Change Password</h3>
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <input
-                        type={showCurrentPassword ? "text" : "password"}
-                        placeholder="Current Password"
-                        value={passwordForm.current_password}
-                        onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
-                        className="input pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                        aria-label={showCurrentPassword ? "Hide password" : "Show password"}
-                      >
-                        {showCurrentPassword ? (
-                          <EyeOff className="h-5 w-5" />
-                        ) : (
-                          <Eye className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type={showNewPassword ? "text" : "password"}
-                        placeholder="New Password"
-                        value={passwordForm.new_password}
-                        onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
-                        className="input pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                        aria-label={showNewPassword ? "Hide password" : "Show password"}
-                      >
-                        {showNewPassword ? (
-                          <EyeOff className="h-5 w-5" />
-                        ) : (
-                          <Eye className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder="Confirm New Password"
-                        value={passwordForm.confirm_password}
-                        onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
-                        className="input pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                        aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff className="h-5 w-5" />
-                        ) : (
-                          <Eye className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
-                    <button className="btn-primary">Update Password</button>
-                  </div>
-                </div>
+                
               </div>
             )}
           </div>
         </div>
         </div>
       </div>
-    </PrivateRoute>
+    
   )
 }
 
