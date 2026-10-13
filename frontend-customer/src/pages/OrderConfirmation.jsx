@@ -16,6 +16,9 @@ const OrderConfirmation = () => {
       <p className="text-ink-600 mb-8">
         Your order <strong>#{orderNumber}</strong> is in. We&apos;ll keep you posted as it&apos;s prepared and delivered.
       </p>
+      <p className="mx-auto mb-8 max-w-sm rounded-xl bg-cream-200 px-4 py-3 text-sm text-ink-600">
+        There&apos;s no account, so this order is saved on <strong>this device</strong>. Keep this page&apos;s order number if you need to contact us.
+      </p>
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         {orderId && (
           <button type="button" onClick={() => navigate(`/orders/${orderId}`)} className="btn-primary">

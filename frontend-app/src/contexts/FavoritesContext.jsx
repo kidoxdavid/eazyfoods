@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { useAuth } from './AuthContext'
 
 const FavoritesContext = createContext(null)
 
@@ -21,12 +20,9 @@ function save(key, data) {
 }
 
 export function FavoritesProvider({ children }) {
-  const { user } = useAuth()
-  const key = getKey(user?.id)
+  // No accounts: one set of favourites per device.
+  const key = getKey(null)
   const [data, setData] = useState(() => load(key))
-
-  // Reload when user changes (login/logout)
-  useEffect(() => { setData(load(getKey(user?.id))) }, [user?.id])
 
   const toggleProduct = (id) => {
     setData(prev => {
@@ -34,7 +30,7 @@ export function FavoritesProvider({ children }) {
         ? prev.productIds.filter(x => x !== String(id))
         : [...prev.productIds, String(id)]
       const next = { ...prev, productIds: ids }
-      save(getKey(user?.id), next)
+      save(key, next)
       return next
     })
   }
@@ -45,7 +41,7 @@ export function FavoritesProvider({ children }) {
         ? prev.chefIds.filter(x => x !== String(id))
         : [...prev.chefIds, String(id)]
       const next = { ...prev, chefIds: ids }
-      save(getKey(user?.id), next)
+      save(key, next)
       return next
     })
   }

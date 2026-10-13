@@ -23,6 +23,7 @@ import uuid
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+
 from app.api.v1.dependencies import get_current_customer
 
 
@@ -122,6 +123,27 @@ async def create_order(
         # Resolve customer: authenticated or guest
         if current_customer:
             customer_id = UUID(current_customer["customer_id"])
+            customer = db.get(Customer, customer_id)
+            if customer is not None:
+                # There are no accounts: the contact details typed at checkout are this device's customer
+                # profile, so the store, chef and driver can see who the order is for and how to reach them.
+                first_name = (order_data.get("guest_first_name") or order_data.get("first_name") or "").strip()
+                last_name = (order_data.get("guest_last_name") or order_data.get("last_name") or "").strip()
+                phone = (order_data.get("guest_phone") or "").strip()
+                email = (order_data.get("guest_email") or "").strip().lower()
+                has_contact = bool(first_name and last_name and email and phone)
+                needs_contact = not customer.phone
+                if needs_contact and not has_contact:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Please enter your first name, last name, email and phone number so we can reach you about your order.",
+                    )
+                if has_contact:
+                    customer.first_name, customer.last_name, customer.phone = first_name, last_name, phone
+                    taken = db.query(Customer.id).filter(func.lower(Customer.email) == email, Customer.id != customer.id).first()
+                    if not taken:
+                        customer.email = email  # else keep the current address; the order still carries the name/phone
+                    db.flush()
         else:
             ps = db.query(PlatformSettings).filter(PlatformSettings.setting_type == "customer").first()
             allow_guest = True

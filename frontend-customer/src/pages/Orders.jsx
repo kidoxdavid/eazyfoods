@@ -217,6 +217,10 @@ const Orders = () => {
           </div>
         )}
 
+        <p className="mb-4 rounded-xl border border-ink-100 bg-white px-4 py-2.5 text-xs text-ink-500">
+          Orders are saved on this device. Clearing your browser data removes them from this list.
+        </p>
+
         {error ? (
           <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-200">
             <p className="text-red-600 mb-4">{error}</p>

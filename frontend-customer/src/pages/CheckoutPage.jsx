@@ -17,8 +17,8 @@ const MAPS_LIBRARIES = ['places']
 const CheckoutPage = () => {
   const { cart, getCartTotal, clearCart } = useCart()
   const { token } = useAuth()
-  const authToken = token || (typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null)
-  const isGuest = !authToken
+  // No accounts: every shopper checks out with the contact details below (remembered on this device).
+  const isGuest = true
   const navigate = useNavigate()
 
   const [loading, setLoading] = useState(false)
@@ -36,7 +36,10 @@ const CheckoutPage = () => {
   const [estimatingDelivery, setEstimatingDelivery] = useState(false)
   const [cardReady, setCardReady] = useState(false)
   const [PaymentSection, setPaymentSection] = useState(null)
-  const [guestInfo, setGuestInfo] = useState({ guest_email: '', guest_first_name: '', guest_last_name: '', guest_phone: '' })
+  const [guestInfo, setGuestInfo] = useState(() => {
+    const blank = { guest_email: '', guest_first_name: '', guest_last_name: '', guest_phone: '' }
+    try { return { ...blank, ...JSON.parse(localStorage.getItem('eazy_contact') || '{}') } } catch { return blank }
+  })
   const [address, setAddress] = useState({
     street_address: '', city: '', state: '', postal_code: '', country: 'Canada'
   })
@@ -175,7 +178,7 @@ const CheckoutPage = () => {
     (!needsStoreSelection || selectedStoreId) &&
     (deliveryMethod === 'pickup' || (address.street_address && address.city && address.postal_code)) &&
     (deliveryMethod !== 'delivery' || !useDistanceBasedDelivery || deliveryFeeFromEstimate != null) &&
-    (!isGuest || (guestInfo.guest_email && guestInfo.guest_first_name && guestInfo.guest_last_name)) &&
+    (guestInfo.guest_email && guestInfo.guest_first_name && guestInfo.guest_last_name && guestInfo.guest_phone) &&
     (paymentConfig.payments_suspended || cardReady)
 
   const handlePlaceOrder = async () => {
@@ -183,8 +186,8 @@ const CheckoutPage = () => {
       alert('Please select a store')
       return
     }
-    if (isGuest && (!guestInfo.guest_email || !guestInfo.guest_first_name || !guestInfo.guest_last_name)) {
-      alert('Please enter your email, first name, and last name')
+    if (!guestInfo.guest_email || !guestInfo.guest_first_name || !guestInfo.guest_last_name || !guestInfo.guest_phone) {
+      alert('Please enter your first name, last name, email and phone number so we can reach you about your order.')
       return
     }
     if (deliveryMethod === 'delivery' && (!address.street_address || !address.city || !address.postal_code)) {
@@ -226,25 +229,18 @@ const CheckoutPage = () => {
         helcim_transaction_id: null,
         stripe_payment_intent_id: paymentsSuspended ? null : (paymentData?.transaction_id || paymentData?.payment_intent_id || null)
       }
-      if (isGuest) {
-        orderData.guest_email = guestInfo.guest_email
-        orderData.guest_first_name = guestInfo.guest_first_name
-        orderData.guest_last_name = guestInfo.guest_last_name
-        orderData.guest_phone = guestInfo.guest_phone || null
-      }
-      const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {}
-      const response = await api.post('/customer/cart/checkout', orderData, { headers })
+      orderData.guest_email = guestInfo.guest_email.trim()
+      orderData.guest_first_name = guestInfo.guest_first_name.trim()
+      orderData.guest_last_name = guestInfo.guest_last_name.trim()
+      orderData.guest_phone = guestInfo.guest_phone.trim()
+      const response = await api.post('/customer/cart/checkout', orderData)
+      try { localStorage.setItem('eazy_contact', JSON.stringify(guestInfo)) } catch { /* private mode */ }
       clearCart()
-      if (response.data?.orders?.length > 0) {
-        const orderId = response.data.orders[0].order_id
-        const orderNumber = response.data.orders[0].order_number
-        if (isGuest) {
-          navigate('/order-confirmation', { state: { orderNumber, orderId } })
-        } else {
-          navigate(`/orders/${orderId}`, { state: { orderPlaced: true, orderNumber } })
-        }
+      const first = response.data?.orders?.[0]
+      if (first) {
+        navigate('/order-confirmation', { state: { orderNumber: first.order_number, orderId: first.order_id } })
       } else {
-        navigate(isGuest ? '/' : '/orders')
+        navigate('/orders')
       }
     } catch (error) {
       const detail = error.response?.data?.detail
@@ -308,15 +304,16 @@ const CheckoutPage = () => {
 
           {isGuest && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <h2 className="text-base font-semibold mb-3">Your details</h2>
+              <h2 className="text-base font-semibold mb-1">Your details</h2>
+              <p className="text-xs text-gray-500 mb-3">No account needed. We use these to confirm and deliver your order, and remember them on this device.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Email *</label>
                   <input type="email" required value={guestInfo.guest_email} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_email: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="you@example.com" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Phone</label>
-                  <input type="tel" value={guestInfo.guest_phone} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_phone: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="Optional" />
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Phone *</label>
+                  <input type="tel" required value={guestInfo.guest_phone} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_phone: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="So the driver or store can reach you" autoComplete="tel" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">First name *</label>

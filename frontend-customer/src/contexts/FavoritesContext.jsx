@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
-import { useAuth } from './AuthContext'
 
 const FavoritesContext = createContext()
 
@@ -48,8 +47,8 @@ function readFromStorage(key) {
 }
 
 export const FavoritesProvider = ({ children }) => {
-  const { user } = useAuth()
-  const customerId = user?.id ?? null
+  // No accounts: one set per device. (Keying on a user id made data move when the guest profile loaded.)
+  const customerId = null
   const [productFavorites, setProductFavorites] = useState(new Set())
   const [chefCuisineFavorites, setChefCuisineFavorites] = useState(new Set())
   const prevKeyRef = useRef(getStorageKey(customerId))

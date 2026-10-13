@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
-import { useAuth } from './AuthContext'
 
 const SaveForLaterContext = createContext()
 
@@ -14,8 +13,8 @@ export const useSaveForLater = () => {
 const getStorageKey = (customerId) => (customerId ? `saveForLater_${customerId}` : 'saveForLater')
 
 export const SaveForLaterProvider = ({ children }) => {
-  const { user } = useAuth()
-  const customerId = user?.id ?? null
+  // No accounts: one set per device. (Keying on a user id made data move when the guest profile loaded.)
+  const customerId = null
   const [saved, setSaved] = useState([])
   const prevKeyRef = useRef(getStorageKey(customerId))
 
