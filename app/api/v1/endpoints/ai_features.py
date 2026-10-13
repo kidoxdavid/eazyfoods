@@ -275,7 +275,7 @@ Rules:
         import anthropic
         client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
         resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model=settings.AI_MODEL,
             max_tokens=1200,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -429,7 +429,7 @@ async def ai_chat(
 
     try:
         resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model=settings.AI_MODEL,
             max_tokens=450,
             system=_SYSTEM,
             messages=messages,
@@ -516,7 +516,7 @@ async def generate_description(
 
     try:
         resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model=settings.AI_MODEL,
             max_tokens=150,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -554,7 +554,7 @@ Examples:
 
     try:
         resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model=settings.AI_MODEL,
             max_tokens=80,
             messages=[{"role": "user", "content": prompt}],
         )

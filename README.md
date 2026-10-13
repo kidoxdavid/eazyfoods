@@ -1,118 +1,83 @@
-# EasyFoods - African Grocery Store
+# eazyfoods
 
-An e-commerce platform for an African grocery store.
+A marketplace for authentic African groceries and chef-made meals (eazyfoods.ca). Customers shop local African
+stores and home chefs from one cart; vendors, chefs and drivers run their side from partner portals; admins and
+marketing run the platform. An AI assistant (EazyBot) turns "what's for dinner?" into a filled cart.
 
-## Database Setup
+> **Login is currently disabled everywhere (customer, mobile, vendor, chef, driver, admin, marketing).**
+> The API trusts whoever calls it. Run it locally or on a private network only. See
+> [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#login-free-mode) before deploying anything publicly.
 
-### Prerequisites
-- PostgreSQL installed and running
-- Python 3.7+ installed
+## What's in the repo
 
-### Step 1: Install Dependencies
+| Path | What it is |
+|---|---|
+| `app/` | FastAPI backend (SQLAlchemy 2, Postgres). Endpoints are under `app/api/v1/endpoints/`, grouped by role. |
+| `alembic/` | Database migrations. The baseline is generated from the models. |
+| `tests/` | pytest suite (needs a Postgres database). |
+| `scripts/seed_demo.py` | Seeds a small demo catalogue (store, products, chef, recipes). |
+| `scripts/legacy/`, `db/legacy-sql/` | The old ad-hoc migration/setup scripts and SQL. Kept for reference; not maintained. |
+| `frontend-customer/` | Customer web storefront (React 19, Vite, Tailwind) with an Android wrapper (Capacitor). |
+| `frontend-app/` | Mobile app (React, Vite, Capacitor), including the EazyBot assistant screen. |
+| `frontend-admin/` `frontend-vendor/` `frontend-chef/` `frontend-delivery/` `frontend-marketing/` | Partner and staff portals. |
+| `frontend-portals/` | Landing page linking to the portals. |
+| `docs/` | Architecture and setup guides. `docs/archive/` holds older notes. |
+| `fliers/` | Value-proposition copy for customers, vendors, chefs and drivers. |
+
+## Run it locally
+
+Requirements: Python 3.11+, Node 20+, PostgreSQL 14+.
 
 ```bash
+# 1. Backend
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+cp env.template .env            # set DB_PASSWORD (and optionally ANTHROPIC_API_KEY)
+createdb easyfoods
+
+alembic upgrade head            # create the schema
+python scripts/seed_demo.py     # optional demo data
+uvicorn app.main:app --reload   # http://localhost:8000/api/docs
+
+# 2. Customer storefront (any frontend-* folder works the same way)
+cd frontend-customer && npm install
+VITE_API_BASE_URL=http://localhost:8000/api/v1 npm run dev   # http://localhost:3003
 ```
 
-### Step 2: Configure Database Connection
+Dev ports: customer 3003, admin 3002, vendor 3000. Each portal has its own `package.json`.
 
-1. Copy the example environment file:
+### Tests
+
 ```bash
-cp .env.example .env
+TEST_DATABASE_URL=postgresql://postgres:<pw>@localhost:5432/easyfoods_test pytest
 ```
 
-2. Edit `.env` and update with your PostgreSQL credentials:
-```
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=easyfoods
-DB_USER=postgres
-DB_PASSWORD=your_actual_password
-```
+The test database is created if missing and wiped each run.
 
-### Step 3: Verify Database Connection
+### Existing databases
 
-Test your database connection:
-```bash
-python test_db_connection.py
-```
+If your database was created by the old scripts, adopt Alembic without changing data:
+`alembic stamp head`. After that, change schema only via `alembic revision --autogenerate`.
 
-This script will:
-- Test the connection to your PostgreSQL database
-- Display database version and connection info
-- List existing tables (if any)
+## Configuration
 
-### Step 4: Create Database Schema
+Set in `.env` (see `env.template`). Everything is optional except the database.
 
-Once the connection test passes, set up the database schema:
-```bash
-python setup_database.py
-```
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` or `DB_HOST/PORT/NAME/USER/PASSWORD` | Postgres connection. |
+| `ANTHROPIC_API_KEY`, `AI_MODEL` | Enables EazyBot, meal plans, semantic search, description generator. |
+| `STRIPE_*`, `HELCIM_*` | Card payments and Stripe Connect payouts. |
+| `CLOUDINARY_*` or `AWS_*`/`S3_BUCKET_NAME` | Image uploads (otherwise stored on local disk). |
+| `CORS_ORIGINS` | Comma-separated frontend origins (default `*`). |
+| `API_PUBLIC_URL` | Absolute base for uploaded image URLs. |
 
-This will create:
-- All necessary tables (products, categories, orders, customers, etc.)
-- Indexes for performance
-- Triggers for automatic timestamp updates
-- Sample categories and products
+Frontends read `VITE_API_BASE_URL`.
 
-### Step 5: Verify Setup
+## AI features
 
-Run the connection test again to see all created tables:
-```bash
-python test_db_connection.py
-```
-
-## Database Schema
-
-The database includes the following main tables:
-
-- **categories** - Product categories (Grains, Spices, Beverages, etc.)
-- **products** - Store products with pricing, inventory, and details
-- **customers** - Customer accounts
-- **addresses** - Shipping and billing addresses
-- **orders** - Customer orders
-- **order_items** - Items in each order
-- **cart_items** - Shopping cart items
-- **reviews** - Product reviews and ratings
-
-## Payments (Stripe sandbox)
-
-To use **Stripe in test mode** (no real charges), set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `PAYMENT_GATEWAY=stripe` in `.env`. See **[STRIPE_SETUP.md](STRIPE_SETUP.md)** for step-by-step setup and test card numbers (e.g. 4242 4242 4242 4242).
-
-## Troubleshooting
-
-### Connection Issues
-
-1. **PostgreSQL not running:**
-   ```bash
-   # macOS (Homebrew)
-   brew services start postgresql
-   
-   # Linux
-   sudo systemctl start postgresql
-   ```
-
-2. **Database doesn't exist:**
-   ```bash
-   createdb easyfoods
-   ```
-
-3. **Permission issues:**
-   - Ensure your PostgreSQL user has CREATE privileges
-   - Check your `.env` file has correct credentials
-
-### Common Errors
-
-- **"relation does not exist"**: Run `setup_database.py` to create tables
-- **"password authentication failed"**: Check your `.env` file password
-- **"could not connect to server"**: Ensure PostgreSQL is running
-
-## Next Steps
-
-After verifying your database setup:
-1. Build your web application (Flask, Django, FastAPI, etc.)
-2. Implement product catalog
-3. Add shopping cart functionality
-4. Create checkout and order processing
-5. Add user authentication
-
+All under `/api/v1/ai`: `POST /chat` (EazyBot with product lookup and meal plans), `POST /meal-plan`,
+`POST /search` (natural-language search to structured filters), `POST /generate-description`.
+They return 503 / fall back gracefully when no `ANTHROPIC_API_KEY` is set.
+On the web, any page can open the assistant with
+`window.dispatchEvent(new CustomEvent('eazybot:ask', { detail: { message } }))`.

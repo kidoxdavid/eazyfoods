@@ -96,6 +96,8 @@ class Settings(BaseSettings):
 
     # Anthropic Claude API (AI features: shopping assistant, description generator, semantic search)
     ANTHROPIC_API_KEY: Optional[str] = None
+    # Model used by EazyBot, meal plans and semantic search (override with AI_MODEL)
+    AI_MODEL: str = "claude-haiku-4-5-20251001"
 
     # Admin/Marketing: set to False to disable public signup (invite-only)
     ADMIN_SIGNUP_ENABLED: bool = True

@@ -4,6 +4,7 @@ Customer cart and checkout endpoints
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status, Body
+from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -14,7 +15,7 @@ from app.models.product import Product
 from app.models.vendor import Vendor
 from app.models.coupon import Coupon, CouponUsage
 from app.api.v1.dependencies import get_optional_customer
-from app.models.customer import Customer
+from app.models.customer import Customer, CustomerCart
 from app.models.platform_settings import PlatformSettings
 from decimal import Decimal
 import uuid
@@ -30,43 +31,17 @@ from app.api.v1.dependencies import get_current_customer
 # This lets CartContext push/pull the entire cart as a JSON array so items from
 # any product type (products, cuisines, meals …) survive device switches.
 
-class _CustomerCartModel:
-    """Lazy shim — avoids a circular import with the ORM models file."""
-    __tablename__ = "customer_carts"
-
-
-def _get_or_create_cart_row(db: Session, customer_id):
-    """Return the DB row (or create it) for this customer's server cart."""
-    from sqlalchemy import text
-    row = db.execute(
-        text("SELECT cart_data FROM customer_carts WHERE customer_id = :cid"),
-        {"cid": str(customer_id)}
-    ).fetchone()
-    return row
-
-
 @router.get("", response_model=dict)
 async def get_customer_cart(
     current_customer: dict = Depends(get_current_customer),
     db: Session = Depends(get_db)
 ):
-    """Return the authenticated customer's server-side cart."""
-    from sqlalchemy import text
-    try:
-        row = db.execute(
-            text("SELECT cart_data FROM customer_carts WHERE customer_id = :cid"),
-            {"cid": current_customer["customer_id"]}
-        ).fetchone()
-        return {"cart": row[0] if row else []}
-    except Exception as e:
-        logger.warning("Cart fetch failed (non-critical): %s", e)
-        return {"cart": []}
+    """Return the current customer's server-side cart."""
+    row = db.get(CustomerCart, uuid.UUID(current_customer["customer_id"]))
+    return {"cart": row.cart_data if row else []}
 
 
-from pydantic import BaseModel as _BaseModel
-
-
-class CartSyncBody(_BaseModel):
+class CartSyncBody(BaseModel):
     cart: list
 
 
@@ -76,35 +51,15 @@ async def sync_customer_cart(
     current_customer: dict = Depends(get_current_customer),
     db: Session = Depends(get_db)
 ):
-    """Upsert the full cart for the authenticated customer (replace server copy)."""
-    import json
-    from sqlalchemy import text
-    try:
-        db.execute(
-            text("""
-                CREATE TABLE IF NOT EXISTS customer_carts (
-                    customer_id UUID PRIMARY KEY,
-                    cart_data JSONB NOT NULL DEFAULT '[]'::jsonb,
-                    updated_at TIMESTAMPTZ DEFAULT NOW()
-                )
-            """)
-        )
-        db.execute(
-            text("""
-                INSERT INTO customer_carts (customer_id, cart_data, updated_at)
-                VALUES (:cid, :data::jsonb, NOW())
-                ON CONFLICT (customer_id) DO UPDATE
-                SET cart_data = EXCLUDED.cart_data, updated_at = NOW()
-            """),
-            {"cid": current_customer["customer_id"], "data": json.dumps(body.cart)}
-        )
-        db.commit()
-    except Exception as e:
-        logger.warning("Cart sync failed (non-critical): %s", e)
-        try:
-            db.rollback()
-        except Exception:
-            pass
+    """Replace the server copy of the cart with the one the client sends."""
+    customer_id = uuid.UUID(current_customer["customer_id"])
+    row = db.get(CustomerCart, customer_id)
+    if row:
+        row.cart_data = body.cart
+        row.updated_at = func.now()
+    else:
+        db.add(CustomerCart(customer_id=customer_id, cart_data=body.cart))
+    db.commit()
     return {"ok": True}
 
 
@@ -113,20 +68,12 @@ async def clear_customer_cart(
     current_customer: dict = Depends(get_current_customer),
     db: Session = Depends(get_db)
 ):
-    """Clear the server-side cart (called on logout)."""
-    from sqlalchemy import text
-    try:
-        db.execute(
-            text("UPDATE customer_carts SET cart_data = '[]'::jsonb, updated_at = NOW() WHERE customer_id = :cid"),
-            {"cid": current_customer["customer_id"]}
-        )
+    """Empty the server-side cart."""
+    row = db.get(CustomerCart, uuid.UUID(current_customer["customer_id"]))
+    if row:
+        row.cart_data = []
+        row.updated_at = func.now()
         db.commit()
-    except Exception as e:
-        logger.warning("Cart clear failed (non-critical): %s", e)
-        try:
-            db.rollback()
-        except Exception:
-            pass
     return {"ok": True}
 
 
