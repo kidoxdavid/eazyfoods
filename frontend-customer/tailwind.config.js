@@ -23,6 +23,8 @@ export default {
       colors: {
         cream: { 50: '#fffdf9', 100: '#fdf8f0', 200: '#f8eedd', 300: '#f0e0c4' },
         ink: { 50: '#f6f7f6', 100: '#e8ebe8', 200: '#cdd3cd', 300: '#a5afa6', 400: '#78857a', 500: '#56635a', 600: '#3f4a42', 700: '#2c352f', 800: '#1d2520', 900: '#121814' },
+        // Legacy pages use gray-*; point it at the warm ink scale so they match the new design without per-page edits.
+        gray: { 50: '#f6f7f6', 100: '#e8ebe8', 200: '#cdd3cd', 300: '#a5afa6', 400: '#78857a', 500: '#56635a', 600: '#3f4a42', 700: '#2c352f', 800: '#1d2520', 900: '#121814' },
         primary: {
           50: '#f0fdf4',
           100: '#dcfce7',

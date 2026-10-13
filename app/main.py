@@ -104,6 +104,21 @@ app.mount("/api/v1/uploads", StaticFiles(directory=str(upload_dir)), name="uploa
 
 
 @app.on_event("startup")
+async def ensure_runtime_tables():
+    """Create small tables that older deployments never had (checkfirst, so existing data is untouched).
+
+    customer_carts used to be created by raw SQL inside a transaction that always rolled back,
+    so databases that predate the Alembic baseline (adopted with `alembic stamp head`) may not have it.
+    """
+    from app.core.database import engine
+    from app.models.customer import CustomerCart
+    try:
+        CustomerCart.__table__.create(bind=engine, checkfirst=True)
+    except Exception:
+        logger.exception("Could not ensure customer_carts table")
+
+
+@app.on_event("startup")
 async def startup_log():
     """Log Stripe config so test payments can be verified in Dashboard."""
     sk = getattr(settings, "STRIPE_SECRET_KEY", None) or ""

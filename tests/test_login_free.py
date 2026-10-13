@@ -52,3 +52,17 @@ def test_semantic_search_degrades_without_ai_key(client):
     res = client.post("/api/v1/ai/search", json={"query": "cheap egusi"})
     assert res.status_code == 200
     assert res.json()["search_term"]
+
+
+def test_cart_works_when_table_is_missing_at_startup():
+    """Databases adopted via `alembic stamp head` may lack customer_carts; startup must create it."""
+    from fastapi.testclient import TestClient
+    from sqlalchemy import text
+    from app.core.database import engine
+    from app.main import app
+
+    with engine.begin() as conn:
+        conn.execute(text("DROP TABLE IF EXISTS customer_carts"))
+    with TestClient(app) as fresh:  # entering the context runs startup handlers
+        res = fresh.get("/api/v1/customer/cart", headers={"X-Customer-Id": str(uuid.uuid4())})
+        assert res.status_code == 200 and res.json() == {"cart": []}
