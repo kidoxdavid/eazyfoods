@@ -255,47 +255,48 @@ const CheckoutPage = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       {paymentConfig.payments_suspended && (
-        <div className="mb-4 p-4 bg-amber-50 border border-amber-400 rounded-lg">
-          <p className="text-amber-800 font-semibold">Payments are currently suspended</p>
-          <p className="text-sm text-amber-700 mt-1">You can place your order and pay on delivery or later.</p>
+        <div className="mb-8 rounded-lg border border-ochre-200 bg-ochre-50 p-4" role="status">
+          <p className="font-semibold text-ochre-800">Online payments are paused</p>
+          <p className="mt-1 text-sm text-ochre-800">You can place your order and pay on delivery or later.</p>
         </div>
       )}
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">Checkout</h1>
+      <p className="eyebrow mb-3">Secure checkout</p>
+      <h1 className="mb-8 font-display text-4xl font-medium tracking-tight text-ink-900 sm:text-5xl">Checkout</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 space-y-4">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-12">
+        <div className="space-y-6 lg:col-span-2">
           {hasStoreItems && (
             selectedStore ? (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <h2 className="text-base font-semibold mb-3 flex items-center">
-                  <MapPin className="h-4 w-4 mr-2 text-primary-600" /> Store
+              <div className="rounded-lg border border-paper-300 bg-white p-5 sm:p-6">
+                <h2 className="mb-4 flex items-center font-display text-xl text-ink-900">
+                  <MapPin className="h-4 w-4 mr-2 text-ink-500" /> Store
                 </h2>
-                <div className="p-3 bg-primary-50 rounded-lg border border-primary-200">
+                <div className="rounded-md border border-paper-300 bg-paper-200/60 p-3">
                   <p className="font-semibold text-sm">{selectedStore.store_name}</p>
-                  <p className="text-xs text-gray-600">{selectedStore.street_address}, {selectedStore.city}, {selectedStore.state}</p>
-                  {!useDistanceBasedDelivery && selectedStore.delivery_fee != null && <p className="text-xs text-gray-600 mt-1">Delivery: ${Number(selectedStore.delivery_fee).toFixed(2)}</p>}
-                {useDistanceBasedDelivery && <p className="text-xs text-gray-600 mt-1">Delivery: based on distance (enter address at checkout)</p>}
+                  <p className="text-xs text-ink-600">{selectedStore.street_address}, {selectedStore.city}, {selectedStore.state}</p>
+                  {!useDistanceBasedDelivery && selectedStore.delivery_fee != null && <p className="text-xs text-ink-600 mt-1">Delivery: ${Number(selectedStore.delivery_fee).toFixed(2)}</p>}
+                {useDistanceBasedDelivery && <p className="text-xs text-ink-600 mt-1">Delivery: based on distance (enter address at checkout)</p>}
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="rounded-lg border border-paper-300 bg-white p-5 sm:p-6">
                 <p className="text-sm text-gray-500">Loading store…</p>
               </div>
             )
           )}
 
           {hasChefItems && chefs.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <h2 className="text-base font-semibold mb-3 flex items-center">
-                <ChefHat className="h-4 w-4 mr-2 text-primary-600" /> Chef{chefs.length > 1 ? 's' : ''}
+            <div className="rounded-lg border border-paper-300 bg-white p-5 sm:p-6">
+              <h2 className="mb-4 flex items-center font-display text-xl text-ink-900">
+                <ChefHat className="h-4 w-4 mr-2 text-ink-500" /> Chef{chefs.length > 1 ? 's' : ''}
               </h2>
               <div className="space-y-3">
                 {chefs.map((chef) => (
-                  <div key={chef.id} className="p-3 bg-primary-50 rounded-lg border border-primary-200">
+                  <div key={chef.id} className="rounded-md border border-paper-300 bg-paper-200/60 p-3">
                     <p className="font-semibold text-sm">{chef.chef_name || `${chef.first_name || ''} ${chef.last_name || ''}`.trim()}</p>
-                    {chef.city && <p className="text-xs text-gray-600">{chef.city}{chef.state ? `, ${chef.state}` : ''}</p>}
+                    {chef.city && <p className="text-xs text-ink-600">{chef.city}{chef.state ? `, ${chef.state}` : ''}</p>}
                   </div>
                 ))}
               </div>
@@ -303,41 +304,41 @@ const CheckoutPage = () => {
           )}
 
           {isGuest && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <h2 className="text-base font-semibold mb-1">Your details</h2>
+            <div className="rounded-lg border border-paper-300 bg-white p-5 sm:p-6">
+              <h2 className="mb-1 font-display text-xl text-ink-900">Your details</h2>
               <p className="text-xs text-gray-500 mb-3">No account needed. We use these to confirm and deliver your order, and remember them on this device.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Email *</label>
-                  <input aria-label="Email" type="email" required value={guestInfo.guest_email} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_email: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="you@example.com" />
+                  <label className="label">Email *</label>
+                  <input aria-label="Email" type="email" required value={guestInfo.guest_email} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_email: e.target.value }))} className="input" placeholder="you@example.com" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Phone *</label>
-                  <input aria-label="Phone" type="tel" required value={guestInfo.guest_phone} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_phone: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="So the driver or store can reach you" autoComplete="tel" />
+                  <label className="label">Phone *</label>
+                  <input aria-label="Phone" type="tel" required value={guestInfo.guest_phone} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_phone: e.target.value }))} className="input" placeholder="So the driver or store can reach you" autoComplete="tel" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">First name *</label>
-                  <input aria-label="First name" type="text" required value={guestInfo.guest_first_name} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_first_name: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+                  <label className="label">First name *</label>
+                  <input aria-label="First name" type="text" required value={guestInfo.guest_first_name} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_first_name: e.target.value }))} className="input" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Last name *</label>
-                  <input aria-label="Last name" type="text" required value={guestInfo.guest_last_name} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_last_name: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+                  <label className="label">Last name *</label>
+                  <input aria-label="Last name" type="text" required value={guestInfo.guest_last_name} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_last_name: e.target.value }))} className="input" />
                 </div>
               </div>
             </div>
           )}
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h2 className="text-base font-semibold mb-3 flex items-center">
-              <Truck className="h-4 w-4 mr-2 text-primary-600" /> Delivery Method
+          <div className="rounded-lg border border-paper-300 bg-white p-5 sm:p-6">
+            <h2 className="mb-4 flex items-center font-display text-xl text-ink-900">
+              <Truck className="h-4 w-4 mr-2 text-ink-500" /> Delivery Method
             </h2>
             <div className="grid grid-cols-2 gap-3">
-              <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer ${deliveryMethod === 'delivery' ? 'border-primary-500 bg-primary-50' : 'border-gray-200'}`}>
+              <label className={`flex items-center p-3 rounded-lg border cursor-pointer transition ${deliveryMethod === 'delivery' ? 'border-ink-900 bg-white ring-1 ring-ink-900' : 'border-paper-400 hover:border-ink-400'}`}>
                 <input type="radio" name="delivery" value="delivery" checked={deliveryMethod === 'delivery'} onChange={(e) => setDeliveryMethod(e.target.value)} className="mr-2" />
-                <Truck className="h-4 w-4 mr-2 text-primary-600" />
+                <Truck className="h-4 w-4 mr-2 text-ink-500" />
                 <div>
                   <p className="font-semibold text-sm">Delivery</p>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-ink-600">
                     {estimatingDelivery
                       ? 'Calculating…'
                       : useDistanceBasedDelivery && deliveryFeeFromEstimate == null
@@ -346,59 +347,59 @@ const CheckoutPage = () => {
                   </p>
                 </div>
               </label>
-              <label className={`flex items-center p-3 border-2 rounded-lg cursor-pointer ${deliveryMethod === 'pickup' ? 'border-primary-500 bg-primary-50' : 'border-gray-200'}`}>
+              <label className={`flex items-center p-3 rounded-lg border cursor-pointer transition ${deliveryMethod === 'pickup' ? 'border-ink-900 bg-white ring-1 ring-ink-900' : 'border-paper-400 hover:border-ink-400'}`}>
                 <input type="radio" name="delivery" value="pickup" checked={deliveryMethod === 'pickup'} onChange={(e) => setDeliveryMethod(e.target.value)} className="mr-2" />
-                <MapPin className="h-4 w-4 mr-2 text-primary-600" />
-                <div><p className="font-semibold text-sm">Pickup</p><p className="text-xs text-gray-600">Free</p></div>
+                <MapPin className="h-4 w-4 mr-2 text-ink-500" />
+                <div><p className="font-semibold text-sm">Pickup</p><p className="text-xs text-ink-600">Free</p></div>
               </label>
             </div>
           </div>
 
           {deliveryMethod === 'delivery' && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <h2 className="text-base font-semibold mb-3">Delivery Address</h2>
+            <div className="rounded-lg border border-paper-300 bg-white p-5 sm:p-6">
+              <h2 className="mb-4 font-display text-xl text-ink-900">Delivery Address</h2>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Street Address *</label>
+                  <label className="label">Street Address *</label>
                   {mapsLoaded && import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
                     <Autocomplete
                       onLoad={(ac) => { autocompleteRef.current = ac }}
                       onPlaceChanged={onPlaceChanged}
                       options={{ types: ['address'], componentRestrictions: { country: ['ca', 'us'] } }}
                     >
-                      <input type="text" required value={address.street_address} onChange={(e) => { setAddress((a) => ({ ...a, street_address: e.target.value })); setDeliveryLatLng(null) }} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="Start typing your address…" />
+                      <input type="text" required value={address.street_address} onChange={(e) => { setAddress((a) => ({ ...a, street_address: e.target.value })); setDeliveryLatLng(null) }} className="input" placeholder="Start typing your address…" />
                     </Autocomplete>
                   ) : (
-                    <input type="text" required value={address.street_address} onChange={(e) => setAddress((a) => ({ ...a, street_address: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="123 Main Street" />
+                    <input type="text" required value={address.street_address} onChange={(e) => setAddress((a) => ({ ...a, street_address: e.target.value }))} className="input" placeholder="123 Main Street" />
                   )}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">City *</label>
-                    <input aria-label="City" type="text" required value={address.city} onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+                    <label className="label">City *</label>
+                    <input aria-label="City" type="text" required value={address.city} onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))} className="input" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Province</label>
-                    <input aria-label="Province" type="text" value={address.state} onChange={(e) => setAddress((a) => ({ ...a, state: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+                    <label className="label">Province</label>
+                    <input aria-label="Province" type="text" value={address.state} onChange={(e) => setAddress((a) => ({ ...a, state: e.target.value }))} className="input" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Postal Code *</label>
-                    <input aria-label="Postal Code" type="text" required value={address.postal_code} onChange={(e) => setAddress((a) => ({ ...a, postal_code: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+                    <label className="label">Postal Code *</label>
+                    <input aria-label="Postal Code" type="text" required value={address.postal_code} onChange={(e) => setAddress((a) => ({ ...a, postal_code: e.target.value }))} className="input" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Country</label>
-                    <input aria-label="Country" type="text" value={address.country} onChange={(e) => setAddress((a) => ({ ...a, country: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+                    <label className="label">Country</label>
+                    <input aria-label="Country" type="text" value={address.country} onChange={(e) => setAddress((a) => ({ ...a, country: e.target.value }))} className="input" />
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h2 className="text-base font-semibold mb-3 flex items-center">
-              <CreditCard className="h-4 w-4 mr-2 text-primary-600" /> Payment
+          <div className="rounded-lg border border-paper-300 bg-white p-5 sm:p-6">
+            <h2 className="mb-4 flex items-center font-display text-xl text-ink-900">
+              <CreditCard className="h-4 w-4 mr-2 text-ink-500" /> Payment
             </h2>
             {PaymentSection && !paymentConfig.payments_suspended && (
               <PaymentSection
@@ -413,17 +414,17 @@ const CheckoutPage = () => {
               />
             )}
             {paymentConfig.payments_suspended && (
-              <p className="text-sm text-gray-600">Pay on delivery or later.</p>
+              <p className="text-sm text-ink-600">Pay on delivery or later.</p>
             )}
           </div>
         </div>
 
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h2 className="text-base font-semibold mb-3">Order Summary</h2>
+          <div className="rounded-lg border border-paper-300 bg-white p-5 sm:p-6 lg:sticky lg:top-32">
+            <h2 className="mb-4 font-display text-xl text-ink-900">Order Summary</h2>
             <div className="space-y-2 mb-3">
               {cart.map((item) => (
-                <div key={item.id} className="flex justify-between text-xs py-1.5 border-b border-gray-100 last:border-0">
+                <div key={item.id} className="flex justify-between gap-3 border-b border-paper-300 py-3 text-xs last:border-0">
                   <div className="flex-1">
                     <p className="font-medium text-sm">{item.name}</p>
                     <p className="text-gray-500 text-xs">Qty: {item.quantity}</p>
@@ -432,11 +433,11 @@ const CheckoutPage = () => {
                 </div>
               ))}
             </div>
-            <div className="border-t border-gray-200 pt-3 space-y-1.5">
-              <div className="flex justify-between text-xs"><span className="text-gray-600">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-              <div className="flex justify-between text-xs"><span className="text-gray-600">Tax</span><span>${tax.toFixed(2)}</span></div>
+            <div className="space-y-2 border-t border-paper-300 pt-4">
+              <div className="flex justify-between text-xs"><span className="text-ink-600">Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+              <div className="flex justify-between text-xs"><span className="text-ink-600">Tax</span><span>${tax.toFixed(2)}</span></div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-600">Shipping</span>
+                <span className="text-ink-600">Shipping</span>
                 <span>
                   {estimatingDelivery && deliveryMethod === 'delivery'
                     ? 'Calculating…'
@@ -445,14 +446,14 @@ const CheckoutPage = () => {
                       : `$${shipping.toFixed(2)}`}
                 </span>
               </div>
-              <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200">
-                <span>Total</span><span className="text-primary-600">${total.toFixed(2)}</span>
+              <div className="flex items-baseline justify-between border-t border-paper-300 pt-4 text-base font-semibold">
+                <span>Total</span><span className="price text-2xl">${total.toFixed(2)}</span>
               </div>
             </div>
             <button
               onClick={handlePlaceOrder}
               disabled={loading || !isFormValid || processingPayment}
-              className="w-full mt-4 bg-primary-600 text-white py-2.5 px-4 rounded-lg font-semibold hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm"
+              className="btn-primary mt-6 w-full !py-3.5 !text-base"
             >
               {loading || processingPayment ? (
                 <>
