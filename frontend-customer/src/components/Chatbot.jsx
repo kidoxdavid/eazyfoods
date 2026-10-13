@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { MessageCircle, X, Send, Bot, ShoppingCart, Sparkles, UtensilsCrossed, Check, ChevronDown, ChevronUp, CalendarDays } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import api from '../services/api'
 import { resolveImageUrl } from '../utils/imageUtils'
 import { useCart } from '../contexts/CartContext'
@@ -31,7 +31,7 @@ function ProductCard({ product, onAdd }) {
         <p className="text-xs text-primary-600 font-bold">${product.price?.toFixed(2)}</p>
       </div>
       <button onClick={() => onAdd(product)}
-        className="flex-shrink-0 w-7 h-7 bg-primary-600 text-white rounded-lg flex items-center justify-center hover:bg-primary-700 transition-colors">
+        className="flex-shrink-0 w-7 h-7 bg-primary-800 text-white rounded-lg flex items-center justify-center hover:bg-primary-900 transition-colors">
         <ShoppingCart className="h-3.5 w-3.5" />
       </button>
     </div>
@@ -46,7 +46,7 @@ function MealPlanCard({ plan, onAddToCart, adding, added }) {
   return (
     <div className="bg-white border border-primary-100 rounded-2xl overflow-hidden shadow-sm">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-3.5 py-2.5">
+      <div className="bg-gradient-to-r from-primary-800 to-primary-900 px-3.5 py-2.5">
         <div className="flex items-center gap-2">
           <CalendarDays className="h-4 w-4 text-primary-200 flex-shrink-0" />
           <div className="flex-1 min-w-0">
@@ -97,7 +97,7 @@ function MealPlanCard({ plan, onAddToCart, adding, added }) {
       <div className="px-3 pb-3 flex gap-2">
         <button onClick={() => onAddToCart(plan)} disabled={adding || added}
           className={`flex-1 h-9 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
-            added ? 'bg-green-500 text-white' : adding ? 'bg-primary-400 text-white' : 'bg-primary-600 text-white hover:bg-primary-700'
+            added ? 'bg-green-500 text-white' : adding ? 'bg-primary-400 text-white' : 'bg-primary-800 text-white hover:bg-primary-900'
           }`}>
           {added ? <><Check className="h-3.5 w-3.5" /> Added to cart!</>
            : adding ? 'Adding…'
@@ -128,6 +128,7 @@ function TypingDots() {
 const Chatbot = () => {
   const { addToCart } = useCart()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -257,9 +258,11 @@ const Chatbot = () => {
 
   // ── Closed state: floating bubble ────────────────────────────────────────
   if (!isOpen) {
+    // The bubble would cover the order summary on checkout; the assistant is still reachable from the header.
+    if (pathname === '/checkout') return null
     return (
       <button onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 w-14 h-14 bg-primary-600 text-white rounded-full shadow-xl hover:bg-primary-700 flex items-center justify-center z-40 transition-all hover:scale-110 group"
+        className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 w-14 h-14 bg-primary-800 text-white rounded-full shadow-xl hover:bg-primary-900 flex items-center justify-center z-40 transition-all hover:scale-110 group"
         aria-label="Open AI assistant">
         <Bot className="h-6 w-6 group-hover:scale-110 transition-transform" />
         <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-amber-400 rounded-full border-2 border-white animate-pulse" />
@@ -273,7 +276,7 @@ const Chatbot = () => {
       <div className="w-full max-w-md sm:w-[390px] h-[88vh] sm:h-[600px] bg-white flex flex-col shadow-2xl rounded-t-2xl sm:rounded-2xl border border-gray-200 overflow-hidden">
 
         {/* Header */}
-        <div className="bg-primary-600 text-white px-4 py-3.5 flex items-center gap-3 flex-shrink-0">
+        <div className="bg-primary-800 text-white px-4 py-3.5 flex items-center gap-3 flex-shrink-0">
           <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
             <Bot className="h-5 w-5" />
           </div>
@@ -302,7 +305,7 @@ const Chatbot = () => {
               <div className="max-w-[85%] space-y-2">
                 <div className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                   msg.role === 'user'
-                    ? 'bg-primary-600 text-white rounded-tr-sm'
+                    ? 'bg-primary-800 text-white rounded-tr-sm'
                     : 'bg-white text-gray-800 border border-gray-100 shadow-sm rounded-tl-sm'
                 }`}>
                   <p className="whitespace-pre-wrap">{msg.text}</p>
@@ -387,7 +390,7 @@ const Chatbot = () => {
             />
             <button onClick={() => sendMessage()}
               disabled={!input.trim() || isTyping}
-              className="w-10 h-10 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center flex-shrink-0">
+              className="w-10 h-10 bg-primary-800 text-white rounded-xl hover:bg-primary-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center flex-shrink-0">
               <Send className="h-4 w-4" />
             </button>
           </div>
