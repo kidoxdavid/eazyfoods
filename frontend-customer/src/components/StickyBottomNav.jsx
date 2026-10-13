@@ -25,7 +25,7 @@ const StickyBottomNav = () => {
               <span className={`relative flex h-7 w-12 items-center justify-center rounded-full transition ${active(path) ? 'bg-primary-100' : ''}`}>
                 <Icon className="h-5 w-5" />
                 {path === '/cart' && count > 0 && (
-                  <span className="absolute -right-0.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-nude-600 px-1 text-[10px] font-bold text-white">{count > 9 ? '9+' : count}</span>
+                  <span className="absolute -right-0.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-nude-700 px-1 text-[10px] font-bold text-white">{count > 9 ? '9+' : count}</span>
                 )}
               </span>
               {label}

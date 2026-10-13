@@ -345,7 +345,7 @@ const ChefDetail = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <label className="text-sm text-gray-600">Servings:</label>
-                            <input
+                            <input aria-label="Servings"
                               type="number"
                               min={cuisine.minimum_servings ?? 1}
                               max={99}

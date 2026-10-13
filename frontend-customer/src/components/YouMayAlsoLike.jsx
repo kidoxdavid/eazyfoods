@@ -90,6 +90,7 @@ const YouMayAlsoLike = ({ productId, categoryId, maxItems = 4 }) => {
                 e.stopPropagation()
                 toggleFavorite(product.id)
               }}
+              aria-label="Save to favourites"
               className="absolute top-2 right-2 p-1.5 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:shadow-xl hover:bg-white transition-all z-20"
               type="button"
             >
@@ -143,7 +144,8 @@ const YouMayAlsoLike = ({ productId, categoryId, maxItems = 4 }) => {
                   </p>
                   <button
                     onClick={(e) => handleAddToCart(e, product)}
-                    className="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors opacity-0 group-hover:opacity-100"
+                    aria-label={`Add ${product.name} to cart`}
+                    className="p-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                     type="button"
                   >
                     <ShoppingCart className="h-4 w-4" />

@@ -28,7 +28,7 @@ const StickyAddToCartMealPlan = ({ mealPlan, householdSize, setHouseholdSize, on
 
           <div className="flex-shrink-0">
             <label className="sr-only">Household size</label>
-            <select
+            <select aria-label="Household size"
               value={householdSize}
               onChange={(e) => setHouseholdSize(parseInt(e.target.value, 10))}
               className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"

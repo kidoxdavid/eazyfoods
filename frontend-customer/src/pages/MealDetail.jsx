@@ -148,16 +148,17 @@ const MealDetail = () => {
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
               <label className="sr-only">Servings</label>
-              <button onClick={() => setHouseholdSize(Math.max(1, householdSize - 1))} className="p-2 sm:p-2.5 hover:bg-gray-100 touch-manipulation"><Minus className="h-4 w-4" /></button>
+              <button aria-label="Fewer people" onClick={() => setHouseholdSize(Math.max(1, householdSize - 1))} className="p-2 sm:p-2.5 hover:bg-gray-100 touch-manipulation"><Minus className="h-4 w-4" /></button>
               <input
                 type="number"
+                aria-label="Household size"
                 min={1}
                 max={10}
                 value={householdSize}
                 onChange={(e) => setHouseholdSize(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
                 className="w-12 sm:w-14 text-center border-x border-gray-300 py-2 text-sm"
               />
-              <button onClick={() => setHouseholdSize(Math.min(10, householdSize + 1))} className="p-2 sm:p-2.5 hover:bg-gray-100 touch-manipulation"><Plus className="h-4 w-4" /></button>
+              <button aria-label="More people" onClick={() => setHouseholdSize(Math.min(10, householdSize + 1))} className="p-2 sm:p-2.5 hover:bg-gray-100 touch-manipulation"><Plus className="h-4 w-4" /></button>
             </div>
             <AnimatedButton
               onClick={handleAddToCart}

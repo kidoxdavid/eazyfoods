@@ -309,19 +309,19 @@ const CheckoutPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Email *</label>
-                  <input type="email" required value={guestInfo.guest_email} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_email: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="you@example.com" />
+                  <input aria-label="Email" type="email" required value={guestInfo.guest_email} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_email: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="you@example.com" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Phone *</label>
-                  <input type="tel" required value={guestInfo.guest_phone} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_phone: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="So the driver or store can reach you" autoComplete="tel" />
+                  <input aria-label="Phone" type="tel" required value={guestInfo.guest_phone} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_phone: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" placeholder="So the driver or store can reach you" autoComplete="tel" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">First name *</label>
-                  <input type="text" required value={guestInfo.guest_first_name} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_first_name: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+                  <input aria-label="First name" type="text" required value={guestInfo.guest_first_name} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_first_name: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Last name *</label>
-                  <input type="text" required value={guestInfo.guest_last_name} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_last_name: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+                  <input aria-label="Last name" type="text" required value={guestInfo.guest_last_name} onChange={(e) => setGuestInfo((p) => ({ ...p, guest_last_name: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
                 </div>
               </div>
             </div>
@@ -375,21 +375,21 @@ const CheckoutPage = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">City *</label>
-                    <input type="text" required value={address.city} onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+                    <input aria-label="City" type="text" required value={address.city} onChange={(e) => setAddress((a) => ({ ...a, city: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Province</label>
-                    <input type="text" value={address.state} onChange={(e) => setAddress((a) => ({ ...a, state: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+                    <input aria-label="Province" type="text" value={address.state} onChange={(e) => setAddress((a) => ({ ...a, state: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Postal Code *</label>
-                    <input type="text" required value={address.postal_code} onChange={(e) => setAddress((a) => ({ ...a, postal_code: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+                    <input aria-label="Postal Code" type="text" required value={address.postal_code} onChange={(e) => setAddress((a) => ({ ...a, postal_code: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Country</label>
-                    <input type="text" value={address.country} onChange={(e) => setAddress((a) => ({ ...a, country: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
+                    <input aria-label="Country" type="text" value={address.country} onChange={(e) => setAddress((a) => ({ ...a, country: e.target.value }))} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
                   </div>
                 </div>
               </div>

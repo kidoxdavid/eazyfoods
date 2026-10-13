@@ -41,7 +41,7 @@ const ProductTile = ({ product }) => {
           <div className="flex h-full items-center justify-center text-4xl">🛒</div>
         )}
         {off > 0 && (
-          <span className="absolute left-2 top-2 rounded-full bg-nude-600 px-2 py-0.5 text-[11px] font-bold text-white">-{off}%</span>
+          <span className="absolute left-2 top-2 rounded-full bg-nude-700 px-2 py-0.5 text-[11px] font-bold text-white">-{off}%</span>
         )}
         <button
           type="button"

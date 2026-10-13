@@ -504,7 +504,7 @@ const TopMarketDeals = () => {
             {categories.length > 0 && (
             <div className="flex items-center gap-2 flex-shrink-0">
                 <Filter className="h-4 w-4 text-gray-600" />
-                <select
+                <select aria-label="Category"
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
@@ -523,7 +523,7 @@ const TopMarketDeals = () => {
             {allOfferTypes.length > 0 && (
               <div className="flex items-center gap-2 flex-shrink-0">
                 <span className="text-sm text-gray-600">Offer:</span>
-                <select
+                <select aria-label="Offer type"
                   value={offerTypeFilter}
                   onChange={(e) => setOfferTypeFilter(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
@@ -541,7 +541,7 @@ const TopMarketDeals = () => {
             {/* Sort Filter */}
           <div className="flex items-center gap-2 flex-shrink-0">
               <span className="text-sm text-gray-600">Sort:</span>
-              <select
+              <select aria-label="Sort by"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
@@ -593,7 +593,7 @@ const TopMarketDeals = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Min price ($)</label>
-                  <input
+                  <input aria-label="Min price ($)"
                     type="number"
                     min="0"
                     step="0.01"
@@ -605,7 +605,7 @@ const TopMarketDeals = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Max price ($)</label>
-                  <input
+                  <input aria-label="Max price ($)"
                     type="number"
                     min="0"
                     step="0.01"
@@ -617,7 +617,7 @@ const TopMarketDeals = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Min rating</label>
-                  <select
+                  <select aria-label="Min rating"
                     value={minRating}
                     onChange={(e) => setMinRating(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500"

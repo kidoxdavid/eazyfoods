@@ -227,6 +227,7 @@ const ProductDetail = () => {
               </button>
               <input
                 type="number"
+                aria-label="Quantity"
                 min={1}
                 max={stockQuantity}
                 value={quantity}
@@ -319,7 +320,7 @@ const ProductDetail = () => {
               </div>
               <div className="mb-3 sm:mb-4">
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Title (optional)</label>
-                <input
+                <input aria-label="Title (optional)"
                   type="text"
                   value={reviewForm.title}
                   onChange={(e) => setReviewForm({ ...reviewForm, title: e.target.value })}

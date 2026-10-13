@@ -195,6 +195,7 @@ const ContactUs = () => {
                 </label>
                 <input
                   type="file"
+                  aria-label="Attach picture or document"
                   accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,image/*,application/pdf"
                   onChange={(e) => {
                     const file = e.target.files?.[0]

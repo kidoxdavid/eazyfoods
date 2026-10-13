@@ -80,7 +80,7 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
             )}
           </div>
           {compareAt && (
-            <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-primary-500 text-white text-sm font-bold shadow-lg">
+            <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-primary-600 text-white text-sm font-bold shadow-lg">
               −{discountPct}%
             </span>
           )}
@@ -152,7 +152,7 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
               <button
                 onClick={handleAddToCart}
                 disabled={product.stock_quantity === 0}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600 disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg bg-primary-600 text-white text-sm font-semibold hover:bg-primary-600 disabled:opacity-50"
                 type="button"
               >
                 <ShoppingCart className="h-4 w-4" />
@@ -221,7 +221,7 @@ const QuickViewModal = ({ product, isOpen, onClose }) => {
               <button
                 onClick={handleAddToCart}
                 disabled={product.stock_quantity === 0}
-                className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-primary-500 text-white font-bold text-base hover:bg-primary-600 disabled:opacity-50 transition-colors shadow-lg shadow-primary-500/25"
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-primary-600 text-white font-bold text-base hover:bg-primary-600 disabled:opacity-50 transition-colors shadow-lg shadow-primary-500/25"
                 type="button"
               >
                 <ShoppingCart className="h-5 w-5" />

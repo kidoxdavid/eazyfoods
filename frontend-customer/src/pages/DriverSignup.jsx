@@ -234,7 +234,7 @@ const DriverSignup = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-                  <input
+                  <input aria-label="First Name"
                     type="text"
                     required
                     value={formData.first_name}
@@ -244,7 +244,7 @@ const DriverSignup = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-                  <input
+                  <input aria-label="Last Name"
                     type="text"
                     required
                     value={formData.last_name}
@@ -315,7 +315,7 @@ const DriverSignup = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Select Your Delivery Zone *</label>
-                  <select
+                  <select aria-label="Select Your Delivery Zone"
                     required
                     value={formData.delivery_zone}
                     onChange={(e) => setFormData({ ...formData, delivery_zone: e.target.value })}
@@ -367,7 +367,7 @@ const DriverSignup = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Street Address *</label>
-                  <input
+                  <input aria-label="Street Address"
                     type="text"
                     required
                     value={formData.street_address}
@@ -377,7 +377,7 @@ const DriverSignup = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
-                  <input
+                  <input aria-label="City"
                     type="text"
                     required
                     value={formData.city}
@@ -387,7 +387,7 @@ const DriverSignup = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
-                  <input
+                  <input aria-label="Province"
                     type="text"
                     value={formData.state}
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
@@ -396,7 +396,7 @@ const DriverSignup = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code *</label>
-                  <input
+                  <input aria-label="Postal Code"
                     type="text"
                     required
                     value={formData.postal_code}
@@ -416,7 +416,7 @@ const DriverSignup = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Type</label>
-                  <select
+                  <select aria-label="Vehicle Type"
                     value={formData.vehicle_type}
                     onChange={(e) => setFormData({ ...formData, vehicle_type: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
@@ -431,7 +431,7 @@ const DriverSignup = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">License Plate</label>
-                  <input
+                  <input aria-label="License Plate"
                     type="text"
                     value={formData.license_plate}
                     onChange={(e) => setFormData({ ...formData, license_plate: e.target.value })}
@@ -440,7 +440,7 @@ const DriverSignup = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Make</label>
-                  <select
+                  <select aria-label="Vehicle make"
                     value={formData.vehicle_make}
                     onChange={(e) => setFormData({ ...formData, vehicle_make: e.target.value, vehicle_model: '', custom_vehicle_make: '' })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
@@ -464,7 +464,7 @@ const DriverSignup = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Model</label>
                   {formData.vehicle_make && formData.vehicle_make !== 'Other' ? (
-                    <select
+                    <select aria-label="Vehicle Model"
                       value={formData.vehicle_model}
                       onChange={(e) => setFormData({ ...formData, vehicle_model: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
@@ -483,7 +483,7 @@ const DriverSignup = () => {
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
                     />
                   ) : (
-                    <select
+                    <select aria-label="Vehicle model"
                       disabled
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
                     >
@@ -493,7 +493,7 @@ const DriverSignup = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Year</label>
-                  <input
+                  <input aria-label="Vehicle Year"
                     type="number"
                     min="1900"
                     max={new Date().getFullYear() + 1}
@@ -504,7 +504,7 @@ const DriverSignup = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Color</label>
-                  <input
+                  <input aria-label="Vehicle Color"
                     type="text"
                     value={formData.vehicle_color}
                     onChange={(e) => setFormData({ ...formData, vehicle_color: e.target.value })}
@@ -513,7 +513,7 @@ const DriverSignup = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Driver License Number</label>
-                  <input
+                  <input aria-label="Driver License Number"
                     type="text"
                     value={formData.driver_license_number}
                     onChange={(e) => setFormData({ ...formData, driver_license_number: e.target.value })}
@@ -533,14 +533,14 @@ const DriverSignup = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Driver Licence *</label>
-                  <input
+                  <input aria-label="Driver Licence"
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
                     onChange={(e) => setDocFiles((prev) => ({ ...prev, driver_license: e.target.files?.[0] || null }))}
                     className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
                   />
                   <label className="block text-xs text-gray-600 mt-2">Validity / Expiry date *</label>
-                  <input
+                  <input aria-label="Validity / Expiry date"
                     type="date"
                     required
                     value={formData.driver_license_validity}
@@ -550,14 +550,14 @@ const DriverSignup = () => {
                 </div>
                 <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Registration *</label>
-                  <input
+                  <input aria-label="Vehicle Registration"
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
                     onChange={(e) => setDocFiles((prev) => ({ ...prev, vehicle_registration: e.target.files?.[0] || null }))}
                     className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
                   />
                   <label className="block text-xs text-gray-600 mt-2">Validity / Expiry date *</label>
-                  <input
+                  <input aria-label="Validity / Expiry date"
                     type="date"
                     required
                     value={formData.vehicle_registration_validity}
@@ -567,14 +567,14 @@ const DriverSignup = () => {
                 </div>
                 <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Insurance *</label>
-                  <input
+                  <input aria-label="Insurance"
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
                     onChange={(e) => setDocFiles((prev) => ({ ...prev, insurance: e.target.files?.[0] || null }))}
                     className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
                   />
                   <label className="block text-xs text-gray-600 mt-2">Validity / Expiry date *</label>
-                  <input
+                  <input aria-label="Validity / Expiry date"
                     type="date"
                     required
                     value={formData.insurance_validity}

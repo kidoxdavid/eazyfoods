@@ -189,7 +189,7 @@ const MealPlanDetail = () => {
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                 Household Size
               </label>
-              <select
+              <select aria-label="Household Size"
                 value={householdSize}
                 onChange={(e) => setHouseholdSize(parseInt(e.target.value))}
                 className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"

@@ -118,7 +118,7 @@ const FilterSidebar = ({
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">Min Price</label>
-                  <input
+                  <input aria-label="Min Price"
                     type="number"
                     value={filters.min_price || ''}
                     onChange={(e) => onFilterChange('min_price', e.target.value ? parseFloat(e.target.value) : '')}
@@ -128,7 +128,7 @@ const FilterSidebar = ({
                 </div>
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">Max Price</label>
-                  <input
+                  <input aria-label="Max Price"
                     type="number"
                     value={filters.max_price || ''}
                     onChange={(e) => onFilterChange('max_price', e.target.value ? parseFloat(e.target.value) : '')}

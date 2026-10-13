@@ -334,7 +334,7 @@ const StoreDetail = () => {
             {categories.length > 0 && (
             <div className="flex items-center gap-2 flex-shrink-0">
                 <Filter className="h-4 w-4 text-gray-600" />
-                <select
+                <select aria-label="Category"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
@@ -352,7 +352,7 @@ const StoreDetail = () => {
             {/* Sort Filter */}
           <div className="flex items-center gap-2 flex-shrink-0">
               <span className="text-sm text-gray-600">Sort:</span>
-              <select
+              <select aria-label="Sort by"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
@@ -706,7 +706,7 @@ const StoreDetail = () => {
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Items per page:</span>
-              <select
+              <select aria-label="Items per page"
                 value={itemsPerPage}
                 onChange={(e) => {
                   setItemsPerPage(Number(e.target.value))

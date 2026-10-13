@@ -118,7 +118,7 @@ const Layout = ({ children }) => {
           </nav>
 
           <form onSubmit={submitSearch} className="relative mx-2 hidden min-w-0 flex-1 md:block lg:max-w-md xl:max-w-lg">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-300" />
             <input
               type="search"
               value={query}
@@ -150,7 +150,7 @@ const Layout = ({ children }) => {
               <button type="button" onClick={() => setCartOpen((v) => !v)} aria-label={`Cart, ${count} items`} className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white text-ink-800 shadow-soft transition hover:text-primary-800">
                 <AnimatedCartIcon />
                 {count > 0 && (
-                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-nude-600 px-1 text-[11px] font-bold text-white">{count > 99 ? '99+' : count}</span>
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-nude-700 px-1 text-[11px] font-bold text-white">{count > 99 ? '99+' : count}</span>
                 )}
               </button>
               <CartPreview isOpen={cartOpen} onClose={() => setCartOpen(false)} />
@@ -159,7 +159,7 @@ const Layout = ({ children }) => {
         </div>
 
         <form onSubmit={submitSearch} className="relative px-4 pb-3 md:hidden">
-          <Search className="pointer-events-none absolute left-7 top-1/2 h-4 w-4 -translate-y-[70%] text-ink-400" />
+          <Search className="pointer-events-none absolute left-7 top-1/2 h-4 w-4 -translate-y-[70%] text-ink-300" />
           <input
             type="search"
             value={query}
@@ -233,7 +233,7 @@ const Layout = ({ children }) => {
           </div>
         </div>
         <div className="border-t border-white/10">
-          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-ink-400 sm:flex-row sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-6 text-sm text-ink-300 sm:flex-row sm:px-6 lg:px-8">
             <p>&copy; {new Date().getFullYear()} eazyfoods. All rights reserved.</p>
             <a href={(import.meta.env.VITE_PORTALS_URL || 'https://portals.eazyfoods.ca').trim()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-primary-300 hover:text-primary-200">
               <Package className="h-4 w-4" /> For vendors &amp; partners

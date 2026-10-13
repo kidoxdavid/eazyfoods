@@ -188,7 +188,7 @@ const About = () => {
 
       {/* CTA Section */}
       <section className="text-center">
-        <div className="bg-nude-600 rounded-lg p-4 text-white shadow-sm">
+        <div className="bg-nude-700 rounded-lg p-4 text-white shadow-sm">
           <h2 className="text-xl font-bold mb-2">Ready to Start Shopping?</h2>
           <p className="text-sm mb-4 text-white/90">
             Join thousands of satisfied customers and discover the authentic flavors of Africa.
@@ -196,13 +196,13 @@ const About = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
               href="/groceries"
-              className="bg-white text-nude-600 px-4 py-2 rounded-lg font-semibold hover:bg-nude-50 transition-colors text-sm"
+              className="bg-white text-nude-700 px-4 py-2 rounded-lg font-semibold hover:bg-nude-50 transition-colors text-sm"
             >
               Browse Groceries
             </a>
             <a
               href="/stores"
-              className="bg-nude-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-nude-700 transition-colors text-sm border border-white/20"
+              className="bg-nude-700 text-white px-4 py-2 rounded-lg font-semibold hover:bg-nude-700 transition-colors text-sm border border-white/20"
             >
               Find Stores
             </a>

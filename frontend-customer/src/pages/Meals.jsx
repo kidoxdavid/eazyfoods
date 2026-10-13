@@ -351,7 +351,7 @@ const Meals = () => {
                 ].map(({ k, label, opts }) => (
                   <div key={k} className="w-28 sm:w-36">
                     <label className="block text-xs font-medium text-gray-700 mb-1">{label}</label>
-                    <select value={filters[k]} onChange={e => setFilters({ ...filters, [k]: e.target.value })}
+                    <select aria-label={label} value={filters[k]} onChange={e => setFilters({ ...filters, [k]: e.target.value })}
                       className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white">
                       {opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                     </select>
@@ -359,7 +359,7 @@ const Meals = () => {
                 ))}
                 <div className="min-w-[100px]">
                   <label className="block text-xs font-medium text-gray-700 mb-1">Cuisine</label>
-                  <input type="text" value={filters.cuisine_type} onChange={e => setFilters({ ...filters, cuisine_type: e.target.value })}
+                  <input aria-label="Cuisine" type="text" value={filters.cuisine_type} onChange={e => setFilters({ ...filters, cuisine_type: e.target.value })}
                     placeholder="e.g. Nigerian"
                     className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500" />
                 </div>
@@ -418,9 +418,9 @@ const Meals = () => {
                       {recipe.description && <p className="text-sm text-gray-600 line-clamp-2 mb-3">{recipe.description}</p>}
                       {recipe.cuisine_type && <p className="text-sm font-semibold text-primary-600 mb-2">{recipe.cuisine_type}</p>}
                       <div className="flex flex-wrap gap-3 text-sm text-gray-600">
-                        {recipe.prep_time_minutes != null && <div className="flex items-center gap-1"><Clock className="h-4 w-4 text-primary-500" /><span>Prep: {recipe.prep_time_minutes}m</span></div>}
-                        {recipe.cook_time_minutes != null && <div className="flex items-center gap-1"><Clock className="h-4 w-4 text-primary-500" /><span>Cook: {recipe.cook_time_minutes}m</span></div>}
-                        <div className="flex items-center gap-1"><Users className="h-4 w-4 text-primary-500" /><span>Serves {recipe.servings || 1}</span></div>
+                        {recipe.prep_time_minutes != null && <div className="flex items-center gap-1"><Clock className="h-4 w-4 text-primary-600" /><span>Prep: {recipe.prep_time_minutes}m</span></div>}
+                        {recipe.cook_time_minutes != null && <div className="flex items-center gap-1"><Clock className="h-4 w-4 text-primary-600" /><span>Cook: {recipe.cook_time_minutes}m</span></div>}
+                        <div className="flex items-center gap-1"><Users className="h-4 w-4 text-primary-600" /><span>Serves {recipe.servings || 1}</span></div>
                       </div>
                     </div>
                   </Link>
@@ -508,7 +508,7 @@ const Meals = () => {
               <div className="flex items-center gap-3">
                 <Filter className="h-4 w-4 text-gray-500" />
                 <span className="text-sm font-semibold text-gray-700">Filter:</span>
-                <select value={planTypeFilter} onChange={e => setPlanTypeFilter(e.target.value)}
+                <select aria-label="Plan type" value={planTypeFilter} onChange={e => setPlanTypeFilter(e.target.value)}
                   className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 bg-white">
                   <option value="all">All Plan Types</option>
                   <option value="one_day">1 Day Plans</option>
@@ -735,7 +735,7 @@ const Meals = () => {
                     <p className="text-sm text-gray-600 mb-3">Select recipes for each slot. Ingredients will be added to your cart.</p>
                     <div className="mb-3">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Plan length</label>
-                      <select value={buildPlanType} onChange={e => { const v = e.target.value; setBuildPlanType(v); setBuildSlots(makeBuildSlots(v)) }}
+                      <select aria-label="Plan length" value={buildPlanType} onChange={e => { const v = e.target.value; setBuildPlanType(v); setBuildSlots(makeBuildSlots(v)) }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg">
                         <option value="one_day">1 Day (3 meals)</option>
                         <option value="one_week">1 Week (21 meals)</option>
@@ -746,7 +746,7 @@ const Meals = () => {
                         <div key={idx} className="flex flex-wrap items-center gap-2 text-sm">
                           <span className="w-20 font-medium">Day {slot.day_number}</span>
                           <span className="w-20 capitalize text-gray-600">{slot.meal_type}</span>
-                          <select value={slot.recipe_id}
+                          <select aria-label="Recipe for this meal slot" value={slot.recipe_id}
                             onChange={e => { const next = [...buildSlots]; next[idx] = { ...slot, recipe_id: e.target.value }; setBuildSlots(next) }}
                             className="flex-1 min-w-[180px] px-2 py-1.5 border border-gray-300 rounded-lg">
                             <option value="">— Select recipe —</option>

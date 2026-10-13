@@ -191,7 +191,7 @@ const Stores = () => {
         <div className="flex items-center justify-end mb-6">
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-600">African region:</label>
-            <select
+            <select aria-label="African region"
               value={selectedRegion}
               onChange={(e) => setSelectedRegion(e.target.value)}
               className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"

@@ -583,7 +583,7 @@ const Groceries = () => {
             {categories.length > 0 && (
             <div className="flex items-center gap-2 flex-shrink-0">
                 <Filter className="h-4 w-4 text-gray-600" />
-                <select
+                <select aria-label="Category"
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
@@ -612,7 +612,7 @@ const Groceries = () => {
             {/* Sort Filter */}
           <div className="flex items-center gap-2 flex-shrink-0">
               <span className="text-sm text-gray-600">Sort:</span>
-              <select
+              <select aria-label="Sort by"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
@@ -672,7 +672,7 @@ const Groceries = () => {
                 <div className="flex items-center gap-3">
                   <div className="flex-1">
                     <label className="block text-xs text-gray-600 mb-1">Min Price ($)</label>
-                    <input
+                    <input aria-label="Min Price ($)"
                       type="number"
                       value={priceMin}
                       onChange={(e) => setPriceMin(e.target.value)}
@@ -684,7 +684,7 @@ const Groceries = () => {
                   </div>
                   <div className="flex-1">
                     <label className="block text-xs text-gray-600 mb-1">Max Price ($)</label>
-                    <input
+                    <input aria-label="Max Price ($)"
                       type="number"
                       value={priceMax}
                       onChange={(e) => setPriceMax(e.target.value)}
@@ -700,7 +700,7 @@ const Groceries = () => {
               {/* Stock Filter */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Stock Status</h4>
-                <select
+                <select aria-label="Item filter"
                   value={stockFilter}
                   onChange={(e) => setStockFilter(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
@@ -714,7 +714,7 @@ const Groceries = () => {
               {/* Rating Filter */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Minimum Rating</h4>
-                <select
+                <select aria-label="Minimum rating"
                   value={minRating}
                   onChange={(e) => setMinRating(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
@@ -730,7 +730,7 @@ const Groceries = () => {
               {/* Items Per Page */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Items Per Page</h4>
-                <select
+                <select aria-label="Items per page"
                   value={itemsPerPage}
                   onChange={(e) => {
                     setItemsPerPage(Number(e.target.value))

@@ -174,7 +174,7 @@ const Chefs = () => {
           <div className="flex flex-wrap items-end gap-2 sm:gap-3 mb-2">
             <div className="flex-1 min-w-0 w-full sm:min-w-[120px] sm:w-auto">
               <label className="block text-xs font-medium text-gray-700 mb-1">Search</label>
-              <input
+              <input aria-label="Search"
                 type="text"
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
@@ -184,7 +184,7 @@ const Chefs = () => {
             </div>
             <div className="w-full xs:w-36 sm:w-40">
               <label className="block text-xs font-medium text-gray-700 mb-1">Cuisine</label>
-              <select
+              <select aria-label="Cuisine"
                 value={filters.cuisine}
                 onChange={(e) => handleFilterChange('cuisine', e.target.value)}
                 className="w-full px-3 py-2.5 sm:py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 touch-manipulation"
@@ -197,7 +197,7 @@ const Chefs = () => {
             </div>
             <div className="w-28">
               <label className="block text-xs font-medium text-gray-700 mb-1">Min Rating</label>
-              <select
+              <select aria-label="Min Rating"
                 value={filters.min_rating}
                 onChange={(e) => handleFilterChange('min_rating', e.target.value)}
                 className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
@@ -210,7 +210,7 @@ const Chefs = () => {
             </div>
             <div className="w-32">
               <label className="block text-xs font-medium text-gray-700 mb-1">Sort</label>
-              <select
+              <select aria-label="Sort"
                 value={filters.sort}
                 onChange={(e) => handleFilterChange('sort', e.target.value)}
                 className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"

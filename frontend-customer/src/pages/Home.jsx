@@ -47,7 +47,7 @@ const AskHero = () => {
             aria-label="Ask EazyBot"
             className="min-w-0 flex-1 bg-transparent py-2 text-base text-ink-900 placeholder:text-ink-300 focus:outline-none"
           />
-          <button type="submit" aria-label="Ask" disabled={!text.trim()} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-nude-600 text-white transition hover:bg-nude-700 disabled:opacity-40">
+          <button type="submit" aria-label="Ask" disabled={!text.trim()} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-nude-700 text-white transition hover:bg-nude-800 disabled:opacity-40">
             <ArrowUp className="h-5 w-5" />
           </button>
         </form>
@@ -218,7 +218,7 @@ const Home = () => {
         )}
 
         <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-4xl bg-nude-600 px-6 py-10 text-white sm:px-12">
+          <div className="relative overflow-hidden rounded-4xl bg-nude-700 px-6 py-10 text-white sm:px-12">
             <Flame aria-hidden="true" className="absolute -right-6 -top-6 h-48 w-48 text-white/10" />
             <div className="relative max-w-xl">
               <h2 className="font-display text-3xl font-bold">Cook for a living? Sell with eazyfoods.</h2>
