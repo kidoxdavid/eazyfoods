@@ -1,1 +1,1 @@
-web: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+web: npm run migrate && npm run seed && npm -w apps/api run start

@@ -1,2 +1,0 @@
-# EAZyfoods Vendor Portal Application
-
