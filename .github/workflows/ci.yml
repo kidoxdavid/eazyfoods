@@ -5,9 +5,6 @@ on:
   pull_request:
     paths: ['**']
 
-defaults:
-  run:
-
 jobs:
   test:
     runs-on: ubuntu-latest
