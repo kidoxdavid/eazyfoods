@@ -4,7 +4,8 @@ import { money, packLabel, post, type StoreCard } from './api';
 import { ProductArt, StoreBanner, StoreMark, Stars } from './art';
 import { useCart } from './cart';
 import { IconChevron, IconChevronL, IconMinus, IconPlus } from './icons';
-import { Badge, Button, Stepper } from './ui';
+import { Badge, Button, Loading, Modal, Notice, Stepper } from './ui';
+import { useApi } from './hooks';
 
 export type Card = {
   slug: string; name: string; brand: string | null; pack_size: string | null; pack_unit: string | null; category?: string | null; category_slug?: string | null; image_url?: string | null;
@@ -40,6 +41,7 @@ export function QuickAdd({ p }: { p: Card }) {
 
 export function ProductCard({ p }: { p: Card }) {
   useAdImpression(p.sponsored_campaign_id);
+  const [quick, setQuick] = useState(false);
   const click = () => { if (p.sponsored_campaign_id) post(`/ads/${p.sponsored_campaign_id}/event`, { type: 'click' }).catch(() => {}); };
   const was = p.was_price && p.was_price > p.min_price ? p.was_price : null;
   const off = was ? Math.round((1 - p.min_price / was) * 100) : 0;
@@ -51,6 +53,8 @@ export function ProductCard({ p }: { p: Card }) {
         {p.on_sale && off <= 0 && <span className="ribbon">Deal</span>}
         {!p.in_stock && <span className="ribbon grey">Out of stock</span>}
       </Link>
+      <button type="button" className="qv" onClick={() => setQuick(true)} aria-label={`Quick view: ${p.name}`}>Quick view</button>
+      {quick && <QuickView slug={p.slug} onClose={() => setQuick(false)} />}
       <div className="pbody">
         {p.sponsored_campaign_id && <span className="sponsor">Sponsored</span>}
         <div className="prow">
@@ -66,6 +70,45 @@ export function ProductCard({ p }: { p: Card }) {
         <div className="pact"><QuickAdd p={p} /></div>
       </div>
     </article>
+  );
+}
+
+
+type QOffer = { store_slug: string; store_name: string; is_open: boolean; is_test_data: boolean; offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; in_stock: boolean; available: number };
+type QP = { name: string; brand: string | null; description: string | null; pack_size: string | null; pack_unit: string | null; category: string | null; category_slug: string | null; allergens: string[] | null; images: { url: string; alt: string }[]; offers: QOffer[] };
+
+/** Look at a product without leaving the page: picture, price per store, allergens, and add to basket. */
+export function QuickView({ slug, onClose }: { slug: string; onClose: () => void }) {
+  const { data: p, loading, error } = useApi<QP>(`/products/${slug}`);
+  const [sel, setSel] = useState<string | null>(null);
+  const best = p ? [...p.offers].sort((a, b) => Number(b.in_stock) - Number(a.in_stock) || a.price_cents - b.price_cents)[0] : undefined;
+  const cur = p?.offers.find((o) => o.offer_id === sel) ?? best;
+  return (
+    <Modal open onClose={onClose} title={p?.name ?? 'Quick view'}>
+      {loading && <Loading />}
+      {error && <Notice tone="error">Could not load this product. <Link to={`/p/${slug}`} onClick={onClose}>Open the full page</Link></Notice>}
+      {p && (
+        <div className="qv-body">
+          <div className="qv-art">{p.images[0] ? <img src={p.images[0].url} alt={p.images[0].alt} /> : <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />}</div>
+          <div className="qv-info">
+            {p.brand && <span className="muted small">{p.brand}</span>}
+            <span className="muted small">{packLabel(p)}</span>
+            {cur ? (<>
+              <div className="row"><Price cents={cur.price_cents} className={`big ${cur.on_promotion ? 'sale' : ''}`} />{cur.compare_at_cents && cur.compare_at_cents > cur.price_cents && <s className="was">{money(cur.compare_at_cents)}</s>}</div>
+              <div className={`stock ${cur.in_stock ? '' : 'out'}`}>{cur.in_stock ? (cur.available <= 5 ? `Only ${cur.available} left` : 'In stock') : 'Out of stock'}</div>
+              {p.offers.length > 1 && <label className="small"><span className="muted">Sold by</span>
+                <select className="input" value={cur.offer_id} onChange={(e) => setSel(e.target.value)}>{p.offers.map((o) => <option key={o.offer_id} value={o.offer_id}>{o.store_name} — {money(o.price_cents)}{o.in_stock ? '' : ' (out of stock)'}</option>)}</select></label>}
+              {p.offers.length === 1 && <span className="small">Sold by <strong>{cur.store_name}</strong></span>}
+              {!cur.is_open && <span className="small muted">This store is closed now. You can add it but only check out while it is open.</span>}
+              <AddToBasket cta offer={{ offer_id: cur.offer_id, slug, name: p.name, unit_price_cents: cur.price_cents, store_name: cur.store_name, store_slug: cur.store_slug, pack: packLabel(p), available: cur.available, in_stock: cur.in_stock }} />
+            </>) : <Notice tone="warn">No store is currently selling this.</Notice>}
+            {p.description && <p className="small">{p.description.length > 220 ? `${p.description.slice(0, 220)}…` : p.description}</p>}
+            <p className="small"><strong>Allergens:</strong> {p.allergens === null ? 'not supplied; check the package' : p.allergens.length ? p.allergens.join(', ') : 'none declared'}</p>
+            <Link to={`/p/${slug}`} onClick={onClose} className="small">View full details and compare stores →</Link>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }
 

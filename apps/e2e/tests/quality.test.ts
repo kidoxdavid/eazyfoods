@@ -289,3 +289,26 @@ describe('marketing (browser)', () => {
     await c.end();
   });
 });
+
+describe('quick view', () => {
+  for (const [label, size] of [['desktop', DESKTOP], ['phone', MOBILE]] as const) {
+    it(`opens from a product card, shows prices and allergens, adds to the basket and passes the accessibility scan (${label})`, async () => {
+      const { page } = await newPage(browser, size);
+      await page.goto(base() + '/search?q=garri'); await page.waitForLoadState('networkidle');
+      const card = page.locator('article.pcard').first();
+      await card.hover();
+      await card.getByRole('button', { name: /Quick view/ }).click();
+      const dlg = page.getByRole('dialog');
+      await dlg.waitFor();
+      await dlg.getByText(/Allergens/).waitFor();
+      expect(await dlg.getByRole('link', { name: /View full details/ }).count()).toBe(1);
+      const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+      expect(r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+      await dlg.getByRole('button', { name: /Add to basket/ }).click();
+      await dlg.getByRole('button', { name: /Add one/ }).waitFor();
+      await page.keyboard.press('Escape');
+      await dlg.waitFor({ state: 'hidden' });
+      await card.getByRole('group', { name: /Quantity of/ }).waitFor();                      // the card behind shows it is in the basket
+    });
+  }
+});
