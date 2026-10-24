@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { fmtDate } from '../../api';
+import { fmtDate, post } from '../../api';
+import { useAuth } from '../../auth';
 import { useAction } from '../../hooks';
 import { useToast } from '../../toast';
 import { Badge, Button, Card, Confirm, Field, Input, Modal, Notice, PageHeader, Select, StatusBadge, Textarea } from '../../ui';
@@ -34,7 +35,7 @@ export function Vendors() {
 
 export function VendorDetail() {
   const { id } = useParams();
-  const can = useCan();
+  const can = useCan(); const nav = useNavigate(); const { reloadStaff } = useAuth();
   const toast = useToast();
   const [rejecting, setRejecting] = useState<string | null>(null);
   const [note, setNote] = useState('');
@@ -48,7 +49,7 @@ export function VendorDetail() {
         const verified = v.documents.some((d: any) => d.status === 'verified');
         return (
           <>
-            <PageHeader title={v.name} sub={<><StatusBadge status={v.status} /> {v.legal_name && <>· {v.legal_name}</>} · <Link to="/admin/vendors">All vendors</Link></>} />
+            <PageHeader title={v.name} sub={<><StatusBadge status={v.status} /> {v.legal_name && <>· {v.legal_name}</>} · <Link to="/admin/vendors">All vendors</Link></>} actions={can('control.manage') ? <Button size="sm" onClick={async () => { await post(`/admin/control/act-as/${id}`); await reloadStaff(); nav('/vendor'); }}>Open their portal</Button> : undefined} />
             {act.error && <Notice tone="error">{act.error}</Notice>}
             {v.kind === 'chef' && <Notice tone="warn"><strong>Home chef.</strong> Approval needs a verified <strong>food premises permit</strong> and a verified <strong>food-handler certificate</strong>. Check both are genuine and current.</Notice>}
             {v.status === 'submitted' && !verified && <Notice tone="warn">This vendor cannot be approved until at least one business document is <strong>verified</strong> (open the documents below, check them, then verify).</Notice>}
@@ -89,7 +90,7 @@ export function VendorDetail() {
             <Card><h3>Commercial terms</h3>
               <p>Commission: <strong>{v.commission_bps == null ? 'marketplace default' : `${v.commission_bps / 100}%`}</strong></p>
               {can('settings.manage') ? <Button variant="secondary" size="sm" onClick={() => setComm(v.commission_bps == null ? '' : String(v.commission_bps / 100))}>Change commission override</Button>
-                : <p className="small muted">Only an owner can change a vendor’s commission.</p>}
+                : <p className="small muted">Only an admin can change a vendor’s commission.</p>}
               <hr />
               <p>Payout account: <strong>{v.stripe_account_id ?? 'none'}</strong></p>
               {can('payouts.manage') ? <Button variant="secondary" size="sm" onClick={() => setAcct(v.stripe_account_id ?? '')}>Set payout account</Button>

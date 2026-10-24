@@ -22,7 +22,7 @@ afterAll(async () => { await settings(mk); await pool.query(`UPDATE marketing_au
 
 describe('access', () => {
   it('only marketing and owner roles can use it', async () => {
-    const cust = (await login('customer@example.test')).cookie, support = (await login('support@example.test')).cookie, owner = (await login('owner@example.test')).cookie;
+    const cust = (await login('customer@example.test')).cookie, support = (await login('support@example.test')).cookie, owner = (await login('admin@example.test')).cookie;
     for (const c of [cust, support]) expect((await call(c, 'GET', '/api/marketing/dashboard')).status).toBe(403);
     expect((await call(null, 'GET', '/api/marketing/dashboard')).status).toBe(401);
     expect((await call(mk, 'GET', '/api/marketing/dashboard')).status).toBe(200);

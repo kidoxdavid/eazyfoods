@@ -76,7 +76,7 @@ describe('vendor onboarding to publication', () => {
 
 describe('catalogue management', () => {
   it('vendor suggestions stay hidden until moderated; aliases only search once verified', async () => {
-    const owner = await who('owner1@example.test'), admin = await who('owner@example.test');
+    const owner = await who('owner1@example.test'), admin = await who('admin@example.test');
     const s = await call(owner, 'POST', '/api/vendor/products/suggest', { name: 'Baobab Fruit Powder', pack_size: 100, pack_unit: 'g', country_slugs: ['nigeria'] });
     expect(s.status).toBe(201);
     expect(s.body.status).toBe('pending');
@@ -298,37 +298,41 @@ describe('customers: reviews, favourites, recipes, account', () => {
 });
 
 describe('administration', () => {
-  it('commercial settings: validated, owner-only, audited; commission override changes new orders', async () => {
-    const owner = await who('owner@example.test'), fin = await who('finance@example.test'), admin = await who('admin@example.test');
-    expect((await call(admin, 'PUT', '/api/admin/settings/commission.default_bps', { value: 1500 })).status).toBe(403);
+  it('commercial settings: validated, admin-only, audited; commission override changes new orders', async () => {
+    const fin = await who('finance@example.test'), admin = await who('admin@example.test'), support = await who('support@example.test');
+    expect((await call(support, 'PUT', '/api/admin/settings/commission.default_bps', { value: 1500 })).status).toBe(403);
     expect((await call(fin, 'PUT', '/api/admin/settings/commission.default_bps', { value: 1500 })).status).toBe(403);
-    expect((await call(owner, 'PUT', '/api/admin/settings/commission.default_bps', { value: 9999 })).status).toBe(400);
-    expect((await call(owner, 'PUT', '/api/admin/settings/not.a.setting', { value: 1 })).status).toBe(404);
-    expect((await call(owner, 'PUT', '/api/admin/settings/commission.default_bps', { value: 1500 })).status).toBe(200);
+    expect((await call(admin, 'PUT', '/api/admin/settings/commission.default_bps', { value: 9999 })).status).toBe(400);
+    expect((await call(admin, 'PUT', '/api/admin/settings/not.a.setting', { value: 1 })).status).toBe(404);
+    expect((await call(admin, 'PUT', '/api/admin/settings/commission.default_bps', { value: 1500 })).status).toBe(200);
     const u = await newCustomer();
     await addToCart(u.cookie, await setOffer(S1, 'garri-white', 2000, 10), 2);
     await addToCart(u.cookie, await setOffer(S1, 'plantain-chips-salted', 1000, 10), 1);
     expect((await call(u.cookie, 'POST', '/api/checkout/quote', { address_id: u.addressId, method: 'delivery' })).body.suborders[0].commission_cents).toBe(750);   // 15% of 50.00
     const vid = (await pool.query('SELECT vendor_id FROM stores WHERE slug=$1', [S1])).rows[0].vendor_id;
-    expect((await call(admin, 'PATCH', `/api/admin/vendors/${vid}/commission`, { commission_bps: 500 })).status).toBe(403);
-    await call(owner, 'PATCH', `/api/admin/vendors/${vid}/commission`, { commission_bps: 500 });
+    expect((await call(support, 'PATCH', `/api/admin/vendors/${vid}/commission`, { commission_bps: 500 })).status).toBe(403);
+    await call(admin, 'PATCH', `/api/admin/vendors/${vid}/commission`, { commission_bps: 500 });
     expect((await call(u.cookie, 'POST', '/api/checkout/quote', { address_id: u.addressId, method: 'delivery' })).body.suborders[0].commission_cents).toBe(250);
-    await call(owner, 'PATCH', `/api/admin/vendors/${vid}/commission`, { commission_bps: null });
-    await call(owner, 'PUT', '/api/admin/settings/commission.default_bps', { value: 1200 });
+    await call(admin, 'PATCH', `/api/admin/vendors/${vid}/commission`, { commission_bps: null });
+    await call(admin, 'PUT', '/api/admin/settings/commission.default_bps', { value: 1200 });
     const log = (await call(fin, 'GET', '/api/admin/audit?action=setting')).body;
     expect(log.some((a: any) => a.action === 'setting.changed' && a.detail.old === 1200 && a.detail.new === 1500)).toBe(true);
   });
 
-  it('role management: only owners grant roles; the last owner cannot be removed', async () => {
-    const owner = await who('owner@example.test'), admin = await who('admin@example.test');
+  it('admin is the top role: it can do everything; others cannot hand out roles; the last admin cannot be removed', async () => {
+    const admin = await who('admin@example.test'), support = await who('support@example.test');
     const u = await newCustomer();
-    expect((await call(admin, 'POST', `/api/admin/users/${u.id}/roles`, { role: 'owner' })).status).toBe(403);   // cannot escalate
-    expect((await call(owner, 'POST', `/api/admin/users/${u.id}/roles`, { role: 'support' })).status).toBe(200);
+    expect((await call(support, 'POST', `/api/admin/users/${u.id}/roles`, { role: 'admin' })).status).toBe(403);   // cannot escalate
+    expect((await call(admin, 'POST', `/api/admin/users/${u.id}/roles`, { role: 'support' })).status).toBe(200);
     const { cookie } = await login(u.email, 'a-long-password');
     expect((await call(cookie, 'GET', '/api/admin/tickets')).status).toBe(200);
     expect((await call(cookie, 'GET', '/api/admin/ledger')).status).toBe(403);
-    const ownerId = (await pool.query(`SELECT user_id FROM user_roles WHERE role='owner' LIMIT 1`)).rows[0].user_id;
-    expect((await call(owner, 'DELETE', `/api/admin/users/${ownerId}/roles/owner`)).status).toBe(409);
+    // the admin can reach every area's controls
+    for (const url of ['/api/admin/ledger', '/api/admin/control/features', '/api/marketing/dashboard', '/api/admin/settings', '/api/admin/audit']) expect((await call(admin, 'GET', url)).status, url).toBe(200);
+    const adminId = (await pool.query(`SELECT user_id FROM user_roles WHERE role='admin' ORDER BY user_id LIMIT 1`)).rows[0].user_id;
+    await pool.query(`DELETE FROM user_roles WHERE role='admin' AND user_id <> $1`, [adminId]);
+    expect((await call(admin, 'DELETE', `/api/admin/users/${adminId}/roles/admin`)).status).toBe(409);
+    expect((await call(admin, 'POST', '/api/auth/login', {})).status).toBeGreaterThan(0);
   });
 
   it('coupons: created by promotions staff, enforce minimum and per-user limits', async () => {

@@ -109,7 +109,7 @@ describe('cook onboarding and the kill switch', () => {
   });
 
   it('the kitchens switch hides everything', async () => {
-    const owner = (await login('owner@example.test')).cookie;
+    const owner = (await login('admin@example.test')).cookie;
     try {
       expect((await call(owner, 'PUT', '/api/admin/settings/kitchens.enabled', { value: false })).status).toBe(200);
       expect((await call(null, 'GET', '/api/kitchens')).body).toEqual([]);

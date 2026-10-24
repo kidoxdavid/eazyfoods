@@ -82,7 +82,7 @@ describe('end-to-end fulfilment', () => {
     const other = await newCustomer();
     expect((await call(other.cookie, 'POST', '/api/driver/apply', { phone: '5875550199', vehicle: 'Bike' })).status).toBe(201);
     expect((await call(other.cookie, 'GET', '/api/driver/jobs')).status).toBe(403);   // applied, not approved
-    const admin = await who('owner@example.test');
+    const admin = await who('admin@example.test');
     const did = (await pool.query('SELECT id FROM drivers WHERE user_id=$1', [other.id])).rows[0].id;
     expect((await call(admin, 'PATCH', `/api/admin/drivers/${did}`, { status: 'approved' })).status).toBe(409);   // must verify first
     await call(admin, 'PATCH', `/api/admin/drivers/${did}`, { licence_verified: true, background_check_verified: true });

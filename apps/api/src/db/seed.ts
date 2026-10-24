@@ -147,7 +147,7 @@ export async function seed(log = console.log) {
       await c.query(`INSERT INTO user_roles(user_id,role,vendor_id) SELECT $1,$2,$3::uuid WHERE NOT EXISTS (SELECT 1 FROM user_roles WHERE user_id=$1 AND role=$2 AND vendor_id IS NOT DISTINCT FROM $3::uuid)`, [id, role, vendorId]);
       return id;
     };
-    await user('admin@example.test', 'Test Admin', 'admin');
+    await user('admin@example.test', 'Test Admin (all permissions)', 'admin');
     await user('customer@example.test', 'Test Customer', 'customer');
 
     const slugs = Object.keys(productId);
@@ -185,7 +185,7 @@ export async function seed(log = console.log) {
     await c.query('INSERT INTO store_delivery_zones SELECT s.id, $1 FROM stores s WHERE s.is_test_data ON CONFLICT DO NOTHING', [zone]);
     await c.query(`UPDATE stores SET offers_pickup = true WHERE slug = 'demo-horn-spice-grocer'`);
 
-    for (const [email, name, role] of [['owner@example.test', 'Test Owner (all permissions)', 'owner'], ['support@example.test', 'Test Support', 'support'],
+    for (const [email, name, role] of [['support@example.test', 'Test Support', 'support'],
       ['finance@example.test', 'Test Finance', 'finance'], ['dispatcher@example.test', 'Test Dispatcher', 'dispatcher'], ['marketing@example.test', 'Test Marketing', 'marketing']] as const) await user(email, name, role);
     const driverUser = await user('driver@example.test', 'Test Driver', 'driver');
     await c.query(`INSERT INTO drivers(user_id, status, phone, vehicle, licence_verified, background_check_verified, is_available) VALUES ($1,'approved','000-000-0001','Car',true,true,true) ON CONFLICT (user_id) DO NOTHING`, [driverUser]);

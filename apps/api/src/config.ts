@@ -20,7 +20,8 @@ const schema = z.object({
   UPLOAD_DIR: z.string().default('./uploads'),
   PUBLIC_API_URL: z.string().default('http://localhost:4000'),
   SENTRY_DSN: z.string().optional(),
-  // Comma-separated emails that are made owners (full access) when the server starts. Set by whoever runs the host; never by a customer.
+  // Comma-separated emails that are made admins (full access) when the server starts. Set by whoever runs the host; never by a customer. OWNER_EMAILS is the older name and still works.
+  ADMIN_EMAILS: z.string().default(''),
   OWNER_EMAILS: z.string().default(''),
   DISABLE_BACKGROUND_JOBS: z.coerce.boolean().default(false),
   // For automated browser tests only: raises per-route rate limits. Refused in production.

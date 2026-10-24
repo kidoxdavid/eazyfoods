@@ -59,7 +59,7 @@ const ITEMS: Item[] = [
 ];
 
 /** Each role lands on the screen most useful to it. */
-const LANDING: [string, string][] = [['owner', '/admin'], ['admin', '/admin'], ['support', '/admin/support'], ['finance', '/admin/finance'], ['dispatcher', '/admin/dispatch'], ['catalog', '/admin/catalogue'], ['marketing', '/marketing']];
+const LANDING: [string, string][] = [['admin', '/admin'], ['support', '/admin/support'], ['finance', '/admin/finance'], ['dispatcher', '/admin/dispatch'], ['catalog', '/admin/catalogue'], ['marketing', '/marketing']];
 
 export default function Admin() {
   const { me } = useAuth();

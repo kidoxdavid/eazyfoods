@@ -4,10 +4,10 @@ import { api, post } from './api';
 import { isStaffPath } from './area';
 
 export type Role = { role: string; vendor_id: string | null };
-export type Me = { id: string; email: string; full_name: string; roles: Role[] } | null;
+export type Me = { id: string; email: string; full_name: string; roles: Role[]; acting_vendor?: { id: string; name: string } } | null;
 type Ctx = { me: Me; ready: boolean; reload: () => Promise<void>; logout: () => Promise<void>; has: (role: string) => boolean; isStaff: boolean; isVendor: boolean; shopMe: Me; reloadShop: () => Promise<void>; reloadStaff: () => Promise<void> };
 
-const STAFF = ['owner', 'admin', 'support', 'finance', 'dispatcher', 'catalog'];
+const STAFF = ['admin', 'support', 'finance', 'dispatcher', 'catalog'];
 const C = createContext<Ctx>(null as any);
 export const useAuth = () => useContext(C);
 

@@ -8,7 +8,7 @@ let chef: string, fin: string, admin: string, owner: string, vendorId: string;
 
 beforeAll(async () => {
   await openAllStores();
-  [chef, fin, admin, owner] = await Promise.all(['chef1@example.test', 'finance@example.test', 'owner@example.test', 'owner1@example.test'].map(async (e) => (await login(e)).cookie));
+  [chef, fin, admin, owner] = await Promise.all(['chef1@example.test', 'finance@example.test', 'admin@example.test', 'owner1@example.test'].map(async (e) => (await login(e)).cookie));
   vendorId = (await pool.query(`SELECT v.id FROM vendors v JOIN stores s ON s.vendor_id = v.id WHERE s.slug = $1`, [K1])).rows[0].id;
   await pool.query(`UPDATE vendors SET stripe_account_id = NULL, payout_status = 'none' WHERE id = $1`, [vendorId]);
   await pool.query(`UPDATE payouts SET status = 'paid' WHERE vendor_id = $1 AND status <> 'paid'`, [vendorId]);

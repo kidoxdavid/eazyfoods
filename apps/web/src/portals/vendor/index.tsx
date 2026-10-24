@@ -1,4 +1,5 @@
-import { Link, Navigate, Route, Routes } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { del } from '../../api';
 import { useAuth } from '../../auth';
 import { Notice } from '../../ui';
 import { PortalLayout } from '../backoffice';
@@ -24,6 +25,7 @@ import Questions from './Questions';
 
 function Shell() {
   const { pending, store, isChef } = useVendor();
+  const { me, reloadStaff } = useAuth(); const goto = useNavigate();
   const unread = useApi<{ count: number }>('/vendor/messages/unread');
   const caps = useApi<Record<string, boolean>>('/vendor/capabilities');
   const can = (k: string) => caps.data?.[k] !== false;
@@ -36,6 +38,7 @@ function Shell() {
       { to: '/vendor/insights', label: 'Insights', group: 'Money & reports' }, { to: '/vendor/payouts', label: 'Payouts', group: 'Money & reports' }, { to: '/vendor/reports', label: 'Reports', group: 'Money & reports' },
       { to: '/vendor/store', label: isChef ? 'Kitchen' : 'Store', group: 'Account' }, { to: '/vendor/onboarding', label: 'Setup', group: 'Account' },
       ...(can('messages') ? [{ to: '/vendor/messages', label: 'Messages', badge: unread.data?.count, group: 'Account' }] : []), { to: '/vendor/help', label: 'Help', group: 'Account' }]}>
+      {me?.acting_vendor && <Notice tone="warn"><strong>Admin mode:</strong> you are managing {me.acting_vendor.name} as an admin. What you do here is recorded under your name. <button type="button" className="link" onClick={async () => { await del('/admin/control/act-as'); await reloadStaff(); goto('/admin/vendors'); }}>Exit and go back to admin</button></Notice>}
       {store.status !== 'published' && <Notice tone="warn">Your store is not public yet (status: {store.status}). <Link to="/vendor/onboarding">Finish setup</Link>.</Notice>}
       <Routes>
         <Route index element={<Dashboard />} /><Route path="orders" element={<Orders />} /><Route path="inventory" element={isChef ? <Navigate to="/vendor/menu" replace /> : <Inventory />} /><Route path="menu" element={isChef ? <Menu /> : <Navigate to="/vendor/inventory" replace />} /><Route path="promotions" element={<Promotions />} />
@@ -52,8 +55,9 @@ function VendorInsights() {
 }
 
 export default function Portal() {
-  const { isVendor, ready } = useAuth();
+  const { isVendor, ready, has } = useAuth();
   if (!ready) return null;
+  if (!isVendor && has('admin')) return <div className="wrap" style={{ maxWidth: 640, margin: '24px auto' }}><Notice>You are signed in as an admin. To manage a store or kitchen, open <Link to="/admin/vendors">Admin → Vendors</Link>, choose a vendor and press <strong>Open their portal</strong>.</Notice></div>;
   if (!isVendor) return <Apply />;
   return <VendorProvider><Shell /></VendorProvider>;
 }

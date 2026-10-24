@@ -2,12 +2,10 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { AuthUser } from './auth.js';
 
 /**
- * Staff roles carry explicit permissions; nobody is "just admin". `owner` is the only wildcard role.
+ * Staff roles carry explicit permissions. `admin` is the top role and the only wildcard: it can do everything, including controlling every other area.
  */
 export const ROLE_PERMS: Record<string, string[]> = {
-  owner: ['*'],
-  admin: ['vendors.manage', 'stores.manage', 'catalog.manage', 'dispatch.manage', 'drivers.manage', 'content.manage', 'promotions.manage',
-    'ads.manage', 'crm.manage', 'support.manage', 'orders.view', 'orders.manage', 'users.view', 'reports.view', 'settings.view', 'audit.view', 'refunds.request', 'control.manage'],
+  admin: ['*'],
   support: ['orders.view', 'orders.manage', 'support.manage', 'refunds.request', 'users.view'],
   finance: ['orders.view', 'refunds.approve', 'payouts.manage', 'reports.view', 'ledger.view', 'settings.view', 'audit.view'],
   dispatcher: ['dispatch.manage', 'orders.view', 'orders.manage', 'drivers.manage'],

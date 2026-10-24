@@ -10,5 +10,5 @@ This creates a private **demo** site with invented data and a mock payment provi
 
 Notes
 - Free plans sleep when idle (the first visit can take about a minute) and the free database expires after a limited period. Check Render's current plans and pricing.
-- Demo logins use password `dev-password-123`: `customer@example.test`, `owner1@example.test` (/vendor), `owner@example.test` (/admin), `driver@example.test` (/driver).
+- Demo logins use password `dev-password-123`: `customer@example.test`, `owner1@example.test` (/vendor), `admin@example.test` (/admin), `driver@example.test` (/driver).
 - Do **not** use this setup for real customers or real payments. A real launch needs `NODE_ENV=production`, Stripe, email, and the checklist in `LAUNCH_CHECKLIST.md`.

@@ -1,7 +1,8 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
-import { audit } from '../lib/auth.js';
+import { audit, COOKIES } from '../lib/auth.js';
+import { hashToken } from '../lib/password.js';
 import { bad, notFound } from '../lib/errors.js';
 import { requireLogin, requirePerm } from '../lib/permissions.js';
 import { allFlags, clearFeatureCache, VENDOR_CAPS, vendorCaps, type VendorCap } from '../services/features.js';
@@ -32,6 +33,27 @@ export const featureRoutes: FastifyPluginAsync = async (app) => {
 
 export const controlRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', requirePerm('control.manage'));
+
+  // "Open their portal": the admin works inside a vendor's portal as that vendor's owner, on the staff sign-in only, until they exit. Audited both ways.
+  app.post<{ Params: { vendorId: string } }>('/act-as/:vendorId', async (req) => {
+    const id = z.string().uuid().parse(req.params.vendorId);
+    const tok = req.cookies[COOKIES.staff];
+    if (!tok) throw bad('no_staff_session', 'Sign in to the staff area first.');
+    await tx(async (c) => {
+      if (!(await c.query('SELECT 1 FROM vendors WHERE id = $1', [id])).rowCount) throw notFound('Vendor not found');
+      await c.query('UPDATE sessions SET acting_vendor_id = $2 WHERE token_hash = $1', [hashToken(tok), id]);
+      await audit(req.user!.id, 'act_as.start', 'vendor', id, {}, c);
+    });
+    return { ok: true };
+  });
+  app.delete('/act-as', async (req) => {
+    const tok = req.cookies[COOKIES.staff];
+    if (tok) {
+      const r = await pool.query('UPDATE sessions SET acting_vendor_id = NULL WHERE token_hash = $1 AND acting_vendor_id IS NOT NULL RETURNING 1', [hashToken(tok)]);
+      if (r.rowCount) await audit(req.user!.id, 'act_as.stop', 'user', req.user!.id);
+    }
+    return { ok: true };
+  });
 
   app.get('/features', async () => (await pool.query('SELECT key, label, description, grp, enabled, updated_at FROM feature_flags ORDER BY grp, sort, key')).rows);
   app.put<{ Params: { key: string } }>('/features/:key', async (req) => {

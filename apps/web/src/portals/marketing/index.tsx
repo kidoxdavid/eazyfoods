@@ -25,7 +25,7 @@ export default function Marketing() {
   const roles = me?.roles ?? [];
   if (!canDo(roles, 'marketing.manage')) return <div className="wrap" style={{ paddingTop: 24 }}><NoAccess what="the marketing area" /></div>;
   return (
-    <PortalLayout tone="marketing" title="Marketing" subtitle={roles.map((r) => r.role).filter((r) => ['owner', 'marketing'].includes(r)).join(', ')} nav={NAV}>
+    <PortalLayout tone="marketing" title="Marketing" subtitle={roles.map((r) => r.role).filter((r) => ['admin', 'marketing'].includes(r)).join(', ')} nav={NAV}>
       <Routes>
         <Route index element={<Dashboard />} />
         <Route path="emails" element={<EmailList />} /><Route path="emails/:id" element={<EmailEditor />} /><Route path="templates" element={<Templates />} />

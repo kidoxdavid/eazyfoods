@@ -10,7 +10,7 @@ afterAll(async () => { await browser?.close(); });
 const PUBLIC = ['/', '/search?q=garri', '/search?region=east-africa', '/stores', '/kitchens', '/k/demo-mama-ngozi-kitchen', '/k/demo-habesha-table', '/s/demo-calgary-west-african-market', '/p/garri-white', '/recipes', '/recipes/jollof-rice-nigerian-style', '/cart', '/signin', '/register', '/pages/refund-policy'];
 const SIGNED_IN = ['/account', '/orders', '/checkout'];
 const PORTALS: [string, string][] = [['owner1@example.test', '/vendor'], ['owner1@example.test', '/vendor/orders'], ['owner1@example.test', '/vendor/inventory'], ['owner1@example.test', '/vendor/store'],
-  ['owner@example.test', '/admin'], ['owner@example.test', '/admin/catalogue'], ['owner@example.test', '/admin/settings'], ['owner@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/storefront'], ['owner1@example.test', '/vendor/messages'], ['chef1@example.test', '/vendor'], ['chef1@example.test', '/vendor/menu'], ['chef1@example.test', '/vendor/store'], ['chef1@example.test', '/vendor/orders'], ['chef1@example.test', '/vendor/payouts'], ['owner1@example.test', '/vendor/payouts'], ['finance@example.test', '/admin/finance'], ['marketing@example.test', '/marketing'], ['marketing@example.test', '/marketing/emails'], ['marketing@example.test', '/marketing/audiences'], ['marketing@example.test', '/marketing/campaigns'], ['marketing@example.test', '/marketing/automations'], ['marketing@example.test', '/marketing/calendar'], ['marketing@example.test', '/marketing/social'], ['marketing@example.test', '/marketing/budget'], ['marketing@example.test', '/marketing/library'], ['marketing@example.test', '/marketing/analytics'], ['marketing@example.test', '/marketing/settings'], ['owner@example.test', '/admin/dishes'], ['owner1@example.test', '/vendor/insights'], ['owner@example.test', '/admin/insights'], ['owner@example.test', '/admin/messages'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
+  ['admin@example.test', '/admin'], ['admin@example.test', '/admin/catalogue'], ['admin@example.test', '/admin/settings'], ['admin@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/storefront'], ['owner1@example.test', '/vendor/messages'], ['chef1@example.test', '/vendor'], ['chef1@example.test', '/vendor/menu'], ['chef1@example.test', '/vendor/store'], ['chef1@example.test', '/vendor/orders'], ['chef1@example.test', '/vendor/payouts'], ['owner1@example.test', '/vendor/payouts'], ['finance@example.test', '/admin/finance'], ['marketing@example.test', '/marketing'], ['marketing@example.test', '/marketing/emails'], ['marketing@example.test', '/marketing/audiences'], ['marketing@example.test', '/marketing/campaigns'], ['marketing@example.test', '/marketing/automations'], ['marketing@example.test', '/marketing/calendar'], ['marketing@example.test', '/marketing/social'], ['marketing@example.test', '/marketing/budget'], ['marketing@example.test', '/marketing/library'], ['marketing@example.test', '/marketing/analytics'], ['marketing@example.test', '/marketing/settings'], ['admin@example.test', '/admin/dishes'], ['owner1@example.test', '/vendor/insights'], ['admin@example.test', '/admin/insights'], ['admin@example.test', '/admin/messages'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
 const WIDTHS = [360, 390, 768, 1280];
 
 describe('responsive: no horizontal scrolling at common widths', () => {
@@ -134,7 +134,7 @@ describe('festival and season themes', () => {
     it(`every preset theme passes the accessibility scan on the homepage (${scheme})`, async () => {
       const c = await db(); const slugs = (await c.query('SELECT slug FROM themes ORDER BY slug')).rows.map((r) => r.slug as string).filter((_, i) => i % 3 === 0); await c.end();
       const { page } = await newPage(browser, MOBILE, scheme);
-      await signIn(page, 'owner@example.test');
+      await signIn(page, 'admin@example.test');
       const found: string[] = [];
       for (const slug of slugs) {
         await page.goto(`${base()}/?preview_theme=${slug}`); await page.waitForLoadState('networkidle');
@@ -171,7 +171,7 @@ describe('vendor messages (browser)', () => {
     await v.page.getByLabel('Subject').fill(subject); await v.page.getByLabel('Message').fill('Can you help me list a new product?');
     await v.page.getByRole('button', { name: 'Send', exact: true }).click();
     await v.page.getByRole('heading', { name: subject }).waitFor();
-    const a = await newPage(browser, DESKTOP); await signIn(a.page, 'owner@example.test');
+    const a = await newPage(browser, DESKTOP); await signIn(a.page, 'admin@example.test');
     await a.page.goto(base() + '/admin/messages');
     await a.page.getByRole('button', { name: new RegExp(subject) }).click();
     await a.page.getByLabel('Reply', { exact: true }).fill('Yes: use Add from catalogue.');

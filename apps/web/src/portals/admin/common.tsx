@@ -12,7 +12,7 @@ export const useCan = () => {
 
 /** Shown when the signed-in role lacks a permission. */
 export const NoAccess = ({ what }: { what?: string }) => (
-  <Notice tone="warn">Your role does not allow {what ?? 'this'}. Ask an owner if you need access.</Notice>
+  <Notice tone="warn">Your role does not allow {what ?? 'this'}. Ask an admin if you need access.</Notice>
 );
 
 /** Renders children only when the role has one of the permissions. */

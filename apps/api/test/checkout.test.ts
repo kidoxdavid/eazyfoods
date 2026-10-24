@@ -261,7 +261,7 @@ describe('refunds keep the books balanced', () => {
     const line = o.suborders[0].lines[0];
     const rq = await call(finance, 'POST', `/api/admin/suborders/${o.suborders[0].id}/refunds`, { lines: [{ line_id: line.id, quantity: 1 }], include_delivery: true, reason: 'Late delivery', vendor_funded: false });
     expect(rq.status).toBe(403);   // finance may approve but not raise; support/admin raise
-    const admin = await login('owner@example.test');
+    const admin = await login('admin@example.test');
     const rq2 = await call(admin, 'POST', `/api/admin/suborders/${o.suborders[0].id}/refunds`, { lines: [{ line_id: line.id, quantity: 1 }], include_delivery: true, reason: 'Late delivery', vendor_funded: false });
     expect(rq2.status).toBe(201);
     expect((await call(finance, 'POST', `/api/admin/refunds/${rq2.body.id}/approve`)).body.status).toBe('succeeded');

@@ -141,3 +141,9 @@ Set `OWNER_EMAILS` (comma-separated) in the host's environment, e.g. in Render �
 
 ## Separate staff and shop sign-ins (added)
 The shop and the staff areas (admin, marketing, vendor, driver) now have **independent sign-ins in one browser** (cookies `ez_session` for the shop, `ez_staff` for staff). An admin and a shopper (even different people) can be signed in at once; signing out of one leaves the other. Opening a staff page without a staff sign-in shows "Staff sign in", with a one-tap "Continue as <name>" if you are signed in to the shop. Staff API paths use the staff sign-in automatically; staff pages mark other requests with `x-area: staff`. One-time effect: people who were signed in to a staff area before this release must sign in to it again.
+
+## Admin is the top role (added)
+- The separate **owner** role is gone. **admin has every permission** (including finance, settings, marketing and the Control centre) and is the only wildcard role. Demo login `owner@example.test` is switched off; use `admin@example.test`. Existing owners are converted to admins by the migration. The last admin cannot be removed.
+- Other areas use their own demo logins only (marketing@, owner1@…/chef1@… for vendors and kitchens, driver@, support@, finance@, dispatcher@).
+- **Admin control over the other areas**: the Control centre (feature switches, vendor permissions, menus, notices, platform rules) plus **Admin → Vendors → a vendor → "Open their portal"**, which lets the admin work inside that vendor's portal as its owner (with an "Admin mode" banner and Exit), recorded in the audit log.
+- Host setting `ADMIN_EMAILS` (was `OWNER_EMAILS`, still accepted) makes real accounts admins at start-up.

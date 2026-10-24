@@ -59,17 +59,17 @@ export const adminSystemRoutes: FastifyPluginAsync = async (app) => {
 
   app.post<{ Params: { id: string } }>('/users/:id/roles', { preHandler: requirePerm('settings.manage') }, async (req) => {
     const id = uuid.parse(req.params.id);
-    const { role } = z.object({ role: z.enum(['owner', 'admin', 'support', 'finance', 'dispatcher', 'catalog']) }).parse(req.body);
+    const { role } = z.object({ role: z.enum(['admin', 'support', 'finance', 'dispatcher', 'catalog', 'marketing']) }).parse(req.body);
     await pool.query('INSERT INTO user_roles(user_id, role) VALUES ($1,$2) ON CONFLICT DO NOTHING', [id, role]);
     await audit(req.user!.id, 'role.granted', 'user', id, { role });
     return { ok: true };
   });
   app.delete<{ Params: { id: string; role: string } }>('/users/:id/roles/:role', { preHandler: requirePerm('settings.manage') }, async (req) => {
     const id = uuid.parse(req.params.id);
-    const role = z.enum(['owner', 'admin', 'support', 'finance', 'dispatcher', 'catalog']).parse(req.params.role);
-    if (role === 'owner') {
-      const n = (await pool.query(`SELECT count(*)::int n FROM user_roles WHERE role = 'owner'`)).rows[0].n;
-      if (n <= 1) throw conflict('last_owner', 'There must always be at least one owner.');
+    const role = z.enum(['admin', 'support', 'finance', 'dispatcher', 'catalog', 'marketing']).parse(req.params.role);
+    if (role === 'admin') {
+      const n = (await pool.query(`SELECT count(*)::int n FROM user_roles WHERE role = 'admin'`)).rows[0].n;
+      if (n <= 1) throw conflict('last_admin', 'There must always be at least one admin.');
     }
     await pool.query('DELETE FROM user_roles WHERE user_id = $1 AND role = $2', [id, role]);
     await audit(req.user!.id, 'role.revoked', 'user', id, { role });

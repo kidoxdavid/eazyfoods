@@ -57,7 +57,7 @@ function Commercial() {
   return (
     <Fetch path="/admin/settings">{(rows: any[], reload) => (
       <>
-        {!can('settings.manage') && <Notice tone="info">You can view these settings. Only an owner can change them.</Notice>}
+        {!can('settings.manage') && <Notice tone="info">You can view these settings. Only an admin can change them.</Notice>}
         <DataTable rows={rows} rowKey={(r) => r.key} empty="No settings."
           columns={[{ key: 'l', header: 'Setting', render: (r) => <><strong>{META[r.key]?.label ?? r.key}</strong><div className="small muted">{META[r.key]?.help}</div></> }, { key: 'v', header: 'Value', render: (r) => <strong>{show(r.key, r.value)}</strong> },
             { key: 'u', header: 'Changed', render: (r) => fmtDate(r.updated_at) },
@@ -77,7 +77,7 @@ function Commercial() {
   );
 }
 
-const ROLES = ['owner', 'admin', 'support', 'finance', 'dispatcher', 'catalog'];
+const ROLES = ['admin', 'support', 'finance', 'dispatcher', 'catalog'];
 function Users() {
   const { me } = useAuth();
   const can = useCan();
@@ -111,7 +111,7 @@ function RolesRef() {
     <Need perm={['users.view']} what="viewing roles">
       <Fetch path="/admin/roles">{(r: Record<string, string[]>) => (
         <div className="grid cols-2">{Object.entries(r).map(([role, perms]) => (
-          <Card key={role}><h3>{role}</h3>{perms.includes('*') ? <p><Badge tone="warn">Everything</Badge> The only wildcard role. Keep owners few.</p> : <div className="row wrap">{perms.map((p) => <span key={p} className="badge">{p}</span>)}</div>}</Card>))}</div>
+          <Card key={role}><h3>{role}</h3>{perms.includes('*') ? <p><Badge tone="warn">Everything</Badge> The top role: it can do everything and control every other area. Keep admins few.</p> : <div className="row wrap">{perms.map((p) => <span key={p} className="badge">{p}</span>)}</div>}</Card>))}</div>
       )}</Fetch>
     </Need>
   );

@@ -20,7 +20,6 @@ describe('access', () => {
     for (const e of ['support@example.test', 'marketing@example.test', 'owner1@example.test', 'customer@example.test']) expect((await call((await login(e)).cookie, 'GET', '/api/admin/control/features')).status).toBe(403);
     expect((await call(null, 'GET', '/api/admin/control/features')).status).toBe(401);
     expect((await call(admin, 'GET', '/api/admin/control/features')).status).toBe(200);
-    expect((await call((await login('owner@example.test')).cookie, 'GET', '/api/admin/control/features')).status).toBe(200);
     expect((await call(admin, 'PUT', '/api/admin/control/features/no.such.thing', { enabled: false })).status).toBe(404);
   });
   it('anyone can read which switches are on, and every change is audited', async () => {
@@ -123,5 +122,31 @@ describe('portal customisation', () => {
     expect((await pool.query(`SELECT value FROM app_settings WHERE key = 'kitchens.enabled'`)).rows[0].value).toBe(false);
     expect((await call(admin, 'PUT', '/api/admin/control/platform/kitchens.enabled', { enabled: true })).status).toBe(200);
     expect((await call(admin, 'PUT', '/api/admin/control/platform/currency', { enabled: false })).status).toBe(404);
+  });
+});
+
+describe('admin opens a vendor portal', () => {
+  it('works as that vendor until they exit; only admins can; it is audited and never outlives the session', async () => {
+    const vid = (await pool.query('SELECT vendor_id FROM stores WHERE slug = $1', [S1])).rows[0].vendor_id;
+    const support = (await login('support@example.test')).cookie;
+    expect((await call(support, 'POST', `/api/admin/control/act-as/${vid}`)).status).toBe(403);
+    // a non-admin cannot gain anything even if the flag is forced in the database
+    const sup = (await pool.query(`SELECT id FROM users WHERE email = 'support@example.test'`)).rows[0].id;
+    await pool.query('UPDATE sessions SET acting_vendor_id = $2 WHERE user_id = $1', [sup, vid]);
+    expect((await call(support, 'GET', '/api/vendor/stores')).body).toEqual([]);
+    await pool.query('UPDATE sessions SET acting_vendor_id = NULL WHERE user_id = $1', [sup]);
+
+    expect((await call(admin, 'GET', '/api/vendor/stores')).body).toEqual([]);                  // an admin is not a vendor by default
+    expect((await call(admin, 'POST', `/api/admin/control/act-as/${vid}`)).status).toBe(200);
+    expect((await call(admin, 'GET', '/api/auth/me')).body.acting_vendor.id).toBe(vid);
+    const stores = (await call(admin, 'GET', '/api/vendor/stores')).body;
+    expect(stores.some((s: any) => s.slug === S1)).toBe(true);
+    expect((await call(admin, 'GET', '/api/vendor/orders')).status).toBe(200);
+    expect((await call(admin, 'GET', '/api/vendor/capabilities')).status).toBe(200);
+    expect((await call(admin, 'DELETE', '/api/admin/control/act-as')).status).toBe(200);
+    expect((await call(admin, 'GET', '/api/vendor/stores')).body).toEqual([]);
+    expect((await call(admin, 'GET', '/api/auth/me')).body.acting_vendor).toBeUndefined();
+    const log = (await pool.query(`SELECT action FROM audit_log WHERE action LIKE 'act_as.%' ORDER BY id DESC LIMIT 2`)).rows.map((r) => r.action);
+    expect(log).toEqual(['act_as.stop', 'act_as.start']);
   });
 });

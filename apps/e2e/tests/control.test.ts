@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Browser } from 'playwright-core';
-import { base, db, launch, DESKTOP, MOBILE, newPage, noText, seeText, setOffer, signIn } from './helpers.js';
+import { base, db, launch, DESKTOP, MOBILE, newPage, noText, seeText, setOffer, signIn, signInStaff } from './helpers.js';
 
 const S1 = 'demo-calgary-west-african-market';
 let browser: Browser;
@@ -122,5 +122,23 @@ describe('selling and cooking entry (browser)', () => {
     await seeText(page.locator('body'), 'Tell us about your business');
     await page.getByRole('button', { name: 'Use a different account' }).click();
     await page.waitForURL(/\/signin\?next=%2Fvendor/);
+  });
+});
+
+describe('admin has absolute control (browser)', () => {
+  it('opens a vendor portal from the vendor page, sees the admin-mode banner, and exits back to admin', async () => {
+    const c = await db(); const vid = (await c.query('SELECT vendor_id FROM stores WHERE slug = $1', [S1])).rows[0].vendor_id; await c.end();
+    const { page } = await newPage(browser, DESKTOP);
+    await signInStaff(page, 'admin@example.test');
+    await page.goto(`${base()}/admin/vendors/${vid}`);
+    await page.getByRole('button', { name: 'Open their portal' }).click();
+    await page.waitForURL('**/vendor');
+    await seeText(page.locator('body'), 'Admin mode');
+    await page.goto(`${base()}/vendor/orders`);
+    await seeText(page.locator('.bo-main'), 'Orders');
+    await page.getByRole('button', { name: 'Exit and go back to admin' }).click();
+    await page.waitForURL('**/admin/vendors');
+    await page.goto(`${base()}/vendor`);
+    await seeText(page.locator('body'), 'Admin → Vendors');                // an admin on their own is pointed to the right place
   });
 });

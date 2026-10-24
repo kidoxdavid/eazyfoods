@@ -23,7 +23,7 @@ services:
         value: "1"
       - key: WEB_ORIGIN
         value: https://eazyfoods.onrender.com
-      - key: OWNER_EMAILS
-        sync: false              # your own email(s), comma-separated: made owner (full admin) at start-up once the account exists
+      - key: ADMIN_EMAILS
+        sync: false              # your own email(s), comma-separated: made admin (full control) at start-up once the account exists
       - key: NODE_VERSION
         value: "22"

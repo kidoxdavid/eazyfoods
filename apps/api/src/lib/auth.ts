@@ -14,7 +14,7 @@ export const areaOf = (req: FastifyRequest): Area => (req.headers['x-area'] === 
 export const COOKIE = COOKIES.shop;
 
 export type Role = { role: string; vendor_id: string | null };
-export type AuthUser = { id: string; email: string; full_name: string; roles: Role[] };
+export type AuthUser = { id: string; email: string; full_name: string; roles: Role[]; acting_vendor?: { id: string; name: string } | null };
 
 declare module 'fastify' {
   interface FastifyRequest { user: AuthUser | null }
@@ -32,15 +32,22 @@ export async function loadUser(req: FastifyRequest) {
   const token = req.cookies[COOKIES[areaOf(req)]];
   if (!token) return;
   const { rows } = await pool.query(
-    `SELECT u.id, u.email, u.full_name,
+    `SELECT u.id, u.email, u.full_name, s.acting_vendor_id, (SELECT name FROM vendors WHERE id = s.acting_vendor_id) AS acting_vendor_name,
             COALESCE(json_agg(json_build_object('role', r.role, 'vendor_id', r.vendor_id)) FILTER (WHERE r.id IS NOT NULL), '[]') AS roles
        FROM sessions s JOIN users u ON u.id = s.user_id AND u.disabled_at IS NULL
        LEFT JOIN user_roles r ON r.user_id = u.id
       WHERE s.token_hash = $1 AND s.expires_at > now()
-      GROUP BY u.id`,
+      GROUP BY u.id, s.id`,
     [hashToken(token)],
   );
-  if (rows[0]) req.user = rows[0];
+  if (!rows[0]) return;
+  const { acting_vendor_id, acting_vendor_name, ...u } = rows[0];
+  req.user = u;
+  // An admin who chose "open their portal" acts as that vendor's owner until they exit. Only admins can ever have this set (checked again here).
+  if (acting_vendor_id && u.roles.some((r: Role) => r.role === 'admin')) {
+    req.user!.roles = [...u.roles, { role: 'vendor_owner', vendor_id: acting_vendor_id }];
+    req.user!.acting_vendor = { id: acting_vendor_id, name: acting_vendor_name };
+  }
 }
 
 export function requireUser(req: FastifyRequest, reply: FastifyReply) {
