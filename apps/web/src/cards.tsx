@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useT } from './i18n';
 import { Link } from 'react-router-dom';
 import { money, packLabel, post, unitPrice, unitText, type StoreCard } from './api';
 import { SaveToList } from './savelist';
@@ -27,8 +28,9 @@ export function useAdImpression(id: string | null | undefined) {
 }
 
 export function QuickAdd({ p }: { p: Card }) {
+  const t = useT();
   const { qtyOf, setQty } = useCart();
-  if (!p.offer_id || !p.in_stock) return <Link to={`/p/${p.slug}`} className="btn secondary sm wide">{p.in_stock ? 'View' : 'Out of stock'}</Link>;
+  if (!p.offer_id || !p.in_stock) return <Link to={`/p/${p.slug}`} className="btn secondary sm wide">{p.in_stock ? t('View') : t('Out of stock')}</Link>;
   const offer = { offer_id: p.offer_id, slug: p.slug, name: p.name, unit_price_cents: p.min_price, store_name: p.store_name ?? '', store_slug: p.store_slug ?? '', pack: packLabel(p) };
   const q = qtyOf(p.offer_id);
   if (q === 0) return <button className="addbtn" onClick={() => setQty(offer, 1)} aria-label={`Add ${p.name} from ${p.store_name} to basket`}><IconPlus width={18} height={18} /> Add</button>;
@@ -42,6 +44,7 @@ export function QuickAdd({ p }: { p: Card }) {
 }
 
 export function ProductCard({ p }: { p: Card }) {
+  const t = useT();
   useAdImpression(p.sponsored_campaign_id);
   const [quick, setQuick] = useState(false);
   const click = () => { if (p.sponsored_campaign_id) post(`/ads/${p.sponsored_campaign_id}/event`, { type: 'click' }).catch(() => {}); };
@@ -50,12 +53,12 @@ export function ProductCard({ p }: { p: Card }) {
   return (
     <article className="pcard">
       <Link to={`/p/${p.slug}`} className="pimg" onClick={click} tabIndex={-1} aria-hidden="true">
-        {p.image_url ? <img src={p.image_url} alt="" loading="lazy" /> : <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />}
+        {p.image_url ? <img src={p.image_url} alt="" loading="lazy" decoding="async" /> : <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />}
         {p.on_sale && off > 0 && <span className="ribbon">{off}% off</span>}
         {p.on_sale && off <= 0 && <span className="ribbon">Deal</span>}
-        {!p.in_stock && <span className="ribbon grey">Out of stock</span>}
+        {!p.in_stock && <span className="ribbon grey">{t('Out of stock')}</span>}
       </Link>
-      <button type="button" className="qv" onClick={() => setQuick(true)} aria-label={`Quick view: ${p.name}`}><IconEye width={16} height={16} /><span className="qv-txt">Quick view</span></button>
+      <button type="button" className="qv" onClick={() => setQuick(true)} aria-label={`Quick view: ${p.name}`}><IconEye width={16} height={16} /><span className="qv-txt">{t('Quick view')}</span></button>
       {quick && <QuickView slug={p.slug} onClose={() => setQuick(false)} />}
       <div className="pbody">
         {p.sponsored_campaign_id && <span className="sponsor">Sponsored</span>}
@@ -83,6 +86,7 @@ type QP = { name: string; brand: string | null; description: string | null; pack
 
 /** Look at a product without leaving the page: picture, price per store, allergens, and add to basket. */
 export function QuickView({ slug, onClose }: { slug: string; onClose: () => void }) {
+  const t = useT();
   const { data: p, loading, error } = useApi<QP>(`/products/${slug}`);
   const [sel, setSel] = useState<string | null>(null);
   const best = p ? [...p.offers].sort((a, b) => Number(b.in_stock) - Number(a.in_stock) || a.price_cents - b.price_cents)[0] : undefined;
@@ -98,7 +102,7 @@ export function QuickView({ slug, onClose }: { slug: string; onClose: () => void
             <span className="muted small">{[p.brand, packLabel(p), cur ? unitText(unitPrice(cur.price_cents, p.pack_size, p.pack_unit)) : ''].filter(Boolean).join(' · ')}</span>
             {cur ? (<>
               <div className="row wrap" style={{ justifyContent: 'space-between' }}><span className="row"><Price cents={cur.price_cents} className={`big ${cur.on_promotion ? 'sale' : ''}`} />{cur.compare_at_cents && cur.compare_at_cents > cur.price_cents && <s className="was">{money(cur.compare_at_cents)}</s>}</span>
-                <span className={`stock ${cur.in_stock ? '' : 'out'}`}>{cur.in_stock ? (cur.available <= 5 ? `Only ${cur.available} left` : 'In stock') : 'Out of stock'}</span></div>
+                <span className={`stock ${cur.in_stock ? '' : 'out'}`}>{cur.in_stock ? (cur.available <= 5 ? `Only ${cur.available} left` : t('In stock')) : t('Out of stock')}</span></div>
               {p.offers.length > 1 && <label className="small"><span className="muted">Sold by</span>
                 <select className="input" aria-label="Sold by" value={cur.offer_id} onChange={(e) => setSel(e.target.value)}>{p.offers.map((o) => <option key={o.offer_id} value={o.offer_id}>{o.store_name} — {money(o.price_cents)}{o.in_stock ? '' : ' (out of stock)'}</option>)}</select></label>}
               {p.offers.length === 1 && <span className="small">Sold by <strong>{cur.store_name}</strong></span>}
@@ -160,23 +164,25 @@ export function StoreList({ stores }: { stores: StoreCard[] }) {
 }
 
 export function BasketBar() {
+  const t = useT();
   const { count, cart, guest } = useCart();
   if (!count) return null;
   const subtotal = cart ? cart.subtotal_cents : guest.reduce((a, g) => a + g.unit_price_cents * g.quantity, 0);
   return (
     <div className="sticky-bar" role="region" aria-label="Basket summary">
       <span><strong>{count}</strong> item{count === 1 ? '' : 's'} · <strong>{money(subtotal)}</strong></span>
-      <Link to="/cart" className="btn cta">View basket</Link>
+      <Link to="/cart" className="btn cta">{t('View basket')}</Link>
     </div>
   );
 }
 
 export type OfferInfo = { offer_id: string; slug: string; name: string; unit_price_cents: number; store_name: string; store_slug: string; pack: string; available: number; in_stock: boolean };
 export function AddToBasket({ offer, size, cta }: { offer: OfferInfo; size?: 'sm' | 'lg'; cta?: boolean }) {
+  const t = useT();
   const { qtyOf, setQty } = useCart();
   const q = qtyOf(offer.offer_id);
-  if (!offer.in_stock) return <Button variant="secondary" size={size} disabled>Out of stock</Button>;
-  if (q === 0) return <button className={`btn ${cta ? 'cta' : 'primary'} ${size ?? ''} wide`} onClick={() => setQty(offer, 1)} aria-label={`Add to basket: ${offer.name} from ${offer.store_name}`}>Add to basket</button>;
+  if (!offer.in_stock) return <Button variant="secondary" size={size} disabled>{t('Out of stock')}</Button>;
+  if (q === 0) return <button className={`btn ${cta ? 'cta' : 'primary'} ${size ?? ''} wide`} onClick={() => setQty(offer, 1)} aria-label={`Add to basket: ${offer.name} from ${offer.store_name}`}>{t('Add to basket')}</button>;
   return <Stepper value={q} max={Math.min(99, offer.available)} label={`${offer.name} from ${offer.store_name}`} onChange={(n) => setQty(offer, Math.max(0, n))} />;
 }
 export function useOnVisible(cb: () => void) {

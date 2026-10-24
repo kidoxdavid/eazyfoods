@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useT } from '../i18n';
 import { Link, useParams } from 'react-router-dom';
 import { api, del, money, packLabel, post, put, trackRecent, unitPrice, unitText } from '../api';
 import { SaveToList } from '../savelist';
@@ -42,12 +43,13 @@ function AlertButton({ slug, inStock }: { slug: string; inStock: boolean }) {
 type QA = { id: string; question: string; answer: string; first_name: string; answered_by_store: string | null; answered_at: string };
 /** Questions shared with every shopper once a store (or our team) has answered them. */
 function Questions({ slug }: { slug: string }) {
+  const t = useT();
   const { me } = useAuth(); const toast = useToast();
   const qa = useApi<QA[]>(`/products/${slug}/questions`);
   const [text, setText] = useState('');
   const ask = useAction(async () => { const r = await post<{ message: string }>(`/products/${slug}/questions`, { question: text }); setText(''); toast(r.message); });
   return (
-    <section className="block" aria-label="Questions and answers"><h2>Questions about this product</h2>
+    <section className="block" aria-label="Questions and answers"><h2>{t('Questions about this product')}</h2>
       {qa.data?.map((q) => <div key={q.id} className="panel qa"><p><strong>Q:</strong> {q.question} <span className="muted small">· {q.first_name}</span></p><p><strong>A:</strong> {q.answer} <span className="muted small">· {q.answered_by_store ?? 'EAZyfoods team'}</span></p></div>)}
       {qa.data && !qa.data.length && <p className="muted">No questions answered yet.</p>}
       {me ? (
@@ -62,6 +64,7 @@ function Questions({ slug }: { slug: string }) {
 }
 
 export function ProductPage() {
+  const t = useT();
   const { slug } = useParams();
   const { data: p, loading, error, reload } = useApi<P>(`/products/${slug}`);
   const reviews = useApi<Reviews>(`/products/${slug}/reviews`);
@@ -109,18 +112,18 @@ export function ProductPage() {
             {culinary.length > 0 && <><dt>Culinary tradition</dt><dd>{culinary.join(', ')}</dd></>}
             {made.length > 0 && <><dt>Made in</dt><dd>{made.join(', ')}</dd></>}
             {p.manufacturer && <><dt>Manufacturer</dt><dd>{p.manufacturer}</dd></>}
-            {p.ingredients && <><dt>Ingredients</dt><dd>{p.ingredients}</dd></>}
+            {p.ingredients && <><dt>{t('Ingredients')}</dt><dd>{p.ingredients}</dd></>}
             {Object.entries(p.dietary ?? {}).some(([, v]) => v) && <><dt>Dietary</dt><dd>{Object.entries(p.dietary!).filter(([, v]) => v).map(([k]) => ({ vegan: 'Vegan', vegetarian: 'Vegetarian', gluten_free: 'Gluten-free', dairy_free: 'Dairy-free' } as Record<string, string>)[k] ?? k).join(', ')} <span className="muted small">(checked by our catalogue team)</span></dd></>}
-            <dt>Allergens</dt><dd>{p.allergens === null ? 'Not supplied. Check the package if you have allergies.' : p.allergens.length ? `Contains: ${p.allergens.join(', ')}` : 'None declared'}</dd>
-            {p.storage_info && <><dt>Storage</dt><dd>{p.storage_info}</dd></>}
+            <dt>{t('Allergens')}</dt><dd>{p.allergens === null ? 'Not supplied. Check the package if you have allergies.' : p.allergens.length ? `Contains: ${p.allergens.join(', ')}` : 'None declared'}</dd>
+            {p.storage_info && <><dt>{t('Storage')}</dt><dd>{p.storage_info}</dd></>}
           </dl>
         </div>
 
         <aside className="buybox" aria-label="Buy">
           {cur ? <>
             <div className="row between"><Price cents={cur.price_cents} className={`big ${cur.on_promotion ? 'sale' : ''}`} />{off > 0 && <Badge tone="danger">−{off}%</Badge>}</div>
-            <div className={`stock ${cur.in_stock ? '' : 'out'}`}>{cur.in_stock ? (cur.available <= 5 ? `Only ${cur.available} left` : 'In stock') : 'Out of stock'}</div>
-            <label className="small"><span className="muted">Sold by</span>
+            <div className={`stock ${cur.in_stock ? '' : 'out'}`}>{cur.in_stock ? (cur.available <= 5 ? `Only ${cur.available} left` : t('In stock')) : t('Out of stock')}</div>
+            <label className="small"><span className="muted">{t('Sold by')}</span>
               <select className="input" value={cur.offer_id} onChange={(e) => setSel(e.target.value)}>
                 {p.offers.map((o) => <option key={o.offer_id} value={o.offer_id}>{o.store_name} — {money(o.price_cents)}{o.in_stock ? '' : ' (out of stock)'}</option>)}
               </select></label>
@@ -131,7 +134,7 @@ export function ProductPage() {
             <AddToBasket cta size="lg" offer={mk(cur)} />
             <AlertButton slug={slug!} inStock={p.offers.some((o) => o.in_stock)} />
             <SaveToList slug={slug!} />
-            <div className="small muted"><IconShield width={16} height={16} style={{ verticalAlign: -3 }} /> Pay securely. We never see your card number. <Link to="/pages/refund-policy">Refund policy</Link></div>
+            <div className="small muted"><IconShield width={16} height={16} style={{ verticalAlign: -3 }} /> Pay securely. We never see your card number. <Link to="/pages/refund-policy">{t('Refund policy')}</Link></div>
             {cur.is_test_data && <Badge tone="demo">Demo store</Badge>}
           </> : <Notice tone="warn">No store is currently selling this.</Notice>}
         </aside>
@@ -143,19 +146,19 @@ export function ProductPage() {
             <tbody>{[...p.offers].sort((a, b) => a.price_cents - b.price_cents).map((o) => (
               <tr key={o.offer_id} className={o.offer_id === best?.offer_id ? 'best' : ''}>
                 <td data-l="Store"><Link to={`/s/${o.store_slug}`}><strong>{o.store_name}</strong></Link> {o.is_test_data && <Badge tone="demo">Demo</Badge>}<div className="small muted">{o.is_open ? 'Open now' : 'Closed now'}</div></td>
-                <td data-l="Price"><span className={o.on_promotion ? 'pr sale' : 'pr'} style={{ fontWeight: 800 }}>{money(o.price_cents)}</span>{o.compare_at_cents && <s className="was"> {money(o.compare_at_cents)}</s>}{o.offer_id === best?.offer_id && <> <Badge tone="ok">Lowest</Badge></>}</td>
+                <td data-l="Price"><span className={o.on_promotion ? 'pr sale' : 'pr'} style={{ fontWeight: 800 }}>{money(o.price_cents)}</span>{o.compare_at_cents && <s className="was"> {money(o.compare_at_cents)}</s>}{o.offer_id === best?.offer_id && <> <Badge tone="ok">{t('Lowest')}</Badge></>}</td>
                 <td data-l="Availability">{o.in_stock ? (o.available <= 5 ? `Only ${o.available} left` : 'In stock') : 'Out of stock'}</td>
                 <td><AddToBasket size="sm" offer={mk(o)} /></td></tr>))}</tbody></table>
         </section>
       )}
 
       {reviews.data && reviews.data.average !== null && (
-        <section className="block"><h2>Customer reviews</h2><p><Stars value={reviews.data.average} /> <strong>{reviews.data.average}</strong> out of 5 · {reviews.data.count} verified purchases</p>
+        <section className="block"><h2>{t('Customer reviews')}</h2><p><Stars value={reviews.data.average} /> <strong>{reviews.data.average}</strong> out of 5 · {reviews.data.count} verified purchases</p>
           {reviews.data.reviews.filter((r) => r.body).map((r, i) => <div key={i} className="panel"><Stars value={r.rating} /> <span className="muted small">{r.first_name} · verified purchase</span><p style={{ margin: '4px 0 0' }}>{r.body}</p>{r.photo_url && <img className="review-photo" src={r.photo_url} alt={`Photo from ${r.first_name}'s review`} loading="lazy" />}</div>)}</section>
       )}
-      {(together.data?.length ?? 0) > 0 && <Shelf title="Frequently bought together" items={together.data ?? []} />}
+      {(together.data?.length ?? 0) > 0 && <Shelf title={t('Frequently bought together')} items={together.data ?? []} />}
       <Questions slug={slug!} />
-      <Shelf title="You might also like" items={related.data ?? []} />
+      <Shelf title={t('You might also like')} items={related.data ?? []} />
       <BasketBar />
     </article>
   );

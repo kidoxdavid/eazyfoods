@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useT } from '../i18n';
 import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, api, money, post } from '../api';
 import { useCart } from '../cart';
@@ -14,6 +15,7 @@ type Quote = { ok: boolean; issues: { type: string; message: string; store_slug?
 type Cfg = { payment_provider: 'mock' | 'stripe'; stripe_publishable_key: string | null; test_mode: boolean };
 
 export function AddressForm({ onSaved, onCancel, name }: { onSaved: (a: Address) => void; onCancel?: () => void; name?: string }) {
+  const t = useT();
   const save = useAction(async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
@@ -23,20 +25,21 @@ export function AddressForm({ onSaved, onCancel, name }: { onSaved: (a: Address)
     <form onSubmit={save.run} className="stack">
       {save.error && <ErrorBox message={save.error} />}
       <div className="form-grid">
-        <Field label="Full name"><Input name="recipient_name" required defaultValue={name} autoComplete="name" /></Field>
+        <Field label={t('Full name')}><Input name="recipient_name" required defaultValue={name} autoComplete="name" /></Field>
         <Field label="Phone for the driver"><Input name="phone" type="tel" required autoComplete="tel" /></Field>
-        <Field label="Street address"><Input name="line1" required autoComplete="address-line1" /></Field>
+        <Field label={t('Street address')}><Input name="line1" required autoComplete="address-line1" /></Field>
         <Field label="Unit / apartment (optional)"><Input name="line2" autoComplete="address-line2" /></Field>
-        <Field label="City"><Input name="city" required defaultValue="Calgary" autoComplete="address-level2" /></Field>
-        <Field label="Postal code"><Input name="postal_code" required placeholder="T2A 0A0" autoComplete="postal-code" /></Field>
+        <Field label={t('City')}><Input name="city" required defaultValue="Calgary" autoComplete="address-level2" /></Field>
+        <Field label={t('Postal code')}><Input name="postal_code" required placeholder="T2A 0A0" autoComplete="postal-code" /></Field>
       </div>
       <Field label="Delivery instructions (optional)"><Textarea name="instructions" rows={2} placeholder="Buzzer code, where to leave the order…" /></Field>
-      <div className="row"><Button type="submit" busy={save.busy}>Save address</Button>{onCancel && <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>}</div>
+      <div className="row"><Button type="submit" busy={save.busy}>{t('Save address')}</Button>{onCancel && <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>}</div>
     </form>
   );
 }
 
 export function CheckoutPage() {
+  const t = useT();
   const { me } = useAuth();
   const { cart, refresh } = useCart();
   const nav = useNavigate();
@@ -94,15 +97,15 @@ export function CheckoutPage() {
   const issues = quote?.issues.filter((i) => !(method === 'delivery' && !addressId && i.type === 'address_required')) ?? [];
   return (
     <>
-      <h1>Checkout</h1>
+      <h1>{t('Checkout')}</h1>
       <div className="checkout">
         <div>
           <section className="panel">
-            <h2>1. How do you want it?</h2>
+            <h2>1. {t('How do you want it?')}</h2>
             {(['delivery', 'pickup'] as const).map((m) => (
               <label key={m} className={`choice ${method === m ? 'selected' : ''}`}>
                 <input type="radio" name="method" checked={method === m} onChange={() => setMethod(m)} />
-                <span><strong>{m === 'delivery' ? 'Delivery' : 'Pickup from the store'}</strong><br /><span className="muted small">{m === 'delivery' ? 'A driver brings each store’s order to your door.' : 'Collect it yourself. Only stores that offer pickup can be used.'}</span></span>
+                <span><strong>{m === 'delivery' ? t('Delivery') : t('Pickup from the store')}</strong><br /><span className="muted small">{m === 'delivery' ? 'A driver brings each store’s order to your door.' : 'Collect it yourself. Only stores that offer pickup can be used.'}</span></span>
               </label>
             ))}
             {method === 'pickup' && !pickupOk && <Notice tone="warn">One of the stores in your basket does not offer pickup.</Notice>}
@@ -110,18 +113,18 @@ export function CheckoutPage() {
 
           {method === 'delivery' && (
             <section className="panel">
-              <h2>2. Delivery address</h2>
+              <h2>2. {t('Delivery address')}</h2>
               {addrs.loading && <Loading />}
               {addrs.data?.map((a) => (
                 <label key={a.id} className={`choice ${addressId === a.id ? 'selected' : ''}`}>
                   <input type="radio" name="addr" checked={addressId === a.id} onChange={() => setAddressId(a.id)} />
-                  <span><strong>{a.label ?? a.recipient_name}</strong> {a.serviceable ? <Badge tone="ok">We deliver here</Badge> : <Badge tone="danger">Outside our area</Badge>}<br />
+                  <span><strong>{a.label ?? a.recipient_name}</strong> {a.serviceable ? <Badge tone="ok">{t('We deliver here')}</Badge> : <Badge tone="danger">{t('Outside our area')}</Badge>}<br />
                     <span className="small muted">{a.line1}{a.line2 ? `, ${a.line2}` : ''}, {a.city} {a.postal_code}</span></span>
                 </label>
               ))}
               {adding || !addrs.data?.length
                 ? <AddressForm name={me.full_name} onCancel={addrs.data?.length ? () => setAdding(false) : undefined} onSaved={async (a) => { await addrs.reload(); setAddressId(a.id); setAdding(false); }} />
-                : <Button variant="secondary" size="sm" onClick={() => setAdding(true)}>Add a new address</Button>}
+                : <Button variant="secondary" size="sm" onClick={() => setAdding(true)}>{t('Add a new address')}</Button>}
             </section>
           )}
 
@@ -143,29 +146,29 @@ export function CheckoutPage() {
             </section>
           )}
           <section className="panel">
-            <h2>{(method === 'delivery' ? 3 : 2) + (quote?.suborders.some((s) => s.preorders_enabled) ? 1 : 0)}. Extras</h2>
+            <h2>{(method === 'delivery' ? 3 : 2) + (quote?.suborders.some((s) => s.preorders_enabled) ? 1 : 0)}. {t('Extras')}</h2>
             {method === 'delivery' && (
               <fieldset className="tip-box">
-                <legend>Tip your driver</legend>
-                <p className="muted small" style={{ margin: '0 0 8px' }}>100% goes to the driver who delivers your order. If the delivery doesn’t happen, it’s refunded.</p>
+                <legend>{t('Tip your driver')}</legend>
+                <p className="muted small" style={{ margin: '0 0 8px' }}>{t('100% goes to the driver who delivers your order. If the delivery doesn’t happen, it’s refunded.')}</p>
                 <div className="tip-opts">
                   {[0, 200, 300, 500].map((c) => (
-                    <button type="button" key={c} className={`chip ${tip === c && !customTip ? 'on' : ''}`} aria-pressed={tip === c && !customTip} onClick={() => { setTip(c); setCustomTip(''); }}>{c ? money(c) : 'No tip'}</button>
+                    <button type="button" key={c} className={`chip ${tip === c && !customTip ? 'on' : ''}`} aria-pressed={tip === c && !customTip} onClick={() => { setTip(c); setCustomTip(''); }}>{c ? money(c) : t('No tip')}</button>
                   ))}
-                  <label className="tip-custom">Other $<input type="number" min="0" max="100" step="0.5" inputMode="decimal" value={customTip} placeholder="0.00" aria-label="Custom tip in dollars"
+                  <label className="tip-custom">{t('Other $')}<input type="number" min="0" max="100" step="0.5" inputMode="decimal" value={customTip} placeholder="0.00" aria-label="Custom tip in dollars"
                     onChange={(e) => { setCustomTip(e.target.value); const v = Math.round(Number(e.target.value) * 100); setTip(Number.isFinite(v) ? Math.max(0, Math.min(10000, v)) : 0); }} /></label>
                 </div>
               </fieldset>
             )}
-            <label className="check" style={{ marginTop: 10 }}><input type="checkbox" checked={gift} onChange={(e) => setGift(e.target.checked)} /> This is a gift (add a note for the store)</label>
-            {gift && <Field label="Gift note" hint="The store will see this with your order. No prices are shared with the recipient."><Textarea rows={2} maxLength={300} value={giftMessage} onChange={(e) => setGiftMessage(e.target.value)} placeholder="Happy birthday, Mum!" /></Field>}
+            <label className="check" style={{ marginTop: 10 }}><input type="checkbox" checked={gift} onChange={(e) => setGift(e.target.checked)} /> {t('This is a gift (add a note for the store)')}</label>
+            {gift && <Field label={t('Gift note')} hint="The store will see this with your order. No prices are shared with the recipient."><Textarea rows={2} maxLength={300} value={giftMessage} onChange={(e) => setGiftMessage(e.target.value)} placeholder="Happy birthday, Mum!" /></Field>}
           </section>
           <section className="panel">
-            <h2>{(method === 'delivery' ? 4 : 3) + (quote?.suborders.some((s) => s.preorders_enabled) ? 1 : 0)}. Notes and discount code</h2>
+            <h2>{(method === 'delivery' ? 4 : 3) + (quote?.suborders.some((s) => s.preorders_enabled) ? 1 : 0)}. {t('Notes and discount code')}</h2>
             <Field label="Notes for the stores (optional)"><Textarea rows={2} value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="Allergies, ripeness, anything the store should know…" /></Field>
             <form className="row top" onSubmit={(e) => { e.preventDefault(); setCoupon(couponInput.trim()); }}>
-              <div className="grow"><Field label="Discount code"><Input value={couponInput} onChange={(e) => setCouponInput(e.target.value)} placeholder="Enter code" autoCapitalize="characters" /></Field></div>
-              <Button type="submit" variant="secondary" style={{ marginTop: 24 }}>Apply</Button>
+              <div className="grow"><Field label={t('Discount code')}><Input value={couponInput} onChange={(e) => setCouponInput(e.target.value)} placeholder={t('Enter code')} autoCapitalize="characters" /></Field></div>
+              <Button type="submit" variant="secondary" style={{ marginTop: 24 }}>{t('Apply')}</Button>
             </form>
             {quote?.coupon_error && <p className="error-text">{quote.coupon_error}</p>}
             {quote?.coupon && <p className="okc small">“{quote.coupon.code}” applied: −{money(quote.coupon.discount_cents)}</p>}
@@ -174,7 +177,7 @@ export function CheckoutPage() {
 
         <aside>
           <section className="panel" aria-label="Order summary">
-            <h2>Summary</h2>
+            <h2>{t('Summary')}</h2>
             {quoteErr && <ErrorBox message={quoteErr} />}
             {!quote && !quoteErr && <Loading label="Checking prices" />}
             {quote && (
@@ -188,20 +191,20 @@ export function CheckoutPage() {
                   </div>
                 ))}
                 <hr />
-                <div className="summary-row"><span>Items</span><span>{money(quote.subtotal_cents)}</span></div>
-                {quote.discount_cents > 0 && <div className="summary-row okc"><span>Discount</span><span>−{money(quote.discount_cents)}</span></div>}
-                {method === 'delivery' && <div className="summary-row"><span>Delivery (incl. tax)</span><span>{money(quote.delivery_cents)}</span></div>}
-                <div className="summary-row"><span>GST on taxable items</span><span>{money(quote.tax_cents)}</span></div>
-                {quote.tip_cents > 0 && <div className="summary-row"><span>Driver tip</span><span>{money(quote.tip_cents)}</span></div>}
-                <div className="summary-row total"><span>Total</span><span>{money(quote.total_cents)}</span></div>
+                <div className="summary-row"><span>{t('Items')}</span><span>{money(quote.subtotal_cents)}</span></div>
+                {quote.discount_cents > 0 && <div className="summary-row okc"><span>{t('Discount')}</span><span>−{money(quote.discount_cents)}</span></div>}
+                {method === 'delivery' && <div className="summary-row"><span>{t('Delivery (incl. tax)')}</span><span>{money(quote.delivery_cents)}</span></div>}
+                <div className="summary-row"><span>{t('GST on taxable items')}</span><span>{money(quote.tax_cents)}</span></div>
+                {quote.tip_cents > 0 && <div className="summary-row"><span>{t('Driver tip')}</span><span>{money(quote.tip_cents)}</span></div>}
+                <div className="summary-row total"><span>{t('Total')}</span><span>{money(quote.total_cents)}</span></div>
                 {quote.credit_available_cents > 0 && quote.suborders.length > 0 && (
-                  <label className="check" style={{ margin: '8px 0' }}><input type="checkbox" checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)} /> Use my store credit ({money(quote.credit_available_cents)} available)</label>)}
-                {quote.credit_applied_cents > 0 && <><div className="summary-row okc"><span>Store credit</span><span>−{money(quote.credit_applied_cents)}</span></div><div className="summary-row"><span><strong>To pay by card</strong></span><strong>{money(quote.pay_cents)}</strong></div></>}
+                  <label className="check" style={{ margin: '8px 0' }}><input type="checkbox" checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)} /> {t('Use my store credit')} ({money(quote.credit_available_cents)} available)</label>)}
+                {quote.credit_applied_cents > 0 && <><div className="summary-row okc"><span>{t('Store credit')}</span><span>−{money(quote.credit_applied_cents)}</span></div><div className="summary-row"><span><strong>{t('To pay by card')}</strong></span><strong>{money(quote.pay_cents)}</strong></div></>}
                 {quote.warnings.map((w, i) => <Notice key={i} tone="warn">{w.message}</Notice>)}
-                {issues.length > 0 && <Notice tone="error"><strong>Before you can pay:</strong><ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>{issues.map((i, k) => <li key={k}>{i.message}</li>)}</ul><p style={{ margin: '8px 0 0' }}><Link to="/cart">Edit basket</Link></p></Notice>}
+                {issues.length > 0 && <Notice tone="error"><strong>{t('Before you can pay:')}</strong><ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>{issues.map((i, k) => <li key={k}>{i.message}</li>)}</ul><p style={{ margin: '8px 0 0' }}><Link to="/cart">{t('Edit basket')}</Link></p></Notice>}
                 {place.error && <ErrorBox message={place.error} />}
-                <Button size="lg" style={{ width: '100%' }} busy={place.busy} disabled={!quote.ok || (method === 'delivery' && !addressId)} onClick={() => place.run()}>Continue to payment · {money(quote.pay_cents)}</Button>
-                <p className="small muted" style={{ marginTop: 8 }}>You are not charged until the next step. We never see or store your card number.</p>
+                <Button size="lg" style={{ width: '100%' }} busy={place.busy} disabled={!quote.ok || (method === 'delivery' && !addressId)} onClick={() => place.run()}>{t('Continue to payment')} · {money(quote.pay_cents)}</Button>
+                <p className="small muted" style={{ marginTop: 8 }}>{t('You are not charged until the next step. We never see or store your card number.')}</p>
               </>
             )}
           </section>

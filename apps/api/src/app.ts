@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import compress from '@fastify/compress';
 import rateLimit from '@fastify/rate-limit';
 import { ZodError } from 'zod';
 import { config } from './config.js';
@@ -22,6 +23,7 @@ import { cardRoutes, customerRoutes } from './routes/customer.js';
 import { vendorPortalRoutes } from './routes/vendorPortal.js';
 import { supportRoutes } from './routes/support.js';
 import { creditAdminRoutes, creditRoutes } from './routes/credit.js';
+import { applySeo, robotsTxt, seoFor, seoIndexing, siteOrigin, sitemapXml } from './services/seo.js';
 import { engagementRoutes } from './routes/engagement.js';
 import { recipeRoutes } from './routes/recipes.js';
 import { adRoutes } from './routes/ads.js';
@@ -44,6 +46,7 @@ export async function buildApp() {
   });
 
   await app.register(helmet);
+  await app.register(compress, { threshold: 1024 });   // gzip/brotli for HTML, JS, CSS and JSON (images and video are already compressed and are skipped)
   await app.register(cors, { origin: config.WEB_ORIGIN, credentials: true });
   await app.register(cookie);
   await app.register(rateLimit, { global: false });
@@ -114,17 +117,26 @@ export async function buildApp() {
   // Single-host deployment: serve the built web app (and its client-side routes) from the API when it has been built.
   const dist = resolve(dirname(fileURLToPath(import.meta.url)), '../../web/dist');
   if (existsSync(join(dist, 'index.html'))) {
-    await app.register(fastifyStatic, { root: dist, prefix: '/', wildcard: false, index: false, maxAge: '1h' });
+    await app.register(fastifyStatic, { root: dist, prefix: '/', wildcard: false, index: false, maxAge: '1h',
+      setHeaders: (res, path) => {
+        if (/[\\/]assets[\\/]/.test(path)) res.header('cache-control', 'public, max-age=31536000, immutable');   // hashed file names never change
+        else if (/[\\/](sw\.js|offline\.html|site\.webmanifest)$/.test(path)) res.header('cache-control', 'no-cache');   // the service worker must update promptly
+      } });
     const indexHtml = readFileSync(join(dist, 'index.html'), 'utf8');
     // The first screen needs the same few small answers on every page (theme, announcement, homepage banners, menus).
     // Embedding them in the page removes a round trip, so the first paint already has the real content instead of a placeholder.
     const BOOT = ['/theme/active', '/content/home', '/home/banners', '/regions', '/categories'];
+    app.get('/robots.txt', async (req, reply) => reply.type('text/plain').header('cache-control', 'public, max-age=3600').send(robotsTxt(siteOrigin(req.headers.host), seoIndexing())));
+    app.get('/sitemap.xml', async (req, reply) => {
+      if (!seoIndexing()) return reply.code(404).send({ error: 'not_found' });
+      return reply.type('application/xml').header('cache-control', 'public, max-age=3600').send(await sitemapXml(siteOrigin(req.headers.host)));
+    });
     app.setNotFoundHandler(async (req, reply) => {
       if (req.method === 'GET' && !req.url.startsWith('/api') && !req.url.startsWith('/uploads')) {
         const entries = await Promise.all(BOOT.map(async (p) => { try { const r = await app.inject({ url: `/api${p}` }); return r.statusCode === 200 ? [p, r.json()] : null; } catch { return null; } }));
         const json = JSON.stringify(Object.fromEntries(entries.filter(Boolean) as [string, unknown][])).replace(/</g, '\\u003c');
         // A JSON data block (not a script), so the content-security policy that blocks inline scripts is not involved.
-        return reply.header('cache-control', 'no-cache').type('text/html').send(indexHtml.replace('</head>', `<script type="application/json" id="boot">${json}</script></head>`));
+        return reply.header('cache-control', 'no-cache').type('text/html').send(applySeo(indexHtml, await seoFor(req.url, siteOrigin(req.headers.host)).catch(() => ({ title: 'EAZyfoods', description: '', canonical: siteOrigin(req.headers.host) })), seoIndexing()).replace('</head>', `<script type="application/json" id="boot">${json}</script></head>`));
       }
       return reply.code(404).send({ error: 'not_found' });
     });

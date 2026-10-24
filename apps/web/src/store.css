@@ -33,7 +33,7 @@ main { padding-top: 14px; }
   .hcart-txt { display: flex; } .alldept { display: inline-flex; font-weight: 700; } .hdr-nav a, .alldept { padding: 8px 12px; min-height: 40px; }
 }
 .mega-wrap { position: fixed; inset: 0; z-index: 60; background: rgba(8, 24, 16, .55); }
-.mega { position: absolute; left: 0; top: 0; bottom: 0; width: min(92vw, 380px); background: var(--card); color: var(--ink); overflow: auto; padding: 14px 18px 30px; box-shadow: 0 0 40px rgba(0,0,0,.4); }
+.mega { position: absolute; left: 0; top: 0; bottom: 0; width: min(75vw, 340px); background: var(--card); color: var(--ink); overflow: auto; padding: 14px 18px 30px; box-shadow: 0 0 40px rgba(0,0,0,.4); }
 .mega-head { display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; margin-bottom: 8px; } .mega h3 { font-size: .85rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-2); margin: 16px 0 6px; }
 .mega ul { list-style: none; padding: 0; margin: 0; } .mega a { display: block; padding: 9px 0; text-decoration: none; color: var(--ink); font-weight: 600; } .mega a:hover { color: var(--green); } .mega-sub { display: flex; flex-wrap: wrap; gap: 2px 12px; padding-bottom: 6px; } .mega-sub a { font-weight: 500; font-size: .85rem; color: var(--ink-2); padding: 2px 0; }
 @media (min-width: 900px) { .mega-wrap { background: rgba(8,24,16,.35); top: 148px; } .mega { left: 50%; transform: translateX(-50%); width: min(1100px, 94vw); height: fit-content; max-height: calc(100vh - 168px); top: 0; border-radius: 0 0 14px 14px; padding: 22px 28px 28px; } .mega-head { display: none; } .mega-cols { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 28px; } .mega h3 { margin-top: 0; } }
@@ -217,3 +217,20 @@ main { padding-top: 14px; }
 .flyer-store { margin-bottom: 26px; } .flyer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
 .flyer-item { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--card, #fff); display: grid; gap: 4px; align-content: start; } .flyer-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
 @media print { header, footer, .no-print, .basketbar { display: none !important; } .flyer-item { break-inside: avoid; } .flyer-store { break-before: auto; } body { background: #fff; } }
+
+/* Menu: collapsed sections on phones (regions open to their countries); everything open on desktop */
+.mega-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 6px 0 10px; } .mega .mega-quick a { padding: 9px 10px; background: var(--tint); border-radius: 10px; font-size: .9rem; text-align: center; } .mega .mega-quick a.hot { background: var(--green-bg); color: var(--green-2); }
+.acc { border-top: 1px solid var(--line); } .acc-head { display: flex; align-items: center; justify-content: space-between; width: 100%; background: none; border: 0; padding: 6px 0; cursor: pointer; color: inherit; min-height: 44px; } .acc-head h3 { margin: 0 !important; }
+.acc-head svg, .mega-chev svg { width: 18px; height: 18px; transition: transform .18s ease; } .acc.open > .acc-head svg, .mega li.open .mega-chev svg { transform: rotate(90deg); }
+.acc-body { display: none; padding-bottom: 8px; } .acc.open > .acc-body { display: block; }
+.mega-row { display: flex; align-items: center; justify-content: space-between; } .mega-row a { flex: 1; } .mega-chev { background: none; border: 0; width: 44px; height: 40px; display: grid; place-items: center; cursor: pointer; color: var(--ink-2); }
+.mega .mega-sub { display: none; flex-direction: column; gap: 0; padding: 0 0 6px 12px; border-left: 2px solid var(--line); margin-left: 4px; } .mega li.open .mega-sub { display: flex; } .mega .mega-sub a { padding: 8px 0; font-size: .9rem; }
+.mega-help { margin: 0 !important; border-top: 1px solid var(--line); } .mega-help a { padding: 12px 0; text-transform: none; letter-spacing: 0; font-size: .95rem; color: var(--ink); }
+@media (min-width: 900px) {
+  .mega-quick { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; } .mega .mega-quick a { padding: 7px 14px; } .acc { border: 0; } .acc-head { pointer-events: none; padding: 0; min-height: 0; } .acc-head svg { display: none; } .acc-body { display: block; }
+  .mega-chev { display: none; } .mega .mega-sub { display: flex; flex-direction: row; flex-wrap: wrap; gap: 2px 12px; border: 0; margin: 0; padding: 0 0 6px; } .mega .mega-sub a { padding: 2px 0; font-size: .85rem; }
+  .mega-help { border: 0; margin-top: 14px !important; }
+}
+
+.lang { display: inline-flex; gap: 2px; margin-left: 10px; } .lang button { background: transparent; border: 1px solid rgba(255,255,255,.35); color: inherit; font: 700 .72rem var(--body); padding: 2px 7px; border-radius: 6px; cursor: pointer; } .lang button.on { background: rgba(255,255,255,.22); }
+.install { margin-top: 4px; }

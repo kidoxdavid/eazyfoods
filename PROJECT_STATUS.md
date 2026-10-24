@@ -113,3 +113,12 @@ Buy it again and Recently viewed shelves; unit prices (per 100 g / 100 ml, weigh
 - **Help centre** (`/help`, editable page + contact form that opens a support ticket) and **store comparison** by postal area on `/stores` (fee, speed, minimum, rating, items in stock).
 - Needs outside accounts, not built: SMS (Twilio), web push, Apple/Google Pay and saved cards.
 - Before real launch ask an accountant: store-credit liability and expiry rules, gift-code treatment, GST on cashback.
+
+## Menu and customer batch 4 (added)
+- **Phone menu**: now 75% of the screen width; quick links on top, "By region" opens to each region's countries one tap at a time, "By department" and "Partner with us" are collapsed sections, Help centre at the bottom. Desktop menu keeps everything visible.
+- **SEO**: the server writes each page's own title, description, canonical link, social-share tags and structured data (Product with price range and rating only when 3+ reviews, store, home kitchen with NO street address, recipe, site search) into the page; `sitemap.xml` and `robots.txt`; private pages (basket, checkout, orders, account, staff areas) are marked noindex. **Search engines are told to ignore the site unless `NODE_ENV=production` or `SEO_INDEX=true`**, so the demo is never indexed. Set `WEB_ORIGIN` to the real public address.
+- **Installable app (PWA)**: service worker caches app files for speed and shows an offline page; it never caches prices, stock, baskets or orders. "Install the EAZyfoods app" in the footer (Add to Home Screen steps on iPhone). Works only on the real (https) site, not the dev server.
+- **Speed**: gzip/brotli for pages, scripts and API JSON; app files cached for a year (hashed names); service worker never stale.
+- **French** (EN/FR switch in the top bar; remembered; defaults to French for French browsers): menu, header, footer, product buy box, basket, checkout. Product/store names and staff-written pages stay as written. **The French is a working translation: have a native Canadian-French speaker review it.** Other languages need a speaker and the same dictionary file (`apps/web/src/i18n.tsx`).
+- **Trust**: "Our shopping promises" page (footer) listing only things the product does; ratings stay hidden until 3 verified reviews. Marked as needing legal review.
+- Not built: push notifications (needs VAPID keys and a push service), a CDN/image resizing (needs hosting choice), translating the vendor/admin/driver areas.

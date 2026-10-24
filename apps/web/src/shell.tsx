@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { money, type Region } from './api';
 import { useApi } from './hooks';
@@ -6,8 +6,10 @@ import { useSiteTheme } from './theme';
 import { useAuth } from './auth';
 import { useCart } from './cart';
 import { usePlace } from './place';
-import { IconBasket, IconClose, IconHome, IconMenu, IconOrders, IconPin, IconSearch, IconUser } from './icons';
+import { IconBasket, IconChevron, IconClose, IconHome, IconMenu, IconOrders, IconPin, IconSearch, IconUser } from './icons';
 import { Button, Field, Input, Modal, Notice } from './ui';
+import { LangSwitch, useT } from './i18n';
+import { InstallApp } from './pwa';
 
 function PlaceModal() {
   const { place, check, clear, open, setOpen } = usePlace();
@@ -32,10 +34,23 @@ function PlaceModal() {
   );
 }
 
+/** A collapsible section on phones; on desktop the sections are always open and the header is plain text. */
+function Acc({ id, title, open, onToggle, children }: { id: string; title: string; open: boolean; onToggle: (id: string | null) => void; children: ReactNode }) {
+  return (
+    <div className={`acc${open ? ' open' : ''}`}>
+      <button type="button" className="acc-head" aria-expanded={open} onClick={() => onToggle(open ? null : id)}><h3>{title}</h3><IconChevron /></button>
+      <div className="acc-body">{children}</div>
+    </div>
+  );
+}
+
 function Mega({ onClose, closing }: { onClose: () => void; closing: boolean }) {
+  const t = useT();
   const regions = useApi<Region[]>('/regions');
   const cats = useApi<{ slug: string; name: string }[]>('/categories');
   const loc = useLocation();
+  const [openSec, setOpenSec] = useState<string | null>('region');
+  const [openRegion, setOpenRegion] = useState<string | null>(null);
   // Close when the location actually changes. Comparing values (not counting runs) is robust to React StrictMode,
   // which runs effects twice on mount in development and previously made the menu close the instant it opened.
   const here = loc.pathname + loc.search;
@@ -44,15 +59,28 @@ function Mega({ onClose, closing }: { onClose: () => void; closing: boolean }) {
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose(); document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k); }, [onClose]);
   return (
     <div className={`mega-wrap${closing ? ' closing' : ''}`} aria-hidden={closing || undefined} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="mega" role="dialog" aria-label="All departments">
-        <div className="mega-head"><strong>Shop EAZyfoods</strong><button className="icon-btn" onClick={onClose} aria-label="Close menu"><IconClose /></button></div>
+      <div className="mega" role="dialog" aria-label={t('All departments')}>
+        <div className="mega-head"><strong>{t('Shop EAZyfoods')}</strong><button className="icon-btn" onClick={onClose} aria-label={t('Close menu')}><IconClose /></button></div>
+        <div className="mega-quick" aria-label={t('Quick links')}>
+          <Link to="/deals" className="hot">{t('Weekly deals')}</Link><Link to="/flyer">{t('Weekly flyer')}</Link><Link to="/new">{t('New arrivals')}</Link><Link to="/recipes">{t('Recipes')}</Link><Link to="/kitchens">{t('Home chefs')}</Link><Link to="/stores">{t('All stores')}</Link>
+        </div>
         <div className="mega-cols">
-          <div><h3>By region</h3><ul role="list">{regions.data?.map((r) => (
-            <li key={r.slug}><Link to={`/search?region=${r.slug}`}>{r.name}</Link>
-              <span className="mega-sub">{r.countries.slice(0, 5).map((c) => <Link key={c.slug} to={`/search?region=${r.slug}&country=${c.slug}`}>{c.name}</Link>)}</span></li>))}</ul></div>
-          <div><h3>By department</h3><ul role="list">{cats.data?.map((c) => <li key={c.slug}><Link to={`/search?category=${c.slug}`}>{c.name}</Link></li>)}</ul></div>
-          <div><h3>Discover</h3><ul role="list"><li><Link to="/deals">Weekly deals</Link></li><li><Link to="/flyer">Weekly flyer</Link></li><li><Link to="/new">New arrivals</Link></li><li><Link to="/recipes">Recipes</Link></li><li><Link to="/kitchens">Home chefs</Link></li><li><Link to="/stores">All stores</Link></li><li><Link to="/help">Help centre</Link></li></ul>
-            <h3 style={{ marginTop: 18 }}>Partner with us</h3><ul role="list"><li><Link to="/vendor">Sell on EAZyfoods</Link></li><li><Link to="/vendor?kind=chef">Cook with us</Link></li><li><Link to="/driver">Drive with us</Link></li></ul></div>
+          <Acc id="region" title={t('By region')} open={openSec === 'region'} onToggle={setOpenSec}>
+            <ul role="list">{regions.data?.map((r) => (
+              <li key={r.slug} className={openRegion === r.slug ? 'open' : ''}>
+                <div className="mega-row"><Link to={`/search?region=${r.slug}`}>{r.name}</Link>
+                  <button type="button" className="mega-chev" aria-expanded={openRegion === r.slug} aria-label={`${r.name}: show countries`} onClick={() => setOpenRegion(openRegion === r.slug ? null : r.slug)}><IconChevron /></button></div>
+                <span className="mega-sub">{r.countries.map((c) => <Link key={c.slug} to={`/search?region=${r.slug}&country=${c.slug}`}>{c.name}</Link>)}</span></li>))}</ul>
+          </Acc>
+          <Acc id="dept" title={t('By department')} open={openSec === 'dept'} onToggle={setOpenSec}>
+            <ul role="list">{cats.data?.map((c) => <li key={c.slug}><Link to={`/search?category=${c.slug}`}>{c.name}</Link></li>)}</ul>
+          </Acc>
+          <div className="mega-more">
+            <Acc id="partner" title={t('Partner with us')} open={openSec === 'partner'} onToggle={setOpenSec}>
+              <ul role="list"><li><Link to="/vendor">{t('Sell on EAZyfoods')}</Link></li><li><Link to="/vendor?kind=chef">{t('Cook with us')}</Link></li><li><Link to="/driver">{t('Drive with us')}</Link></li></ul>
+            </Acc>
+            <h3 className="mega-help"><Link to="/help">{t('Help centre')}</Link></h3>
+          </div>
         </div>
       </div>
     </div>
@@ -60,6 +88,7 @@ function Mega({ onClose, closing }: { onClose: () => void; closing: boolean }) {
 }
 
 export function Header() {
+  const t = useT();
   const nav = useNavigate(); const loc = useLocation();
   const { me, logout, isStaff, isVendor, has } = useAuth();
   const { count, cart, guest } = useCart();
@@ -84,37 +113,37 @@ export function Header() {
         : theme?.banner_text ? <div className="announce festive" role="note"><span aria-hidden="true">{theme.emoji} </span>{theme.banner_text}{theme.preview && ' (preview)'}</div> : null}
       <header className="hdr">
         <div className="hdr-util"><div className="wrap">
-          <span>Calgary, Alberta · African groceries from local stores</span>
-          <span className="util-links"><Link to="/vendor">Sell on EAZyfoods</Link><Link to="/vendor?kind=chef">Cook with us</Link><Link to="/driver">Drive with us</Link><Link to="/pages/how-it-works">How it works</Link><Link to="/pages/faq">Help</Link></span>
+          <span>{t('Calgary, Alberta · African groceries from local stores')}</span>
+          <span className="util-links"><Link to="/vendor">{t('Sell on EAZyfoods')}</Link><Link to="/vendor?kind=chef">{t('Cook with us')}</Link><Link to="/driver">{t('Drive with us')}</Link><Link to="/pages/how-it-works">{t('How it works')}</Link><Link to="/help">{t('Help')}</Link><LangSwitch /></span>
         </div></div>
         <div className="hdr-main"><div className="wrap hdr-row">
-          <button className="icon-btn menu-btn" aria-label="Open all departments" aria-expanded={menu} onClick={openMenu}><IconMenu /></button>
+          <button className="icon-btn menu-btn" aria-label={t('Open all departments')} aria-expanded={menu} onClick={openMenu}><IconMenu /></button>
           <Link to="/" className="logo" aria-label="EAZyfoods home"><img className="logo-mark" src="/logo-192.png" alt="" width={36} height={36} />EAZy<span>foods</span></Link>
           <button className="deliver" onClick={() => setOpen(true)}>
-            <IconPin width={22} height={22} /><span><small>Deliver to</small><b>{place ? `${place.fsa} ${place.serviceable ? '' : '(not yet)'}` : 'Choose location'}</b></span>
+            <IconPin width={22} height={22} /><span><small>{t('Deliver to')}</small><b>{place ? `${place.fsa} ${place.serviceable ? '' : '(not yet)'}` : t('Choose location')}</b></span>
           </button>
           <form onSubmit={submit} role="search" className="hsearch">
-            <label className="sr-only" htmlFor="dept">Department</label>
-            <select id="dept" value={dept} onChange={(e) => setDept(e.target.value)}><option value="">All</option>{cats.data?.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</select>
-            <label className="sr-only" htmlFor="q">Search products, brands and stores</label>
-            <input id="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search garri, shito, berbere, pondu…" autoComplete="off" enterKeyHint="search" />
-            <button type="submit" aria-label="Search"><IconSearch /></button>
+            <label className="sr-only" htmlFor="dept">{t('Department')}</label>
+            <select id="dept" value={dept} onChange={(e) => setDept(e.target.value)}><option value="">{t('All')}</option>{cats.data?.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</select>
+            <label className="sr-only" htmlFor="q">{t('Search products, brands and stores')}</label>
+            <input id="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Search garri, shito, berbere, pondu…')} autoComplete="off" enterKeyHint="search" />
+            <button type="submit" aria-label={t('Search')}><IconSearch /></button>
           </form>
           <div className="hacct desktop-only">
-            {me ? (<><Link to="/account"><small>Hello, {me.full_name.split(' ')[0]}</small><b>Account</b></Link><Link to="/orders"><small>Returns &</small><b>Orders</b></Link></>)
-              : (<Link to="/signin"><small>Hello, sign in</small><b>Account</b></Link>)}
+            {me ? (<><Link to="/account"><small>{t('Hello')}, {me.full_name.split(' ')[0]}</small><b>{t('Account')}</b></Link><Link to="/orders"><small>{t('Returns &')}</small><b>{t('Orders')}</b></Link></>)
+              : (<Link to="/signin"><small>{t('Hello, sign in')}</small><b>{t('Account')}</b></Link>)}
           </div>
           <Link to="/cart" className="hcart">
             <span className="sr-only">Basket, {count} item{count === 1 ? '' : 's'}</span><span className="hcart-ico"><IconBasket width={28} height={28} />{count > 0 && <span className="count">{count}</span>}</span>
-            <span className="hcart-txt"><small>{count ? `${count} item${count === 1 ? '' : 's'}` : 'Basket'}</small><b>{count ? money(subtotal) : 'Empty'}</b></span>
+            <span className="hcart-txt"><small>{count ? `${count} item${count === 1 ? '' : 's'}` : t('Basket')}</small><b>{count ? money(subtotal) : t('Empty')}</b></span>
           </Link>
         </div></div>
         <nav className="hdr-nav" aria-label="Shop"><div className="wrap hdr-navrow">
-          <button className="alldept" onClick={openMenu} aria-expanded={menu}><IconMenu width={18} height={18} /> All departments</button>
+          <button className="alldept" onClick={openMenu} aria-expanded={menu}><IconMenu width={18} height={18} /> {t('All departments')}</button>
           {regions.data?.map((r) => <Link key={r.slug} to={`/search?region=${r.slug}`} className={active === r.slug ? 'active' : ''} aria-current={active === r.slug ? 'page' : undefined}>{r.name}</Link>)}
-          <Link to="/deals" className="hot">Deals</Link><Link to="/new">New</Link><Link to="/recipes">Recipes</Link><Link to="/stores">Stores</Link><Link to="/kitchens">Home chefs</Link>
+          <Link to="/deals" className="hot">{t('Deals')}</Link><Link to="/new">{t('New')}</Link><Link to="/recipes">{t('Recipes')}</Link><Link to="/stores">{t('Stores')}</Link><Link to="/kitchens">{t('Home chefs')}</Link>
           <span className="grow" />
-          <span className="desktop-only navr">{isVendor && <Link to="/vendor">Vendor portal</Link>}{has('driver') && <Link to="/driver">Driver</Link>}{isStaff && <Link to="/admin">Admin</Link>}{me && <button className="link" onClick={logout}>Sign out</button>}</span>
+          <span className="desktop-only navr">{isVendor && <Link to="/vendor">Vendor portal</Link>}{has('driver') && <Link to="/driver">Driver</Link>}{isStaff && <Link to="/admin">Admin</Link>}{me && <button className="link" onClick={logout}>{t('Sign out')}</button>}</span>
         </div></nav>
       </header>
       {(menu || leaving) && <Mega onClose={closeMenu} closing={!menu} />}
@@ -124,28 +153,30 @@ export function Header() {
 }
 
 export function TabBar() {
+  const t = useT();
   const { count } = useCart(); const { me } = useAuth();
   const tab = (to: string, label: string, Icon: typeof IconHome, end = false) => <NavLink to={to} end={end} className={({ isActive }) => (isActive ? 'active' : '')}><Icon /><span>{label}</span></NavLink>;
   return (
     <nav className="tabbar" aria-label="Main">
-      {tab('/', 'Shop', IconHome, true)}{tab('/search', 'Browse', IconSearch)}
-      <NavLink to="/cart" className={({ isActive }) => (isActive ? 'active' : '')}><IconBasket /><span>Basket</span>{count > 0 && <span className="count">{count}</span>}</NavLink>
-      {tab('/orders', 'Orders', IconOrders)}{tab(me ? '/account' : '/signin', me ? 'Account' : 'Sign in', IconUser)}
+      {tab('/', t('Shop'), IconHome, true)}{tab('/search', t('Browse'), IconSearch)}
+      <NavLink to="/cart" className={({ isActive }) => (isActive ? 'active' : '')}><IconBasket /><span>{t('Basket')}</span>{count > 0 && <span className="count">{count}</span>}</NavLink>
+      {tab('/orders', t('Orders'), IconOrders)}{tab(me ? '/account' : '/signin', me ? t('Account') : t('Sign in'), IconUser)}
     </nav>
   );
 }
 
 export function Footer() {
+  const t = useT();
   const pages = useApi<{ slug: string; title: string }[]>('/pages');
   const regions = useApi<Region[]>('/regions');
   return (
     <footer className="ftr">
-      <button className="totop" onClick={() => window.scrollTo({ top: 0 })}>Back to top</button>
+      <button className="totop" onClick={() => window.scrollTo({ top: 0 })}>{t('Back to top')}</button>
       <div className="wrap ftr-cols">
-        <div><h3>Shop</h3><ul role="list">{regions.data?.map((r) => <li key={r.slug}><Link to={`/search?region=${r.slug}`}>{r.name}</Link></li>)}<li><Link to="/deals">Weekly deals</Link></li><li><Link to="/new">New arrivals</Link></li><li><Link to="/stores">Stores</Link></li></ul></div>
-        <div><h3>Help</h3><ul role="list">{pages.data?.filter((p) => ['how-it-works', 'delivery-policy', 'refund-policy', 'faq'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}<li><Link to="/orders">Your orders</Link></li></ul></div>
-        <div><h3>Work with us</h3><ul role="list"><li><Link to="/vendor">Sell on EAZyfoods</Link></li><li><Link to="/vendor?kind=chef">Cook with us</Link></li><li><Link to="/driver">Drive with us</Link></li></ul></div>
-        <div><h3>Legal</h3><ul role="list">{pages.data?.filter((p) => ['privacy', 'terms'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}</ul></div>
+        <div><h3>{t('Shop')}</h3><ul role="list">{regions.data?.map((r) => <li key={r.slug}><Link to={`/search?region=${r.slug}`}>{r.name}</Link></li>)}<li><Link to="/deals">{t('Weekly deals')}</Link></li><li><Link to="/flyer">{t('Weekly flyer')}</Link></li><li><Link to="/new">{t('New arrivals')}</Link></li><li><Link to="/stores">{t('Stores')}</Link></li></ul></div>
+        <div><h3>{t('Help')}</h3><ul role="list">{pages.data?.filter((p) => ['how-it-works', 'delivery-policy', 'refund-policy', 'our-guarantee', 'faq'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}<li><Link to="/help">{t('Help centre')}</Link></li><li><Link to="/orders">{t('Your orders')}</Link></li><li><InstallApp /></li></ul></div>
+        <div><h3>{t('Work with us')}</h3><ul role="list"><li><Link to="/vendor">{t('Sell on EAZyfoods')}</Link></li><li><Link to="/vendor?kind=chef">{t('Cook with us')}</Link></li><li><Link to="/driver">{t('Drive with us')}</Link></li></ul></div>
+        <div><h3>{t('Legal')}</h3><ul role="list">{pages.data?.filter((p) => ['privacy', 'terms'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}</ul></div>
       </div>
       <div className="ftr-base"><div className="wrap"><strong className="logo"><img className="logo-mark" src="/logo-192.png" alt="" width={28} height={28} />EAZy<span>foods</span></strong><span>African groceries from local stores, starting in Calgary, Alberta. Prices and availability are set by each store.</span></div></div>
     </footer>
