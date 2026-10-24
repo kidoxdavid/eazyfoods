@@ -232,6 +232,47 @@ export async function seed(log = console.log) {
       await c.query(`UPDATE store_offers SET compare_at_cents = price_cents * 118 / 100 WHERE id IN
         (SELECT id FROM (SELECT id, row_number() OVER (ORDER BY id) AS rn FROM store_offers) y WHERE rn % 7 = 1)`);
     }
+
+    // Two invented home kitchens with dishes. Allergens are listed per dish; none of this is a real business or a real permit.
+    const KITCHENS = [
+      { email: 'chef1@example.test', owner: 'Test Chef 1', vendor: 'Demo Ngozi Kitchen (test)', slug: 'demo-mama-ngozi-kitchen', name: 'Demo Mama Ngozi’s Kitchen', postal: 'T2A 0A1', cuisines: ['Nigerian', 'West African'], regions: ['west-africa'],
+        about: 'TEST DATA - not a real cook. Home-style Nigerian dishes, cooked to order.',
+        dishes: [
+          ['Jollof rice with fried plantain', 'Smoky party-style jollof, served with sweet fried plantain.', 'Nigerian', 1599, 12, 'Serves 1', 2, 45, [], ['vegan'], 'Rice, tomato, pepper, onion, oil, spices, plantain.'],
+          ['Egusi soup with pounded yam', 'Melon-seed soup with leafy greens, served with smooth pounded yam.', 'Nigerian', 1899, 8, 'Serves 1', 2, 60, ['fish', 'crustaceans'], [], 'Ground melon seeds, palm oil, leafy greens, smoked fish, crayfish, stock.'],
+          ['Suya skewers (peanut spice)', 'Grilled beef skewers rubbed with peanut spice, onions and tomato.', 'Nigerian', 1399, 10, 'Serves 1', 3, 40, ['peanuts'], ['halal'], 'Beef, peanut spice (yaji), oil, onion, tomato.'],
+          ['Chin chin (crunchy, 250 g)', 'Crunchy fried dough snack.', 'Nigerian', 799, 20, '250 g', 0, 30, ['wheat', 'eggs', 'milk'], ['vegetarian'], 'Flour, sugar, butter, egg, milk, nutmeg.'],
+          ['Pepper soup (goat)', 'Light, peppery broth with tender goat meat.', 'Nigerian', 1699, 6, 'Serves 1', 3, 50, [], ['halal', 'gluten_free', 'dairy_free'], 'Goat meat, pepper-soup spices, scent leaf, stock.'],
+        ] },
+      { email: 'chef2@example.test', owner: 'Test Chef 2', vendor: 'Demo Habesha Table (test)', slug: 'demo-habesha-table', name: 'Demo Habesha Table', postal: 'T3J 0A1', cuisines: ['Ethiopian', 'Eritrean', 'East African'], regions: ['east-africa'],
+        about: 'TEST DATA - not a real cook. Ethiopian and Eritrean home cooking, made to order.',
+        dishes: [
+          ['Doro wat with injera', 'Slow-simmered spicy chicken stew with a boiled egg, served on injera.', 'Ethiopian', 2099, 8, 'Serves 1', 3, 90, ['eggs', 'gluten'], ['dairy_free'], 'Chicken, onion, berbere, spiced butter (niter kibbeh), egg, injera.'],
+          ['Veggie combo platter', 'Lentils, split peas, collard greens and salad on injera.', 'Ethiopian', 1899, 10, 'Serves 1', 1, 60, ['gluten'], ['vegan'], 'Lentils, split peas, collard greens, tomato salad, injera (teff and wheat).'],
+          ['Shiro wat', 'Silky spiced chickpea stew with injera.', 'Ethiopian', 1599, 10, 'Serves 1', 2, 40, ['gluten'], ['vegan'], 'Ground chickpea flour, onion, garlic, berbere, injera.'],
+          ['Kitfo (lightly cooked beef)', 'Minced beef with spiced butter and mitmita. Served lightly cooked.', 'Ethiopian', 2299, 5, 'Serves 1', 3, 45, ['milk'], ['gluten_free'], 'Beef, spiced butter, mitmita, cottage cheese.'],
+        ] },
+    ] as const;
+    for (const k of KITCHENS) {
+      if ((await c.query('SELECT 1 FROM stores WHERE slug=$1', [k.slug])).rowCount) continue;
+      const v = (await c.query(`INSERT INTO vendors(name,legal_name,status,is_test_data,kind) VALUES ($1,$1,'approved',true,'chef') RETURNING id`, [k.vendor])).rows[0].id;
+      await user(k.email, k.owner, 'vendor_owner', v);
+      const st = (await c.query(
+        `INSERT INTO stores(vendor_id,slug,name,description,address_line,postal_code,phone,status,is_test_data,min_order_cents,kind,cuisines,offers_pickup)
+         VALUES ($1,$2,$3,$4,'1 Test Kitchen Rd',$5,'000-000-0000','published',true,2000,'kitchen',$6,false) RETURNING id`, [v, k.slug, k.name, k.about, k.postal, [...k.cuisines]])).rows[0].id;
+      const [o, cl] = process.env.DEMO_ALWAYS_OPEN === '1' ? ['00:00', '23:59:59'] : ['11:00', '20:00'];
+      for (let d = 0; d < 7; d++) await c.query(`INSERT INTO store_hours VALUES ($1,$2,$3,$4)`, [st, d, o, cl]);
+      for (const r of k.regions) await c.query('INSERT INTO store_regions VALUES ($1,$2) ON CONFLICT DO NOTHING', [st, regionId[r]]);
+      await c.query('INSERT INTO store_delivery_zones VALUES ($1,$2) ON CONFLICT DO NOTHING', [st, zone]);
+      for (const [name, desc, cuisine, price, portions, serves, spice, prep, allergens, tags, ingredients] of k.dishes) {
+        const p = (await c.query(
+          `INSERT INTO products(slug,name,name_norm,description,status,sold_by,tax_class,owner_store_id,cuisine,spice_level,serves,prep_minutes,allergens,ingredients,dish_tags)
+           VALUES ($1,$2,$3,$4,'dish_live','unit','standard',$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
+          [slugify(`${k.slug}-${name}`), name, norm(name), desc, st, cuisine, spice, serves, prep, [...allergens], ingredients, [...tags]])).rows[0].id;
+        const off = (await c.query('INSERT INTO store_offers(store_id,product_id,price_cents,stock_on_hand) VALUES ($1,$2,$3,$4) RETURNING id', [st, p, price, portions])).rows[0].id;
+        await c.query(`INSERT INTO inventory_adjustments(offer_id,delta,reason,resulting_on_hand) VALUES ($1,$2,'initial',$2)`, [off, portions]);
+      }
+    }
   });
   log('seeded (test data only)');
 }

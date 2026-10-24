@@ -5,6 +5,7 @@ import { NoAccess } from './common';
 import { canDo, STAFF_ROLES } from './perms';
 import './admin.css';
 import Studio from './Studio';
+import Dishes from './Dishes';
 import { InsightsView } from '../../insights';
 import { MessagesPage } from '../../messages';
 import { useApi } from '../../hooks';
@@ -38,6 +39,7 @@ const ITEMS: Item[] = [
   { to: '/admin/messages', label: 'Vendor messages', need: ['vendors.manage'] },
   { to: '/admin/stores', label: 'Stores', need: ['stores.manage'] },
   { to: '/admin/catalogue', label: 'Catalogue', need: ['catalog.manage'] },
+  { to: '/admin/dishes', label: 'Home-chef dishes', need: ['catalog.manage', 'vendors.manage'] },
   { to: '/admin/taxonomy', label: 'Taxonomy', need: ['catalog.manage'] },
   { to: '/admin/zones', label: 'Delivery zones', need: ['stores.manage'] },
   { to: '/admin/promotions', label: 'Promotions', need: ['promotions.manage'] },
@@ -72,7 +74,7 @@ export default function Admin() {
         <Route path="support" element={<Support />} /><Route path="support/:id" element={<TicketDetail />} />
         <Route path="refunds" element={<Refunds />} />
         <Route path="vendors" element={<Vendors />} /><Route path="vendors/:id" element={<VendorDetail />} /><Route path="stores" element={<StoresAdmin />} />
-        <Route path="catalogue" element={<Catalogue />} /><Route path="catalogue/:id" element={<ProductEditor />} /><Route path="taxonomy" element={<Taxonomy />} />
+        <Route path="dishes" element={<Dishes />} /><Route path="catalogue" element={<Catalogue />} /><Route path="catalogue/:id" element={<ProductEditor />} /><Route path="taxonomy" element={<Taxonomy />} />
         <Route path="zones" element={<Zones />} /><Route path="promotions" element={<Promotions />} /><Route path="ads" element={<Ads />} />
         <Route path="messages" element={<MessagesPage base="/admin/messages" staff />} /><Route path="content" element={<Content />} /><Route path="studio" element={<Studio />} />
         <Route path="crm" element={<Crm />} /><Route path="crm/:id" element={<ProspectDetail />} />

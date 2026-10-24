@@ -2,13 +2,13 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { useApi } from '../../hooks';
 import { Loading, ErrorBox, Select, Field, Empty } from '../../ui';
 
-export type VStore = { id: string; slug: string; name: string; status: string; orderable: boolean; is_open: boolean };
+export type VStore = { id: string; slug: string; name: string; status: string; orderable: boolean; is_open: boolean; kind: 'grocery' | 'kitchen' };
 export type VOrder = {
   id: string; status: string; fulfilment_method: string; subtotal_cents: number; discount_cents: number; total_cents: number; commission_cents: number; placed_at: string | null; promised_at: string | null;
   store_name: string; store_id: string; order_number: string; customer_first_name: string; delivery_instructions: string | null; needs_attention: boolean;
   lines: { id: string; name: string; brand: string | null; pack_label: string | null; quantity: number; unit_price_cents: number; status: string; substitution_status: string; substitute_name: string | null; sold_by: string; refunded_quantity: number }[] | null;
 };
-type Ctx = { stores: VStore[]; storeId: string; setStoreId: (id: string) => void; store: VStore; orders: VOrder[]; reloadOrders: () => void; ordersLoading: boolean; pending: number };
+type Ctx = { stores: VStore[]; storeId: string; setStoreId: (id: string) => void; store: VStore; isChef: boolean; orders: VOrder[]; reloadOrders: () => void; ordersLoading: boolean; pending: number };
 const C = createContext<Ctx>(null as any);
 export const useVendor = () => useContext(C);
 
@@ -24,7 +24,7 @@ export function VendorProvider({ children }: { children: ReactNode }) {
   if (!stores.data?.length) return <Empty title="No store found for this account" />;
   const store = stores.data.find((s) => s.id === storeId) ?? stores.data[0];
   const all = orders.data ?? [];
-  return <C.Provider value={{ stores: stores.data, storeId: store.id, setStoreId, store, orders: all, reloadOrders: orders.reload, ordersLoading: orders.loading && !orders.data, pending: all.filter((o) => o.status === 'placed').length }}>{children}</C.Provider>;
+  return <C.Provider value={{ stores: stores.data, storeId: store.id, setStoreId, store, isChef: store.kind === 'kitchen', orders: all, reloadOrders: orders.reload, ordersLoading: orders.loading && !orders.data, pending: all.filter((o) => o.status === 'placed').length }}>{children}</C.Provider>;
 }
 
 export function StoreSelect() {

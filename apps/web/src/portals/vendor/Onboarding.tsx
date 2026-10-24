@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError, fmtDate, post, put } from '../../api';
 import { useAction, useApi } from '../../hooks';
+import { useVendor } from './Shared';
 import { useToast } from '../../toast';
 import { Badge, Button, Card, DataTable, ErrorBox, Field, Input, Loading, Notice, PageHeader, Select, StatusBadge, formValues } from '../../ui';
 import { useAuth } from '../../auth';
 
 type OB = { vendor_status: string; store_status: string; store_id: string; store_slug: string; can_submit: boolean; items: { key: string; label: string; done: boolean; required: boolean; hint: string }[] };
 type Doc = { id: string; kind: string; status: string; review_note: string | null; created_at: string };
-const KINDS: Record<string, string> = { business_licence: 'Business licence', gst_registration: 'GST registration', food_premises_permit: 'Food premises permit', id: 'Owner ID', other: 'Other' };
+const KINDS: Record<string, string> = { business_licence: 'Business licence', gst_registration: 'GST registration', food_premises_permit: 'Food premises permit', food_handler_cert: 'Food-handler certificate', id: 'Owner ID', other: 'Other' };
 const LINKS: Record<string, [string, string]> = { store_location: ['../store', 'Edit store'], hours: ['../store', 'Set hours'], regions: ['../store', 'Choose regions'], fulfilment: ['../store', 'Delivery / pickup'], products: ['../inventory', 'Add products'] };
 
 export default function Onboarding() {
@@ -22,7 +23,7 @@ export default function Onboarding() {
   const profile = useAction(async (v: Record<string, string>) => { await put('/vendor/profile', { name: v.name, legal_name: v.legal_name || null, business_number: v.business_number || null, phone: v.phone, contact_email: v.contact_email }); toast('Business details saved.'); setOpen(null); refresh(); });
   const accept = useAction(async () => { await post('/vendor/agreement/accept'); toast('Agreement accepted.'); refresh(); });
   const submit = useAction(async () => { await post('/vendor/submit'); toast('Submitted for review.'); refresh(); });
-  const [kind, setKind] = useState('business_licence'); const [upErr, setUpErr] = useState<string>(); const [upBusy, setUpBusy] = useState(false);
+  const { isChef } = useVendor(); const [kind, setKind] = useState(isChef ? 'food_premises_permit' : 'business_licence'); const [upErr, setUpErr] = useState<string>(); const [upBusy, setUpBusy] = useState(false);
   const uploadDoc = async (file: File) => {
     setUpBusy(true); setUpErr(undefined);
     try {

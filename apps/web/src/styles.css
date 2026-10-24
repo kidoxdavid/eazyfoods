@@ -158,10 +158,12 @@ main { padding-top: 18px; padding-bottom: calc(var(--tab-h) + 28px + env(safe-ar
 /* ---------- Portal identities: each staff area has its own colour so you always know where you are ---------- */
 .portal[data-portal="admin"] { --green: #33409a; --green-2: #242e72; --green-bg: #e1e5f8; --band: #242e72; --band-2: #33409a; }
 .portal[data-portal="vendor"] { --green: #0f6670; --green-2: #0a4850; --green-bg: #d9eff1; --band: #0a4850; --band-2: #0f6670; }
+.portal[data-portal="chef"] { --green: #7a2e5d; --green-2: #57203f; --green-bg: #f5e1ee; --band: #57203f; --band-2: #7a2e5d; }
 .portal[data-portal="driver"] { --green: #a3470f; --green-2: #76320a; --green-bg: #fbe3d3; --band: #76320a; --band-2: #a3470f; }
 @media (prefers-color-scheme: dark) {
   .portal[data-portal="admin"] { --green: #a3b0f5; --green-2: #a3b0f5; --green-bg: #1b2145; }
   .portal[data-portal="vendor"] { --green: #7fd3dc; --green-2: #7fd3dc; --green-bg: #0f2d31; }
+  .portal[data-portal="chef"] { --green: #e3a0cc; --green-2: #e3a0cc; --green-bg: #36162a; }
   .portal[data-portal="driver"] { --green: #f0a273; --green-2: #f0a273; --green-bg: #3a2113; }
 }
 .portal[data-portal] .portal-title { background: linear-gradient(135deg, var(--band), var(--band-2)); color: #fff; border-radius: 0 0 12px 12px; }

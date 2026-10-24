@@ -12,7 +12,7 @@ export const vendorRoutes: FastifyPluginAsync = async (app) => {
   app.get('/stores', async (req) => {
     const vendorIds = req.user!.roles.filter((r) => r.vendor_id).map((r) => r.vendor_id);
     const { rows } = await pool.query(
-      `SELECT id, slug, name, status, orderable, is_open FROM storefronts WHERE vendor_id = ANY($1::uuid[]) ORDER BY name`, [vendorIds]);
+      `SELECT id, slug, name, status, orderable, is_open, kind FROM storefronts WHERE vendor_id = ANY($1::uuid[]) ORDER BY name`, [vendorIds]);
     return rows;
   });
 

@@ -178,13 +178,13 @@ function BannerEditor({ b, onClose, onSaved }: { b: Banner | null; onClose: () =
 }
 
 // ---------- Homepage layout ----------
-const LABELS: Record<string, string> = { regions: 'Shop-by-region tiles', deals: 'Today’s deals', departments: 'Shop by department', collections_a: 'Featured collections (first two)', new: 'New arrivals', collections_b: 'Featured collections (next two)', stores: 'Stores near you', recipes: 'Recipes', trust: 'Trust strip (stores, delivery, help)' };
+const LABELS: Record<string, string> = { regions: 'Shop-by-region tiles', deals: 'Today’s deals', departments: 'Shop by department', collections_a: 'Featured collections (first two)', new: 'New arrivals', collections_b: 'Featured collections (next two)', stores: 'Stores near you', kitchens: 'Home chefs', recipes: 'Recipes', trust: 'Trust strip (stores, delivery, help)' };
 function Layout() {
   return <Fetch path="/content/home">{(c: any) => <LayoutForm initial={c.home_layout?.sections ?? Object.keys(LABELS).map((id) => ({ id, enabled: true }))} />}</Fetch>;
 }
 function LayoutForm({ initial }: { initial: { id: string; enabled: boolean }[] }) {
   const toast = useToast();
-  const [rows, setRows] = useState(initial);
+  const [rows, setRows] = useState(() => [...initial, ...Object.keys(LABELS).filter((id) => !initial.some((r) => r.id === id)).map((id) => ({ id, enabled: true }))]);
   const move = (i: number, j: number) => setRows((r) => { const n = [...r]; [n[i], n[j]] = [n[j], n[i]]; return n; });
   const save = useAction(async () => { await put('/admin/layout', { sections: rows }); toast('Homepage layout saved'); });
   return (

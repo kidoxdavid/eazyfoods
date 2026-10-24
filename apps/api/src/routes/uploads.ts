@@ -31,7 +31,7 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
     const vids = vendorIdsOf(req.user!);
     if (!vids.length) throw forbidden();
     const buf = await readFile(req);
-    const kind = z.enum(['business_licence', 'gst_registration', 'food_premises_permit', 'id', 'other']).parse((req.query as any).kind);
+    const kind = z.enum(['business_licence', 'gst_registration', 'food_premises_permit', 'food_handler_cert', 'id', 'other']).parse((req.query as any).kind);
     const t = sniff(buf, ['jpg', 'png', 'webp', 'pdf']);
     const { url } = save(buf, t.ext, 'private');
     const r = await pool.query(`INSERT INTO vendor_documents(vendor_id, kind, url) VALUES ($1,$2,$3) RETURNING id, kind, status`, [vids[0], kind, url]);

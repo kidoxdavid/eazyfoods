@@ -14,6 +14,7 @@ import { adminSystemRoutes } from './adminSystem.js';
 import { adminReportRoutes } from './adminReports.js';
 import { adminStudioRoutes } from './adminStudio.js';
 import { adminMessageRoutes } from './messages.js';
+import { adminDishRoutes } from './kitchens.js';
 
 const uuid = z.string().uuid();
 
@@ -22,7 +23,7 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
   app.get('/vendors', { preHandler: requirePerm('vendors.manage') }, async (req) => {
     const { status } = z.object({ status: z.string().optional() }).parse(req.query);
     return (await pool.query(
-      `SELECT v.id, v.name, v.status, v.commission_bps, v.is_test_data, v.submitted_at, v.created_at,
+      `SELECT v.id, v.name, v.kind, v.status, v.commission_bps, v.is_test_data, v.submitted_at, v.created_at,
               (SELECT count(*)::int FROM stores s WHERE s.vendor_id = v.id) AS stores,
               (SELECT count(*)::int FROM vendor_documents d WHERE d.vendor_id = v.id AND d.status = 'verified') AS verified_docs,
               (SELECT count(*)::int FROM vendor_documents d WHERE d.vendor_id = v.id AND d.status = 'pending') AS pending_docs
@@ -50,6 +51,11 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
       if (status === 'approved' && (await getSetting<boolean>('vendor.require_verified_docs', c))) {
         const ok = (await c.query(`SELECT 1 FROM vendor_documents WHERE vendor_id = $1 AND status = 'verified'`, [id])).rowCount;
         if (!ok) throw conflict('docs_required', 'Verify at least one business document before approving this vendor.');
+      }
+      if (status === 'approved' && (await c.query(`SELECT 1 FROM vendors WHERE id = $1 AND kind = 'chef'`, [id])).rowCount) {
+        const have = new Set((await c.query(`SELECT kind FROM vendor_documents WHERE vendor_id = $1 AND status = 'verified'`, [id])).rows.map((r) => r.kind));
+        const missing = ['food_premises_permit', 'food_handler_cert'].filter((k) => !have.has(k));
+        if (missing.length) throw conflict('chef_docs_required', `A home cook needs a verified ${missing.map((m) => m.replace(/_/g, ' ')).join(' and a verified ')} before approval.`);
       }
       const r = await c.query('UPDATE vendors SET status = $2 WHERE id = $1 RETURNING id, status', [id, status]);
       await audit(req.user!.id, `vendor.${status}`, 'vendor', id, {}, c);
@@ -145,5 +151,6 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
   await app.register(adminReportRoutes);
   await app.register(adminStudioRoutes);
   await app.register(adminMessageRoutes);
+  await app.register(adminDishRoutes);
   void can;
 };

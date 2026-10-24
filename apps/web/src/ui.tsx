@@ -163,7 +163,7 @@ export function ImageUpload({ value, onChange, label = 'Image' }: { value?: stri
 
 // ---------- Portal shell (sidebar on desktop, scrolling tab strip on phones) ----------
 export type NavItem = { to: string; label: string; end?: boolean; badge?: number };
-export function PortalLayout({ title, subtitle, nav, tone, children }: { title: string; subtitle?: string; nav: NavItem[]; tone?: 'admin' | 'vendor' | 'driver'; children: ReactNode }) {
+export function PortalLayout({ title, subtitle, nav, tone, children }: { title: string; subtitle?: string; nav: NavItem[]; tone?: 'admin' | 'vendor' | 'driver' | 'chef'; children: ReactNode }) {
   return (
     <div className="portal" data-portal={tone}>
       <aside className="portal-nav" aria-label={`${title} navigation`}>

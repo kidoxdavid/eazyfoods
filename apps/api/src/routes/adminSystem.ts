@@ -25,6 +25,7 @@ export const SETTING_SCHEMAS: Record<string, z.ZodTypeAny> = {
   'ads.min_cpc_cents': int(1, 5000),
   'ads.min_budget_cents': int(100, 1000000),
   'vendor.agreement_version': z.string().min(1).max(40),
+  'kitchens.enabled': z.boolean(),
 };
 
 export const adminSystemRoutes: FastifyPluginAsync = async (app) => {

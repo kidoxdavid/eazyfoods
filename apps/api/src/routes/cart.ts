@@ -18,7 +18,7 @@ export async function cartView(userId: string) {
   const stores = new Map<string, any>();
   for (const r of rows) {
     const st = stores.get(r.store_slug) ?? stores.set(r.store_slug, { slug: r.store_slug, name: r.store_name, is_open: r.is_open, is_test_data: r.is_test_data, min_order_cents: r.min_order_cents, orderable: r.orderable, subtotal_cents: 0, items: [] }).get(r.store_slug);
-    const unavailable = !r.is_active || r.pstatus !== 'published' || !r.orderable || r.available < 1;
+    const unavailable = !r.is_active || !['published', 'dish_live'].includes(r.pstatus) || !r.orderable || r.available < 1;
     st.items.push({
       offer_id: r.offer_id, slug: r.slug, name: r.name, brand: r.brand, pack_size: r.pack_size, pack_unit: r.pack_unit, sold_by: r.sold_by,
       quantity: r.quantity, unit_price_cents: r.price_cents, compare_at_cents: r.compare_at_cents, available: r.available,

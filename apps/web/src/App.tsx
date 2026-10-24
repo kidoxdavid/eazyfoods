@@ -12,6 +12,7 @@ import { Home } from './pages/Home';
 import { SearchPage } from './pages/Search';
 import { ProductPage } from './pages/Product';
 import { StorePage, StoresPage } from './pages/Store';
+import { KitchenPage, KitchensPage } from './pages/Kitchens';
 import { CollectionPage, FeedPage } from './pages/Collection';
 import { CartPage } from './pages/Cart';
 import { CheckoutPage } from './pages/Checkout';
@@ -56,6 +57,8 @@ export function App() {
                     <Route path="/new" element={<FeedPage title="New arrivals" sub="Recently added to the catalogue." path="/new-arrivals" empty="Nothing new yet." />} />
                     <Route path="/stores" element={<StoresPage />} />
                     <Route path="/s/:slug" element={<StorePage />} />
+                    <Route path="/kitchens" element={<KitchensPage />} />
+                    <Route path="/k/:slug" element={<KitchenPage />} />
                     <Route path="/c/:slug" element={<CollectionPage />} />
                     <Route path="/p/:slug" element={<ProductPage />} />
                     <Route path="/recipes" element={<RecipesPage />} />

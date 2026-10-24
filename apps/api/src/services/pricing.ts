@@ -28,8 +28,10 @@ type Opts = { addressId?: string | null; method: 'delivery' | 'pickup'; couponCo
 export async function buildQuote(c: Queryable, userId: string, opts: Opts): Promise<Quote> {
   const issues: Issue[] = [];
   const warnings: Issue[] = [];
-  const [taxRates, defaultBps, requireOpen] = await Promise.all([
-    getSetting<Record<string, number>>('tax.rates_bps', c), getSetting<number>('commission.default_bps', c), getSetting<boolean>('ordering.require_open', c)]);
+  // Sequential: `c` may be a single transaction client, which must not run queries concurrently.
+  const taxRates = await getSetting<Record<string, number>>('tax.rates_bps', c);
+  const defaultBps = await getSetting<number>('commission.default_bps', c);
+  const requireOpen = await getSetting<boolean>('ordering.require_open', c);
 
   const items = (await c.query(
     `SELECT ci.offer_id, ci.quantity, ci.added_price_cents,
@@ -68,7 +70,7 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
   const groups = new Map<string, any[]>();
   for (const it of items) {
     if (!it.orderable || it.ordering_paused) issues.push({ type: 'store_unavailable', message: `${it.store_name} is not taking orders right now.`, store_slug: it.store_slug });
-    else if (!it.is_active || it.pstatus !== 'published') issues.push({ type: 'unavailable', message: `${it.name} is no longer available from ${it.store_name}.`, offer_id: it.offer_id, store_slug: it.store_slug, available: 0 });
+    else if (!it.is_active || !['published', 'dish_live'].includes(it.pstatus)) issues.push({ type: 'unavailable', message: `${it.name} is no longer available from ${it.store_name}.`, offer_id: it.offer_id, store_slug: it.store_slug, available: 0 });
     else if (it.available < it.quantity)
       issues.push({ type: it.available <= 0 ? 'unavailable' : 'insufficient_stock', message: it.available <= 0 ? `${it.name} is out of stock at ${it.store_name}.` : `Only ${it.available} of ${it.name} left at ${it.store_name}.`,
         offer_id: it.offer_id, store_slug: it.store_slug, available: Math.max(0, it.available) });

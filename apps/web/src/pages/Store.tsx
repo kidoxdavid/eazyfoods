@@ -7,6 +7,7 @@ import { Badge, ErrorBox, Loading, Notice } from '../ui';
 import { BasketBar, ProductGrid, StoreList, type Card } from '../cards';
 import { IconPin } from '../icons';
 import { paletteCss } from '../theme';
+import { KitchenRedirect } from './Kitchens';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 type SP = Card & { offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; available: number; category: string | null; category_slug: string | null };
@@ -32,7 +33,7 @@ export function StorePage() {
   const [cat, setCat] = useState<string>('');
   const cats = useMemo(() => { const m = new Map<string, string>(); s?.products.forEach((p) => p.category_slug && m.set(p.category_slug, p.category ?? p.category_slug)); return [...m.entries()]; }, [s]);
   if (loading) return <Loading />;
-  if (error) return <ErrorBox message={error} retry={reload} />;
+  if (error) return <><KitchenRedirect slug={slug!} /><ErrorBox message={error} retry={reload} /></>;
   if (!s) return null;
   const items: Card[] = s.products.filter((p) => !cat || p.category_slug === cat).map((p) => ({ ...p, min_price: p.price_cents, was_price: p.compare_at_cents, in_stock: p.available > 0, on_sale: p.on_promotion, store_count: 1, store_name: s.name, store_slug: slug!, available: p.available }));
   const br = s.branding;

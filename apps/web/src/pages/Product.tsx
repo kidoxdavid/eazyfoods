@@ -8,6 +8,7 @@ import { ProductArt, Stars } from '../art';
 import { Badge, Button, ErrorBox, Loading, Notice } from '../ui';
 import { AddToBasket, BasketBar, Price, Shelf, type Card } from '../cards';
 import { IconShield, IconTruck } from '../icons';
+import { DishRedirect } from './Kitchens';
 
 type Offer = { store_slug: string; store_name: string; is_open: boolean; is_test_data: boolean; offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; in_stock: boolean; available: number };
 type P = {
@@ -39,7 +40,7 @@ export function ProductPage() {
   }, [slug]);
   useEffect(() => { if (p) document.title = `${p.name} – EAZyfoods`; return () => { document.title = 'EAZyfoods – African groceries from local stores'; }; }, [p]);
   if (loading) return <Loading />;
-  if (error) return <ErrorBox message={error} retry={reload} />;
+  if (error) return <><DishRedirect slug={slug!} /><ErrorBox message={error} retry={reload} /></>;
   if (!p) return null;
 
   const pack = packLabel(p);

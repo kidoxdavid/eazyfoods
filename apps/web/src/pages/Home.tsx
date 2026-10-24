@@ -9,9 +9,10 @@ import { IconShield, IconStore, IconSwap, IconTruck, IconBook } from '../icons';
 import { post } from '../api';
 import { useAdImpression } from '../cards';
 import { useSiteTheme } from '../theme';
+import { KitchenList } from './Kitchens';
 
 type Layout = { sections: { id: string; enabled: boolean }[] };
-const DEFAULT_LAYOUT = ['regions', 'deals', 'departments', 'collections_a', 'new', 'collections_b', 'stores', 'recipes', 'trust'];
+const DEFAULT_LAYOUT = ['regions', 'deals', 'departments', 'collections_a', 'new', 'collections_b', 'stores', 'kitchens', 'recipes', 'trust'];
 
 type Search = { results: Card[] };
 const REGION_COLOURS: [string, string][] = [['#0f5a3a', '#1f8f5b'], ['#a3470f', '#e08a1e'], ['#254e8f', '#4a86d4'], ['#7a2e5d', '#b4508a'], ['#136f63', '#2bb3a1'], ['#8c2f39', '#d4564a']];
@@ -58,6 +59,7 @@ export function Home() {
   const deals = useApi<Card[]>('/deals');
   const fresh = useApi<Card[]>('/new-arrivals');
   const cats = useApi<{ slug: string; name: string }[]>('/categories');
+  const kitchens = useApi<any[]>('/kitchens');
   const recipes = useApi<{ slug: string; title: string; summary: string }[]>('/recipes');
   const featured = useApi<Search>('/search?in_stock=1&sort=price_desc');
   const eastSearch = useApi<Search>(`/search?region=${regions.data?.[1]?.slug ?? 'east-africa'}&in_stock=1`);
@@ -92,6 +94,11 @@ export function Home() {
         {stores.loading && <Loading />}{stores.error && <ErrorBox message={stores.error} retry={stores.reload} />}
         {stores.data && <StoreList stores={stores.data} />}
       </section>),
+    kitchens: kitchens.data?.length ? (
+      <section key="kitchens" className="block" aria-labelledby="kit-h">
+        <div className="shelf-head"><div><h2 id="kit-h">Home chefs</h2><p className="muted">Meals cooked to order by local home cooks.</p></div><Link to="/kitchens" className="seeall">All home chefs</Link></div>
+        <KitchenList items={kitchens.data.slice(0, 4)} />
+      </section>) : null,
     recipes: recipes.data?.length ? (
       <section key="recipes" className="block" aria-labelledby="rec-h">
         <div className="shelf-head"><div><h2 id="rec-h">Cook something tonight</h2><p className="muted">Recipes linked to what’s in stock.</p></div><Link to="/recipes" className="seeall">All recipes</Link></div>

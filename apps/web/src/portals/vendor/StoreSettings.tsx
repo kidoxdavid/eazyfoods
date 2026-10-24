@@ -6,12 +6,12 @@ import { useToast } from '../../toast';
 import { Button, Card, ErrorBox, Field, ImageUpload, Input, Loading, Notice, PageHeader, Textarea } from '../../ui';
 import { StoreSelect, useVendor } from './Shared';
 
-type Profile = { name: string; description: string | null; address_line: string | null; city: string; postal_code: string | null; phone: string | null; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; ordering_paused: boolean; min_order_cents: number | null; logo_url: string | null; cover_url: string | null; status: string; regions: string[] };
+type Profile = { name: string; description: string | null; address_line: string | null; city: string; postal_code: string | null; phone: string | null; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; ordering_paused: boolean; min_order_cents: number | null; logo_url: string | null; cover_url: string | null; status: string; regions: string[]; kind?: string; cuisines?: string[] };
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function StoreSettings() {
-  const { storeId } = useVendor();
-  return (<><PageHeader title="Store" sub="What customers see on your storefront." /><StoreSelect /><ProfileForm key={storeId} /><HoursForm key={storeId + 'h'} /></>);
+  const { storeId, isChef } = useVendor();
+  return (<><PageHeader title={isChef ? 'Kitchen' : 'Store'} sub={isChef ? 'What customers see on your kitchen page.' : 'What customers see on your storefront.'} /><StoreSelect /><ProfileForm key={storeId} /><HoursForm key={storeId + 'h'} /></>);
 }
 
 function ProfileForm() {
@@ -22,7 +22,7 @@ function ProfileForm() {
   const save = useAction(async () => {
     if (!f) return;
     await put(`/vendor/stores/${storeId}/profile`, { description: f.description || null, address_line: f.address_line ?? undefined, city: f.city, postal_code: f.postal_code ?? undefined, phone: f.phone ?? undefined, policies: f.policies || null,
-      offers_delivery: f.offers_delivery, offers_pickup: f.offers_pickup, ordering_paused: f.ordering_paused, min_order_cents: min ? dollarsToCents(min) : null, logo_url: f.logo_url, cover_url: f.cover_url, regions: f.regions });
+      offers_delivery: f.offers_delivery, offers_pickup: f.offers_pickup, ordering_paused: f.ordering_paused, min_order_cents: min ? dollarsToCents(min) : null, logo_url: f.logo_url, cover_url: f.cover_url, regions: f.regions, ...(f.kind === 'kitchen' ? { cuisines: f.cuisines ?? [] } : {}) });
     toast('Store saved.'); p.reload();
   });
   if (p.loading && !f) return <Loading />;
@@ -44,6 +44,7 @@ function ProfileForm() {
           <Field label="Phone"><Input type="tel" value={f.phone ?? ''} onChange={(e) => set('phone', e.target.value)} required /></Field>
           <Field label="Minimum order (CAD, optional)"><Input type="number" step="0.01" min="0" value={min} onChange={(e) => setMin(e.target.value)} inputMode="decimal" /></Field></div>
         <div className="row wrap"><label className="check"><input type="checkbox" checked={f.offers_delivery} onChange={(e) => set('offers_delivery', e.target.checked)} />We offer delivery</label><label className="check"><input type="checkbox" checked={f.offers_pickup} onChange={(e) => set('offers_pickup', e.target.checked)} />We offer pickup</label></div>
+        {f.kind === 'kitchen' && <Field label="Cuisines you cook" hint="Separate with commas, e.g. Nigerian, West African"><Input value={(f.cuisines ?? []).join(', ')} onChange={(e) => set('cuisines', e.target.value.split(',').map((c) => c.trim()).filter(Boolean).slice(0, 8))} /></Field>}
         <fieldset style={{ border: 0, padding: 0, margin: '10px 0' }}><legend className="label" style={{ fontWeight: 600, fontSize: '.9rem' }}>Regional specialties</legend>
           <div className="pill-list">{regions.data?.map((r) => <label key={r.slug} className="check"><input type="checkbox" checked={f.regions.includes(r.slug)} onChange={(e) => set('regions', e.target.checked ? [...f.regions, r.slug] : f.regions.filter((x) => x !== r.slug))} />{r.name}</label>)}</div></fieldset>
         <Field label="Store policies (optional)" hint="For example how you handle substitutions or pickup times."><Textarea value={f.policies ?? ''} onChange={(e) => set('policies', e.target.value)} maxLength={3000} /></Field>

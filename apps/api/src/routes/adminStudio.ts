@@ -113,8 +113,8 @@ export const adminStudioRoutes: FastifyPluginAsync = async (app) => {
 
   // ---------- Homepage layout (order and visibility of the sections) ----------
   app.put('/layout', { preHandler: content }, async (req) => {
-    const b = z.object({ sections: z.array(z.object({ id: z.enum(['regions', 'deals', 'departments', 'collections_a', 'new', 'collections_b', 'stores', 'recipes', 'trust']), enabled: z.boolean() })).length(9) }).parse(req.body);
-    if (new Set(b.sections.map((s) => s.id)).size !== 9) throw bad('duplicate_section', 'Each section must appear once.');
+    const b = z.object({ sections: z.array(z.object({ id: z.enum(['regions', 'deals', 'departments', 'collections_a', 'new', 'collections_b', 'stores', 'kitchens', 'recipes', 'trust']), enabled: z.boolean() })).min(9).max(10) }).parse(req.body);
+    if (new Set(b.sections.map((s) => s.id)).size !== b.sections.length) throw bad('duplicate_section', 'Each section must appear once.');
     await pool.query(`INSERT INTO content_blocks(key, value) VALUES ('home_layout', $1) ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = now()`, [b]);
     await audit(req.user!.id, 'layout.updated', 'content', 'home_layout', b);
     return { ok: true };

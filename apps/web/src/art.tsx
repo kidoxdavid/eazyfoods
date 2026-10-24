@@ -5,7 +5,7 @@ import { useId, type CSSProperties } from 'react';
  * actually comes in (bag, jar, pouch, tin, bottle, box, frozen bag, fresh crate), labelled with its real name,
  * brand and size. They are illustrations, not photos, and are replaced automatically by a store's real photo.
  */
-type Kind = 'bag' | 'jar' | 'pouch' | 'tin' | 'frozen' | 'snack' | 'bottle' | 'box' | 'fresh';
+type Kind = 'bag' | 'jar' | 'pouch' | 'tin' | 'frozen' | 'snack' | 'bottle' | 'box' | 'fresh' | 'bowl';
 
 const RULES: [RegExp, Kind][] = [
   [/frozen/, 'frozen'], [/injera/, 'bag'], [/fresh|okra|plantains \(|yam|peppers|leaves|produce/, 'fresh'],
@@ -14,6 +14,7 @@ const RULES: [RegExp, Kind][] = [
   [/flour|rice|garri|gari|meal|beans|grain|ogi|pap\b|fufu|teff|maize/, 'bag'], [/spice|seasoning|blend|ras el|suya|yaji|egusi|ogbono|hibiscus|dried|stockfish|catfish/, 'pouch'],
 ];
 export function packKind(name: string, category?: string | null): Kind {
+  if (category === 'dish') return 'bowl';
   const hay = `${name} ${category ?? ''}`.toLowerCase();
   for (const [re, k] of RULES) if (re.test(hay)) return k;
   return 'pouch';
@@ -132,6 +133,15 @@ export function ProductArt({ name, brand, category, size, bare = false, classNam
         <path d="M110 50 H130 V74 Q160 84 160 112 V192 Q160 208 144 208 H96 Q80 208 80 192 V112 Q80 84 110 74 Z" fill={`url(#g${uid})`} />
         <path d="M90 100 Q86 140 90 192" stroke="#fff" strokeOpacity=".35" strokeWidth={5} fill="none" strokeLinecap="round" />
         {L(86, 118, 68, 76)}
+      </g>); break;
+    case 'bowl':
+      shape = (<g>
+        <path d="M44 128 H196 Q192 200 120 208 Q48 200 44 128 Z" fill={`url(#g${uid})`} />
+        <ellipse cx={120} cy={128} rx={76} ry={13} fill={dark} />
+        <path d="M58 126 Q70 82 120 78 Q170 82 182 126 Z" fill={accent} /><path d="M72 120 Q84 94 120 90" stroke="#fff" strokeOpacity=".35" strokeWidth={5} fill="none" strokeLinecap="round" />
+        <circle cx={96} cy={106} r={6} fill={mix(accent, '#000000', 0.25)} /><circle cx={132} cy={98} r={7} fill={mix(accent, '#ffffff', 0.3)} /><circle cx={150} cy={112} r={5} fill={mix(accent, '#000000', 0.2)} />
+        <path d="M96 66 Q88 52 98 40 M120 62 Q112 46 122 32 M144 66 Q136 52 146 40" stroke="#fff" strokeOpacity=".55" strokeWidth={4} fill="none" strokeLinecap="round" />
+        {L(70, 148, 100, 46)}
       </g>); break;
     case 'box':
       shape = (<g>

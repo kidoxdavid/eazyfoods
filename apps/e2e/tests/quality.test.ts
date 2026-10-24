@@ -7,10 +7,10 @@ let browser: Browser;
 beforeAll(async () => { browser = await launch(); });
 afterAll(async () => { await browser?.close(); });
 
-const PUBLIC = ['/', '/search?q=garri', '/search?region=east-africa', '/stores', '/s/demo-calgary-west-african-market', '/p/garri-white', '/recipes', '/recipes/jollof-rice-nigerian-style', '/cart', '/signin', '/register', '/pages/refund-policy'];
+const PUBLIC = ['/', '/search?q=garri', '/search?region=east-africa', '/stores', '/kitchens', '/k/demo-mama-ngozi-kitchen', '/k/demo-habesha-table', '/s/demo-calgary-west-african-market', '/p/garri-white', '/recipes', '/recipes/jollof-rice-nigerian-style', '/cart', '/signin', '/register', '/pages/refund-policy'];
 const SIGNED_IN = ['/account', '/orders', '/checkout'];
 const PORTALS: [string, string][] = [['owner1@example.test', '/vendor'], ['owner1@example.test', '/vendor/orders'], ['owner1@example.test', '/vendor/inventory'], ['owner1@example.test', '/vendor/store'],
-  ['owner@example.test', '/admin'], ['owner@example.test', '/admin/catalogue'], ['owner@example.test', '/admin/settings'], ['owner@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/storefront'], ['owner1@example.test', '/vendor/messages'], ['owner1@example.test', '/vendor/insights'], ['owner@example.test', '/admin/insights'], ['owner@example.test', '/admin/messages'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
+  ['owner@example.test', '/admin'], ['owner@example.test', '/admin/catalogue'], ['owner@example.test', '/admin/settings'], ['owner@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/storefront'], ['owner1@example.test', '/vendor/messages'], ['chef1@example.test', '/vendor'], ['chef1@example.test', '/vendor/menu'], ['chef1@example.test', '/vendor/store'], ['owner@example.test', '/admin/dishes'], ['owner1@example.test', '/vendor/insights'], ['owner@example.test', '/admin/insights'], ['owner@example.test', '/admin/messages'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
 const WIDTHS = [360, 390, 768, 1280];
 
 describe('responsive: no horizontal scrolling at common widths', () => {
@@ -173,5 +173,50 @@ describe('vendor messages (browser)', () => {
     await a.page.getByText('Yes: use Add from catalogue.').waitFor();
     await v.page.reload(); await v.page.getByRole('button', { name: new RegExp(subject) }).click();
     await v.page.getByText('Yes: use Add from catalogue.').waitFor();
+  });
+});
+
+describe('home chefs (browser)', () => {
+  it('a customer filters out dishes with an allergen they avoid and orders a dish', async () => {
+    const { page } = await newPage(browser, MOBILE);
+    await page.goto(base() + '/k/demo-mama-ngozi-kitchen'); await page.waitForLoadState('networkidle');
+    const suya = page.locator('li.dish', { hasText: 'Suya skewers' });
+    await suya.waitFor();
+    expect(await suya.innerText()).toContain('Peanuts');
+    await page.getByText('Allergens I avoid').click();
+    await page.getByRole('button', { name: 'Peanuts' }).click();
+    await suya.getByText(/which you avoid/).waitFor();
+    expect(await suya.getByRole('button', { name: /Add to basket/ }).count()).toBe(0);
+    const jollof = page.locator('li.dish', { hasText: 'Jollof rice' });
+    await jollof.getByRole('button', { name: /Add to basket/ }).click();
+    await jollof.getByRole('button', { name: /Add one Jollof/ }).waitFor();   // the add button became a quantity stepper
+  });
+
+  it('a cook adds a dish from the chef portal and it appears on the public kitchen page', async () => {
+    const name = `Test stew ${Date.now()}`;
+    const { page, ctx } = await newPage(browser, DESKTOP); await signIn(page, 'chef1@example.test');
+    await page.goto(base() + '/vendor/menu');
+    await page.getByRole('button', { name: 'Add a dish' }).click();
+    await page.getByLabel('Dish name').fill(name); await page.getByLabel('Price (CAD)').fill('14.50');
+    const save = page.getByRole('button', { name: 'Save dish' });
+    expect(await save.isDisabled()).toBe(true);               // allergen confirmation is mandatory
+    await page.getByRole('checkbox', { name: /Peanuts/ }).check();
+    await page.getByRole('checkbox', { name: /I confirm the allergen list/ }).check();
+    await save.click();
+    await page.getByText(name).first().waitFor();
+    const pub = await newPage(browser, DESKTOP);
+    await pub.page.goto(base() + '/k/demo-mama-ngozi-kitchen'); await pub.page.waitForLoadState('networkidle');
+    const card = pub.page.locator('li.dish', { hasText: name });
+    await card.waitFor();
+    expect(await card.innerText()).toContain('Peanuts');
+    await ctx.close();
+  });
+
+  it('the apply form offers a cook path', async () => {
+    const { page } = await newPage(browser, MOBILE);
+    await signIn(page, 'customer@example.test');
+    await page.goto(base() + '/vendor?kind=chef');
+    await page.getByRole('heading', { name: 'Cook with EAZyfoods' }).waitFor();
+    await page.getByLabel('Cuisines you cook').waitFor();
   });
 });

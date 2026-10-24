@@ -30,15 +30,15 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
       phone: z.string().min(7).max(25), contact_email: z.string().email().optional(),
       store_name: z.string().min(2).max(120), address_line: z.string().min(3).max(160), city: z.string().min(1).max(80).default('Calgary'),
       postal_code: z.string().refine(isCanadianPostal, 'Enter a valid Canadian postal code'), description: z.string().max(1000).optional(),
-      regions: z.array(z.string()).default([]),
+      regions: z.array(z.string()).default([]), kind: z.enum(['store', 'chef']).default('store'), cuisines: z.array(z.string().trim().min(2).max(40)).max(8).default([]),
     }).parse(req.body);
     const out = await tx(async (c) => {
-      const v = (await c.query(`INSERT INTO vendors(name, legal_name, business_number, phone, contact_email) VALUES ($1,$2,$3,$4,$5) RETURNING id`, [b.business_name, b.legal_name ?? null, b.business_number ?? null, b.phone, b.contact_email ?? req.user!.email])).rows[0];
+      const v = (await c.query(`INSERT INTO vendors(name, legal_name, business_number, phone, contact_email, kind) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`, [b.business_name, b.legal_name ?? null, b.business_number ?? null, b.phone, b.contact_email ?? req.user!.email, b.kind])).rows[0];
       await c.query(`INSERT INTO user_roles(user_id, role, vendor_id) VALUES ($1,'vendor_owner',$2)`, [req.user!.id, v.id]);
       let slug = slugify(b.store_name), n = 1;
       while ((await c.query('SELECT 1 FROM stores WHERE slug = $1', [slug])).rowCount) slug = `${slugify(b.store_name)}-${++n}`;
-      const s = (await c.query(`INSERT INTO stores(vendor_id, slug, name, description, address_line, city, postal_code, phone) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, slug`,
-        [v.id, slug, b.store_name, b.description ?? null, b.address_line, b.city, normalisePostal(b.postal_code), b.phone])).rows[0];
+      const s = (await c.query(`INSERT INTO stores(vendor_id, slug, name, description, address_line, city, postal_code, phone, kind, cuisines) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, slug`,
+        [v.id, slug, b.store_name, b.description ?? null, b.address_line, b.city, normalisePostal(b.postal_code), b.phone, b.kind === 'chef' ? 'kitchen' : 'grocery', b.cuisines])).rows[0];
       if (b.regions.length) await c.query('INSERT INTO store_regions SELECT $1, id FROM regions WHERE slug = ANY($2::text[]) ON CONFLICT DO NOTHING', [s.id, b.regions]);
       await audit(req.user!.id, 'vendor.applied', 'vendor', v.id, {}, c);
       return { vendor_id: v.id, store_id: s.id, slug: s.slug };
@@ -89,13 +89,15 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
       postal_code: z.string().refine(isCanadianPostal).optional(), phone: z.string().max(25).optional(), policies: z.string().max(3000).nullable().optional(),
       offers_delivery: z.boolean().optional(), offers_pickup: z.boolean().optional(), ordering_paused: z.boolean().optional(),
       min_order_cents: z.number().int().min(0).max(100000).nullable().optional(), logo_url: img, cover_url: img, regions: z.array(z.string()).optional(),
+      cuisines: z.array(z.string().trim().min(2).max(40)).max(8).optional(),
     }).parse(req.body);
     await tx(async (c) => {
       const cur = (await c.query('SELECT * FROM stores WHERE id = $1 FOR UPDATE', [id])).rows[0];
-      const m = { ...cur, ...Object.fromEntries(Object.entries(b).filter(([k, v]) => v !== undefined && k !== 'regions')) };
+      const m = { ...cur, ...Object.fromEntries(Object.entries(b).filter(([k, v]) => v !== undefined && k !== 'regions' && k !== 'cuisines')) };
       if (b.postal_code) m.postal_code = normalisePostal(b.postal_code);
       await c.query(`UPDATE stores SET description=$2, address_line=$3, city=$4, postal_code=$5, phone=$6, policies=$7, offers_delivery=$8, offers_pickup=$9, ordering_paused=$10, min_order_cents=$11, logo_url=$12, cover_url=$13 WHERE id=$1`,
         [id, m.description, m.address_line, m.city, m.postal_code, m.phone, m.policies, m.offers_delivery, m.offers_pickup, m.ordering_paused, m.min_order_cents, m.logo_url, m.cover_url]);
+      if (b.cuisines) await c.query(`UPDATE stores SET cuisines = $2 WHERE id = $1 AND kind = 'kitchen'`, [id, b.cuisines]);
       if (b.regions) { await c.query('DELETE FROM store_regions WHERE store_id = $1', [id]); await c.query('INSERT INTO store_regions SELECT $1, id FROM regions WHERE slug = ANY($2::text[])', [id, b.regions]); }
       await audit(req.user!.id, 'store.profile_updated', 'store', id, b, c);
     });
@@ -111,7 +113,7 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
   });
   app.get<{ Params: { storeId: string } }>('/stores/:storeId/hours', async (req) => (await pool.query('SELECT dow, to_char(opens,\'HH24:MI\') AS opens, to_char(closes,\'HH24:MI\') AS closes FROM store_hours WHERE store_id = $1 ORDER BY dow, opens', [await store(req)])).rows);
   app.get<{ Params: { storeId: string } }>('/stores/:storeId/profile', async (req) => {
-    const s = (await pool.query('SELECT id, slug, name, description, address_line, city, postal_code, phone, policies, offers_delivery, offers_pickup, ordering_paused, min_order_cents, logo_url, cover_url, status FROM stores WHERE id = $1', [await store(req)])).rows[0];
+    const s = (await pool.query('SELECT id, slug, name, description, address_line, city, postal_code, phone, policies, offers_delivery, offers_pickup, ordering_paused, min_order_cents, logo_url, cover_url, status, kind, cuisines FROM stores WHERE id = $1', [await store(req)])).rows[0];
     const regions = (await pool.query('SELECT r.slug FROM store_regions sr JOIN regions r ON r.id = sr.region_id WHERE sr.store_id = $1', [s.id])).rows.map((r) => r.slug);
     return { ...s, regions };
   });
@@ -335,24 +337,29 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
 async function onboardingStatus(vid: string) {
   const v = (await pool.query('SELECT * FROM vendors WHERE id = $1', [vid])).rows[0];
   const st = (await pool.query('SELECT * FROM stores WHERE vendor_id = $1 ORDER BY created_at LIMIT 1', [vid])).rows[0];
-  const [hours, regions, docs, offers, zones] = await Promise.all([
+  const chef = v.kind === 'chef';
+  const [hours, regions, docs, offers, zones, docKinds] = await Promise.all([
     pool.query('SELECT count(*)::int n FROM store_hours WHERE store_id = $1', [st.id]), pool.query('SELECT count(*)::int n FROM store_regions WHERE store_id = $1', [st.id]),
     pool.query('SELECT count(*)::int n FROM vendor_documents WHERE vendor_id = $1 AND status <> $2', [vid, 'rejected']),
     pool.query('SELECT count(*)::int n FROM store_offers WHERE store_id = $1 AND is_active', [st.id]),
-    pool.query('SELECT count(*)::int n FROM store_delivery_zones WHERE store_id = $1', [st.id])]);
+    pool.query('SELECT count(*)::int n FROM store_delivery_zones WHERE store_id = $1', [st.id]),
+    pool.query(`SELECT DISTINCT kind FROM vendor_documents WHERE vendor_id = $1 AND status <> 'rejected'`, [vid])]);
+  const have = new Set(docKinds.rows.map((r) => r.kind));
   const items = [
     { key: 'business_details', label: 'Business details', done: !!(v.name && v.phone && v.business_number), required: true, hint: 'Business name, phone and business/GST number.' },
     { key: 'store_location', label: 'Store location and contact', done: !!(st.address_line && st.postal_code && st.phone), required: true, hint: 'Street address, postal code and a phone number customers can reach.' },
     { key: 'hours', label: 'Opening hours', done: hours.rows[0].n > 0, required: true, hint: 'Set the hours you can take orders.' },
-    { key: 'regions', label: 'Regional specialties', done: regions.rows[0].n > 0, required: true, hint: 'Pick the African regions your store specialises in.' },
+    { key: 'regions', label: 'Regional specialties', done: regions.rows[0].n > 0, required: true, hint: chef ? 'Pick the African regions your cooking comes from.' : 'Pick the African regions your store specialises in.' },
     { key: 'fulfilment', label: 'Delivery or pickup', done: st.offers_delivery || st.offers_pickup, required: true, hint: 'Choose whether you offer delivery, pickup, or both.' },
-    { key: 'documents', label: 'Business documents', done: docs.rows[0].n > 0, required: true, hint: 'Upload a business licence (and food premises permit if you have one).' },
+    chef
+      ? { key: 'documents', label: 'Permit and food-handler certificate', done: have.has('food_premises_permit') && have.has('food_handler_cert'), required: true, hint: 'Upload your food premises permit and your food-handler certificate. Our team verifies both before you can go live.' }
+      : { key: 'documents', label: 'Business documents', done: docs.rows[0].n > 0, required: true, hint: 'Upload a business licence (and food premises permit if you have one).' },
     { key: 'agreement', label: 'Vendor agreement', done: !!v.agreement_accepted_at, required: true, hint: 'Read and accept the agreement and fees.' },
     { key: 'payout', label: 'Payout account', done: !!v.stripe_account_id, required: false, hint: 'Needed before we can pay you. We will help you connect it after approval.' },
-    { key: 'products', label: 'Products listed', done: offers.rows[0].n >= 5, required: false, hint: 'List at least 5 products so customers have something to buy at launch.' },
+    { key: 'products', label: chef ? 'Dishes on your menu' : 'Products listed', done: offers.rows[0].n >= (chef ? 3 : 5), required: false, hint: chef ? 'Add at least 3 dishes, each with its allergens, so customers have something to order at launch.' : 'List at least 5 products so customers have something to buy at launch.' },
     { key: 'delivery_zones', label: 'Delivery areas', done: zones.rows[0].n > 0 || !st.offers_delivery, required: false, hint: 'EAZyfoods assigns the delivery areas you serve when you are approved.' },
   ];
-  return { vendor_status: v.status, store_status: st.status, store_id: st.id, store_slug: st.slug, items, can_submit: v.status === 'draft' && items.filter((i) => i.required).every((i) => i.done) };
+  return { kind: v.kind, vendor_status: v.status, store_status: st.status, store_id: st.id, store_slug: st.slug, items, can_submit: v.status === 'draft' && items.filter((i) => i.required).every((i) => i.done) };
   }
 
 export const DEFINITIONS = {

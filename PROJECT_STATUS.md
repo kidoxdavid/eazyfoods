@@ -63,3 +63,11 @@ See `docs/DECISIONS.md`: commission 12%, delivery $5.99/store, driver pay $4.50,
 
 ## Insights dashboards (added)
 - Admin → Insights and Vendor → Insights: 7/30/90-day KPIs with change vs the previous period, daily sales and orders charts (hover/keyboard read-out and table alternative), orders by hour and weekday, outcome and delivery/pickup mix, top products (and top stores for admin), accept/prepare speed. Vendors only see their own stores.
+
+## Home chefs (added)
+- **Model**: a chef is a vendor of kind `chef`; their store is a `kitchen`; dishes are products with status `dish_live` owned by that kitchen, so no grocery query can ever show a dish. Orders, GST (dishes are standard-rated, 5%), commission, payments, refunds, delivery, handover codes, messaging and insights are the shared machinery.
+- **Customers**: `/kitchens` (filter by cuisine), `/k/:slug` kitchen page with per-dish allergens, spice, serves, prep time, declared dietary labels, a saved-on-device "allergens I avoid" filter that blocks adding matching dishes, "Home chefs" on the homepage (reorderable in the studio) and in the menus. Cooks' street addresses are never published (area only).
+- **Cooks** (`/vendor`, choose "Cook and sell meals" or `/vendor?kind=chef`): plum-coloured Chef portal with Menu (dishes, daily portions, mandatory allergen confirmation), Kitchen profile with cuisines, plus the shared Orders, Promotions, Ads, Insights, Reports, Storefront, Messages.
+- **Admin**: vendor list shows Home chef; approval requires a verified food premises permit AND food-handler certificate; "Home-chef dishes" screen can hide/restore a dish (the cook is told in Messages); `kitchens.enabled` setting is a kill switch.
+- **LEGAL / SAFETY, must be reviewed before real cooks sell**: Alberta food-premises permit rules for selling home-prepared food, liability and insurance, allergen duties, GST treatment of prepared meals (accountant), and the draft page "Rules for home kitchens". Allergen and dietary labels are declared by cooks and are not verified by EAZyfoods; the UI says so.
+- Not built yet: cook payouts via Stripe Connect (shared payout flow is manual), scheduled/pre-order time slots, per-dish reviews.

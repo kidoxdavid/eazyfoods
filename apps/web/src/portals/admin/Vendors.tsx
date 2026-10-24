@@ -20,7 +20,7 @@ export function Vendors() {
       <Fetch path={`/admin/vendors${status ? `?status=${status}` : ''}`}>{(rows: any[]) => (
         <DataTable rows={rows} rowKey={(r) => r.id} onRowClick={(r) => nav(`/admin/vendors/${r.id}`)} empty="No vendors match."
           columns={[
-            { key: 'name', header: 'Vendor', render: (r) => <><strong>{r.name}</strong> {r.is_test_data && <Badge tone="demo">Demo</Badge>}</> },
+            { key: 'name', header: 'Vendor', render: (r) => <><strong>{r.name}</strong> {r.kind === 'chef' && <Badge tone="info">Home chef</Badge>} {r.is_test_data && <Badge tone="demo">Demo</Badge>}</> },
             { key: 'status', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
             { key: 'stores', header: 'Stores' },
             { key: 'docs', header: 'Documents', render: (r) => <>{r.verified_docs} verified{r.pending_docs ? <> · <Badge tone="warn">{r.pending_docs} to review</Badge></> : null}</> },
@@ -50,6 +50,7 @@ export function VendorDetail() {
           <>
             <PageHeader title={v.name} sub={<><StatusBadge status={v.status} /> {v.legal_name && <>· {v.legal_name}</>} · <Link to="/admin/vendors">All vendors</Link></>} />
             {act.error && <Notice tone="error">{act.error}</Notice>}
+            {v.kind === 'chef' && <Notice tone="warn"><strong>Home chef.</strong> Approval needs a verified <strong>food premises permit</strong> and a verified <strong>food-handler certificate</strong>. Check both are genuine and current.</Notice>}
             {v.status === 'submitted' && !verified && <Notice tone="warn">This vendor cannot be approved until at least one business document is <strong>verified</strong> (open the documents below, check them, then verify).</Notice>}
             <div className="row wrap" style={{ marginBottom: 14 }}>
               {v.status !== 'approved' && <Confirm variant="primary" message={`Approve ${v.name}? Their stores can then be published and take orders.`} onConfirm={() => act.run(() => patch(`/admin/vendors/${id}/status`, { status: 'approved' }), 'Vendor approved', reload) as any}>Approve vendor</Confirm>}

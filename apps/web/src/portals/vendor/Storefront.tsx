@@ -16,7 +16,7 @@ export default function Storefront() {
 }
 
 function Editor() {
-  const { storeId, store } = useVendor(); const toast = useToast();
+  const { storeId, store, isChef } = useVendor(); const toast = useToast();
   const b = useApi<Branding>(`/vendor/stores/${storeId}/branding`);
   const [f, setF] = useState<Branding | null>(null);
   useEffect(() => { if (b.data) setF(b.data); }, [b.data]);
@@ -66,7 +66,7 @@ function Editor() {
           <label key={p.slug} className="check"><input type="checkbox" checked={f.featured_slugs.includes(p.slug)} onChange={() => toggle(p.slug)} disabled={!f.featured_slugs.includes(p.slug) && f.featured_slugs.length >= 8} />{p.name}</label>
         ))}</div> : <p className="muted">Add products to your inventory first.</p>}
       </Card>
-      <div className="row end">{store.orderable && <Link className="btn ghost" to={`/s/${store.slug}`} target="_blank" rel="noopener">View my store<span className="sr-only"> (opens in a new tab)</span></Link>}<Button type="submit" busy={save.busy}>Save storefront</Button></div>
+      <div className="row end">{store.orderable && <Link className="btn ghost" to={`/${isChef ? 'k' : 's'}/${store.slug}`} target="_blank" rel="noopener">View my store<span className="sr-only"> (opens in a new tab)</span></Link>}<Button type="submit" busy={save.busy}>Save storefront</Button></div>
     </form>
   );
 }

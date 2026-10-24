@@ -51,8 +51,8 @@ function Mega({ onClose }: { onClose: () => void }) {
             <li key={r.slug}><Link to={`/search?region=${r.slug}`}>{r.name}</Link>
               <span className="mega-sub">{r.countries.slice(0, 5).map((c) => <Link key={c.slug} to={`/search?region=${r.slug}&country=${c.slug}`}>{c.name}</Link>)}</span></li>))}</ul></div>
           <div><h3>By department</h3><ul role="list">{cats.data?.map((c) => <li key={c.slug}><Link to={`/search?category=${c.slug}`}>{c.name}</Link></li>)}</ul></div>
-          <div><h3>Discover</h3><ul role="list"><li><Link to="/deals">Weekly deals</Link></li><li><Link to="/new">New arrivals</Link></li><li><Link to="/recipes">Recipes</Link></li><li><Link to="/stores">All stores</Link></li></ul>
-            <h3 style={{ marginTop: 18 }}>Partner with us</h3><ul role="list"><li><Link to="/vendor">Sell on EAZyfoods</Link></li><li><Link to="/driver">Drive with us</Link></li></ul></div>
+          <div><h3>Discover</h3><ul role="list"><li><Link to="/deals">Weekly deals</Link></li><li><Link to="/new">New arrivals</Link></li><li><Link to="/recipes">Recipes</Link></li><li><Link to="/kitchens">Home chefs</Link></li><li><Link to="/stores">All stores</Link></li></ul>
+            <h3 style={{ marginTop: 18 }}>Partner with us</h3><ul role="list"><li><Link to="/vendor">Sell on EAZyfoods</Link></li><li><Link to="/vendor?kind=chef">Cook with us</Link></li><li><Link to="/driver">Drive with us</Link></li></ul></div>
         </div>
       </div>
     </div>
@@ -82,7 +82,7 @@ export function Header() {
       <header className="hdr">
         <div className="hdr-util"><div className="wrap">
           <span>Calgary, Alberta · African groceries from local stores</span>
-          <span className="util-links"><Link to="/vendor">Sell on EAZyfoods</Link><Link to="/driver">Drive with us</Link><Link to="/pages/how-it-works">How it works</Link><Link to="/pages/faq">Help</Link></span>
+          <span className="util-links"><Link to="/vendor">Sell on EAZyfoods</Link><Link to="/vendor?kind=chef">Cook with us</Link><Link to="/driver">Drive with us</Link><Link to="/pages/how-it-works">How it works</Link><Link to="/pages/faq">Help</Link></span>
         </div></div>
         <div className="hdr-main"><div className="wrap hdr-row">
           <button className="icon-btn menu-btn" aria-label="Open all departments" aria-expanded={menu} onClick={() => setMenu(true)}><IconMenu /></button>
@@ -109,7 +109,7 @@ export function Header() {
         <nav className="hdr-nav" aria-label="Shop"><div className="wrap hdr-navrow">
           <button className="alldept" onClick={() => setMenu(true)} aria-expanded={menu}><IconMenu width={18} height={18} /> All departments</button>
           {regions.data?.map((r) => <Link key={r.slug} to={`/search?region=${r.slug}`} className={active === r.slug ? 'active' : ''} aria-current={active === r.slug ? 'page' : undefined}>{r.name}</Link>)}
-          <Link to="/deals" className="hot">Deals</Link><Link to="/new">New</Link><Link to="/recipes">Recipes</Link><Link to="/stores">Stores</Link>
+          <Link to="/deals" className="hot">Deals</Link><Link to="/new">New</Link><Link to="/recipes">Recipes</Link><Link to="/stores">Stores</Link><Link to="/kitchens">Home chefs</Link>
           <span className="grow" />
           <span className="desktop-only navr">{isVendor && <Link to="/vendor">Vendor portal</Link>}{has('driver') && <Link to="/driver">Driver</Link>}{isStaff && <Link to="/admin">Admin</Link>}{me && <button className="link" onClick={logout}>Sign out</button>}</span>
         </div></nav>
@@ -141,7 +141,7 @@ export function Footer() {
       <div className="wrap ftr-cols">
         <div><h3>Shop</h3><ul role="list">{regions.data?.map((r) => <li key={r.slug}><Link to={`/search?region=${r.slug}`}>{r.name}</Link></li>)}<li><Link to="/deals">Weekly deals</Link></li><li><Link to="/new">New arrivals</Link></li><li><Link to="/stores">Stores</Link></li></ul></div>
         <div><h3>Help</h3><ul role="list">{pages.data?.filter((p) => ['how-it-works', 'delivery-policy', 'refund-policy', 'faq'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}<li><Link to="/orders">Your orders</Link></li></ul></div>
-        <div><h3>Work with us</h3><ul role="list"><li><Link to="/vendor">Sell on EAZyfoods</Link></li><li><Link to="/driver">Drive with us</Link></li></ul></div>
+        <div><h3>Work with us</h3><ul role="list"><li><Link to="/vendor">Sell on EAZyfoods</Link></li><li><Link to="/vendor?kind=chef">Cook with us</Link></li><li><Link to="/driver">Drive with us</Link></li></ul></div>
         <div><h3>Legal</h3><ul role="list">{pages.data?.filter((p) => ['privacy', 'terms'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}</ul></div>
       </div>
       <div className="ftr-base"><div className="wrap"><strong className="logo">EAZy<span>foods</span></strong><span>African groceries from local stores, starting in Calgary, Alberta. Prices and availability are set by each store.</span></div></div>
