@@ -32,7 +32,7 @@ function PlaceModal() {
   );
 }
 
-function Mega({ onClose }: { onClose: () => void }) {
+function Mega({ onClose, closing }: { onClose: () => void; closing: boolean }) {
   const regions = useApi<Region[]>('/regions');
   const cats = useApi<{ slug: string; name: string }[]>('/categories');
   const loc = useLocation();
@@ -43,7 +43,7 @@ function Mega({ onClose }: { onClose: () => void }) {
   useEffect(() => { if (opened.current !== here) { opened.current = here; onClose(); } }, [here, onClose]);
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose(); document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k); }, [onClose]);
   return (
-    <div className="mega-wrap" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className={`mega-wrap${closing ? ' closing' : ''}`} aria-hidden={closing || undefined} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="mega" role="dialog" aria-label="All departments">
         <div className="mega-head"><strong>Shop EAZyfoods</strong><button className="icon-btn" onClick={onClose} aria-label="Close menu"><IconClose /></button></div>
         <div className="mega-cols">
@@ -74,7 +74,10 @@ export function Header() {
   const ann = content.data?.announcement;
   const subtotal = cart ? cart.subtotal_cents : guest.reduce((a, g) => a + g.unit_price_cents * g.quantity, 0);
   const submit = (e: FormEvent) => { e.preventDefault(); const p = new URLSearchParams(); if (q.trim()) p.set('q', q.trim()); if (dept) p.set('category', dept); nav(`/search?${p}`); };
-  const closeMenu = useRef(() => setMenu(false)).current;
+  const [leaving, setLeaving] = useState(false);
+  // The menu fades out before it is removed, so closing is as smooth as opening.
+  const closeMenu = useRef(() => { setMenu(false); setLeaving(true); setTimeout(() => setLeaving(false), 200); }).current;
+  const openMenu = () => { setLeaving(false); setMenu(true); };
   return (
     <>
       {ann?.active && ann.text ? <div className="announce" role="note">{ann.text}</div>
@@ -85,7 +88,7 @@ export function Header() {
           <span className="util-links"><Link to="/vendor">Sell on EAZyfoods</Link><Link to="/vendor?kind=chef">Cook with us</Link><Link to="/driver">Drive with us</Link><Link to="/pages/how-it-works">How it works</Link><Link to="/pages/faq">Help</Link></span>
         </div></div>
         <div className="hdr-main"><div className="wrap hdr-row">
-          <button className="icon-btn menu-btn" aria-label="Open all departments" aria-expanded={menu} onClick={() => setMenu(true)}><IconMenu /></button>
+          <button className="icon-btn menu-btn" aria-label="Open all departments" aria-expanded={menu} onClick={openMenu}><IconMenu /></button>
           <Link to="/" className="logo" aria-label="EAZyfoods home">EAZy<span>foods</span></Link>
           <button className="deliver" onClick={() => setOpen(true)}>
             <IconPin width={22} height={22} /><span><small>Deliver to</small><b>{place ? `${place.fsa} ${place.serviceable ? '' : '(not yet)'}` : 'Choose location'}</b></span>
@@ -107,14 +110,14 @@ export function Header() {
           </Link>
         </div></div>
         <nav className="hdr-nav" aria-label="Shop"><div className="wrap hdr-navrow">
-          <button className="alldept" onClick={() => setMenu(true)} aria-expanded={menu}><IconMenu width={18} height={18} /> All departments</button>
+          <button className="alldept" onClick={openMenu} aria-expanded={menu}><IconMenu width={18} height={18} /> All departments</button>
           {regions.data?.map((r) => <Link key={r.slug} to={`/search?region=${r.slug}`} className={active === r.slug ? 'active' : ''} aria-current={active === r.slug ? 'page' : undefined}>{r.name}</Link>)}
           <Link to="/deals" className="hot">Deals</Link><Link to="/new">New</Link><Link to="/recipes">Recipes</Link><Link to="/stores">Stores</Link><Link to="/kitchens">Home chefs</Link>
           <span className="grow" />
           <span className="desktop-only navr">{isVendor && <Link to="/vendor">Vendor portal</Link>}{has('driver') && <Link to="/driver">Driver</Link>}{isStaff && <Link to="/admin">Admin</Link>}{me && <button className="link" onClick={logout}>Sign out</button>}</span>
         </div></nav>
       </header>
-      {menu && <Mega onClose={closeMenu} />}
+      {(menu || leaving) && <Mega onClose={closeMenu} closing={!menu} />}
       <PlaceModal />
     </>
   );

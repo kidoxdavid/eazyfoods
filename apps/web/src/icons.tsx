@@ -25,3 +25,4 @@ export const IconTag = P('M3 12V4h8l10 10-8 8L3 12zM7.5 8.5h.01');
 export const IconStar = P('M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3z');
 export const IconChevronL = P('M15 6l-6 6 6 6');
 export const IconSwap = P('M7 7h12l-3-3M17 17H5l3 3');
+export const IconEye = P('M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6z');

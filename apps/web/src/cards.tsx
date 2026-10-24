@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { money, packLabel, post, type StoreCard } from './api';
 import { ProductArt, StoreBanner, StoreMark, Stars } from './art';
 import { useCart } from './cart';
-import { IconChevron, IconChevronL, IconMinus, IconPlus } from './icons';
+import { IconChevron, IconChevronL, IconEye, IconMinus, IconPlus } from './icons';
 import { Badge, Button, Loading, Modal, Notice, Stepper } from './ui';
 import { useApi } from './hooks';
 
@@ -53,7 +53,7 @@ export function ProductCard({ p }: { p: Card }) {
         {p.on_sale && off <= 0 && <span className="ribbon">Deal</span>}
         {!p.in_stock && <span className="ribbon grey">Out of stock</span>}
       </Link>
-      <button type="button" className="qv" onClick={() => setQuick(true)} aria-label={`Quick view: ${p.name}`}>Quick view</button>
+      <button type="button" className="qv" onClick={() => setQuick(true)} aria-label={`Quick view: ${p.name}`}><IconEye width={16} height={16} /><span className="qv-txt">Quick view</span></button>
       {quick && <QuickView slug={p.slug} onClose={() => setQuick(false)} />}
       <div className="pbody">
         {p.sponsored_campaign_id && <span className="sponsor">Sponsored</span>}
@@ -84,7 +84,7 @@ export function QuickView({ slug, onClose }: { slug: string; onClose: () => void
   const best = p ? [...p.offers].sort((a, b) => Number(b.in_stock) - Number(a.in_stock) || a.price_cents - b.price_cents)[0] : undefined;
   const cur = p?.offers.find((o) => o.offer_id === sel) ?? best;
   return (
-    <Modal open onClose={onClose} title={p?.name ?? 'Quick view'}>
+    <Modal open onClose={onClose} title={p?.name ?? 'Quick view'} className="qv-modal">
       {loading && <Loading />}
       {error && <Notice tone="error">Could not load this product. <Link to={`/p/${slug}`} onClick={onClose}>Open the full page</Link></Notice>}
       {p && (
@@ -102,7 +102,7 @@ export function QuickView({ slug, onClose }: { slug: string; onClose: () => void
               {!cur.is_open && <span className="small muted">This store is closed now. You can add it but only check out while it is open.</span>}
               <AddToBasket cta offer={{ offer_id: cur.offer_id, slug, name: p.name, unit_price_cents: cur.price_cents, store_name: cur.store_name, store_slug: cur.store_slug, pack: packLabel(p), available: cur.available, in_stock: cur.in_stock }} />
             </>) : <Notice tone="warn">No store is currently selling this.</Notice>}
-            {p.description && <p className="small">{p.description.length > 220 ? `${p.description.slice(0, 220)}…` : p.description}</p>}
+            {p.description && <p className="small qv-desc">{p.description.length > 220 ? `${p.description.slice(0, 220)}…` : p.description}</p>}
             <p className="small"><strong>Allergens:</strong> {p.allergens === null ? 'not supplied; check the package' : p.allergens.length ? p.allergens.join(', ') : 'none declared'}</p>
             <Link to={`/p/${slug}`} onClick={onClose} className="small">View full details and compare stores →</Link>
           </div>

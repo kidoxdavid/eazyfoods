@@ -27,7 +27,7 @@ import { uploadRoutes } from './routes/uploads.js';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import { publicDir } from './lib/storage.js';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cartRoutes } from './routes/cart.js';
@@ -109,8 +109,17 @@ export async function buildApp() {
   const dist = resolve(dirname(fileURLToPath(import.meta.url)), '../../web/dist');
   if (existsSync(join(dist, 'index.html'))) {
     await app.register(fastifyStatic, { root: dist, prefix: '/', wildcard: false, index: false, maxAge: '1h' });
-    app.setNotFoundHandler((req, reply) => {
-      if (req.method === 'GET' && !req.url.startsWith('/api') && !req.url.startsWith('/uploads')) return reply.type('text/html').sendFile('index.html');
+    const indexHtml = readFileSync(join(dist, 'index.html'), 'utf8');
+    // The first screen needs the same few small answers on every page (theme, announcement, homepage banners, menus).
+    // Embedding them in the page removes a round trip, so the first paint already has the real content instead of a placeholder.
+    const BOOT = ['/theme/active', '/content/home', '/home/banners', '/regions', '/categories'];
+    app.setNotFoundHandler(async (req, reply) => {
+      if (req.method === 'GET' && !req.url.startsWith('/api') && !req.url.startsWith('/uploads')) {
+        const entries = await Promise.all(BOOT.map(async (p) => { try { const r = await app.inject({ url: `/api${p}` }); return r.statusCode === 200 ? [p, r.json()] : null; } catch { return null; } }));
+        const json = JSON.stringify(Object.fromEntries(entries.filter(Boolean) as [string, unknown][])).replace(/</g, '\\u003c');
+        // A JSON data block (not a script), so the content-security policy that blocks inline scripts is not involved.
+        return reply.header('cache-control', 'no-cache').type('text/html').send(indexHtml.replace('</head>', `<script type="application/json" id="boot">${json}</script></head>`));
+      }
       return reply.code(404).send({ error: 'not_found' });
     });
   }

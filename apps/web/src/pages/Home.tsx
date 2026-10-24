@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { type Region, type StoreCard } from '../api';
 import { useApi } from '../hooks';
@@ -66,16 +67,22 @@ export function Home() {
   const hero = content.data?.home_hero;
   const east = regions.data?.[1];
 
-  // Build the slides only once every feed has settled, so they appear together and in a fixed order. Building them as data
-  // arrives made the first-to-load slide (e.g. the red deals slide) flash and then jump when the welcome slide was inserted.
-  const ready = !themeLoading && !banners.loading && !featured.loading && !deals.loading && !regions.loading && !eastSearch.loading && !recipes.loading && !content.loading;
+  // The first slide must never move. Theme, banners and the welcome text come embedded in the page, so slide 1 is right from the very first paint.
+  // Slides that depend on product data are only ever added AFTER it, in a fixed order, so nothing flashes or jumps while they arrive.
+  // Without embedded data (the dev server), wait for those three small answers and show a neutral placeholder meanwhile.
+  const head = !themeLoading && !banners.loading && !content.loading;
   const slides: Slide[] = [];
-  if (ready && theme) slides.push({ id: 'theme', from: theme.palette.hero_from, to: theme.palette.hero_to, eyebrow: `${theme.emoji} ${theme.name}`.trim(), title: theme.headline, text: theme.subtitle, cta: { to: theme.cta_link || '/search', label: theme.cta_label || 'Start shopping' }, art: featured.data?.results ?? [], motif: theme.motif });
-  if (ready) for (const b of banners.data ?? []) slides.push({ id: `banner-${b.id}`, from: b.from_color, to: b.to_color, eyebrow: 'Featured', title: b.title, text: b.subtitle, cta: { to: b.cta_link || '/', label: b.cta_label || 'Learn more' }, art: b.image_url ? [] : featured.data?.results ?? [], image: b.image_url });
-  if (ready && featured.data) slides.push({ id: 'welcome', from: '#0b3a24', to: '#1d7a4c', eyebrow: 'Calgary · African groceries', title: (hero?.title ?? 'African groceries, from the stores you trust.').replace('\n', ' '), text: hero?.subtitle ?? 'Compare each store’s own price and stock, then have it delivered.', cta: { to: '/search', label: 'Start shopping' }, art: featured.data.results });
-  if (ready && deals.data?.length) slides.push({ id: 'deals', from: '#b8260f', to: '#f0701f', eyebrow: 'Weekly deals', title: 'Save on pantry staples this week', text: 'Live promotions from local stores, priced as you’ll pay.', cta: { to: '/deals', label: 'Shop deals' }, art: deals.data });
-  if (ready && east && eastSearch.data?.results.length) slides.push({ id: 'east', from: '#7a3a0b', to: '#d98b1f', eyebrow: east.name, title: `Discover ${east.name.replace(' Africa', '')} African ingredients`, text: east.countries.slice(0, 4).map((c) => c.name).join(' · '), cta: { to: `/search?region=${east.slug}`, label: `Shop ${east.name}` }, art: eastSearch.data.results });
-  if (ready && recipes.data?.length && featured.data) slides.push({ id: 'cook', from: '#3b2a6b', to: '#7a4bb8', eyebrow: 'Cook tonight', title: recipes.data[0].title, text: 'Add the ingredients that are in stock to your basket in one tap.', cta: { to: `/recipes`, label: 'See recipes' }, art: [...featured.data.results].reverse() });
+  if (head && theme) slides.push({ id: 'theme', from: theme.palette.hero_from, to: theme.palette.hero_to, eyebrow: `${theme.emoji} ${theme.name}`.trim(), title: theme.headline, text: theme.subtitle, cta: { to: theme.cta_link || '/search', label: theme.cta_label || 'Start shopping' }, art: featured.data?.results ?? [], motif: theme.motif });
+  if (head) for (const b of banners.data ?? []) slides.push({ id: `banner-${b.id}`, from: b.from_color, to: b.to_color, eyebrow: 'Featured', title: b.title, text: b.subtitle, cta: { to: b.cta_link || '/', label: b.cta_label || 'Learn more' }, art: b.image_url ? [] : featured.data?.results ?? [], image: b.image_url });
+  if (head) slides.push({ id: 'welcome', from: '#0b3a24', to: '#1d7a4c', eyebrow: 'Calgary · African groceries', title: (hero?.title ?? 'African groceries, from the stores you trust.').replace('\n', ' '), text: hero?.subtitle ?? 'Compare each store’s own price and stock, then have it delivered.', cta: { to: '/search', label: 'Start shopping' }, art: featured.data?.results ?? [] });
+  if (head && deals.data?.length) slides.push({ id: 'deals', from: '#b8260f', to: '#f0701f', eyebrow: 'Weekly deals', title: 'Save on pantry staples this week', text: 'Live promotions from local stores, priced as you’ll pay.', cta: { to: '/deals', label: 'Shop deals' }, art: deals.data });
+  if (head && east && eastSearch.data?.results.length) slides.push({ id: 'east', from: '#7a3a0b', to: '#d98b1f', eyebrow: east.name, title: `Discover ${east.name.replace(' Africa', '')} African ingredients`, text: east.countries.slice(0, 4).map((c) => c.name).join(' · '), cta: { to: `/search?region=${east.slug}`, label: `Shop ${east.name}` }, art: eastSearch.data.results });
+  if (head && recipes.data?.length && featured.data) slides.push({ id: 'cook', from: '#3b2a6b', to: '#7a4bb8', eyebrow: 'Cook tonight', title: recipes.data[0].title, text: 'Add the ingredients that are in stock to your basket in one tap.', cta: { to: `/recipes`, label: 'See recipes' }, art: [...featured.data.results].reverse() });
+
+  // Show slides in the order they first appeared: a slide whose data arrives late is added at the end and never pushes earlier slides around.
+  const seen = useRef<string[]>([]);
+  for (const sl of slides) if (!seen.current.includes(sl.id)) seen.current.push(sl.id);
+  slides.sort((a, b) => seen.current.indexOf(a.id) - seen.current.indexOf(b.id));
 
   const parts: Record<string, JSX.Element | null> = {
     regions: <div key="regions" className="quads">{regions.data?.slice(0, 4).map((r) => <RegionQuad key={r.slug} r={r} />)}</div>,
@@ -115,7 +122,7 @@ export function Home() {
   const order = content.data?.home_layout?.sections ?? DEFAULT_LAYOUT.map((id) => ({ id, enabled: true }));
   return (
     <>
-      {slides.length ? <HeroCarousel slides={slides} /> : ready ? null : <div className="hero-skel" aria-hidden="true" />}
+      {slides.length ? <HeroCarousel slides={slides} /> : <div className="hero-skel" aria-hidden="true" />}
       {stores.data?.some((s) => s.is_test_data) && <Notice tone="warn"><strong>Development data.</strong> Stores marked “Demo store” are invented for testing and are not real businesses. Product pictures are illustrations until stores upload photos.</Notice>}
       <HomeBanner />
       {regions.error && <ErrorBox message={regions.error} retry={regions.reload} />}

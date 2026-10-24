@@ -87,20 +87,26 @@ describe('navigation menu', () => {
 });
 
 describe('home carousel', () => {
-  it('does not flash or reorder slides while loading: the first slide shown is the welcome slide and the order never changes', async () => {
-    const { page } = await newPage(browser, DESKTOP);
-    await page.addInitScript(() => {
-      (window as any).__heroLog = [];
-      const sample = () => { const li = [...document.querySelectorAll('.hero-slide')].map((e) => e.getAttribute('aria-label') + '|' + (e.querySelector('h2')?.textContent ?? '')); const skel = !!document.querySelector('.hero-skel'); (window as any).__heroLog.push({ li, skel }); };
-      setInterval(sample, 40);
-    });
-    await page.goto(base()); await page.waitForSelector('.hero-slide'); await page.waitForTimeout(1500);
-    const log: { li: string[]; skel: boolean }[] = await page.evaluate(() => (window as any).__heroLog);
-    const withSlides = log.filter((l) => l.li.length > 0);
-    expect(withSlides.length).toBeGreaterThan(0);
-    // once slides exist they are always the same list (no insertion later)
-    expect(new Set(withSlides.map((l) => l.li.join('~'))).size).toBe(1);
-    expect(withSlides[0].li[0]).toContain('African groceries');     // the welcome slide is first
+  it('shows the real first slide from the first paint, never a placeholder, and later slides are only ever added after it', async () => {
+    const c = await db();
+    const before = (await c.query('SELECT id, status FROM themes')).rows;
+    await c.query(`UPDATE themes SET status = 'off'`);           // the date-driven festival theme would otherwise lead
+    try {
+      const { page } = await newPage(browser, DESKTOP);
+      await page.addInitScript(() => {
+        (window as any).__heroLog = [];
+        const sample = () => { const li = [...document.querySelectorAll('.hero-slide h2')].map((e) => e.textContent ?? ''); (window as any).__heroLog.push({ li, skel: !!document.querySelector('.hero-skel') }); };
+        setInterval(sample, 16);
+      });
+      await page.goto(base()); await page.waitForSelector('.hero-slide'); await page.waitForTimeout(1500);
+      const log: { li: string[]; skel: boolean }[] = await page.evaluate(() => (window as any).__heroLog);
+      const withSlides = log.filter((l) => l.li.length > 0);
+      expect(withSlides.length).toBeGreaterThan(0);
+      expect(log.some((l) => l.skel)).toBe(false);                                  // no placeholder at any moment
+      expect(withSlides[0].li[0]).toContain('African groceries');                   // the welcome slide is first
+      for (let k = 1; k < withSlides.length; k++) expect(withSlides[k].li.slice(0, withSlides[k - 1].li.length)).toEqual(withSlides[k - 1].li);   // only appended, never reordered or inserted before
+      expect(await page.evaluate(() => !!document.getElementById('boot'))).toBe(true);
+    } finally { for (const r of before) await c.query('UPDATE themes SET status = $2 WHERE id = $1', [r.id, r.status]); await c.end(); }
   });
 });
 
@@ -311,4 +317,35 @@ describe('quick view', () => {
       await card.getByRole('group', { name: /Quantity of/ }).waitFor();                      // the card behind shows it is in the basket
     });
   }
+});
+
+describe('mobile quick view and menu motion', () => {
+  it('on a phone the quick view is a small eye (no text over the product) and its window is a compact sheet', async () => {
+    const { page } = await newPage(browser, MOBILE);
+    await page.goto(base() + '/search?q=garri'); await page.waitForLoadState('networkidle');
+    const btn = page.locator('article.pcard').first().getByRole('button', { name: /Quick view/ });
+    const box = (await btn.boundingBox())!;
+    expect(box.width).toBeLessThanOrEqual(34); expect(box.height).toBeLessThanOrEqual(34);
+    expect(await btn.locator('.qv-txt').isVisible()).toBe(false);
+    await btn.click();
+    const dlg = page.getByRole('dialog'); await dlg.waitFor();
+    await page.waitForTimeout(300);
+    const h = (await dlg.boundingBox())!.height;
+    expect(h).toBeLessThan(MOBILE.height * 0.7);                                   // never fills the screen
+    await dlg.getByRole('button', { name: /Add to basket/ }).waitFor();
+  });
+
+  it('the hamburger menu fades in and fades out', async () => {
+    const { page } = await newPage(browser, MOBILE);
+    await page.goto(base()); await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: 'Open all departments' }).click();
+    const wrap = page.locator('.mega-wrap'); await wrap.waitFor();
+    await page.waitForTimeout(350);
+    expect(await wrap.evaluate((e) => getComputedStyle(e).opacity)).toBe('1');
+    await page.getByRole('button', { name: 'Close menu' }).click();
+    await page.waitForTimeout(70);
+    const mid = Number(await wrap.evaluate((e) => getComputedStyle(e).opacity));     // still there, part-way through fading
+    expect(mid).toBeGreaterThan(0); expect(mid).toBeLessThan(1);
+    await wrap.waitFor({ state: 'detached' });
+  });
 });

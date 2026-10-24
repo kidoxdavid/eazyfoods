@@ -122,7 +122,7 @@ main { padding-top: 14px; }
 .empty-art { max-width: 220px; margin: 0 auto 8px; }
 
 /* Placeholder while the hero slides load: same size and base colour as the first slide, so nothing flashes or jumps. */
-.hero-skel { margin: 4px 0 16px; border-radius: 16px; min-height: 250px; background: linear-gradient(115deg, #0b3a24, #1d7a4c); } @media (min-width: 900px) { .hero-skel { min-height: 340px; border-radius: 18px; } }
+.hero-skel { margin: 4px 0 16px; border-radius: 16px; min-height: 250px; background: var(--tint); animation: skel-pulse 1.2s ease-in-out infinite alternate; } @media (min-width: 900px) { .hero-skel { min-height: 340px; border-radius: 18px; } }
 
 /* ---------- Studio: festival/season themes, banners, store branding ---------- */
 .announce.festive { background: var(--green); color: #fff; } @media (prefers-color-scheme: dark) { .announce.festive { background: var(--green-bg); color: var(--ink); } }
@@ -156,9 +156,20 @@ main { padding-top: 14px; }
 .slot.on { border-color: var(--green); background: var(--green-bg); box-shadow: inset 0 0 0 1px var(--green); } .slot-left { color: var(--deal-ink) !important; }
 
 /* ---------- Quick view ---------- */
-.pcard .qv { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 3; background: rgba(255,255,255,.96); color: #1b2a21; border: 1px solid rgba(0,0,0,.18); border-radius: 999px; font: 700 .82rem var(--body); min-height: 34px; padding: 0 14px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.18); opacity: 0; pointer-events: none; transition: opacity .15s; white-space: nowrap; }
+.pcard .qv { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 3; display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.96); color: #1b2a21; border: 1px solid rgba(0,0,0,.18); border-radius: 999px; font: 700 .82rem var(--body); min-height: 34px; padding: 0 14px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.18); opacity: 0; pointer-events: none; transition: opacity .15s; white-space: nowrap; }
 .pcard:hover .qv, .pcard:focus-within .qv, .pcard .qv:focus-visible { opacity: 1; pointer-events: auto; }
-@media (hover: none) { .pcard .qv { opacity: 1; pointer-events: auto; left: auto; right: 8px; transform: none; min-height: 30px; padding: 0 10px; font-size: .75rem; } }
-.qv-body { display: grid; gap: 14px; grid-template-columns: 1fr; } @media (min-width: 640px) { .qv-body { grid-template-columns: 220px 1fr; } }
+/* Touch screens: just a small eye in the corner, so it hides as little of the product as possible. */
+@media (hover: none), (max-width: 699px) { .pcard .qv { opacity: 1; pointer-events: auto; left: auto; right: 6px; top: 6px; transform: none; width: 30px; height: 30px; min-height: 30px; padding: 0; justify-content: center; background: rgba(255,255,255,.82); box-shadow: 0 1px 4px rgba(0,0,0,.2); } .pcard .qv .qv-txt { display: none; } }
+/* The window is a compact sheet, never a full screen. */
+.modal.qv-modal { max-height: 64vh; padding: 12px 14px calc(14px + env(safe-area-inset-bottom)); } .qv-modal h2 { font-size: 1.05rem; padding-right: 8px; }
+.qv-body { display: grid; gap: 12px; grid-template-columns: 96px 1fr; align-items: start; } @media (min-width: 700px) { .modal.qv-modal { max-height: 86vh; padding: 18px; } .qv-modal h2 { font-size: 1.3rem; } .qv-body { grid-template-columns: 220px 1fr; gap: 16px; } }
 .qv-art { background: var(--tint); border-radius: 12px; overflow: hidden; aspect-ratio: 1; } .qv-art img, .qv-art svg { width: 100%; height: 100%; object-fit: cover; display: block; }
-.qv-info { display: grid; gap: 8px; align-content: start; min-width: 0; } .qv-info p { margin: 0; }
+.qv-info { display: grid; gap: 6px; align-content: start; min-width: 0; } .qv-info p { margin: 0; }
+@media (max-width: 699px) { .qv-desc { display: none; } .qv-info .btn { min-height: 44px; } }
+
+/* ---------- Motion: things fade in (and the menu fades out) instead of popping ---------- */
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } } @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } } @keyframes skel-pulse { from { opacity: .55; } to { opacity: 1; } }
+.mega-wrap { animation: fade-in .18s ease both; } .mega-wrap.closing { animation: fade-out .18s ease both; pointer-events: none; }
+.modal-backdrop { animation: fade-in .15s ease both; } .modal { animation: fade-in .18s ease both; }
+.hp { animation: fade-in .4s ease both; }
+@media (prefers-reduced-motion: reduce) { .mega-wrap, .mega-wrap.closing, .modal-backdrop, .modal, .hp, .hero-skel { animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }

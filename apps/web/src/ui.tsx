@@ -100,7 +100,7 @@ export function DataTable<T>({ columns, rows, rowKey, empty = 'Nothing here yet.
 }
 
 // ---------- Modal (bottom sheet on phones) ----------
-export function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+export function Modal({ open, onClose, title, children, className = '' }: { open: boolean; onClose: () => void; title: string; children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -114,7 +114,7 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
   if (!open) return null;
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={ref}>
+      <div className={`modal ${className}`} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={ref}>
         <div className="row between"><h2>{title}</h2><button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button></div>
         {children}
       </div>

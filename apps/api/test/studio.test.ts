@@ -156,3 +156,22 @@ describe('insights', () => {
     expect((await call(admin, 'GET', '/api/admin/reports/insights?days=0')).status).toBe(400);
   });
 });
+
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { app as theApp } from './helpers.js';
+describe.skipIf(!existsSync(resolve(import.meta.dirname, '../../web/dist/index.html')))('first-paint data', () => {
+  it('pages carry the theme, announcement, banners and menus in the HTML, safely, and are never cached', async () => {
+    for (const url of ['/', '/search', '/kitchens']) {
+      const r = await theApp.inject({ url });
+      expect(r.statusCode).toBe(200); expect(String(r.headers['cache-control'])).toContain('no-cache');
+      const m = /<script type="application\/json" id="boot">([\s\S]*?)<\/script>/.exec(r.body)!;
+      expect(m).toBeTruthy();
+      const boot = JSON.parse(m[1]);
+      for (const k of ['/theme/active', '/content/home', '/home/banners', '/regions', '/categories']) expect(boot).toHaveProperty([k]);
+      expect(m[1]).not.toContain('<');                       // cannot close the tag early, whatever an editor typed into a headline
+    }
+    const asset = await theApp.inject({ url: '/api/health' });
+    expect(asset.body).not.toContain('boot');
+  });
+});

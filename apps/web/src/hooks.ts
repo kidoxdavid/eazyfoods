@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from './api';
+import { consumeBoot, peekBoot } from './boot';
 
 export function useApi<T = any>(path: string | null) {
-  const [state, set] = useState<{ data?: T; error?: string; loading: boolean }>({ loading: !!path });
+  // First screen: use what the server embedded in the page, if it has this answer, instead of asking again.
+  const booted = useRef<T | undefined>(path ? peekBoot<T>(path) : undefined);
+  // The (path, reload-count) pair the embedded data answers. Comparing the pair (rather than flipping a flag) also survives React StrictMode running effects twice.
+  const answered = useRef<string | null>(booted.current !== undefined ? `${path}|0` : null);
+  const [state, set] = useState<{ data?: T; error?: string; loading: boolean }>(booted.current !== undefined ? { data: booted.current, loading: false } : { loading: !!path });
   const [tick, setTick] = useState(0);
   useEffect(() => {
     if (!path) { set({ loading: false }); return; }
+    if (answered.current === `${path}|${tick}`) { consumeBoot(path); return; }
     let live = true;
     set((s) => ({ ...s, loading: true, error: undefined }));
     api<T>(path).then((data) => live && set({ data, loading: false }), (e) => live && set({ error: e.message, loading: false }));
