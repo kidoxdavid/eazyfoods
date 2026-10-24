@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useApi, useAction } from '../../hooks';
 import { useToast } from '../../toast';
-import { Badge, Button, Card, Field, ImageUpload, Input, Modal, Notice, PageHeader, Select, Tabs, Textarea } from '../../ui';
+import { Badge, Button, Card, Field, ImageUpload, Input, Modal, Notice, PageHeader, Select, Tabs, Textarea, VideoUpload } from '../../ui';
 import { Fetch, Need, del, post, put, useForm } from './common';
 
 type Palette = { primary: string; deep: string; tint: string; glow: string; hero_from: string; hero_to: string };
 type Theme = { id: string; slug: string; name: string; kind: string; emoji: string; motif: string; starts_on: string; ends_on: string; repeats_yearly: boolean; priority: number; status: 'auto' | 'on' | 'off'; palette: Palette;
   headline: string; subtitle: string; cta_label: string; cta_link: string; banner_text: string; notes: string; is_preset: boolean };
-type Banner = { id: string; title: string; subtitle: string; cta_label: string; cta_link: string; image_url: string | null; from_color: string; to_color: string; status: 'draft' | 'live'; starts_at: string | null; ends_at: string | null; position: number };
+type Banner = { id: string; title: string; subtitle: string; cta_label: string; cta_link: string; image_url: string | null; video_url: string | null; from_color: string; to_color: string; status: 'draft' | 'live'; starts_at: string | null; ends_at: string | null; position: number };
 
 const day = (s: string) => s.slice(0, 10);
 const fmt = (s: string) => new Date(day(s) + 'T12:00:00').toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -116,7 +116,7 @@ function ThemeEditor({ theme, onClose, onSaved }: { theme: Theme | null; onClose
 }
 
 // ---------- Banners ----------
-const BLANK_B = { title: '', subtitle: '', cta_label: 'Shop now', cta_link: '/deals', image_url: null as string | null, from_color: '#0b3a24', to_color: '#1d7a4c', status: 'draft' as 'draft' | 'live', starts_at: '', ends_at: '' };
+const BLANK_B = { title: '', subtitle: '', cta_label: 'Shop now', cta_link: '/deals', image_url: null as string | null, video_url: null as string | null, from_color: '#0b3a24', to_color: '#1d7a4c', status: 'draft' as 'draft' | 'live', starts_at: '', ends_at: '' };
 const local = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() - new Date(iso).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '');
 function Banners() {
   const toast = useToast();
@@ -147,7 +147,7 @@ const swap = (rows: Banner[], a: number, b: number) => { const ids = rows.map((r
 
 function BannerEditor({ b, onClose, onSaved }: { b: Banner | null; onClose: () => void; onSaved: (m: string) => void }) {
   const f = useForm(b ? { ...b, starts_at: local(b.starts_at), ends_at: local(b.ends_at) } : BLANK_B);
-  const payload = () => ({ title: f.v.title, subtitle: f.v.subtitle, cta_label: f.v.cta_label, cta_link: f.v.cta_link, image_url: f.v.image_url, from_color: f.v.from_color, to_color: f.v.to_color, status: f.v.status,
+  const payload = () => ({ title: f.v.title, subtitle: f.v.subtitle, cta_label: f.v.cta_label, cta_link: f.v.cta_link, image_url: f.v.image_url, video_url: f.v.video_url, from_color: f.v.from_color, to_color: f.v.to_color, status: f.v.status,
     starts_at: f.v.starts_at ? new Date(f.v.starts_at).toISOString() : null, ends_at: f.v.ends_at ? new Date(f.v.ends_at).toISOString() : null });
   const save = useAction(async () => { if (b) await put(`/admin/banners/${b.id}`, payload()); else await post('/admin/banners', payload()); onSaved('Banner saved'); });
   const remove = useAction(async () => { if (b) { await del(`/admin/banners/${b.id}`); onSaved('Banner deleted'); } });
@@ -168,6 +168,9 @@ function BannerEditor({ b, onClose, onSaved }: { b: Banner | null; onClose: () =
       <p className="small muted">Text on a banner is white, so choose dark colours.</p>
       <span className="label" style={{ fontWeight: 600, fontSize: '.9rem' }}>Background picture (optional)</span>
       <ImageUpload value={f.v.image_url} onChange={(u) => f.setV((s) => ({ ...s, image_url: u }))} label="Banner picture" />
+      <span className="label" style={{ fontWeight: 600, fontSize: '.9rem' }}>Background video (optional)</span>
+      <VideoUpload value={f.v.video_url} onChange={(u) => f.setV((s) => ({ ...s, video_url: u }))} label="Banner video" />
+      {f.v.video_url && <p className="small muted">The picture above is shown while the video loads, and to visitors who have reduced motion or data saving turned on, so add one. Videos have no sound. Make sure the words stay readable over the footage: a dark overlay is added automatically.</p>}
       <div className="row end">
         {b && <Button variant="danger" busy={remove.busy} onClick={() => remove.run()}>Delete</Button>}
         <Button variant="ghost" onClick={onClose}>Cancel</Button>

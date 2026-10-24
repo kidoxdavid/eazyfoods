@@ -349,3 +349,44 @@ describe('mobile quick view and menu motion', () => {
     await wrap.waitFor({ state: 'detached' });
   });
 });
+
+describe('banner video', () => {
+  it('staff add a video to a banner; it plays muted on the homepage, can be paused, and stays still for reduced motion', async () => {
+    const c = await db();
+    const themes = (await c.query('SELECT id, status FROM themes')).rows; await c.query(`UPDATE themes SET status = 'off'`);   // the date-driven festival theme would lead otherwise
+    try {
+      const staff = await newPage(browser, DESKTOP); await signIn(staff.page, 'marketing@example.test');
+      await staff.page.goto(base() + '/admin/studio');
+      await staff.page.getByRole('tab', { name: 'Banners' }).click();
+      await staff.page.getByRole('button', { name: 'New banner' }).click();
+      await staff.page.getByLabel('Title').fill('Video test banner');
+      await staff.page.locator('input[type=file][accept^="video"]').setInputFiles(new URL('../fixtures/banner.webm', import.meta.url).pathname);
+      await staff.page.getByLabel('Banner video preview').waitFor();
+      await staff.page.getByLabel('Status').selectOption('live');
+      await staff.page.getByRole('button', { name: 'Save banner' }).click();
+      await staff.page.getByText('Banner saved').waitFor();
+
+      const v = await newPage(browser, DESKTOP);
+      await v.page.goto(base()); await v.page.waitForLoadState('networkidle');
+      const video = v.page.locator('.hero-slide.has-video video').first();
+      await video.waitFor({ state: 'attached' });
+      expect(await video.evaluate((e: HTMLVideoElement) => e.muted && e.loop && e.playsInline)).toBe(true);
+      expect(await video.getAttribute('src')).toMatch(/^\/uploads\/[a-f0-9]{32}\.webm$/);
+      await v.page.waitForFunction(() => { const e = document.querySelector('.hero-slide.has-video video') as HTMLVideoElement | null; return !!e && !e.paused && e.currentTime > 0; }, null, { timeout: 15000 });
+      await v.page.getByRole('button', { name: 'Pause background video' }).first().click();
+      await v.page.waitForFunction(() => (document.querySelector('.hero-slide.has-video video') as HTMLVideoElement).paused);
+      await v.page.getByRole('button', { name: 'Play background video' }).first().waitFor();
+      const r = await new AxeBuilder({ page: v.page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+      expect(r.violations.filter((x) => x.impact === 'serious' || x.impact === 'critical').map((x) => `${x.id}: ${x.help}`)).toEqual([]);
+
+      const calm = await (await browser.newContext({ viewport: DESKTOP, reducedMotion: 'reduce' })).newPage();
+      await calm.goto(base()); await calm.waitForLoadState('networkidle'); await calm.waitForTimeout(1200);
+      expect(await calm.evaluate(() => { const e = document.querySelector('.hero-slide.has-video video') as HTMLVideoElement | null; return !!e && e.paused; })).toBe(true);   // not playing unless asked
+      await calm.getByRole('button', { name: 'Play background video' }).first().waitFor();
+    } finally {
+      await c.query(`DELETE FROM home_banners WHERE title = 'Video test banner'`);
+      for (const t of themes) await c.query('UPDATE themes SET status = $2 WHERE id = $1', [t.id, t.status]);
+      await c.end();
+    }
+  });
+});

@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool } from '../db/pool.js';
-import { requireLogin, isStaff } from '../lib/permissions.js';
+import { requireLogin, isStaff, can } from '../lib/permissions.js';
 import { bad, forbidden } from '../lib/errors.js';
 import { openPrivate, save, sniff } from '../lib/storage.js';
 import { vendorIdsOf } from './vendorOrders.js';
@@ -23,6 +23,17 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
     if (!vendorIdsOf(req.user!).length && !isStaff(req.user)) throw forbidden();
     const buf = await readFile(req);
     const t = sniff(buf, ['jpg', 'png', 'webp']);
+    return save(buf, t.ext, 'public');
+  });
+
+  // Short banner videos (MP4 or WebM, 25 MB at most). Staff who manage the homepage only: videos are heavy and are shown to every visitor.
+  app.post('/uploads/video', rl(6, '1 minute'), async (req) => {
+    if (!can(req.user, 'content.manage')) throw forbidden();
+    const part = await (req as any).file({ limits: { fileSize: 25 * 1024 * 1024, files: 1 } });
+    if (!part) throw bad('no_file', 'No file received.');
+    const buf = await part.toBuffer();
+    if (part.file.truncated) throw bad('too_large', 'Video is too large (25 MB maximum). Use a shorter clip or lower resolution.');
+    const t = sniff(buf, ['mp4', 'webm']);
     return save(buf, t.ext, 'public');
   });
 

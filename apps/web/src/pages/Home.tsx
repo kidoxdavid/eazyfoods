@@ -53,7 +53,7 @@ function CollectionShelf({ slug }: { slug: string }) {
 export function Home() {
   const content = useApi<{ home_hero?: { title: string; subtitle: string }; home_layout?: Layout }>('/content/home');
   const { theme, loading: themeLoading } = useSiteTheme();
-  const banners = useApi<{ id: string; title: string; subtitle: string; cta_label: string; cta_link: string; image_url: string | null; from_color: string; to_color: string }[]>('/home/banners');
+  const banners = useApi<{ id: string; title: string; subtitle: string; cta_label: string; cta_link: string; image_url: string | null; video_url: string | null; from_color: string; to_color: string }[]>('/home/banners');
   const regions = useApi<Region[]>('/regions');
   const stores = useApi<StoreCard[]>('/stores');
   const cols = useApi<{ slug: string }[]>('/collections');
@@ -73,7 +73,7 @@ export function Home() {
   const head = !themeLoading && !banners.loading && !content.loading;
   const slides: Slide[] = [];
   if (head && theme) slides.push({ id: 'theme', from: theme.palette.hero_from, to: theme.palette.hero_to, eyebrow: `${theme.emoji} ${theme.name}`.trim(), title: theme.headline, text: theme.subtitle, cta: { to: theme.cta_link || '/search', label: theme.cta_label || 'Start shopping' }, art: featured.data?.results ?? [], motif: theme.motif });
-  if (head) for (const b of banners.data ?? []) slides.push({ id: `banner-${b.id}`, from: b.from_color, to: b.to_color, eyebrow: 'Featured', title: b.title, text: b.subtitle, cta: { to: b.cta_link || '/', label: b.cta_label || 'Learn more' }, art: b.image_url ? [] : featured.data?.results ?? [], image: b.image_url });
+  if (head) for (const b of banners.data ?? []) slides.push({ id: `banner-${b.id}`, from: b.from_color, to: b.to_color, eyebrow: 'Featured', title: b.title, text: b.subtitle, cta: { to: b.cta_link || '/', label: b.cta_label || 'Learn more' }, art: b.image_url || b.video_url ? [] : featured.data?.results ?? [], image: b.image_url, video: b.video_url });
   if (head) slides.push({ id: 'welcome', from: '#0b3a24', to: '#1d7a4c', eyebrow: 'Calgary · African groceries', title: (hero?.title ?? 'African groceries, from the stores you trust.').replace('\n', ' '), text: hero?.subtitle ?? 'Compare each store’s own price and stock, then have it delivered.', cta: { to: '/search', label: 'Start shopping' }, art: featured.data?.results ?? [] });
   if (head && deals.data?.length) slides.push({ id: 'deals', from: '#b8260f', to: '#f0701f', eyebrow: 'Weekly deals', title: 'Save on pantry staples this week', text: 'Live promotions from local stores, priced as you’ll pay.', cta: { to: '/deals', label: 'Shop deals' }, art: deals.data });
   if (head && east && eastSearch.data?.results.length) slides.push({ id: 'east', from: '#7a3a0b', to: '#d98b1f', eyebrow: east.name, title: `Discover ${east.name.replace(' Africa', '')} African ingredients`, text: east.countries.slice(0, 4).map((c) => c.name).join(' · '), cta: { to: `/search?region=${east.slug}`, label: `Shop ${east.name}` }, art: eastSearch.data.results });

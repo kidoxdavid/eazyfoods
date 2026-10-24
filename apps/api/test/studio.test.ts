@@ -175,3 +175,36 @@ describe.skipIf(!existsSync(resolve(import.meta.dirname, '../../web/dist/index.h
     expect(asset.body).not.toContain('boot');
   });
 });
+
+describe('banner videos', () => {
+  // Smallest byte patterns the type check looks for (not playable files: only the real file type is verified here).
+  const mp4 = Buffer.concat([Buffer.from([0, 0, 0, 24]), Buffer.from('ftypisom'), Buffer.alloc(32)]);
+  const webm = Buffer.concat([Buffer.from([0x1a, 0x45, 0xdf, 0xa3]), Buffer.alloc(32)]);
+  const upload = async (cookie: string | null, buf: Buffer, name = 'clip.mp4') => {
+    const boundary = '----t' + Math.random().toString(16).slice(2);
+    const payload = Buffer.concat([Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${name}"\r\nContent-Type: video/mp4\r\n\r\n`), buf, Buffer.from(`\r\n--${boundary}--\r\n`)]);
+    return theApp.inject({ method: 'POST', url: '/api/uploads/video', payload, headers: { 'content-type': `multipart/form-data; boundary=${boundary}`, ...(cookie ? { cookie } : {}) } });
+  };
+  it('only staff who manage the homepage can upload, and only real MP4/WebM files are kept', async () => {
+    const mk = (await login('marketing@example.test')).cookie, cust = (await login('customer@example.test')).cookie, owner1 = (await login('owner1@example.test')).cookie;
+    expect((await upload(null, mp4)).statusCode).toBe(401);
+    expect((await upload(cust, mp4)).statusCode).toBe(403);
+    expect((await upload(owner1, mp4)).statusCode).toBe(403);                         // a vendor cannot put video on the homepage
+    const ok = await upload(mk, mp4); expect(ok.statusCode).toBe(200); expect(ok.json().url).toMatch(/^\/uploads\/[a-f0-9]{32}\.mp4$/);
+    expect((await upload(mk, webm, 'x.webm')).json().url).toMatch(/\.webm$/);
+    const r = await theApp.inject({ url: ok.json().url, headers: { range: 'bytes=0-9' } });   // browsers (Safari especially) need byte ranges to play video
+    expect(r.statusCode).toBe(206); expect(String(r.headers['content-type'])).toContain('video/mp4');
+    expect((await upload(mk, Buffer.from('<?php echo 1; ?>'), 'evil.mp4')).statusCode).toBe(400);   // name says mp4, bytes say otherwise
+    expect((await upload(mk, Buffer.from('%PDF-1.4 hello'), 'doc.mp4')).statusCode).toBe(400);
+  });
+  it('a banner keeps only a video we stored, and visitors get it', async () => {
+    const mk = (await login('marketing@example.test')).cookie;
+    const url = (await upload(mk, mp4)).json().url as string;
+    const bad = await call(mk, 'POST', '/api/admin/banners', { title: 'Evil', cta_link: '/', video_url: 'https://evil.example/x.mp4' });
+    expect(bad.status).toBe(400);
+    const made = await call(mk, 'POST', '/api/admin/banners', { title: 'Video banner', cta_link: '/deals', video_url: url, status: 'live' });
+    expect(made.status).toBe(201);
+    try { expect((await call(null, 'GET', '/api/home/banners')).body.find((b: any) => b.title === 'Video banner').video_url).toBe(url); }
+    finally { await call(mk, 'DELETE', `/api/admin/banners/${made.body.id}`); }
+  });
+});

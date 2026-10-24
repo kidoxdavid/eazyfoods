@@ -4,7 +4,7 @@ import { pool } from '../db/pool.js';
 import { audit } from '../lib/auth.js';
 import { requirePerm } from '../lib/permissions.js';
 import { bad, notFound } from '../lib/errors.js';
-import { isOurImageUrl } from '../lib/storage.js';
+import { isOurImageUrl, isOurVideoUrl } from '../lib/storage.js';
 import { HEX } from '../lib/themes.js';
 
 const uuid = z.string().uuid();
@@ -77,6 +77,7 @@ export const adminStudioRoutes: FastifyPluginAsync = async (app) => {
   const bannerBody = z.object({
     title: z.string().min(2).max(90), subtitle: z.string().max(220).default(''), cta_label: z.string().max(40).default(''), cta_link: link.default('/'),
     image_url: z.string().refine(isOurImageUrl, 'Upload the image through EAZyfoods first.').nullable().optional(),
+    video_url: z.string().refine(isOurVideoUrl, 'Upload the video through EAZyfoods first.').nullable().optional(),
     from_color: hex.default('#0b3a24'), to_color: hex.default('#1d7a4c'), status: z.enum(['draft', 'live']).default('draft'),
     starts_at: z.string().datetime().nullable().optional(), ends_at: z.string().datetime().nullable().optional(),
   });
@@ -85,16 +86,16 @@ export const adminStudioRoutes: FastifyPluginAsync = async (app) => {
     const b = bannerBody.parse(req.body);
     const pos = (await pool.query('SELECT COALESCE(max(position), 0) + 1 AS p FROM home_banners')).rows[0].p;
     const r = (await pool.query(
-      `INSERT INTO home_banners(title,subtitle,cta_label,cta_link,image_url,from_color,to_color,status,starts_at,ends_at,position) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-      [b.title, b.subtitle, b.cta_label, b.cta_link, b.image_url ?? null, b.from_color, b.to_color, b.status, b.starts_at ?? null, b.ends_at ?? null, pos])).rows[0];
+      `INSERT INTO home_banners(title,subtitle,cta_label,cta_link,image_url,video_url,from_color,to_color,status,starts_at,ends_at,position) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+      [b.title, b.subtitle, b.cta_label, b.cta_link, b.image_url ?? null, b.video_url ?? null, b.from_color, b.to_color, b.status, b.starts_at ?? null, b.ends_at ?? null, pos])).rows[0];
     await audit(req.user!.id, 'banner.created', 'banner', r.id);
     return reply.code(201).send(r);
   });
   app.put<{ Params: { id: string } }>('/banners/:id', { preHandler: content }, async (req) => {
     const id = uuid.parse(req.params.id); const b = bannerBody.parse(req.body);
     const r = (await pool.query(
-      `UPDATE home_banners SET title=$2,subtitle=$3,cta_label=$4,cta_link=$5,image_url=$6,from_color=$7,to_color=$8,status=$9,starts_at=$10,ends_at=$11 WHERE id=$1 RETURNING *`,
-      [id, b.title, b.subtitle, b.cta_label, b.cta_link, b.image_url ?? null, b.from_color, b.to_color, b.status, b.starts_at ?? null, b.ends_at ?? null])).rows[0];
+      `UPDATE home_banners SET title=$2,subtitle=$3,cta_label=$4,cta_link=$5,image_url=$6,video_url=$7,from_color=$8,to_color=$9,status=$10,starts_at=$11,ends_at=$12 WHERE id=$1 RETURNING *`,
+      [id, b.title, b.subtitle, b.cta_label, b.cta_link, b.image_url ?? null, b.video_url ?? null, b.from_color, b.to_color, b.status, b.starts_at ?? null, b.ends_at ?? null])).rows[0];
     if (!r) throw notFound('Banner not found');
     await audit(req.user!.id, 'banner.updated', 'banner', id);
     return r;

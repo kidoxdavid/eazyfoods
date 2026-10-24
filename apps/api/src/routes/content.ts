@@ -22,7 +22,7 @@ export const contentRoutes: FastifyPluginAsync = async (app) => {
   app.get('/home/banners', async (_req, reply) => {
     reply.header('Cache-Control', 'no-store');
     return (await pool.query(
-      `SELECT id, title, subtitle, cta_label, cta_link, image_url, from_color, to_color FROM home_banners
+      `SELECT id, title, subtitle, cta_label, cta_link, image_url, video_url, from_color, to_color FROM home_banners
         WHERE status = 'live' AND (starts_at IS NULL OR starts_at <= now()) AND (ends_at IS NULL OR ends_at > now()) ORDER BY position, created_at`)).rows;
   });
   app.get<{ Params: { slug: string } }>('/pages/:slug', async (req) => {

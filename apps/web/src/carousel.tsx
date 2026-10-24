@@ -5,8 +5,25 @@ import { IconChevron, IconChevronL } from './icons';
 import type { Card } from './cards';
 import { packLabel } from './api';
 import { Motif, type SiteTheme } from './theme';
+import { IconPause, IconPlay } from './icons';
 
-export type Slide = { id: string; from: string; to: string; eyebrow: string; title: string; text: string; cta: { to: string; label: string }; art: Card[]; light?: boolean; image?: string | null; motif?: SiteTheme['motif'] };
+export type Slide = { id: string; from: string; to: string; eyebrow: string; title: string; text: string; cta: { to: string; label: string }; art: Card[]; light?: boolean; image?: string | null; video?: string | null; motif?: SiteTheme['motif'] };
+
+/** Looping muted banner video. It only plays while its slide is showing, never for people who asked for less motion or less data, and always has a pause button. */
+function SlideVideo({ src, poster, active }: { src: string; poster?: string | null; active: boolean }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [failed, setFailed] = useState(false);
+  const calm = typeof matchMedia !== 'undefined' && (matchMedia('(prefers-reduced-motion: reduce)').matches || !!(navigator as any).connection?.saveData);
+  const [paused, setPaused] = useState(calm);
+  useEffect(() => { const v = ref.current; if (!v) return; if (active && !paused) v.play().catch(() => setPaused(true)); else v.pause(); }, [active, paused]);
+  if (failed) return null;
+  return (
+    <>
+      <video ref={ref} className="hero-video" src={src} poster={poster ?? undefined} muted loop playsInline preload={calm ? 'none' : 'metadata'} aria-hidden="true" tabIndex={-1} onError={() => setFailed(true)} />
+      <button type="button" className="hero-vctl" onClick={() => setPaused((p) => !p)} aria-label={paused ? 'Play background video' : 'Pause background video'} tabIndex={active ? 0 : -1}>{paused ? <IconPlay width={16} height={16} /> : <IconPause width={16} height={16} />}</button>
+    </>
+  );
+}
 
 /** Hero carousel: scroll-snap (native swipe), arrows, dots, auto-advance that stops on hover/focus and for reduced-motion users. */
 export function HeroCarousel({ slides }: { slides: Slide[] }) {
@@ -24,7 +41,8 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
     <section className="hero-car" aria-roledescription="carousel" aria-label="Featured" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}>
       <ul className="hero-track" ref={ref} onScroll={onScroll} role="list">
         {slides.map((s, k) => (
-          <li key={s.id} className={`hero-slide ${s.light ? 'light' : ''}`} style={{ background: `linear-gradient(115deg, ${s.from}, ${s.to})` }} aria-roledescription="slide" aria-label={`${k + 1} of ${slides.length}`} aria-hidden={k !== i}>
+          <li key={s.id} className={`hero-slide ${s.light ? 'light' : ''} ${s.video ? 'has-video' : ''}`} style={{ background: `linear-gradient(115deg, ${s.from}, ${s.to})` }} aria-roledescription="slide" aria-label={`${k + 1} of ${slides.length}`} aria-hidden={k !== i}>
+            {s.video && <SlideVideo src={s.video} poster={s.image} active={k === i} />}
             {s.motif && <Motif kind={s.motif} />}
             <div className="hero-copy">
               <span className="hero-eyebrow">{s.eyebrow}</span>

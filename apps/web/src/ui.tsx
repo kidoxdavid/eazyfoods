@@ -142,6 +142,25 @@ export function Tabs({ tabs, value, onChange }: { tabs: { id: string; label: str
 }
 
 // ---------- Image upload (only EAZyfoods-issued URLs are accepted by the API) ----------
+export function VideoUpload({ value, onChange, label = 'Video' }: { value?: string | null; onChange: (url: string | null) => void; label?: string }) {
+  const [busy, setBusy] = useState(false); const toast = useToast();
+  return (
+    <div className="image-upload">
+      {value ? <video src={value} muted playsInline controls preload="metadata" style={{ width: 160, maxHeight: 100, background: '#000' }} aria-label={`${label} preview`} /> : <div className="image-empty">No video</div>}
+      <div className="stack">
+        <label className="btn secondary sm">{busy ? 'Uploading…' : value ? `Change ${label.toLowerCase()}` : `Upload ${label.toLowerCase()}`}
+          <input type="file" accept="video/mp4,video/webm" hidden disabled={busy} onChange={async (e) => {
+            const f = e.target.files?.[0]; if (!f) return; setBusy(true);
+            try { onChange((await upload('/uploads/video', f)).url); } catch (err: any) { toast(err.message, 'error'); } finally { setBusy(false); e.target.value = ''; }
+          }} />
+        </label>
+        {value && <button type="button" className="link" onClick={() => onChange(null)}>Remove</button>}
+        <span className="hint">MP4 (H.264) or WebM, up to 25 MB. Keep it short (10 to 20 seconds). It plays muted and loops.</span>
+      </div>
+    </div>
+  );
+}
+
 export function ImageUpload({ value, onChange, label = 'Image' }: { value?: string | null; onChange: (url: string | null) => void; label?: string }) {
   const [busy, setBusy] = useState(false); const toast = useToast();
   return (

@@ -19,10 +19,12 @@ const SIGS: { ext: string; mime: string; test: (b: Buffer) => boolean }[] = [
   { ext: 'png', mime: 'image/png', test: (b) => b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) },
   { ext: 'webp', mime: 'image/webp', test: (b) => b.subarray(0, 4).toString() === 'RIFF' && b.subarray(8, 12).toString() === 'WEBP' },
   { ext: 'pdf', mime: 'application/pdf', test: (b) => b.subarray(0, 5).toString() === '%PDF-' },
+  { ext: 'mp4', mime: 'video/mp4', test: (b) => b.length > 12 && b.subarray(4, 8).toString() === 'ftyp' },
+  { ext: 'webm', mime: 'video/webm', test: (b) => b.length > 4 && b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3 },
 ];
 
 /** Identify the real file type from its bytes (the client-supplied name and content-type are never trusted). */
-export function sniff(buf: Buffer, allow: ('jpg' | 'png' | 'webp' | 'pdf')[]) {
+export function sniff(buf: Buffer, allow: ('jpg' | 'png' | 'webp' | 'pdf' | 'mp4' | 'webm')[]) {
   const t = SIGS.find((s) => s.test(buf));
   if (!t || !allow.includes(t.ext as any)) throw bad('unsupported_file', `Unsupported file type. Allowed: ${allow.join(', ')}.`);
   return t;
@@ -43,3 +45,6 @@ export function openPrivate(key: string) {
 
 /** Only accept image URLs that we issued, so a vendor cannot hotlink arbitrary third-party URLs into the catalogue. */
 export const isOurImageUrl = (u: string) => /^\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)$/.test(u);
+
+/** Same rule for banner videos. */
+export const isOurVideoUrl = (u: string) => /^\/uploads\/[a-f0-9]{32}\.(mp4|webm)$/.test(u);
