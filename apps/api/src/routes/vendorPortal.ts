@@ -9,6 +9,7 @@ import { isOurImageUrl } from '../lib/storage.js';
 import { parseCsv, toCsv } from '../lib/csv.js';
 import { slugify, norm } from '../lib/norm.js';
 import { vendorIdsOf } from './vendorOrders.js';
+import { insights } from '../services/insights.js';
 import { ACCENTS } from '../lib/themes.js';
 import { normalisePostal, isCanadianPostal } from '../services/pricing.js';
 
@@ -271,6 +272,12 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
       // Gross sales are NOT profit: money shown here is revenue before commission, refunds and the vendor's own costs.
       last_30_days: { ...stats, note: 'Gross sales are before commission and refunds. They are not profit.' }, balance: { owed_to_you_cents: bal.rows[0].owed_cents },
     };
+  });
+
+  app.get('/insights', async (req) => {
+    const q = z.object({ days: z.coerce.number().int().min(1).max(365).default(30), store: uuid.optional() }).parse(req.query);
+    if (q.store) await store({ ...req, params: { storeId: q.store } });
+    return insights({ vendorId: vendorId(req), storeId: q.store ?? null }, q.days);
   });
 
   app.get('/reports/settlement', async (req, reply) => {

@@ -60,3 +60,6 @@ See `docs/DECISIONS.md`: commission 12%, delivery $5.99/store, driver pay $4.50,
 ## Messaging and barcode scan (added)
 - **Vendor messages**: vendors and staff (vendors.manage) hold threaded conversations; unread badges in both menus; staff replies email the vendor owners; vendors only see their own threads; a vendor reply reopens a closed thread.
 - **Barcode scan**: on phones/browsers that support it, vendors can scan a pack's barcode when adding from the shared catalogue; typing always works.
+
+## Insights dashboards (added)
+- Admin → Insights and Vendor → Insights: 7/30/90-day KPIs with change vs the previous period, daily sales and orders charts (hover/keyboard read-out and table alternative), orders by hour and weekday, outcome and delivery/pickup mix, top products (and top stores for admin), accept/prepare speed. Vendors only see their own stores.

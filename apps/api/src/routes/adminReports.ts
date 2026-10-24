@@ -23,6 +23,8 @@ export const KPI_DEFINITIONS: Record<string, string> = {
   funnel: 'Distinct visitors (signed-in user or anonymous session) reaching each stage in the period. Anonymous product views without a session id are counted once each.',
 };
 
+import { insights } from '../services/insights.js';
+
 export const adminReportRoutes: FastifyPluginAsync = async (app) => {
   const rep = requirePerm('reports.view');
   const range = z.object({ from: z.string().optional(), to: z.string().optional() });
@@ -73,6 +75,11 @@ export const adminReportRoutes: FastifyPluginAsync = async (app) => {
       funnel: { ...funnel, view_to_cart_pct: pct(funnel.added, funnel.viewed), cart_to_checkout_pct: pct(funnel.checkout, funnel.added), checkout_to_paid_pct: pct(funnel.paid, funnel.checkout), overall_conversion_pct: pct(funnel.paid, funnel.viewed) },
       data_caveat: 'Figures include any demo/test data present in this database.',
     };
+  });
+
+  app.get('/reports/insights', { preHandler: rep }, async (req) => {
+    const { days } = z.object({ days: z.coerce.number().int().min(1).max(365).default(30) }).parse(req.query);
+    return insights({}, days);
   });
 
   app.get('/reports/search-demand', { preHandler: rep }, async (req) => {

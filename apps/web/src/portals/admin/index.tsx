@@ -5,6 +5,7 @@ import { NoAccess } from './common';
 import { canDo, STAFF_ROLES } from './perms';
 import './admin.css';
 import Studio from './Studio';
+import { InsightsView } from '../../insights';
 import { MessagesPage } from '../../messages';
 import { useApi } from '../../hooks';
 import { Dashboard } from './Dashboard';
@@ -45,6 +46,7 @@ const ITEMS: Item[] = [
   { to: '/admin/content', label: 'Content', need: ['content.manage'] },
   { to: '/admin/crm', label: 'Vendor pipeline', need: ['crm.manage'] },
   { to: '/admin/finance', label: 'Finance', need: ['ledger.view', 'payouts.manage'] },
+  { to: '/admin/insights', label: 'Insights', need: ['reports.view'] },
   { to: '/admin/reports', label: 'Reports', need: ['reports.view'] },
   { to: '/admin/settings', label: 'Settings & access', need: ['settings.view', 'users.view'] },
   { to: '/admin/system', label: 'System & audit', need: ['settings.view', 'orders.view', 'audit.view'] },
@@ -74,7 +76,7 @@ export default function Admin() {
         <Route path="zones" element={<Zones />} /><Route path="promotions" element={<Promotions />} /><Route path="ads" element={<Ads />} />
         <Route path="messages" element={<MessagesPage base="/admin/messages" staff />} /><Route path="content" element={<Content />} /><Route path="studio" element={<Studio />} />
         <Route path="crm" element={<Crm />} /><Route path="crm/:id" element={<ProspectDetail />} />
-        <Route path="finance" element={<Finance />} /><Route path="reports" element={<Reports />} />
+        <Route path="insights" element={<InsightsView path="/admin/reports/insights" title="Insights" sub="Sales, customers and speed across the whole marketplace." />} /><Route path="finance" element={<Finance />} /><Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} /><Route path="system" element={<System />} />
         <Route path="*" element={<NoAccess what="this page" />} />
       </Routes>

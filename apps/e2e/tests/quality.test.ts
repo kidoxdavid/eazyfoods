@@ -10,7 +10,7 @@ afterAll(async () => { await browser?.close(); });
 const PUBLIC = ['/', '/search?q=garri', '/search?region=east-africa', '/stores', '/s/demo-calgary-west-african-market', '/p/garri-white', '/recipes', '/recipes/jollof-rice-nigerian-style', '/cart', '/signin', '/register', '/pages/refund-policy'];
 const SIGNED_IN = ['/account', '/orders', '/checkout'];
 const PORTALS: [string, string][] = [['owner1@example.test', '/vendor'], ['owner1@example.test', '/vendor/orders'], ['owner1@example.test', '/vendor/inventory'], ['owner1@example.test', '/vendor/store'],
-  ['owner@example.test', '/admin'], ['owner@example.test', '/admin/catalogue'], ['owner@example.test', '/admin/settings'], ['owner@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/storefront'], ['owner1@example.test', '/vendor/messages'], ['owner@example.test', '/admin/messages'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
+  ['owner@example.test', '/admin'], ['owner@example.test', '/admin/catalogue'], ['owner@example.test', '/admin/settings'], ['owner@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/storefront'], ['owner1@example.test', '/vendor/messages'], ['owner1@example.test', '/vendor/insights'], ['owner@example.test', '/admin/insights'], ['owner@example.test', '/admin/messages'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
 const WIDTHS = [360, 390, 768, 1280];
 
 describe('responsive: no horizontal scrolling at common widths', () => {

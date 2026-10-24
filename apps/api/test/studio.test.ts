@@ -133,3 +133,26 @@ describe('vendor messages', () => {
     expect((await call(o1, 'POST', '/api/vendor/messages', { subject: 'x', body: '' })).status).toBe(400);
   });
 });
+
+describe('insights', () => {
+  it('admin and vendor insights are internally consistent and scoped', async () => {
+    const admin = (await login('admin@example.test')).cookie, o1 = (await login('owner1@example.test')).cookie, o2 = (await login('owner2@example.test')).cookie, cust = (await login('customer@example.test')).cookie;
+    for (const days of [7, 30, 90]) {
+      const a = await call(admin, 'GET', `/api/admin/reports/insights?days=${days}`);
+      expect(a.status).toBe(200);
+      expect(a.body.series).toHaveLength(days);
+      expect(a.body.by_hour).toHaveLength(24); expect(a.body.by_weekday).toHaveLength(7);
+      expect(a.body.series.reduce((x: number, r: any) => x + r.gross_cents, 0)).toBe(a.body.kpis.gross_cents.value);
+      expect(a.body.series.reduce((x: number, r: any) => x + r.orders, 0)).toBeGreaterThanOrEqual(a.body.kpis.orders.value); // an order spanning two stores counts once per day per store scope
+    }
+    const sid = await storeId('demo-calgary-west-african-market');
+    const v = await call(o1, 'GET', `/api/vendor/insights?days=30&store=${sid}`);
+    expect(v.status).toBe(200); expect(v.body.top_stores).toEqual([]);
+    const all = await call(admin, 'GET', '/api/admin/reports/insights?days=30');
+    expect(v.body.kpis.gross_cents.value).toBeLessThanOrEqual(all.body.kpis.gross_cents.value);
+    expect((await call(o2, 'GET', `/api/vendor/insights?days=30&store=${sid}`)).status).toBe(403);
+    expect((await call(cust, 'GET', '/api/admin/reports/insights')).status).toBe(403);
+    expect((await call(cust, 'GET', '/api/vendor/insights')).status).toBe(403);
+    expect((await call(admin, 'GET', '/api/admin/reports/insights?days=0')).status).toBe(400);
+  });
+});
