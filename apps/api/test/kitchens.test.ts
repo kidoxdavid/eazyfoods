@@ -77,7 +77,7 @@ describe('cooks manage their own menu', () => {
     const admin = (await login('admin@example.test')).cookie, cust = (await login('customer@example.test')).cookie;
     const dishes = (await call(admin, 'GET', '/api/admin/dishes')).body;
     const d = dishes.find((x: any) => x.name.startsWith('Chin chin'));
-    expect((await call(cust, 'POST', `/api/admin/dishes/${d.id}/hide`, { reason: 'x' })).status).toBe(403);
+    expect([401, 403]).toContain((await call(cust, 'POST', `/api/admin/dishes/${d.id}/hide`, { reason: 'x' })).status);
     expect((await call(admin, 'POST', `/api/admin/dishes/${d.id}/hide`, { reason: 'Allergen list incomplete' })).status).toBe(200);
     expect((await call(null, 'GET', `/api/kitchens/${K1}`)).body.dishes.map((x: any) => x.name)).not.toContain('Chin chin (crunchy, 250 g)');
     const chef = (await login('chef1@example.test')).cookie;

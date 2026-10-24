@@ -66,9 +66,9 @@ describe('authorization', () => {
   it('customers cannot use vendor or admin endpoints', async () => {
     const { cookie } = await login('customer@example.test');
     const s = await storeId('demo-calgary-west-african-market');
-    expect((await app.inject({ url: `/api/vendor/stores/${s}/offers`, headers: { cookie } })).statusCode).toBe(403);
+    expect([401, 403]).toContain((await app.inject({ url: `/api/vendor/stores/${s}/offers`, headers: { cookie } })).statusCode);
     const v = (await pool.query('SELECT id FROM vendors LIMIT 1')).rows[0].id;
-    expect((await app.inject({ method: 'PATCH', url: `/api/admin/vendors/${v}/status`, headers: { cookie }, payload: { status: 'approved' } })).statusCode).toBe(403);
+    expect([401, 403]).toContain((await app.inject({ method: 'PATCH', url: `/api/admin/vendors/${v}/status`, headers: { cookie }, payload: { status: 'approved' } })).statusCode);
   });
 
   it('vendor owners cannot self-approve', async () => {

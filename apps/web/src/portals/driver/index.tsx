@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { PortalLayout } from '../backoffice';
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../auth';
 import { api, fmtDate, money, post, put } from '../../api';
 import { useApi } from '../../hooks';
 import { useToast } from '../../toast';
@@ -33,10 +34,10 @@ const dropAddr = (d: Addr) => [d.line1, d.line2, d.city, d.postal_code].filter(B
 const pickAddr = (p: Job['pickup']) => [p.address_line, p.city, p.postal_code].filter(Boolean).join(', ');
 
 export default function DriverPortal() {
-  const me = useApi<Me>('/driver/me');
+  const me = useApi<Me>('/driver/me'); const { has } = useAuth();
   return (
     <PortalLayout tone="driver" title="Driver" nav={NAV}>
-      {me.loading ? <Loading /> : me.error ? <ErrorBox message={me.error} retry={me.reload} /> : me.data?.status === 'none' ? <Apply onDone={me.reload} />
+      {me.loading ? <Loading /> : me.error ? <ErrorBox message={me.error} retry={me.reload} /> : me.data?.status === 'none' ? (has('admin') ? <Notice>You are signed in as an admin. Drivers are managed in <Link to="/admin/drivers">Admin → Drivers</Link> and <Link to="/admin/dispatch">Dispatch</Link>.</Notice> : <Apply onDone={me.reload} />)
         : me.data?.status !== 'approved' ? <Status status={me.data!.status} />
         : (
           <Routes>

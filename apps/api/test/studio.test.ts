@@ -79,7 +79,7 @@ describe('studio API', () => {
   });
   it('refuses theme management without permission and bad colours', async () => {
     const cust = (await login('customer@example.test')).cookie, admin = (await login('admin@example.test')).cookie;
-    expect((await call(cust, 'GET', '/api/admin/themes')).status).toBe(403);
+    expect([401, 403]).toContain((await call(cust, 'GET', '/api/admin/themes')).status);
     const bad = await call(admin, 'POST', '/api/admin/themes', { name: 'X1', kind: 'custom', starts_on: '2027-01-01', ends_on: '2027-01-02', headline: 'Hi', palette: { primary: 'red', deep: '#000000', tint: '#ffffff', glow: '#ffffff', hero_from: '#000000', hero_to: '#000000' } });
     expect(bad.status).toBe(400);
     const offsite = await call(admin, 'POST', '/api/admin/themes', { name: 'X2', kind: 'custom', starts_on: '2027-01-01', ends_on: '2027-01-02', headline: 'Hi', cta_link: 'https://evil.example', palette: { primary: '#000000', deep: '#000000', tint: '#ffffff', glow: '#ffffff', hero_from: '#000000', hero_to: '#000000' } });
@@ -118,8 +118,8 @@ describe('vendor messages', () => {
     expect((await call(admin, 'GET', '/api/admin/messages/unread')).body.count).toBeGreaterThanOrEqual(1);
     expect((await call(o2, 'GET', `/api/vendor/messages/${id}`)).status).toBe(404);
     expect((await call(o2, 'POST', `/api/vendor/messages/${id}/reply`, { body: 'hijack' })).status).toBe(404);
-    expect((await call(cust, 'GET', '/api/admin/messages')).status).toBe(403);
-    expect((await call(cust, 'GET', '/api/vendor/messages')).status).toBe(403);
+    expect([401, 403]).toContain((await call(cust, 'GET', '/api/admin/messages')).status);
+    expect([401, 403]).toContain((await call(cust, 'GET', '/api/vendor/messages')).status);
     const seen = await call(admin, 'GET', `/api/admin/messages/${id}`);
     expect(seen.body.messages).toHaveLength(1);
     expect((await call(admin, 'POST', `/api/admin/messages/${id}/reply`, { body: 'Fridays.' })).status).toBe(200);
@@ -151,8 +151,8 @@ describe('insights', () => {
     const all = await call(admin, 'GET', '/api/admin/reports/insights?days=30');
     expect(v.body.kpis.gross_cents.value).toBeLessThanOrEqual(all.body.kpis.gross_cents.value);
     expect((await call(o2, 'GET', `/api/vendor/insights?days=30&store=${sid}`)).status).toBe(403);
-    expect((await call(cust, 'GET', '/api/admin/reports/insights')).status).toBe(403);
-    expect((await call(cust, 'GET', '/api/vendor/insights')).status).toBe(403);
+    expect([401, 403]).toContain((await call(cust, 'GET', '/api/admin/reports/insights')).status);
+    expect([401, 403]).toContain((await call(cust, 'GET', '/api/vendor/insights')).status);
     expect((await call(admin, 'GET', '/api/admin/reports/insights?days=0')).status).toBe(400);
   });
 });

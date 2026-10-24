@@ -1,5 +1,5 @@
 /** The staff areas (admin, marketing, vendor, driver) keep their own sign-in, separate from the shop's. */
-export const STAFF_PATH = /^\/(admin|marketing|vendor|driver)(\/|$)/;
+export const STAFF_PATH = /^\/(admin|marketing|vendor|driver)(\/|\?|$)/;
 export const isStaffPath = (p: string) => STAFF_PATH.test(p);
 /** The area a post-sign-in destination belongs to. */
 export const areaForNext = (next: string | null | undefined) => (next && isStaffPath(next) ? 'staff' : 'shop');

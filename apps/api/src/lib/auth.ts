@@ -10,7 +10,11 @@ import { hashToken, newToken } from './password.js';
 export const COOKIES = { shop: 'ez_session', staff: 'ez_staff' } as const;
 export type Area = keyof typeof COOKIES;
 const STAFF_API = /^\/api\/(admin|marketing|vendor|driver)(\/|\?|$)/;
-export const areaOf = (req: FastifyRequest): Area => (req.headers['x-area'] === 'staff' || STAFF_API.test(req.url) ? 'staff' : 'shop');
+// Applying to become a vendor or driver is something a shopper does, so those two calls stay on the shop sign-in.
+const SHOP_API = /^\/api\/(vendor|driver)\/apply(\/|\?|$)/;
+export const areaOf = (req: FastifyRequest): Area => (SHOP_API.test(req.url) ? 'shop' : req.headers['x-area'] === 'staff' || STAFF_API.test(req.url) ? 'staff' : 'shop');
+/** Only accounts that hold one of these roles may use a staff sign-in. Customers cannot, wherever they come from. */
+export const STAFF_AREA_ROLES = ['admin', 'support', 'finance', 'dispatcher', 'catalog', 'marketing', 'vendor_owner', 'vendor_staff', 'driver'];
 export const COOKIE = COOKIES.shop;
 
 export type Role = { role: string; vendor_id: string | null };
@@ -41,6 +45,7 @@ export async function loadUser(req: FastifyRequest) {
     [hashToken(token)],
   );
   if (!rows[0]) return;
+  if (areaOf(req) === 'staff' && !rows[0].roles.some((r: Role) => STAFF_AREA_ROLES.includes(r.role))) return;   // a customer's session is never a staff session
   const { acting_vendor_id, acting_vendor_name, ...u } = rows[0];
   req.user = u;
   // An admin who chose "open their portal" acts as that vendor's owner until they exit. Only admins can ever have this set (checked again here).

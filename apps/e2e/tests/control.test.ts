@@ -81,12 +81,17 @@ describe('separate staff and shop sign-ins (browser)', () => {
   it('an admin and a customer are signed in side by side in one browser, and signing out of one keeps the other', async () => {
     const ctx = await browser.newContext({ viewport: DESKTOP });
     const page = await ctx.newPage();
-    await signIn(page, 'customer@example.test');                       // shop (and its own staff session, which has no staff rights)
-    await ctx.clearCookies({ name: 'ez_staff' });
+    await page.goto(`${base()}/signin`);
+    await page.fill('input[name=email]', 'customer@example.test'); await page.fill('input[name=password]', 'dev-password-123');
+    await page.click('.auth button[type=submit]'); await page.waitForURL((u) => !u.pathname.startsWith('/signin'));
     await page.goto(`${base()}/admin`);
-    await page.waitForURL(/\/signin\?next=%2Fadmin/);                   // a shop sign-in does not open the admin
-    await seeText(page.locator('main'), 'Staff sign in');
-    await seeText(page.locator('main'), 'Continue as');                 // offered, since you are signed in to the shop
+    await page.waitForURL(/\/signin\?next=%2Fadmin/);                   // a shopper does not get into the admin
+    await seeText(page.locator('main'), 'Admin sign in');
+    await noText(page.locator('main'), 'Continue as');
+    await page.fill('input[name=email]', 'customer@example.test');     // not even by trying the customer's own email
+    await page.fill('input[name=password]', 'dev-password-123');
+    await page.click('.auth button[type=submit]');
+    await seeText(page.locator('main'), 'only for the admin, marketing, vendor and driver accounts');
     await page.fill('input[name=email]', 'admin@example.test');
     await page.fill('input[name=password]', 'dev-password-123');
     await page.click('.auth button[type=submit]');
@@ -95,7 +100,6 @@ describe('separate staff and shop sign-ins (browser)', () => {
     await page.goto(`${base()}/account`);
     await seeText(page.locator('main'), 'customer@example.test');       // the shop still knows the customer
     await page.goto(`${base()}/admin`);
-    await seeText(page.locator('.bo-top'), 'Switch area');
     await page.locator('.bo-user summary').click();
     await page.getByRole('button', { name: 'Sign out' }).click();
     await page.waitForURL(base() + '/');
@@ -105,23 +109,30 @@ describe('separate staff and shop sign-ins (browser)', () => {
     await page.waitForURL(/\/signin/);                                  // but the admin is gone
     await ctx.close();
   });
+
+  it('each area opens only for its own account: the wrong one is signed out and asked for the right email', async () => {
+    const { page } = await newPage(browser, DESKTOP);
+    await signInStaff(page, 'marketing@example.test', 'dev-password-123', '/marketing');
+    await seeText(page.locator('.bo-top'), 'Marketing');
+    await page.goto(`${base()}/driver`);
+    await page.waitForURL(/\/signin\?next=%2Fdriver&wrong=1/);
+    await seeText(page.locator('main'), 'cannot open the driver area');
+    await page.goto(`${base()}/marketing`);
+    await page.waitForURL(/\/signin\?next=%2Fmarketing/);                // the wrong account was signed out of the staff area
+    await seeText(page.locator('main'), 'Marketing sign in');
+  });
 });
 
 describe('selling and cooking entry (browser)', () => {
-  it('a signed-out visitor to /vendor gets sign in or sign up first, and a new account lands on the application', async () => {
+  it('/vendor asks for the store or kitchen account; a vendor email gets in, and the portal shows its menu', async () => {
     const { page } = await newPage(browser, MOBILE);
     await page.goto(`${base()}/vendor`);
     await page.waitForURL(/\/signin\?next=%2Fvendor/);
-    await seeText(page.locator('main'), 'Sign in to sell or cook');
-    await page.locator('.notice').getByRole('link', { name: 'create an account' }).click();
-    await page.waitForURL(/\/register\?next=%2Fvendor/);
-    await page.fill('input[name=full_name]', 'New Seller'); await page.fill('input[name=email]', `seller+${Date.now()}@example.test`); await page.fill('input[name=password]', 'a-long-password');
+    await seeText(page.locator('main'), 'Vendor and chef sign in');
+    await page.fill('input[name=email]', 'owner1@example.test'); await page.fill('input[name=password]', 'dev-password-123');
     await page.click('.auth button[type=submit]');
     await page.waitForURL('**/vendor');
-    await seeText(page.locator('body'), 'Applying as New Seller');
-    await seeText(page.locator('body'), 'Tell us about your business');
-    await page.getByRole('button', { name: 'Use a different account' }).click();
-    await page.waitForURL(/\/signin\?next=%2Fvendor/);
+    await page.waitForSelector('.bo-top');
   });
 });
 

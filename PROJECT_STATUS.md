@@ -154,3 +154,6 @@ The shop and the staff areas (admin, marketing, vendor, driver) now have **indep
 
 ## Skeleton loading (added)
 Grey placeholder shapes with a gentle shimmer now show while pages load (search and store grids, product page, basket, checkout, orders, flyer, kitchens, recipes, lists, home shelves, and while a page's code loads), in the same layout as the real content so nothing jumps. Still (no shimmer) for people who prefer reduced motion.
+
+## Staff areas: designated accounts only (changed)
+For now the staff areas open **only for their own accounts**, from anywhere: `admin@example.test` (and support/finance/dispatcher/catalog) → /admin, `marketing@example.test` → /marketing, `owner1@…owner3@` and `chef1@…chef2@example.test` → /vendor, `driver@example.test` → /driver. Customers cannot sign in to a staff area (the sign-in refuses them), the "Continue as" shortcut is gone, and an account that tries the wrong area is signed out of the staff area and asked for the right email. The admin also reaches /marketing; /vendor shows an admin where to open a vendor's portal. The shop sign-in stays separate. Shoppers can still apply to sell or drive by API, but the staff pages do not offer it while this is in force.

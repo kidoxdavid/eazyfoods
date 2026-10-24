@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool } from '../db/pool.js';
-import { areaOf, COOKIES, createSession } from '../lib/auth.js';
+import { areaOf, COOKIES, createSession, STAFF_AREA_ROLES } from '../lib/auth.js';
 import { rl } from '../lib/ratelimit.js';
 import { hashPassword, hashToken, newToken, verifyPassword } from '../lib/password.js';
 import { config } from '../config.js';
@@ -48,15 +48,11 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const { rows } = await pool.query('SELECT id, password_hash FROM users WHERE email = $1 AND disabled_at IS NULL', [body.email]);
     const ok = await verifyPassword(body.password, rows[0]?.password_hash ?? DUMMY);
     if (!rows[0] || !ok) return reply.code(401).send({ error: 'invalid_credentials', message: 'Email or password is incorrect.' });
+    if (areaOf(req) === 'staff') {
+      const held = (await pool.query('SELECT role FROM user_roles WHERE user_id = $1', [rows[0].id])).rows.map((r) => r.role);
+      if (!held.some((r) => STAFF_AREA_ROLES.includes(r))) return reply.code(403).send({ error: 'not_staff', message: 'This sign-in is only for the admin, marketing, vendor and driver accounts. Use the email for that area.' });
+    }
     await createSession(rows[0].id, reply, areaOf(req));
-    return { ok: true };
-  });
-
-  // "Continue as <you>" from the shop into the staff areas: opens a staff session for the person already signed in to the shop (same account only).
-  app.post('/staff-session', limit, async (req, reply) => {
-    if (areaOf(req) === 'staff') return reply.code(400).send({ error: 'bad_request', message: 'Call this from the shop.' });
-    if (!req.user) return reply.code(401).send({ error: 'unauthenticated' });
-    await createSession(req.user.id, reply, 'staff');
     return { ok: true };
   });
 

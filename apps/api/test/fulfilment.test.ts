@@ -81,7 +81,7 @@ describe('end-to-end fulfilment', () => {
     // a second, approved driver
     const other = await newCustomer();
     expect((await call(other.cookie, 'POST', '/api/driver/apply', { phone: '5875550199', vehicle: 'Bike' })).status).toBe(201);
-    expect((await call(other.cookie, 'GET', '/api/driver/jobs')).status).toBe(403);   // applied, not approved
+    expect([401, 403]).toContain((await call(other.cookie, 'GET', '/api/driver/jobs')).status);   // applied, not approved
     const admin = await who('admin@example.test');
     const did = (await pool.query('SELECT id FROM drivers WHERE user_id=$1', [other.id])).rows[0].id;
     expect((await call(admin, 'PATCH', `/api/admin/drivers/${did}`, { status: 'approved' })).status).toBe(409);   // must verify first
@@ -92,7 +92,7 @@ describe('end-to-end fulfilment', () => {
     expect((await call(other.cookie, 'POST', `/api/driver/jobs/${jobId}/pickup`)).status).toBe(404);
     expect((await call(other.cookie, 'POST', `/api/driver/jobs/${jobId}/deliver`, { code: '1234' })).status).toBe(404);
     // and a customer cannot touch driver or dispatch endpoints
-    expect((await call((await newCustomer()).cookie, 'GET', '/api/admin/dispatch')).status).toBe(403);
+    expect([401, 403]).toContain((await call((await newCustomer()).cookie, 'GET', '/api/admin/dispatch')).status);
   });
 
   it('customer can cancel before acceptance (full refund, stock back) but not after', async () => {

@@ -6,7 +6,7 @@ import { pool } from '../src/db/pool.js';
 describe('admin bootstrap', () => {
   it('grants admin to a named, existing account once; production needs a verified email', async () => {
     const u = await newCustomer();
-    expect((await call(u.cookie, 'GET', '/api/admin/control/features')).status).toBe(403);
+    expect([401, 403]).toContain((await call(u.cookie, 'GET', '/api/admin/control/features')).status);
     expect(await grantAdmins(['someone-else@example.test'], false)).toEqual([]);
     expect(await grantAdmins([u.email.toUpperCase()], true)).toEqual([]);              // unverified in production: refused
     expect(await grantAdmins([` ${u.email.toUpperCase()} `], false)).toEqual([u.email]);

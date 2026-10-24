@@ -28,8 +28,8 @@ export async function signIn(page: Page, email: string, password = 'dev-password
   await page.fill('input[name=password]', password);
   await page.click('.auth button[type=submit]');
   await page.waitForURL((u) => !u.pathname.startsWith('/signin'));
-  // Staff areas have their own sign-in: this is the "Continue as <you>" step, so one helper covers shop and staff pages.
-  await page.evaluate(() => fetch('/api/auth/staff-session', { method: 'POST', credentials: 'include' }).then(() => {}));
+  // Staff areas have their own sign-in, open only to the area accounts: do it too (customers are simply refused, which is fine here).
+  await page.evaluate(async ([e, pw]) => { await fetch('/api/auth/login', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json', 'x-area': 'staff' }, body: JSON.stringify({ email: e, password: pw }) }); }, [email, password]);
 }
 
 export async function db() { const c = new pg.Client({ connectionString: process.env.E2E_DB }); await c.connect(); return c; }

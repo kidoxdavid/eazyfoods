@@ -218,12 +218,15 @@ describe('home chefs (browser)', () => {
     await ctx.close();
   });
 
-  it('the apply form offers a cook path', async () => {
+  it('a cook signs in with the cook account and lands in the chef portal', async () => {
     const { page } = await newPage(browser, MOBILE);
-    await signIn(page, 'customer@example.test');
     await page.goto(base() + '/vendor?kind=chef');
-    await page.getByRole('heading', { name: 'Cook with EAZyfoods' }).waitFor();
-    await page.getByLabel('Cuisines you cook').waitFor();
+    await page.waitForURL(/\/signin/);
+    await page.fill('input[name=email]', 'chef1@example.test'); await page.fill('input[name=password]', 'dev-password-123');
+    await page.click('.auth button[type=submit]');
+    await page.waitForURL('**/vendor**');
+    await page.waitForSelector('.bo-top');
+    expect(await page.locator('.bo-top').innerText()).toContain('Chef portal');
   });
 });
 

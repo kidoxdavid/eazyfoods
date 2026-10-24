@@ -210,10 +210,11 @@ describe('inventory, stale baskets and access control', () => {
     const cust = await newPage(browser, DESKTOP);
     await signIn(cust.page, 'customer@example.test');
     await cust.page.goto(`${base()}/admin`);
-    await seeText(cust.page.locator('body'), /does not allow|do not have access/i);
+    await cust.page.waitForURL(/\/signin\?next=%2Fadmin/);
+    await seeText(cust.page.locator('body'), 'Admin sign in');                          // a shopper is asked for the admin account, not shown the console
     await cust.page.goto(`${base()}/vendor`);
-    await seeText(cust.page.locator('body'), /apply|sell/i);
-    expect((await cust.page.request.get(`${base()}/api/admin/ledger`)).status()).toBe(403);
+    await seeText(cust.page.locator('body'), 'Vendor and chef sign in');
+    expect([401, 403]).toContain((await cust.page.request.get(`${base()}/api/admin/ledger`)).status());
 
     const owner2 = await newPage(browser, DESKTOP);
     await signIn(owner2.page, 'owner2@example.test');

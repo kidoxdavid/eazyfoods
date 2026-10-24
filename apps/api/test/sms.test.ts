@@ -10,7 +10,7 @@ afterAll(async () => { await pool.query('UPDATE feature_flags SET enabled = true
 
 async function pickupOrder(u: { cookie: string; addressId: string }) {
   await openAllStores();
-  await addToCart(u.cookie, await setOffer(HORN, 'berbere-spice-blend', 1500, 50), 3);
+  await addToCart(u.cookie, await setOffer(HORN, 'berbere-spice-blend', 1500, 50), 6);
   const c = await call(u.cookie, 'POST', '/api/checkout', { address_id: null, method: 'pickup' }, { 'idempotency-key': crypto.randomUUID() });
   expect(c.status, JSON.stringify(c.body)).toBe(201);
   await simulate(u.cookie, c.body.order.id, 'succeeded');

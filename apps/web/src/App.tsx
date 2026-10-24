@@ -8,7 +8,7 @@ import { PlaceProvider } from './place';
 import { ThemeProvider } from './theme';
 import { Footer, Header, TabBar } from './shell';
 import { Empty, Loading } from './ui';
-import { RequireAuth } from './guard';
+import { RequireArea, RequireAuth } from './guard';
 import { Home } from './pages/Home';
 import { SearchPage } from './pages/Search';
 import { ProductPage } from './pages/Product';
@@ -53,10 +53,10 @@ export function App() {
           <ThemeProvider>
           <Suspense fallback={<SkelPage />}>
             <Routes>
-              <Route path="/vendor/*" element={<RequireAuth><Vendor /></RequireAuth>} />
-              <Route path="/admin/*" element={<RequireAuth><Admin /></RequireAuth>} />
-              <Route path="/driver/*" element={<RequireAuth><Driver /></RequireAuth>} />
-              <Route path="/marketing/*" element={<RequireAuth><Marketing /></RequireAuth>} />
+              <Route path="/vendor/*" element={<RequireArea area="vendor"><Vendor /></RequireArea>} />
+              <Route path="/admin/*" element={<RequireArea area="admin"><Admin /></RequireArea>} />
+              <Route path="/driver/*" element={<RequireArea area="driver"><Driver /></RequireArea>} />
+              <Route path="/marketing/*" element={<RequireArea area="marketing"><Marketing /></RequireArea>} />
               <Route path="*" element={
                 <Site>
                   <Routes>

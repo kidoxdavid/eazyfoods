@@ -34,16 +34,20 @@ describe('separate shop and staff sign-ins', () => {
     expect((await raw(both, '/api/auth/me')).json().email).toBe('customer@example.test');
     expect((await raw(both, '/api/admin/control/features')).statusCode).toBe(401);                          // the old staff token is dead server-side, not just cleared
   });
-  it('"continue as" opens a staff session for the same person only, and only from the shop', async () => {
+  it('only the designated accounts can sign in to the staff areas; customers cannot, wherever they come from', async () => {
+    const r = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { email: 'customer@example.test', password: 'dev-password-123' }, headers: STAFF });
+    expect(r.statusCode).toBe(403);
+    expect(r.json().error).toBe('not_staff');
+    expect(cookiesOf(r)).toEqual([]);
+    for (const e of ['admin@example.test', 'marketing@example.test', 'owner1@example.test', 'chef1@example.test', 'driver@example.test', 'support@example.test'])
+      expect((await app.inject({ method: 'POST', url: '/api/auth/login', payload: { email: e, password: 'dev-password-123' }, headers: STAFF })).statusCode, e).toBe(200);
+    // a customer's own shop sign-in is never a staff sign-in, even if the same token is presented as one
     const u = await newCustomer();
-    expect((await app.inject({ method: 'POST', url: '/api/auth/staff-session' })).statusCode).toBe(401);
-    expect((await app.inject({ method: 'POST', url: '/api/auth/staff-session', headers: { cookie: u.cookie, ...RAW, ...STAFF } })).statusCode).toBe(400);
-    const r = await app.inject({ method: 'POST', url: '/api/auth/staff-session', headers: { cookie: u.cookie, ...RAW } });
-    expect(r.statusCode).toBe(200);
-    const staff = cookiesOf(r)[0];
-    expect(staff.startsWith('ez_staff=')).toBe(true);
-    expect((await raw(staff, '/api/auth/me', STAFF)).json().email).toBe(u.email);
-    expect((await call(u.cookie, 'GET', '/api/admin/control/features')).status).toBe(403);                  // same person, still no admin rights
+    const token = u.cookie.slice('ez_session='.length);
+    expect((await raw(`${u.cookie}; ez_staff=${token}`, '/api/auth/me', STAFF)).json()).toBeNull();
+    expect((await raw(`${u.cookie}; ez_staff=${token}`, '/api/admin/control/features')).statusCode).toBe(401);
+    expect((await app.inject({ method: 'POST', url: '/api/auth/staff-session', headers: { cookie: u.cookie, ...RAW } })).statusCode).toBe(404);   // the "continue as" shortcut is gone
+    expect((await raw(u.cookie, '/api/auth/me')).json().email).toBe(u.email);                                                                          // the shop still works
   });
   it('registering and failing to log in behave per area', async () => {
     const bad = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { email: 'admin@example.test', password: 'nope-nope-nope' }, headers: STAFF });
