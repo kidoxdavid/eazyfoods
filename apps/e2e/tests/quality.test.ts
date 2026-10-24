@@ -59,7 +59,7 @@ describe('accessibility (axe, WCAG 2 A/AA): no serious or critical violations', 
   });
   it('signed-in customer and portal pages', async () => {
     const found: string[] = [];
-    for (const [email, path] of [['customer@example.test', '/account'] as const, ['customer@example.test', '/orders'] as const, ...PORTALS]) {
+    for (const [email, path] of [['customer@example.test', '/account'] as const, ['customer@example.test', '/orders'] as const, ['customer@example.test', '/lists'] as const, ['customer@example.test', '/alerts'] as const, ...PORTALS]) {
       const { page, ctx } = await newPage(browser, DESKTOP);
       await signIn(page, email); await page.goto(base() + path); await page.waitForLoadState('networkidle');
       found.push(...(await scan(page, `${email} ${path}`))); await ctx.close();
@@ -307,7 +307,7 @@ describe('quick view', () => {
       const dlg = page.getByRole('dialog');
       await dlg.waitFor();
       await dlg.getByText(/Allergens/).waitFor();
-      expect(await dlg.getByRole('link', { name: /View full details/ }).count()).toBe(1);
+      expect(await dlg.getByRole('link', { name: /Full details/ }).count()).toBe(1);
       const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
       expect(r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.help}`)).toEqual([]);
       await dlg.getByRole('button', { name: /Add to basket/ }).click();
@@ -396,5 +396,75 @@ describe('banner video', () => {
       for (const t of themes) await c.query('UPDATE themes SET status = $2 WHERE id = $1', [t.id, t.status]);
       await c.end();
     }
+  });
+});
+
+describe('customer features: lists, alerts, unit prices, dietary filters, basket progress', () => {
+  it('unit prices show on cards and the dietary filter narrows results', async () => {
+    const { page } = await newPage(browser, DESKTOP);
+    await page.goto(base() + '/search?q=garri'); await page.waitForLoadState('networkidle');
+    await page.locator('article.pcard .unit').first().waitFor();
+    expect(await page.locator('article.pcard .unit').first().innerText()).toMatch(/\$\d+\.\d{2} \/ 100 g/);
+    await page.goto(base() + '/search'); await page.waitForLoadState('networkidle');
+    const before = await page.locator('article.pcard').count();
+    await page.getByRole('button', { name: /^Vegan/ }).click();
+    await page.getByRole('button', { name: /Remove filter Vegan/ }).waitFor();
+    await page.waitForLoadState('networkidle');
+    expect(new URL(page.url()).searchParams.get('diet')).toBe('vegan');
+    expect(await page.locator('article.pcard').count()).toBeLessThanOrEqual(before);
+    await page.getByLabel('Sort by').selectOption('unit_price'); await page.waitForLoadState('networkidle');
+    expect(new URL(page.url()).searchParams.get('sort')).toBe('unit_price');
+  });
+
+  it('a customer saves a product to a new list, shares it, and a stranger can view it and add everything to the basket', async () => {
+    const c = await db(); await c.query(`DELETE FROM shopping_lists WHERE user_id = (SELECT id FROM users WHERE email = 'customer@example.test')`); await c.end();
+    const { page } = await newPage(browser, DESKTOP); await signIn(page, 'customer@example.test');
+    await page.goto(base() + '/p/garri-white'); await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: /Save to a list/ }).click();
+    await page.getByLabel('New list name').fill('E2E feast');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByText('Saved to your list').waitFor();
+    await page.goto(base() + '/lists'); await page.getByRole('link', { name: /E2E feast/ }).click();
+    await page.getByRole('heading', { name: 'E2E feast' }).waitFor();
+    await page.getByRole('button', { name: 'Create a share link' }).click();
+    const link = await page.getByLabel('Share link').inputValue();
+    expect(link).toMatch(/\/l\/[\w-]+$/);
+    const stranger = await newPage(browser, MOBILE);
+    await stranger.page.goto(link);
+    await stranger.page.getByRole('heading', { name: 'E2E feast' }).waitFor();
+    expect(await stranger.page.locator('body').innerText()).not.toContain('customer@example.test');
+    await stranger.page.getByRole('button', { name: /Add all to basket/ }).click();
+    await stranger.page.getByText(/added to your basket/).waitFor();
+    await page.getByRole('button', { name: 'Stop sharing' }).click();
+    await stranger.page.goto(link); await stranger.page.getByText(/not shared any more/).waitFor();
+  });
+
+  it('an out-of-stock product can be watched, and the alert is listed and removable', async () => {
+    const c = await db();
+    await c.query(`UPDATE store_offers SET stock_on_hand = 0 WHERE product_id = (SELECT id FROM products WHERE slug = 'okra-fresh')`).catch(() => {});
+    const slug = (await c.query(`SELECT p.slug FROM products p WHERE p.status = 'published' AND NOT EXISTS (SELECT 1 FROM store_offers o WHERE o.product_id = p.id AND o.is_active AND o.stock_on_hand - o.stock_reserved > 0) AND EXISTS (SELECT 1 FROM store_offers o WHERE o.product_id = p.id) LIMIT 1`)).rows[0]?.slug
+      ?? (await c.query(`WITH p AS (SELECT id, slug FROM products WHERE status = 'published' ORDER BY slug LIMIT 1) UPDATE store_offers SET stock_on_hand = 0 WHERE product_id IN (SELECT id FROM p) RETURNING (SELECT slug FROM p)`)).rows[0]?.slug;
+    await c.query(`DELETE FROM product_alerts WHERE user_id = (SELECT id FROM users WHERE email = 'customer@example.test')`);
+    const { page } = await newPage(browser, DESKTOP); await signIn(page, 'customer@example.test');
+    await page.goto(base() + `/p/${slug}`); await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: /Tell me when it is back/ }).click();
+    await page.getByText(/Alert set/).waitFor();
+    await page.goto(base() + '/alerts');
+    await page.getByText('Tell me when it is back in stock').waitFor();
+    await page.getByRole('button', { name: 'Remove' }).click();
+    await page.getByText('No alerts').waitFor();
+    await c.end();
+  });
+
+  it('the basket shows how far each store is from free delivery, and the home page remembers what you looked at', async () => {
+    const { page } = await newPage(browser, DESKTOP); await signIn(page, 'customer@example.test');
+    await page.addInitScript(() => localStorage.setItem('ez_place_v1', JSON.stringify({ postal: 'T2A0A1', fsa: 'T2A', serviceable: true, zone: 'Calgary', fee_cents: 599, free_over_cents: 7500, eta_minutes: 90 })));
+    await page.goto(base() + '/search?q=garri'); await page.waitForLoadState('networkidle');
+    await page.locator('article.pcard').first().getByRole('button', { name: /Add .* to basket/ }).click();
+    await page.goto(base() + '/cart'); await page.waitForLoadState('networkidle');
+    await page.getByText(/more from .* for free delivery/).first().waitFor();
+    await page.goto(base() + '/p/garri-white'); await page.waitForLoadState('networkidle');
+    await page.goto(base()); await page.waitForLoadState('networkidle');
+    await page.getByRole('heading', { name: 'Recently viewed' }).waitFor();
   });
 });

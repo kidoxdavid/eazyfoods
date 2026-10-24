@@ -3,6 +3,9 @@ import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { norm } from '../lib/norm.js';
 import { LIVE_ADS } from './ads.js';
+import { UNIT_BASIS, UNIT_QTY } from '../lib/listing.js';
+
+export const DIET_KEYS = ['vegan', 'vegetarian', 'gluten_free', 'dairy_free'] as const;
 
 const query = z.object({
   q: z.string().max(100).default(''),
@@ -13,7 +16,8 @@ const query = z.object({
   in_stock: z.enum(['1']).optional(),
   min_price: z.coerce.number().int().min(0).optional(),
   max_price: z.coerce.number().int().min(0).optional(),
-  sort: z.enum(['relevance', 'price_asc', 'price_desc', 'name']).default('relevance'),
+  sort: z.enum(['relevance', 'price_asc', 'price_desc', 'unit_price', 'name']).default('relevance'),
+  diet: z.string().max(100).optional(),
   page: z.coerce.number().int().min(1).default(1),
 });
 const PAGE = 24;
@@ -24,6 +28,9 @@ export const searchRoutes: FastifyPluginAsync = async (app) => {
     const a = query.parse(req.query);
     const t = norm(a.q);
     const offset = (a.page - 1) * PAGE;
+
+    const wanted = (a.diet ?? '').split(',').filter((k): k is (typeof DIET_KEYS)[number] => (DIET_KEYS as readonly string[]).includes(k));
+    const dietFilter = wanted.length ? JSON.stringify(Object.fromEntries(wanted.map((k) => [k, true]))) : null;
 
     const sql = `
       WITH scored AS (
@@ -47,7 +54,8 @@ export const searchRoutes: FastifyPluginAsync = async (app) => {
           FROM scored
          WHERE $1 = '' OR GREATEST(s_name, s_brand, s_alias) >= $2
       ), listing AS (
-        SELECT p.slug, p.name, p.pack_size, p.pack_unit, b.name AS brand, c.name AS category,
+        SELECT p.slug, p.name, p.pack_size, p.pack_unit, b.name AS brand, c.name AS category, p.dietary,
+               ${UNIT_BASIS()} AS unit_basis, round(off.min_price / NULLIF(${UNIT_QTY()}, 0))::int AS unit_price_cents,
                (SELECT url FROM product_images WHERE product_id = p.id ORDER BY sort_order LIMIT 1) AS image_url, p.id AS product_id,
                r.score, r.matched_alias, off.min_price, off.was_price, off.on_sale, off.store_count, off.in_stock, off.offer_id, off.store_name, off.store_slug, off.available, c.slug AS category_slug,
                (SELECT CASE WHEN count(*) >= 3 THEN round(avg(rv.rating)::numeric, 1)::float END FROM reviews rv WHERE rv.product_id = p.id AND NOT rv.is_hidden) AS rating_avg,
@@ -78,16 +86,19 @@ export const searchRoutes: FastifyPluginAsync = async (app) => {
                    WHERE pc.product_id = p.id AND pc.kind = 'culinary' AND cn.slug = $4))
            AND ($5::text IS NULL OR c.slug = $5 OR c.parent_id = (SELECT id FROM categories WHERE slug = $5))
            AND ($8::int IS NULL OR off.min_price >= $8) AND ($9::int IS NULL OR off.min_price <= $9)
+           AND ($11::jsonb IS NULL OR p.dietary @> $11::jsonb)
       )
       SELECT *, count(*) OVER () AS total FROM listing
        ORDER BY CASE WHEN $10 = 'price_asc' THEN min_price END ASC,
                 CASE WHEN $10 = 'price_desc' THEN min_price END DESC,
+                CASE WHEN $10 = 'unit_price' THEN unit_price_cents END ASC NULLS LAST,
                 CASE WHEN $10 = 'relevance' THEN score END DESC,
                 name
        LIMIT 500`;
     const { rows } = await pool.query(sql, [
       t, MIN_SCORE, a.region ?? null, a.country ?? null, a.category ?? null, a.store ?? null,
       a.in_stock ? true : null, a.min_price ?? null, a.max_price ?? null, a.sort,
+      dietFilter,
     ]);
     const total = rows[0] ? Number(rows[0].total) : 0;
     const all = rows;
@@ -119,6 +130,7 @@ export const searchRoutes: FastifyPluginAsync = async (app) => {
     let facets: unknown = undefined;
     if (total > 0) {
       const ids = all.map((r) => r.product_id);
+      const diet = (await pool.query(`SELECT e.key AS key, count(*)::int AS n FROM products p, jsonb_each_text(p.dietary) e WHERE p.id = ANY($1::uuid[]) AND e.value = 'true' AND e.key = ANY($2::text[]) GROUP BY e.key ORDER BY n DESC`, [ids, [...DIET_KEYS]])).rows;
       const [cats, regs, stores, price] = await Promise.all([
         pool.query(`SELECT c.slug, c.name, count(*)::int AS n FROM products p JOIN categories c ON c.id = p.category_id WHERE p.id = ANY($1::uuid[]) GROUP BY c.slug, c.name ORDER BY n DESC, c.name`, [ids]),
         pool.query(`SELECT r.slug, r.name, count(DISTINCT pc.product_id)::int AS n FROM product_countries pc JOIN region_countries rc ON rc.country_id = pc.country_id JOIN regions r ON r.id = rc.region_id AND r.is_active
@@ -126,7 +138,7 @@ export const searchRoutes: FastifyPluginAsync = async (app) => {
         pool.query(`SELECT s.slug, s.name, count(DISTINCT o.product_id)::int AS n FROM offers_live o JOIN storefronts s ON s.id = o.store_id AND s.orderable WHERE o.is_active AND o.product_id = ANY($1::uuid[]) GROUP BY s.slug, s.name ORDER BY n DESC`, [ids]),
         Promise.resolve({ rows: [{ min: Math.min(...all.map((r) => r.min_price)), max: Math.max(...all.map((r) => r.min_price)) }] }),
       ]);
-      facets = { categories: cats.rows, regions: regs.rows, stores: stores.rows, price: price.rows[0] };
+      facets = { categories: cats.rows, regions: regs.rows, stores: stores.rows, price: price.rows[0], dietary: diet };
     }
     return { query: a.q, total, page: a.page, page_size: PAGE, results, suggestions, facets };
   });

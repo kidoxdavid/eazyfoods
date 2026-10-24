@@ -22,6 +22,7 @@ import { SignIn, Register, Forgot, Reset, Verify } from './pages/Auth';
 import { RecipesPage, RecipePage } from './pages/Recipes';
 import { ContentPage } from './pages/ContentPage';
 import { Unsubscribe } from './pages/Unsubscribe';
+import { AlertsPage, ListPage, ListsPage, SharedListPage } from './pages/Lists';
 
 const Vendor = lazy(() => import('./portals/vendor'));
 const Admin = lazy(() => import('./portals/admin'));
@@ -71,6 +72,7 @@ export function App() {
                     <Route path="/orders" element={<RequireAuth><OrdersPage /></RequireAuth>} />
                     <Route path="/orders/:id" element={<RequireAuth><OrderPage /></RequireAuth>} />
                     <Route path="/account" element={<RequireAuth><AccountPage /></RequireAuth>} />
+                    <Route path="/lists" element={<RequireAuth><ListsPage /></RequireAuth>} /><Route path="/lists/:id" element={<RequireAuth><ListPage /></RequireAuth>} /><Route path="/l/:token" element={<SharedListPage />} /><Route path="/alerts" element={<RequireAuth><AlertsPage /></RequireAuth>} />
                     <Route path="/signin" element={<SignIn />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/forgot" element={<Forgot />} />

@@ -5,7 +5,8 @@ import { Button, Empty, ErrorBox, Loading, Select } from '../ui';
 import { ProductGrid, type Card } from '../cards';
 
 type Facet = { slug: string; name: string; n: number };
-type Result = { total: number; page: number; page_size: number; results: Card[]; suggestions?: { message: string; regions: { slug: string; name: string }[] }; facets?: { categories: Facet[]; regions: Facet[]; stores: Facet[]; price: { min: number; max: number } } };
+type Result = { total: number; page: number; page_size: number; results: Card[]; suggestions?: { message: string; regions: { slug: string; name: string }[] }; facets?: { dietary?: { key: string; n: number }[]; categories: Facet[]; regions: Facet[]; stores: Facet[]; price: { min: number; max: number } } };
+const DIET: Record<string, string> = { vegan: 'Vegan', vegetarian: 'Vegetarian', gluten_free: 'Gluten-free', dairy_free: 'Dairy-free' };
 const PRICE_BANDS: [string, number | null, number | null][] = [['Under $5', null, 499], ['$5 to $10', 500, 1000], ['$10 to $20', 1000, 2000], ['$20 & above', 2000, null]];
 
 export function SearchPage() {
@@ -14,6 +15,8 @@ export function SearchPage() {
   const regions = useApi<Region[]>('/regions');
   const cats = useApi<{ slug: string; name: string }[]>('/categories');
   const set = (k: string, v: string | null) => { const n = new URLSearchParams(sp); if (v) n.set(k, v); else n.delete(k); n.delete('page'); setSp(n); };
+  const diets = (sp.get('diet') ?? '').split(',').filter(Boolean);
+  const toggleDiet = (k: string) => set('diet', (diets.includes(k) ? diets.filter((d) => d !== k) : [...diets, k]).join(',') || null);
   const q = sp.get('q');
   const desktop = typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches;
   const region = regions.data?.find((r) => r.slug === sp.get('region'));
@@ -23,9 +26,10 @@ export function SearchPage() {
   const title = q ? `Results for “${q}”` : cat?.name ?? (country ? country.name : region?.name) ?? 'All products';
   const active: [string, string, string][] = [];
   if (region) active.push(['region', region.name, 'region']); if (country) active.push(['country', country.name, 'country']); if (cat) active.push(['category', cat.name, 'category']);
+  for (const d of diets) active.push([`diet-${d}`, DIET[d] ?? d, `diet-${d}`]);
   if (store) active.push(['store', store.name, 'store']); if (sp.get('in_stock')) active.push(['in_stock', 'In stock only', 'in_stock']);
   if (sp.get('min_price') || sp.get('max_price')) active.push(['price', PRICE_BANDS.find((b) => String(b[1] ?? '') === (sp.get('min_price') ?? '') && String(b[2] ?? '') === (sp.get('max_price') ?? ''))?.[0] ?? 'Price range', 'price']);
-  const clear = (key: string) => { const n = new URLSearchParams(sp); if (key === 'price') { n.delete('min_price'); n.delete('max_price'); } else n.delete(key); if (key === 'region') n.delete('country'); n.delete('page'); setSp(n); };
+  const clear = (key: string) => { const n = new URLSearchParams(sp); if (key.startsWith('diet-')) { const left = diets.filter((d) => `diet-${d}` !== key); left.length ? n.set('diet', left.join(',')) : n.delete('diet'); n.delete('page'); setSp(n); return; } if (key === 'price') { n.delete('min_price'); n.delete('max_price'); } else n.delete(key); if (key === 'region') n.delete('country'); n.delete('page'); setSp(n); };
   const band = (b: (typeof PRICE_BANDS)[number]) => { const n = new URLSearchParams(sp); n.delete('page'); b[1] == null ? n.delete('min_price') : n.set('min_price', String(b[1])); b[2] == null ? n.delete('max_price') : n.set('max_price', String(b[2])); setSp(n); };
   const bandOn = (b: (typeof PRICE_BANDS)[number]) => String(b[1] ?? '') === (sp.get('min_price') ?? '') && String(b[2] ?? '') === (sp.get('max_price') ?? '');
 
@@ -42,12 +46,13 @@ export function SearchPage() {
             <div className="facet"><h3>Store</h3><ul>{data.facets.stores.map((f) => <li key={f.slug}><button className={sp.get('store') === f.slug ? 'on' : ''} onClick={() => set('store', sp.get('store') === f.slug ? null : f.slug)}><span>{f.name}</span><small>{f.n}</small></button></li>)}</ul></div>
             <div className="facet"><h3>Price</h3><ul>{PRICE_BANDS.map((b) => <li key={b[0]}><button className={bandOn(b) ? 'on' : ''} onClick={() => (bandOn(b) ? (() => { const n = new URLSearchParams(sp); n.delete('min_price'); n.delete('max_price'); setSp(n); })() : band(b))}><span>{b[0]}</span></button></li>)}</ul></div>
           </>}
+          {!!data?.facets?.dietary?.length && <div className="facet"><h3>Dietary</h3><ul>{data.facets.dietary.map((f) => <li key={f.key}><button className={diets.includes(f.key) ? 'on' : ''} aria-pressed={diets.includes(f.key)} onClick={() => toggleDiet(f.key)}><span>{DIET[f.key] ?? f.key}</span><span className="muted">{f.n}</span></button></li>)}</ul><p className="small muted">Labels checked by our catalogue team.</p></div>}
           <div className="facet"><label className="check"><input type="checkbox" checked={sp.get('in_stock') === '1'} onChange={(e) => set('in_stock', e.target.checked ? '1' : null)} /> In stock only</label></div>
         </details>
         <section aria-live="polite">
           <div className="toolbar">
             <div><h1>{title}</h1>{data && <span className="muted small">{data.total} product{data.total === 1 ? '' : 's'}{data.facets ? ` · ${money(data.facets.price.min)} – ${money(data.facets.price.max)}` : ''}</span>}</div>
-            <label className="row small">Sort by <Select value={sp.get('sort') ?? 'relevance'} onChange={(e) => set('sort', e.target.value)} aria-label="Sort by"><option value="relevance">Best match</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option><option value="name">Name</option></Select></label>
+            <label className="row small">Sort by <Select value={sp.get('sort') ?? 'relevance'} onChange={(e) => set('sort', e.target.value)} aria-label="Sort by"><option value="relevance">Best match</option><option value="unit_price">Unit price: low to high</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option><option value="name">Name</option></Select></label>
           </div>
           {active.length > 0 && <div className="chips">{active.map(([k, label, key]) => <button key={k} className="chip-x" onClick={() => clear(key)} aria-label={`Remove filter ${label}`}>{label} ✕</button>)}</div>}
           {region?.description && <p className="muted">{region.description}</p>}

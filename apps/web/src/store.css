@@ -190,3 +190,12 @@ main { padding-top: 14px; }
 
 /* Very narrow phones: the delivery place is just the pin (its text stays for screen readers) so the logo has room. */
 @media (max-width: 420px) { .hdr .deliver > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } .hdr .deliver { justify-self: end; padding: 0 6px; } }
+
+/* ---------- Unit prices, progress bars, lists ---------- */
+.unit { font-size: .76rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.progress { display: grid; gap: 4px; margin: 8px 0 2px; } .progress-bar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; } .progress-bar i { display: block; height: 100%; background: var(--green); border-radius: 999px; transition: width .3s; }
+.lists { list-style: none; padding: 0; margin: 14px 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); } .lists .panel { display: grid; gap: 4px; text-decoration: none; color: inherit; margin: 0; height: 100%; } .lists .panel:hover { border-color: var(--green); }
+.list-items { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 8px; } .list-items .panel { margin: 0; align-items: center; }
+.savelist { display: grid; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+
+.qv-actions { justify-content: space-between; gap: 6px 12px; }

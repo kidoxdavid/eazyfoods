@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { type Region, type StoreCard } from '../api';
+import { recentSlugs, type Region, type StoreCard } from '../api';
+import { useAuth } from '../auth';
 import { useApi } from '../hooks';
 import { ProductArt } from '../art';
 import { Shelf, StoreList, type Card } from '../cards';
@@ -48,6 +49,20 @@ function CollectionShelf({ slug }: { slug: string }) {
   const { data } = useApi<{ collection: { title: string; subtitle: string }; products: Card[] }>(`/collections/${slug}`);
   if (!data?.products.length) return null;
   return <Shelf title={data.collection.title} subtitle={data.collection.subtitle} to={`/c/${slug}`} items={data.products} />;
+}
+
+/** Personal shelves: what you buy often, and what you looked at lately. Both stay empty (and invisible) for new visitors. */
+function Personal() {
+  const { me } = useAuth();
+  const again = useApi<Card[]>(me ? '/me/buy-again' : null);
+  const slugs = recentSlugs();
+  const recent = useApi<Card[]>(slugs.length ? `/products-cards?slugs=${slugs.join(',')}` : null);
+  return (
+    <>
+      {!!again.data?.length && <Shelf title="Buy it again" subtitle="Things you have ordered before" items={again.data} />}
+      {!!recent.data?.length && <Shelf title="Recently viewed" subtitle="Pick up where you left off" items={recent.data} />}
+    </>
+  );
 }
 
 export function Home() {
@@ -124,6 +139,7 @@ export function Home() {
     <>
       {slides.length ? <HeroCarousel slides={slides} /> : <div className="hero-skel" aria-hidden="true" />}
       {stores.data?.some((s) => s.is_test_data) && <Notice tone="warn"><strong>Development data.</strong> Stores marked “Demo store” are invented for testing and are not real businesses. Product pictures are illustrations until stores upload photos.</Notice>}
+      <Personal />
       <HomeBanner />
       {regions.error && <ErrorBox message={regions.error} retry={regions.reload} />}
       {order.filter((x) => x.enabled).map((x) => parts[x.id])}

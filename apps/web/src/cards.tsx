@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { money, packLabel, post, type StoreCard } from './api';
+import { money, packLabel, post, unitPrice, unitText, type StoreCard } from './api';
+import { SaveToList } from './savelist';
 import { ProductArt, StoreBanner, StoreMark, Stars } from './art';
 import { useCart } from './cart';
 import { IconChevron, IconChevronL, IconEye, IconMinus, IconPlus } from './icons';
@@ -10,6 +11,7 @@ import { useApi } from './hooks';
 export type Card = {
   slug: string; name: string; brand: string | null; pack_size: string | null; pack_unit: string | null; category?: string | null; category_slug?: string | null; image_url?: string | null;
   min_price: number; was_price?: number | null; in_stock: boolean; on_sale?: boolean; store_count?: number; matched_alias?: string | null;
+  unit_price_cents?: number | null; unit_basis?: '100g' | '100ml' | null; dietary?: Record<string, boolean> | null;
   offer_id?: string | null; store_name?: string | null; store_slug?: string | null; available?: number | null; rating_avg?: number | null; rating_count?: number; sponsored_campaign_id?: string | null;
 };
 
@@ -61,6 +63,7 @@ export function ProductCard({ p }: { p: Card }) {
           <Price cents={p.min_price} className={p.on_sale ? 'sale' : ''} />
           {was && <s className="was">{money(was)}</s>}
         </div>
+        {p.unit_price_cents != null && p.unit_basis && <span className="unit">{unitText({ cents: p.unit_price_cents, basis: p.unit_basis })}</span>}
         {(p.store_count ?? 1) > 1 && <span className="from">lowest of {p.store_count} stores</span>}
         <Link to={`/p/${p.slug}`} className="pname" onClick={click}>{p.name}</Link>
         <span className="pmeta">{[p.brand, packLabel(p)].filter(Boolean).join(' · ')}</span>
@@ -91,7 +94,7 @@ export function QuickView({ slug, onClose }: { slug: string; onClose: () => void
         <div className="qv-body">
           <div className="qv-art">{p.images[0] ? <img src={p.images[0].url} alt={p.images[0].alt} /> : <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />}</div>
           <div className="qv-info">
-            <span className="muted small">{[p.brand, packLabel(p)].filter(Boolean).join(' · ')}</span>
+            <span className="muted small">{[p.brand, packLabel(p), cur ? unitText(unitPrice(cur.price_cents, p.pack_size, p.pack_unit)) : ''].filter(Boolean).join(' · ')}</span>
             {cur ? (<>
               <div className="row wrap" style={{ justifyContent: 'space-between' }}><span className="row"><Price cents={cur.price_cents} className={`big ${cur.on_promotion ? 'sale' : ''}`} />{cur.compare_at_cents && cur.compare_at_cents > cur.price_cents && <s className="was">{money(cur.compare_at_cents)}</s>}</span>
                 <span className={`stock ${cur.in_stock ? '' : 'out'}`}>{cur.in_stock ? (cur.available <= 5 ? `Only ${cur.available} left` : 'In stock') : 'Out of stock'}</span></div>
@@ -103,7 +106,7 @@ export function QuickView({ slug, onClose }: { slug: string; onClose: () => void
             </>) : <Notice tone="warn">No store is currently selling this.</Notice>}
             {p.description && <p className="small qv-desc">{p.description.length > 220 ? `${p.description.slice(0, 220)}…` : p.description}</p>}
             <p className="small"><strong>Allergens:</strong> {p.allergens === null ? 'not supplied; check the package' : p.allergens.length ? p.allergens.join(', ') : 'none declared'}</p>
-            <Link to={`/p/${slug}`} onClick={onClose} className="small">View full details and compare stores →</Link>
+            <div className="row wrap qv-actions"><SaveToList slug={slug} /><Link to={`/p/${slug}`} onClick={onClose} className="small">Full details →</Link></div>
           </div>
         </div>
       )}

@@ -88,3 +88,6 @@ See `docs/DECISIONS.md`: commission 12%, delivery $5.99/store, driver pay $4.50,
 - **Quick view**: eye icon on phones, compact bottom sheet; text pill on desktop hover.
 - **Menu**: fades in and out.
 - **Banner video**: staff (content.manage) upload MP4 (H.264) or WebM up to 25 MB for a homepage banner (Studio → Banners). It plays muted and looped behind the text with a dark overlay, only while its slide is showing, never for reduced-motion or data-saver visitors (the picture shows instead), with a pause button. Files are verified by their bytes; range requests work for Safari. Not done: transcoding or resizing (upload web-ready clips), video on festival theme slides, and object storage/CDN (files live on the app server's disk; use a CDN before large videos or heavy traffic).
+
+## Customer batch 1 (added)
+Buy it again and Recently viewed shelves; unit prices (per 100 g / 100 ml, weight and volume packs only) with a unit-price sort; dietary filters (vegan, vegetarian, gluten-free, dairy-free) from labels set by the catalogue team in the product editor; per-store free-delivery progress in the basket; shopping lists (save from a product or quick view, share read-only by link, stop sharing, copy a shared list, add all to basket); back-in-stock and price-drop alerts (email once, then off; manage at /alerts). Demo dietary flags are invented.

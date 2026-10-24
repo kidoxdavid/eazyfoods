@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api, del, money, packLabel, put } from '../api';
-import { useApi } from '../hooks';
+import { api, del, money, packLabel, post, put, trackRecent, unitPrice, unitText } from '../api';
+import { SaveToList } from '../savelist';
+import { useAction, useApi } from '../hooks';
+import { useToast } from '../toast';
 import { useAuth } from '../auth';
 import { usePlace } from '../place';
 import { ProductArt, Stars } from '../art';
@@ -12,6 +14,7 @@ import { DishRedirect } from './Kitchens';
 
 type Offer = { store_slug: string; store_name: string; is_open: boolean; is_test_data: boolean; offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; in_stock: boolean; available: number };
 type P = {
+  dietary?: Record<string, boolean>;
   name: string; brand: string | null; category: string | null; category_slug: string | null; description: string | null; pack_size: string | null; pack_unit: string | null; sold_by: string; ingredients: string | null; allergens: string[] | null;
   storage_info: string | null; manufacturer: string | null; countries: { name: string; kind: string }[]; aliases: string[]; images: { url: string; alt: string }[]; offers: Offer[];
 };
@@ -23,6 +26,17 @@ function Heart({ slug }: { slug: string }) {
   if (!me) return <Link to={`/signin?next=/p/${slug}`} className="btn ghost sm">♡ Save</Link>;
   const on = fav.data?.favourite;
   return <Button variant="ghost" size="sm" aria-pressed={!!on} onClick={async () => { await (on ? del(`/favourites/${slug}`) : put(`/favourites/${slug}`)); fav.reload(); }}>{on ? '♥ Saved' : '♡ Save'}</Button>;
+}
+
+/** "Tell me when it is back" (out of stock) or "tell me if the price drops" (in stock). Sent once, then it switches itself off. */
+function AlertButton({ slug, inStock }: { slug: string; inStock: boolean }) {
+  const { me } = useAuth(); const toast = useToast();
+  const [done, setDone] = useState(false);
+  const kind = inStock ? 'price_drop' : 'back_in_stock';
+  const go = useAction(async () => { await post('/alerts', { slug, kind }); setDone(true); toast(inStock ? 'We will email you if the price drops.' : 'We will email you when it is back.'); });
+  if (!me) return <Link to={`/signin?next=/p/${slug}`} className="btn ghost sm">🔔 {inStock ? 'Tell me if the price drops' : 'Tell me when it is back'}</Link>;
+  if (done) return <span className="small okc">✓ Alert set. Manage alerts in <Link to="/alerts">your account</Link>.</span>;
+  return <><Button variant="ghost" size="sm" busy={go.busy} onClick={() => go.run()}>🔔 {inStock ? 'Tell me if the price drops' : 'Tell me when it is back'}</Button>{go.error && <span className="small warnc">{go.error}</span>}</>;
 }
 
 export function ProductPage() {
@@ -38,6 +52,7 @@ export function ProductPage() {
     const sp = new URLSearchParams(location.search);
     api('/events', { method: 'POST', json: { type: 'product_view', product_slug: slug, session_id: session ?? undefined, utm_source: sp.get('utm_source') ?? undefined, utm_campaign: sp.get('utm_campaign') ?? undefined } }).catch(() => {});
   }, [slug]);
+  useEffect(() => { if (p) trackRecent(slug!); }, [p, slug]);
   useEffect(() => { if (p) document.title = `${p.name} – EAZyfoods`; return () => { document.title = 'EAZyfoods – African groceries from local stores'; }; }, [p]);
   if (loading) return <Loading />;
   if (error) return <><DishRedirect slug={slug!} /><ErrorBox message={error} retry={reload} /></>;
@@ -72,6 +87,7 @@ export function ProductPage() {
             {made.length > 0 && <><dt>Made in</dt><dd>{made.join(', ')}</dd></>}
             {p.manufacturer && <><dt>Manufacturer</dt><dd>{p.manufacturer}</dd></>}
             {p.ingredients && <><dt>Ingredients</dt><dd>{p.ingredients}</dd></>}
+            {Object.entries(p.dietary ?? {}).some(([, v]) => v) && <><dt>Dietary</dt><dd>{Object.entries(p.dietary!).filter(([, v]) => v).map(([k]) => ({ vegan: 'Vegan', vegetarian: 'Vegetarian', gluten_free: 'Gluten-free', dairy_free: 'Dairy-free' } as Record<string, string>)[k] ?? k).join(', ')} <span className="muted small">(checked by our catalogue team)</span></dd></>}
             <dt>Allergens</dt><dd>{p.allergens === null ? 'Not supplied. Check the package if you have allergies.' : p.allergens.length ? `Contains: ${p.allergens.join(', ')}` : 'None declared'}</dd>
             {p.storage_info && <><dt>Storage</dt><dd>{p.storage_info}</dd></>}
           </dl>
@@ -87,7 +103,10 @@ export function ProductPage() {
               </select></label>
             <div className="ship"><IconTruck width={18} height={18} style={{ verticalAlign: -4 }} /> {place?.serviceable ? <>Delivers to <b>{place.fsa}</b> in about {place.eta_minutes} min · {money(place.fee_cents)} per store</> : place ? <>Not delivering to {place.fsa} yet</> : <button className="link" onClick={() => setOpen(true)}>Enter postal code to see delivery</button>}</div>
             {!cur.is_open && <Notice tone="warn">{cur.store_name} is closed now. You can add it, but you can only check out while it is open.</Notice>}
+            {unitText(unitPrice(cur.price_cents, p.pack_size, p.pack_unit)) && <div className="unit">{unitText(unitPrice(cur.price_cents, p.pack_size, p.pack_unit))}</div>}
             <AddToBasket cta size="lg" offer={mk(cur)} />
+            <AlertButton slug={slug!} inStock={p.offers.some((o) => o.in_stock)} />
+            <SaveToList slug={slug!} />
             <div className="small muted"><IconShield width={16} height={16} style={{ verticalAlign: -3 }} /> Pay securely. We never see your card number. <Link to="/pages/refund-policy">Refund policy</Link></div>
             {cur.is_test_data && <Badge tone="demo">Demo store</Badge>}
           </> : <Notice tone="warn">No store is currently selling this.</Notice>}

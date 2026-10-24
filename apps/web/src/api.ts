@@ -45,3 +45,20 @@ export type ProductCard = {
   store_count?: number; matched_alias?: string | null; category?: string; image_url?: string | null; sponsored_campaign_id?: string | null;
 };
 export type StoreCard = { slug: string; name: string; description: string; city: string; is_open: boolean; min_order_cents: number | null; is_test_data: boolean; regions: { slug: string; name: string }[]; logo_url?: string | null };
+
+/** Price per 100 g or 100 ml for weight/volume packs (same rule as the server). Other pack types get none, never a guess. */
+export function unitPrice(priceCents: number, size?: string | number | null, unit?: string | null): { cents: number; basis: '100g' | '100ml' } | null {
+  const n = Number(size); const u = (unit ?? '').toLowerCase();
+  if (!n || !priceCents) return null;
+  const g = { g: n / 100, kg: n * 10, lb: n * 4.53592, oz: n * 0.283495 }[u as 'g'];
+  if (g) return { cents: Math.round(priceCents / g), basis: '100g' };
+  const ml = { ml: n / 100, l: n * 10, cl: n / 10 }[u as 'ml'];
+  return ml ? { cents: Math.round(priceCents / ml), basis: '100ml' } : null;
+}
+export const unitText = (u: { cents: number; basis: '100g' | '100ml' } | null) => (u ? `${money(u.cents)} / ${u.basis.replace('100', '100 ')}` : '');
+
+/** Recently viewed products, kept on this device only. */
+export function trackRecent(slug: string) {
+  try { const cur: string[] = JSON.parse(localStorage.getItem('ez_recent_v1') ?? '[]'); localStorage.setItem('ez_recent_v1', JSON.stringify([slug, ...cur.filter((x) => x !== slug)].slice(0, 12))); } catch { /* storage unavailable */ }
+}
+export const recentSlugs = (): string[] => { try { return JSON.parse(localStorage.getItem('ez_recent_v1') ?? '[]'); } catch { return []; } };

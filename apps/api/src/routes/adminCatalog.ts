@@ -16,6 +16,8 @@ const productBody = z.object({
   allergens: z.array(z.string().max(40)).max(20).nullable().optional(), storage_info: z.string().max(500).nullable().optional(), manufacturer: z.string().max(120).nullable().optional(),
   tax_class: z.enum(['zero_rated', 'standard']).optional(), status: z.enum(['draft', 'pending', 'published', 'archived']).optional(),
   seo_title: z.string().max(120).nullable().optional(), seo_description: z.string().max(300).nullable().optional(),
+  // Only what the catalogue team has checked on the pack. Shoppers filter on these, so they are never guessed.
+  dietary: z.object({ vegan: z.boolean(), vegetarian: z.boolean(), gluten_free: z.boolean(), dairy_free: z.boolean() }).partial().strict().optional(),
 });
 
 export const adminCatalogRoutes: FastifyPluginAsync = async (app) => {
@@ -74,6 +76,7 @@ export const adminCatalogRoutes: FastifyPluginAsync = async (app) => {
       const set: Record<string, unknown> = {};
       for (const k of ['description', 'sku', 'barcode', 'sold_by', 'pack_size', 'pack_unit', 'ingredients', 'allergens', 'storage_info', 'manufacturer', 'tax_class', 'status', 'seo_title', 'seo_description'] as const)
         if (b[k] !== undefined) set[k] = b[k];
+      if (b.dietary !== undefined) set.dietary = JSON.stringify(Object.fromEntries(Object.entries(b.dietary).filter(([, v]) => v === true)));
       if (b.name) { set.name = b.name; set.name_norm = norm(b.name); }
       if (b.brand !== undefined) set.brand_id = await upsertBrand(c, b.brand);
       if (b.category_slug !== undefined) set.category_id = b.category_slug ? (await c.query('SELECT id FROM categories WHERE slug = $1', [b.category_slug])).rows[0]?.id ?? null : null;

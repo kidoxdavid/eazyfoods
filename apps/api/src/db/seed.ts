@@ -195,6 +195,10 @@ export async function seed(log = console.log) {
       await c.query(`INSERT INTO addresses(user_id,label,recipient_name,phone,line1,city,postal_code,is_default) VALUES ($1,'Home','Test Customer','000-000-0002','10 Test Way NE','Calgary','T2A0A1',true)`, [cust]);
     await c.query(`INSERT INTO coupons(code, description, kind, value, min_subtotal_cents, first_order_only, max_discount_cents) VALUES ('WELCOME10','10% off your first order (dev coupon)','percent',10,2000,true,1500) ON CONFLICT (code) DO NOTHING`);
 
+    // Demo dietary flags (invented for development: real flags are set by the catalogue team after checking the pack).
+    await c.query(`UPDATE products SET dietary = '{"vegan": true, "vegetarian": true, "dairy_free": true}' WHERE dietary = '{}' AND (name ILIKE '%garri%' OR name ILIKE '%rice%' OR name ILIKE '%plantain%' OR name ILIKE '%beans%' OR name ILIKE '%hibiscus%' OR name ILIKE '%okra%' OR name ILIKE '%yam%')`);
+    await c.query(`UPDATE products SET dietary = dietary || '{"gluten_free": true}' WHERE (name ILIKE '%garri%' OR name ILIKE '%rice%' OR name ILIKE '%beans%' OR name ILIKE '%yam%' OR name ILIKE '%okra%') AND dietary ? 'vegan'`);
+
     // Starter recipes. Written as drafts (ai_generated = true, reviewed = false): they are labelled as such in the UI
     // and must be reviewed by a person before the label is removed.
     const R: { title: string; summary: string; region: string; country: string; servings: number; prep: number; cook: number; steps: string[]; safety?: string;

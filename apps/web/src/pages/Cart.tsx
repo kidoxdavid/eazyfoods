@@ -1,3 +1,4 @@
+import { usePlace } from '../place';
 import { Link } from 'react-router-dom';
 import { money, packLabel, post } from '../api';
 import { useCart } from '../cart';
@@ -35,6 +36,7 @@ export function CartPage() {
   if (loading && !cart) return <Loading />;
   if (!cart || !cart.stores.length) return <Empty title="Your basket is empty"><p>Find something you love.</p><Link to="/search" className="btn primary">Browse products</Link></Empty>;
 
+  const { place } = usePlace();
   const priceChanged = cart.stores.some((s) => s.items.some((i) => i.price_changed));
   const blockers = cart.stores.flatMap((s) => s.items.filter((i) => i.unavailable || i.short));
   return (
@@ -66,6 +68,11 @@ export function CartPage() {
             </div>
           ))}
           <div className="summary-row"><span>Items from {s.name}</span><strong>{money(s.subtotal_cents)}</strong></div>
+          {place?.serviceable && place.free_over_cents != null && (
+            <div className="progress" role="group" aria-label={`Free delivery from ${s.name}`}>
+              <div className="progress-bar" aria-hidden="true"><i style={{ width: `${Math.min(100, (s.subtotal_cents / place.free_over_cents) * 100)}%` }} /></div>
+              <span className="small">{s.subtotal_cents >= place.free_over_cents ? <><strong className="okc">Free delivery</strong> from {s.name}</> : <>Add <strong>{money(place.free_over_cents - s.subtotal_cents)}</strong> more from {s.name} for free delivery</>}</span>
+            </div>)}
           {s.min_order_cents && s.subtotal_cents < s.min_order_cents && <p className="small warnc">This store has a {money(s.min_order_cents)} minimum order. Add {money(s.min_order_cents - s.subtotal_cents)} more.</p>}
         </section>
       ))}
