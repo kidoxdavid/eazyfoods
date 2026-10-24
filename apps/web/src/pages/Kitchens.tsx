@@ -13,10 +13,10 @@ const ALLERGENS: [string, string][] = [['peanuts', 'Peanuts'], ['tree_nuts', 'Tr
 const label = (k: string) => ALLERGENS.find(([a]) => a === k)?.[1] ?? k.replace(/_/g, ' ');
 const TAGS: Record<string, string> = { halal: 'Halal', vegan: 'Vegan', vegetarian: 'Vegetarian', pescatarian: 'Pescatarian', gluten_free: 'Gluten-free', dairy_free: 'Dairy-free' };
 
-type KCard = { slug: string; name: string; description: string | null; city: string; area: string; is_open: boolean; min_order_cents: number | null; is_test_data: boolean; logo_url: string | null; cover_url: string | null; cuisines: string[]; ordering_paused: boolean; dish_count: number; from_cents: number | null };
+type KCard = { kitchen_type?: 'home' | 'restaurant'; address_line?: string | null; slug: string; name: string; description: string | null; city: string; area: string; is_open: boolean; min_order_cents: number | null; is_test_data: boolean; logo_url: string | null; cover_url: string | null; cuisines: string[]; ordering_paused: boolean; dish_count: number; from_cents: number | null };
 type Dish = { slug: string; name: string; description: string | null; cuisine: string | null; spice_level: number | null; serves: string | null; prep_minutes: number | null; allergens: string[] | null; ingredients: string | null; dish_tags: string[];
-  offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; available: number; image_url: string | null };
-type K = Omit<KCard, 'dish_count' | 'from_cents'> & { preorders_enabled?: boolean; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; hours: { dow: number; opens: string; closes: string }[]; dishes: Dish[]; allergen_notice: string;
+  offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; available: number; image_url: string | null; menu_section?: string | null; video_url?: string | null };
+type K = Omit<KCard, 'dish_count' | 'from_cents'> & { postal_code?: string | null; phone?: string | null; video_url?: string | null; preorders_enabled?: boolean; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; hours: { dow: number; opens: string; closes: string }[]; dishes: Dish[]; allergen_notice: string;
   branding: { accent: { primary: string; deep: string; tint: string; glow: string } | null; tagline: string | null; story: string | null; announcement: string | null; website: string | null; instagram: string | null; facebook: string | null } | null };
 
 function KitchenTile({ k }: { k: KCard }) {
@@ -25,10 +25,11 @@ function KitchenTile({ k }: { k: KCard }) {
       <div className="stile-cover">{k.cover_url ? <img src={k.cover_url} alt="" loading="lazy" /> : <StoreBanner name={k.name} />}</div>
       <div className="stile-body">
         {k.logo_url ? <img src={k.logo_url} alt="" width={44} height={44} style={{ borderRadius: '50%', objectFit: 'cover' }} /> : <StoreMark name={k.name} size={44} />}
-        <div><h3>{k.name}</h3><span className="muted small">{k.area ? `${k.city} · ${k.area}` : k.city}{k.from_cents ? ` · dishes from ${money(k.from_cents)}` : ''}</span></div>
+        <div><h3>{k.name}</h3><span className="muted small">{k.kitchen_type === 'restaurant' && k.address_line ? `${k.address_line}, ${k.city}` : k.area ? `${k.city} · ${k.area}` : k.city}{k.from_cents ? ` · dishes from ${money(k.from_cents)}` : ''}</span></div>
       </div>
       <div className="row wrap" style={{ padding: '0 14px 14px' }}>
         <Badge tone={k.is_open ? 'ok' : 'warn'}>{k.is_open ? 'Open now' : 'Closed now'}</Badge>
+        {k.kitchen_type === 'restaurant' && <Badge tone="info">Restaurant</Badge>}
         {k.cuisines.slice(0, 2).map((c) => <Badge key={c}>{c}</Badge>)}
         {k.is_test_data && <Badge tone="demo">Demo cook</Badge>}
       </div>
@@ -42,16 +43,19 @@ export function KitchenList({ items }: { items: KCard[] }) {
 
 export function KitchensPage() {
   const [cuisine, setCuisine] = useState('');
+  const [type, setType] = useState<'' | 'home' | 'restaurant'>('');
   const cuisines = useApi<{ name: string; kitchens: number }[]>('/kitchens/cuisines');
-  const { data, loading, error, reload } = useApi<KCard[]>(`/kitchens${cuisine ? `?cuisine=${encodeURIComponent(cuisine)}` : ''}`);
+  const qs = [cuisine && `cuisine=${encodeURIComponent(cuisine)}`, type && `type=${type}`].filter(Boolean).join('&');
+  const { data, loading, error, reload } = useApi<KCard[]>(`/kitchens${qs ? `?${qs}` : ''}`);
   return (
     <>
-      <h1>Home chefs</h1>
-      <p className="muted">Meals cooked to order by local home cooks. Every cook uploads a food-premises permit and food-handler certificate that our team checks before they can sell, and every dish lists its allergens.</p>
+      <h1>Home chefs &amp; restaurants</h1>
+      <p className="muted">Meals cooked to order by local home cooks and restaurants. Every seller uploads the permits we require, which our team checks before they can sell, and every dish lists its allergens.</p>
+      <div className="catchips" role="group" aria-label="Type">{([['', 'All'], ['home', 'Home chefs'], ['restaurant', 'Restaurants']] as const).map(([v, l]) => <button key={v} className={type === v ? 'on' : ''} aria-pressed={type === v} onClick={() => setType(v)}>{l}</button>)}</div>
       {!!cuisines.data?.length && <div className="catchips" role="group" aria-label="Cuisine"><button className={!cuisine ? 'on' : ''} onClick={() => setCuisine('')}>All</button>{cuisines.data.map((c) => <button key={c.name} className={cuisine === c.name ? 'on' : ''} onClick={() => setCuisine(c.name)}>{c.name}</button>)}</div>}
       {loading && !data && <SkelGrid n={6} label="Loading kitchens" />}
       {error && <ErrorBox message={error} retry={reload} />}
-      {data && !data.length && <Notice>No home chefs are available yet{cuisine ? ` for ${cuisine}` : ''}. Check back soon, or <Link to="/vendor">apply to cook with us</Link>.</Notice>}
+      {data && !data.length && <Notice>Nothing is available here yet{cuisine ? ` for ${cuisine}` : ''}. Check back soon, or <Link to="/vendor">sell with us</Link>.</Notice>}
       {data && <KitchenList items={data} />}
     </>
   );
@@ -79,6 +83,7 @@ function DishCard({ d, k, avoid }: { d: Dish; k: K; avoid: string[] }) {
           {d.dish_tags.map((t) => <Badge key={t} tone="info">{TAGS[t] ?? t}</Badge>)}
         </div>
         <p className="small dish-allergens"><strong>Contains:</strong> {unknown ? 'allergen information not supplied; ask the cook' : d.allergens!.length ? d.allergens!.map(label).join(', ') : 'none of the priority allergens (declared by the cook)'}</p>
+        {d.video_url && <details className="small"><summary>Watch a short video</summary><ClipPlayer src={d.video_url} label={`Video of ${d.name}`} /></details>}
         {d.ingredients && <details className="small"><summary>Ingredients</summary><p style={{ margin: '4px 0' }}>{d.ingredients}</p></details>}
         <div className="dish-buy">
           <strong className="dish-price">{money(d.price_cents)}</strong>
@@ -102,6 +107,7 @@ export function KitchenPage() {
   if (loading) return <SkelStore />;
   if (error) return <ErrorBox message={error} retry={reload} />;
   if (!k) return null;
+  const sections = [...dishes.reduce((m, d) => m.set(d.menu_section ?? '', [...(m.get(d.menu_section ?? '') ?? []), d]), new Map<string, Dish[]>())];
   const hidden = dishes.filter((d) => (d.allergens ?? []).some((a) => avoid.includes(a))).length;
   return (
     <>
@@ -114,13 +120,14 @@ export function KitchenPage() {
             <div className="grow"><h1>{k.name}</h1>{br?.tagline && <p className="tagline">{br.tagline}</p>}
               <div className="row wrap"><Badge tone={k.is_open ? 'ok' : 'warn'}>{k.is_open ? 'Open now' : 'Closed now'}</Badge>{k.cuisines.map((c) => <Badge key={c}>{c}</Badge>)}{k.offers_pickup && <Badge tone="info">Pickup available</Badge>}{k.preorders_enabled && <Badge tone="info">Pre-orders welcome</Badge>}{k.is_test_data && <Badge tone="demo">Demo cook</Badge>}</div></div>
           </div>
-          <div className="shead-meta small muted">Home kitchen in {k.city}{k.area ? ` (${k.area})` : ''}. The cook’s address is shared only for pickup orders.{k.min_order_cents ? ` · Minimum order ${money(k.min_order_cents)}` : ''}</div>
+          <div className="shead-meta small muted">{k.kitchen_type === 'restaurant' ? <>Restaurant · {[k.address_line, k.city, k.postal_code].filter(Boolean).join(', ')}{k.phone ? ` · ${k.phone}` : ''}.</> : <>Home kitchen in {k.city}{k.area ? ` (${k.area})` : ''}. The cook’s address is shared only for pickup orders.</>}{k.min_order_cents ? ` · Minimum order ${money(k.min_order_cents)}` : ''}</div>
         </div>
         {br?.announcement && <div className="store-ann" role="note">{br.announcement}</div>}
         {k.is_test_data && <Notice tone="warn">Demo cook with invented data for development. This is not a real kitchen or permit.</Notice>}
         {k.ordering_paused && <Notice tone="warn">This cook has paused orders for now.</Notice>}
         {!k.is_open && !k.ordering_paused && <Notice>This kitchen is closed right now. You can fill your basket, but you can only check out while it is open.</Notice>}
         <p style={{ marginTop: 14 }}>{k.description}</p>
+        {k.video_url && <ClipPlayer src={k.video_url} label={`Video from ${k.name}`} />}
         {br?.story && <section className="store-story" aria-label={`About ${k.name}`}><h2>Our story</h2><p>{br.story}</p></section>}
         <Notice>{k.allergen_notice}</Notice>
         <details className="avoid" open={avoid.length > 0}>
@@ -129,10 +136,14 @@ export function KitchenPage() {
           <p className="small muted">Saved on this device only. Dishes that declare an allergen you avoid can’t be added to your basket here.{hidden ? ` ${hidden} dish${hidden > 1 ? 'es are' : ' is'} marked.` : ''}</p>
         </details>
         {cuisines.length > 1 && <div className="catchips" role="group" aria-label="Cuisine"><button className={!cuisine ? 'on' : ''} onClick={() => setCuisine('')}>All dishes</button>{cuisines.map((c) => <button key={c} className={cuisine === c ? 'on' : ''} onClick={() => setCuisine(c)}>{c}</button>)}</div>}
-        {!dishes.length ? <Notice>No dishes on the menu right now.</Notice> : <ul className="dishes" role="list">{dishes.map((d) => <DishCard key={d.slug} d={d} k={k} avoid={avoid} />)}</ul>}
+        {!dishes.length ? <Notice>No dishes on the menu right now.</Notice> : sections.map(([name, list]) => (
+          <section key={name || 'menu'} aria-label={name || 'Menu'}>
+            {name && <h2 style={{ marginTop: 18 }}>{name}</h2>}
+            <ul className="dishes" role="list">{list.map((d) => <DishCard key={d.slug} d={d} k={k} avoid={avoid} />)}</ul>
+          </section>))}
         <details style={{ marginTop: 14 }}><summary style={{ cursor: 'pointer', minHeight: 32 }}>Opening hours{k.policies ? ' and policies' : ''}</summary>
           <ul role="list" style={{ paddingLeft: 18 }}>{k.hours.map((h, i) => <li key={i}>{DAYS[h.dow]} {h.opens.slice(0, 5)}–{h.closes.slice(0, 5)}</li>)}</ul>{k.policies && <p>{k.policies}</p>}</details>
-        <p className="small muted">Cooks must hold a food-premises permit and food-handler certificate. <Link to="/pages/home-kitchen-rules">Read the rules for home kitchens</Link>.</p>
+        <p className="small muted">Sellers must hold the permits we require. <Link to="/pages/home-kitchen-rules">Read the rules for kitchens</Link>.</p>
       </div>
       <BasketBar />
     </>
@@ -152,4 +163,10 @@ export function DishRedirect({ slug }: { slug: string }) {
   const d = useApi<{ kitchen_slug: string }>(`/kitchens/dish/${slug}`);
   useEffect(() => { if (d.data) nav(`/k/${d.data.kitchen_slug}#dish-${slug}`, { replace: true }); }, [d.data, nav, slug]);
   return null;
+}
+
+/** A short vendor video. Never autoplays; loads nothing until asked when the visitor saves data. */
+export function ClipPlayer({ src, label }: { src: string; label: string }) {
+  const save = typeof navigator !== 'undefined' && (navigator as any).connection?.saveData;
+  return <video className="clip" src={src} controls playsInline preload={save ? 'none' : 'metadata'} aria-label={label} style={{ width: '100%', maxHeight: 420, borderRadius: 12, background: '#000', margin: '10px 0' }} />;
 }

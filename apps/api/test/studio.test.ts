@@ -185,11 +185,11 @@ describe('banner videos', () => {
     const payload = Buffer.concat([Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${name}"\r\nContent-Type: video/mp4\r\n\r\n`), buf, Buffer.from(`\r\n--${boundary}--\r\n`)]);
     return theApp.inject({ method: 'POST', url: '/api/uploads/video', payload, headers: { 'content-type': `multipart/form-data; boundary=${boundary}`, ...(cookie ? { cookie } : {}) } });
   };
-  it('only staff who manage the homepage can upload, and only real MP4/WebM files are kept', async () => {
+  it('customers cannot upload, vendors and homepage staff can, and only real MP4/WebM files are kept', async () => {
     const mk = (await login('marketing@example.test')).cookie, cust = (await login('customer@example.test')).cookie, owner1 = (await login('owner1@example.test')).cookie;
     expect((await upload(null, mp4)).statusCode).toBe(401);
     expect((await upload(cust, mp4)).statusCode).toBe(403);
-    expect((await upload(owner1, mp4)).statusCode).toBe(403);                         // a vendor cannot put video on the homepage
+    expect((await upload(owner1, mp4)).statusCode).toBe(200);                         // vendors may upload store/dish videos; only staff can attach one to the homepage (banner routes need content.manage)
     const ok = await upload(mk, mp4); expect(ok.statusCode).toBe(200); expect(ok.json().url).toMatch(/^\/uploads\/[a-f0-9]{32}\.mp4$/);
     expect((await upload(mk, webm, 'x.webm')).json().url).toMatch(/\.webm$/);
     const r = await theApp.inject({ url: ok.json().url, headers: { range: 'bytes=0-9' } });   // browsers (Safari especially) need byte ranges to play video

@@ -1,4 +1,4 @@
-import { requireFeature } from '../services/features.js';
+import { assertVendorCan, requireFeature } from '../services/features.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool } from '../db/pool.js';
@@ -37,9 +37,13 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
     return save(buf, t.ext, 'public');
   });
 
-  // Short banner videos (MP4 or WebM, 25 MB at most). Staff who manage the homepage only: videos are heavy and are shown to every visitor.
+  // Short videos (MP4 or WebM, 25 MB at most): homepage banners (staff who manage content) and store, kitchen or dish videos (vendors allowed the 'videos' capability).
   app.post('/uploads/video', rl(6, '1 minute'), async (req) => {
-    if (!can(req.user, 'content.manage')) throw forbidden();
+    if (!can(req.user, 'content.manage')) {
+      const vid = vendorIdsOf(req.user!)[0];
+      if (!vid) throw forbidden();
+      await assertVendorCan(vid, 'videos');
+    }
     const part = await (req as any).file({ limits: { fileSize: 25 * 1024 * 1024, files: 1 } });
     if (!part) throw bad('no_file', 'No file received.');
     const buf = await part.toBuffer();

@@ -155,7 +155,7 @@ export function VideoUpload({ value, onChange, label = 'Video' }: { value?: stri
           }} />
         </label>
         {value && <button type="button" className="link" onClick={() => onChange(null)}>Remove</button>}
-        <span className="hint">MP4 (H.264) or WebM, up to 25 MB. Keep it short (10 to 20 seconds). It plays muted and loops.</span>
+        <span className="hint">MP4 (H.264) or WebM, up to 25 MB. Keep it short. Banners play muted on a loop; store and dish videos have play controls.</span>
       </div>
     </div>
   );

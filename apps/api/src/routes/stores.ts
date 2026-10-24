@@ -51,7 +51,9 @@ export const storeRoutes: FastifyPluginAsync = async (app) => {
       pool.query('SELECT accent, tagline, story, announcement, featured_slugs, website, instagram, facebook FROM store_branding WHERE store_id = $1', [s.id]),
     ]);
     const br = branding.rows[0];
+    const video_url = (await featureOn('shop.vendor_videos')) ? (await pool.query('SELECT video_url FROM stores WHERE id = $1', [s.id])).rows[0]?.video_url ?? null : null;
     return {
+      video_url,
       slug: s.slug, name: s.name, description: s.description, address_line: s.address_line, city: s.city, province: s.province,
       postal_code: s.postal_code, phone: s.phone, is_open: s.is_open, min_order_cents: s.min_order_cents, is_test_data: s.is_test_data,
       logo_url: s.logo_url, cover_url: s.cover_url, policies: s.policies, offers_delivery: s.offers_delivery, offers_pickup: s.offers_pickup, ordering_paused: s.ordering_paused,

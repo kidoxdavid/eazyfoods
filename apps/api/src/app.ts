@@ -47,7 +47,8 @@ export async function buildApp() {
     logger: config.NODE_ENV === 'test' ? false : { level: 'info', redact: ['req.headers.cookie', 'req.headers.authorization'] },
   });
 
-  await app.register(helmet);
+  // Maps (driver navigation, live delivery position) are embedded as frames from these hosts only.
+  await app.register(helmet, { contentSecurityPolicy: { directives: { ...helmet.contentSecurityPolicy.getDefaultDirectives(), 'frame-src': ["'self'", 'https://maps.google.com', 'https://www.google.com', 'https://www.openstreetmap.org'] } } });
   await app.register(compress, { threshold: 1024 });   // gzip/brotli for HTML, JS, CSS and JSON (images and video are already compressed and are skipped)
   await app.register(cors, { origin: config.WEB_ORIGIN, credentials: true });
   await app.register(cookie);

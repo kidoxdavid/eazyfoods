@@ -11,6 +11,7 @@ import { history } from '../services/orders.js';
 import { notifyVendorOwners } from '../services/notify.js';
 import { rl } from '../lib/ratelimit.js';
 import { cartView } from './cart.js';
+import { featureOn, requireFeature } from '../services/features.js';
 
 const checkoutBody = z.object({
   address_id: z.string().uuid().nullish(), method: z.enum(['delivery', 'pickup']).default('delivery'),
@@ -24,8 +25,13 @@ export async function loadOrder(orderId: string, userId: string | null) {
   if (!o) throw notFound('Order not found');
   const subs = (await pool.query(
     `SELECT s.*, st.name AS store_name, st.slug AS store_slug, st.phone AS store_phone, st.address_line AS store_address, st.city AS store_city,
-            d.status AS delivery_status, d.handover_code, d.driver_id, d.picked_up_at, split_part(du.full_name, ' ', 1) AS driver_first_name
+            d.id AS delivery_id, d.status AS delivery_status, d.handover_code, d.driver_id, d.picked_up_at, split_part(du.full_name, ' ', 1) AS driver_first_name
        FROM suborders s JOIN stores st ON st.id = s.store_id LEFT JOIN deliveries d ON d.suborder_id = s.id LEFT JOIN drivers dr ON dr.id = d.driver_id LEFT JOIN users du ON du.id = dr.user_id WHERE s.order_id = $1 ORDER BY st.name`, [orderId])).rows;
+  const live = userId && (await featureOn('driver.live_location'));
+  const rateOn = userId && (await featureOn('shop.rate_drivers'));
+  const dids = subs.map((s) => s.delivery_id).filter(Boolean);
+  const locs = live && dids.length ? (await pool.query(`SELECT delivery_id, lat, lng, updated_at FROM delivery_locations WHERE delivery_id = ANY($1::uuid[]) AND updated_at > now() - interval '10 minutes'`, [dids])).rows : [];
+  const rated = rateOn && dids.length ? (await pool.query('SELECT delivery_id, rating FROM delivery_ratings WHERE delivery_id = ANY($1::uuid[])', [dids])).rows : [];
   const lines = (await pool.query(
     `SELECT l.* , p.slug AS product_slug FROM order_lines l JOIN products p ON p.id = l.product_id WHERE l.suborder_id = ANY($1::uuid[]) ORDER BY l.product_name`, [subs.map((s) => s.id)])).rows;
   const hist = (await pool.query('SELECT suborder_id, from_status, to_status, note, created_at FROM order_status_history WHERE order_id = $1 ORDER BY id', [orderId])).rows;
@@ -42,6 +48,9 @@ export async function loadOrder(orderId: string, userId: string | null) {
       promised_at: s.promised_at, eta_minutes: s.eta_minutes, driver_first_name: s.driver_first_name ?? undefined, picked_up_at: s.picked_up_at ?? undefined, tip_cents: s.tip_cents, scheduled_for: s.scheduled_for, scheduled_until: s.scheduled_until, reject_reason: s.reject_reason, delivery_status: s.delivery_status,
       // The handover code is shown to the customer only while a delivery is on its way.
       handover_code: ['ready', 'out_for_delivery'].includes(s.status) && s.fulfilment_method === 'delivery' ? s.handover_code : undefined,
+      driver_location: s.status === 'out_for_delivery' ? (() => { const l = locs.find((x) => x.delivery_id === s.delivery_id); return l ? { lat: l.lat, lng: l.lng, updated_at: l.updated_at } : undefined; })() : undefined,
+      can_rate_driver: !!rateOn && s.delivery_status === 'delivered' && !rated.some((r) => r.delivery_id === s.delivery_id),
+      driver_rating: rated.find((r) => r.delivery_id === s.delivery_id)?.rating,
       pickup_address: s.fulfilment_method === 'pickup' ? `${s.store_address ?? ''}, ${s.store_city}` : undefined,
       lines: lines.filter((l) => l.suborder_id === s.id).map((l) => ({
         id: l.id, product_slug: l.product_slug, product_id: l.product_id, name: l.product_name, brand: l.brand, pack_label: l.pack_label, quantity: l.quantity, unit_price_cents: l.unit_price_cents,
@@ -94,6 +103,17 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.get<{ Params: { id: string } }>('/orders/:id', async (req) => loadOrder(z.string().uuid().parse(req.params.id), req.user!.id));
+
+  app.post<{ Params: { id: string; sid: string } }>('/orders/:id/suborders/:sid/driver-rating', async (req, reply) => {
+    await requireFeature('shop.rate_drivers');
+    const { id, sid } = z.object({ id: z.string().uuid(), sid: z.string().uuid() }).parse(req.params);
+    const b = z.object({ rating: z.number().int().min(1).max(5), comment: z.string().trim().max(300).optional() }).parse(req.body);
+    const d = (await pool.query(`SELECT d.id FROM deliveries d JOIN suborders s ON s.id = d.suborder_id JOIN orders o ON o.id = s.order_id WHERE s.id = $1 AND o.id = $2 AND o.user_id = $3 AND d.status = 'delivered' AND d.driver_id IS NOT NULL`, [sid, id, req.user!.id])).rows[0];
+    if (!d) throw notFound('Only a delivered order can be rated.');
+    const r = await pool.query('INSERT INTO delivery_ratings(delivery_id, user_id, rating, comment) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING', [d.id, req.user!.id, b.rating, b.comment || null]);
+    if (!r.rowCount) throw conflict('already_rated', 'You have already rated this delivery.');
+    return reply.code(201).send({ ok: true });
+  });
 
   // Customer may cancel until the store accepts. Refund is automatic.
   app.post<{ Params: { id: string; sid: string } }>('/orders/:id/suborders/:sid/cancel', async (req) => {

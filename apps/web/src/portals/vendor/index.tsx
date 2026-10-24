@@ -24,19 +24,19 @@ import { StoreSelect, VendorProvider, useVendor } from './Shared';
 import Questions from './Questions';
 
 function Shell() {
-  const { pending, store, isChef } = useVendor();
+  const { pending, store, isChef, isRestaurant } = useVendor();
   const { me, reloadStaff } = useAuth(); const goto = useNavigate();
   const unread = useApi<{ count: number }>('/vendor/messages/unread');
   const caps = useApi<Record<string, boolean>>('/vendor/capabilities');
   const can = (k: string) => caps.data?.[k] !== false;
   return (
-    <PortalLayout tone={isChef ? 'chef' : 'vendor'} title={isChef ? 'Chef portal' : 'Vendor portal'} subtitle={store.name} nav={[
+    <PortalLayout tone={isChef ? 'chef' : 'vendor'} title={isRestaurant ? 'Restaurant portal' : isChef ? 'Chef portal' : 'Vendor portal'} subtitle={store.name} nav={[
       { to: '/vendor', label: 'Dashboard', end: true, group: 'Sell' }, { to: '/vendor/orders', label: 'Orders', badge: pending, group: 'Sell' },
       isChef ? { to: '/vendor/menu', label: 'Menu', group: 'Sell' } : { to: '/vendor/inventory', label: 'Inventory', group: 'Sell' },
       ...(can('questions') ? [{ to: '/vendor/questions', label: 'Questions', group: 'Sell' }] : []),
       ...(can('promotions') ? [{ to: '/vendor/promotions', label: 'Promotions', group: 'Grow' }] : []), ...(can('ads') ? [{ to: '/vendor/ads', label: 'Ads', group: 'Grow' }] : []), ...(can('storefront') ? [{ to: '/vendor/storefront', label: 'Storefront', group: 'Grow' }] : []),
       { to: '/vendor/insights', label: 'Insights', group: 'Money & reports' }, { to: '/vendor/payouts', label: 'Payouts', group: 'Money & reports' }, { to: '/vendor/reports', label: 'Reports', group: 'Money & reports' },
-      { to: '/vendor/store', label: isChef ? 'Kitchen' : 'Store', group: 'Account' }, { to: '/vendor/onboarding', label: 'Setup', group: 'Account' },
+      { to: '/vendor/store', label: isRestaurant ? 'Restaurant' : isChef ? 'Kitchen' : 'Store', group: 'Account' }, { to: '/vendor/onboarding', label: 'Setup', group: 'Account' },
       ...(can('messages') ? [{ to: '/vendor/messages', label: 'Messages', badge: unread.data?.count, group: 'Account' }] : []), { to: '/vendor/help', label: 'Help', group: 'Account' }]}>
       {me?.acting_vendor && <Notice tone="warn"><strong>Admin mode:</strong> you are managing {me.acting_vendor.name} as an admin. What you do here is recorded under your name. <button type="button" className="link" onClick={async () => { await del('/admin/control/act-as'); await reloadStaff(); goto('/admin/vendors'); }}>Exit and go back to admin</button></Notice>}
       {store.status !== 'published' && <Notice tone="warn">Your store is not public yet (status: {store.status}). <Link to="/vendor/onboarding">Finish setup</Link>.</Notice>}

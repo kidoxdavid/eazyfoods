@@ -6,7 +6,8 @@ import { bad, forbidden, notFound } from '../lib/errors.js';
 import { getSetting } from '../lib/settings.js';
 import { norm, slugify } from '../lib/norm.js';
 import { requireLogin, requirePerm } from '../lib/permissions.js';
-import { isOurImageUrl } from '../lib/storage.js';
+import { isOurImageUrl, isOurVideoUrl } from '../lib/storage.js';
+import { assertVendorCan, featureOn } from '../services/features.js';
 import { ACCENTS } from '../lib/themes.js';
 import { notifyVendorOwners } from '../services/notify.js';
 import { listSlots } from '../services/slots.js';
@@ -22,14 +23,15 @@ const kitchensOn = async () => getSetting<boolean>('kitchens.enabled').catch(() 
 export const kitchenRoutes: FastifyPluginAsync = async (app) => {
   app.get('/kitchens', async (req) => {
     if (!(await kitchensOn())) return [];
-    const { cuisine } = z.object({ cuisine: z.string().max(40).optional() }).parse(req.query);
+    const { cuisine, type } = z.object({ cuisine: z.string().max(40).optional(), type: z.enum(['home', 'restaurant']).optional() }).parse(req.query);
+    const restaurants = await featureOn('shop.restaurants');
     return (await pool.query(
-      `SELECT s.slug, s.name, s.description, s.city, left(s.postal_code, 3) AS area, s.is_open, s.min_order_cents, s.is_test_data, s.logo_url, s.cover_url, s.cuisines, s.ordering_paused,
+      `SELECT s.slug, s.name, s.description, s.city, left(s.postal_code, 3) AS area, ks.kitchen_type, CASE WHEN ks.kitchen_type = 'restaurant' THEN s.address_line END AS address_line, s.is_open, s.min_order_cents, s.is_test_data, s.logo_url, s.cover_url, s.cuisines, s.ordering_paused,
               (SELECT count(*)::int FROM store_offers o JOIN products p ON p.id = o.product_id AND p.status = 'dish_live' WHERE o.store_id = s.id AND o.is_active) AS dish_count,
               (SELECT min(o.price_cents)::int FROM offers_live o JOIN products p ON p.id = o.product_id AND p.status = 'dish_live' WHERE o.store_id = s.id AND o.is_active) AS from_cents
-         FROM storefronts s
-        WHERE s.orderable AND s.kind = 'kitchen' AND ($1::text IS NULL OR $1 = ANY(s.cuisines))
-        ORDER BY s.is_open DESC, s.name`, [cuisine ?? null])).rows;
+         FROM storefronts s JOIN stores ks ON ks.id = s.id
+        WHERE s.orderable AND s.kind = 'kitchen' AND ($1::text IS NULL OR $1 = ANY(s.cuisines)) AND ($2::text IS NULL OR ks.kitchen_type = $2) AND ($3 OR ks.kitchen_type = 'home')
+        ORDER BY s.is_open DESC, s.name`, [cuisine ?? null, type ?? null, restaurants])).rows;
   });
 
   /** Bookable pre-order slots for any store that takes pre-orders (kitchens by default). */
@@ -54,21 +56,25 @@ export const kitchenRoutes: FastifyPluginAsync = async (app) => {
     if (!(await kitchensOn())) throw notFound('Kitchen not found');
     const s = (await pool.query(`SELECT * FROM storefronts WHERE slug = $1 AND orderable AND kind = 'kitchen'`, [req.params.slug])).rows[0];
     if (!s) throw notFound('Kitchen not found');
+    const ext = (await pool.query('SELECT kitchen_type, video_url, address_line, phone FROM stores WHERE id = $1', [s.id])).rows[0];
+    if (ext.kitchen_type === 'restaurant' && !(await featureOn('shop.restaurants'))) throw notFound('Kitchen not found');
+    const showVideo = await featureOn('shop.vendor_videos');
+    const restaurant = ext.kitchen_type === 'restaurant';
     const [hours, dishes, branding] = await Promise.all([
       pool.query('SELECT dow, opens, closes FROM store_hours WHERE store_id = $1 ORDER BY dow, opens', [s.id]),
       pool.query(
-        `SELECT p.slug, p.name, p.description, p.cuisine, p.spice_level, p.serves, p.prep_minutes, p.allergens, p.ingredients, p.dish_tags,
+        `SELECT p.slug, p.name, p.description, p.cuisine, p.spice_level, p.serves, p.prep_minutes, p.allergens, p.ingredients, p.dish_tags, p.menu_section, p.video_url,
                 o.id AS offer_id, o.price_cents, o.compare_at_cents, o.on_promotion, GREATEST(o.stock_on_hand - o.stock_reserved, 0) AS available,
                 (SELECT url FROM product_images WHERE product_id = p.id ORDER BY sort_order LIMIT 1) AS image_url
            FROM offers_live o JOIN products p ON p.id = o.product_id AND p.status = 'dish_live'
-          WHERE o.store_id = $1 AND o.is_active ORDER BY p.name`, [s.id]),
+          WHERE o.store_id = $1 AND o.is_active ORDER BY p.menu_section NULLS LAST, p.name`, [s.id]),
       pool.query('SELECT accent, tagline, story, announcement, website, instagram, facebook FROM store_branding WHERE store_id = $1', [s.id]),
     ]);
     const br = branding.rows[0];
     return {
-      slug: s.slug, name: s.name, description: s.description, city: s.city, area: (s.postal_code ?? '').slice(0, 3), phone: null, is_open: s.is_open, min_order_cents: s.min_order_cents,
+      slug: s.slug, name: s.name, description: s.description, city: s.city, area: (s.postal_code ?? '').slice(0, 3), kitchen_type: ext.kitchen_type, address_line: restaurant ? ext.address_line : null, postal_code: restaurant ? s.postal_code : null, phone: restaurant ? ext.phone : null, video_url: showVideo ? ext.video_url : null, is_open: s.is_open, min_order_cents: s.min_order_cents,
       is_test_data: s.is_test_data, logo_url: s.logo_url, cover_url: s.cover_url, policies: s.policies, offers_delivery: s.offers_delivery, offers_pickup: s.offers_pickup, ordering_paused: s.ordering_paused,
-      cuisines: s.cuisines, preorders_enabled: s.preorders_enabled, hours: hours.rows, dishes: dishes.rows,
+      cuisines: s.cuisines, preorders_enabled: s.preorders_enabled, hours: hours.rows, dishes: dishes.rows.map((d) => (showVideo ? d : { ...d, video_url: null })),
       branding: br ? { ...br, accent: br.accent && ACCENTS[br.accent] ? { primary: ACCENTS[br.accent].primary, deep: ACCENTS[br.accent].deep, tint: ACCENTS[br.accent].tint, glow: ACCENTS[br.accent].glow } : null } : null,
       allergen_notice: 'Allergens and dietary labels are declared by the cook and are not verified by EAZyfoods. If you have a severe allergy, message the cook before ordering.',
     };
@@ -83,9 +89,11 @@ const dishBody = z.object({
   allergens: z.array(z.enum(ALLERGENS)).max(ALLERGENS.length), allergens_confirmed: z.literal(true, { errorMap: () => ({ message: 'Confirm the allergen list is complete before saving.' }) }),
   ingredients: z.string().trim().max(800).nullable().optional(), dish_tags: z.array(z.enum(DISH_TAGS)).max(DISH_TAGS.length).default([]),
   image_url: img, is_active: z.boolean().default(true),
+  menu_section: z.string().trim().min(2).max(40).nullable().optional(),
+  video_url: z.string().refine(isOurVideoUrl, 'Upload the video through EAZyfoods first.').nullable().optional(),
 });
 
-const DISH_SELECT = `SELECT p.id AS product_id, p.slug, p.name, p.description, p.cuisine, p.spice_level, p.serves, p.prep_minutes, p.allergens, p.ingredients, p.dish_tags, p.status,
+const DISH_SELECT = `SELECT p.id AS product_id, p.slug, p.name, p.description, p.cuisine, p.spice_level, p.serves, p.prep_minutes, p.allergens, p.ingredients, p.dish_tags, p.status, p.menu_section, p.video_url,
        o.id AS offer_id, o.price_cents, o.stock_on_hand, o.stock_reserved, o.is_active,
        (SELECT url FROM product_images WHERE product_id = p.id ORDER BY sort_order LIMIT 1) AS image_url
   FROM store_offers o JOIN products p ON p.id = o.product_id AND p.owner_store_id = o.store_id`;
@@ -96,9 +104,9 @@ export const dishRoutes: FastifyPluginAsync = async (app) => {
   const kitchen = async (req: any) => {
     const id = z.string().uuid().parse(req.params.storeId);
     if (!(await canManageStore(req.user, id))) throw forbidden();
-    const s = (await pool.query('SELECT id, slug, kind FROM stores WHERE id = $1', [id])).rows[0];
-    if (s?.kind !== 'kitchen') throw bad('not_a_kitchen', 'Menus are only for home kitchens.');
-    return s as { id: string; slug: string; kind: string };
+    const s = (await pool.query('SELECT id, slug, kind, vendor_id FROM stores WHERE id = $1', [id])).rows[0];
+    if (s?.kind !== 'kitchen') throw bad('not_a_kitchen', 'Menus are only for kitchens and restaurants.');
+    return s as { id: string; slug: string; kind: string; vendor_id: string };
   };
 
   app.get<{ Params: { storeId: string } }>('/stores/:storeId/dishes', async (req) => {
@@ -113,9 +121,10 @@ export const dishRoutes: FastifyPluginAsync = async (app) => {
       let slug = slugify(`${s.slug}-${b.name}`).slice(0, 90), n = 1;
       while ((await c.query('SELECT 1 FROM products WHERE slug = $1', [slug])).rowCount) slug = `${slugify(`${s.slug}-${b.name}`).slice(0, 84)}-${++n}`;
       const p = (await c.query(
-        `INSERT INTO products(slug, name, name_norm, description, status, sold_by, tax_class, owner_store_id, cuisine, spice_level, serves, prep_minutes, allergens, ingredients, dish_tags)
-         VALUES ($1,$2,$3,$4,'dish_live','unit','standard',$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
-        [slug, b.name, norm(b.name), b.description ?? null, s.id, b.cuisine ?? null, b.spice_level ?? null, b.serves ?? null, b.prep_minutes ?? null, b.allergens, b.ingredients ?? null, b.dish_tags])).rows[0];
+        `INSERT INTO products(slug, name, name_norm, description, status, sold_by, tax_class, owner_store_id, cuisine, spice_level, serves, prep_minutes, allergens, ingredients, dish_tags, menu_section, video_url)
+         VALUES ($1,$2,$3,$4,'dish_live','unit','standard',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING id`,
+        [slug, b.name, norm(b.name), b.description ?? null, s.id, b.cuisine ?? null, b.spice_level ?? null, b.serves ?? null, b.prep_minutes ?? null, b.allergens, b.ingredients ?? null, b.dish_tags, b.menu_section ?? null, b.video_url ?? null])).rows[0];
+      if (b.video_url) await assertVendorCan(s.vendor_id, 'videos', c);
       if (b.image_url) await c.query('INSERT INTO product_images(product_id, url, alt, sort_order) VALUES ($1,$2,$3,0)', [p.id, b.image_url, b.name]);
       const o = (await c.query('INSERT INTO store_offers(store_id, product_id, price_cents, stock_on_hand, is_active) VALUES ($1,$2,$3,$4,$5) RETURNING id', [s.id, p.id, b.price_cents, b.portions, b.is_active])).rows[0];
       await c.query(`INSERT INTO inventory_adjustments(offer_id, delta, reason, actor_user_id, resulting_on_hand) VALUES ($1,$2,'initial',$3,$2)`, [o.id, b.portions, req.user!.id]);
@@ -133,8 +142,9 @@ export const dishRoutes: FastifyPluginAsync = async (app) => {
       const o = (await c.query(`SELECT o.id, o.stock_on_hand, o.stock_reserved FROM store_offers o JOIN products p ON p.id = o.product_id AND p.owner_store_id = o.store_id WHERE o.store_id = $1 AND o.product_id = $2 AND p.status IN ('dish_live','draft') FOR UPDATE OF o`, [s.id, pid])).rows[0];
       if (!o) throw notFound('Dish not found');
       if (b.portions < o.stock_reserved) throw bad('below_reserved', `${o.stock_reserved} portions are reserved for open orders; you cannot set fewer than that.`);
-      await c.query(`UPDATE products SET name=$2, name_norm=$3, description=$4, cuisine=$5, spice_level=$6, serves=$7, prep_minutes=$8, allergens=$9, ingredients=$10, dish_tags=$11 WHERE id=$1`,
-        [pid, b.name, norm(b.name), b.description ?? null, b.cuisine ?? null, b.spice_level ?? null, b.serves ?? null, b.prep_minutes ?? null, b.allergens, b.ingredients ?? null, b.dish_tags]);
+      await c.query(`UPDATE products SET name=$2, name_norm=$3, description=$4, cuisine=$5, spice_level=$6, serves=$7, prep_minutes=$8, allergens=$9, ingredients=$10, dish_tags=$11, menu_section=$12, video_url = CASE WHEN $13::boolean THEN $14 ELSE video_url END WHERE id=$1`,
+        [pid, b.name, norm(b.name), b.description ?? null, b.cuisine ?? null, b.spice_level ?? null, b.serves ?? null, b.prep_minutes ?? null, b.allergens, b.ingredients ?? null, b.dish_tags, b.menu_section ?? null, b.video_url !== undefined, b.video_url ?? null]);
+      if (b.video_url) await assertVendorCan(s.vendor_id, 'videos', c);
       if (b.image_url !== undefined) { await c.query('DELETE FROM product_images WHERE product_id = $1', [pid]); if (b.image_url) await c.query('INSERT INTO product_images(product_id, url, alt, sort_order) VALUES ($1,$2,$3,0)', [pid, b.image_url, b.name]); }
       await c.query('UPDATE store_offers SET price_cents = $2, stock_on_hand = $3, is_active = $4, updated_at = now() WHERE id = $1', [o.id, b.price_cents, b.portions, b.is_active]);
       if (b.portions !== o.stock_on_hand) await c.query(`INSERT INTO inventory_adjustments(offer_id, delta, reason, note, actor_user_id, resulting_on_hand) VALUES ($1,$2,'correction','Portions set from menu',$3,$4)`, [o.id, b.portions - o.stock_on_hand, req.user!.id, b.portions]);

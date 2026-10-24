@@ -3,11 +3,11 @@ import { centsToDollars, dollarsToCents, put } from '../../api';
 import type { Region } from '../../api';
 import { useAction, useApi } from '../../hooks';
 import { useToast } from '../../toast';
-import { Button, Card, ErrorBox, Field, ImageUpload, Input, Loading, Notice, PageHeader, Textarea } from '../../ui';
+import { Button, Card, ErrorBox, Field, ImageUpload, Input, Loading, Notice, PageHeader, Select, Textarea, VideoUpload } from '../../ui';
 import { StoreSelect, useVendor } from './Shared';
 import Schedule from './Schedule';
 
-type Profile = { name: string; description: string | null; address_line: string | null; city: string; postal_code: string | null; phone: string | null; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; ordering_paused: boolean; min_order_cents: number | null; logo_url: string | null; cover_url: string | null; status: string; regions: string[]; kind?: string; cuisines?: string[] };
+type Profile = { name: string; description: string | null; address_line: string | null; city: string; postal_code: string | null; phone: string | null; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; ordering_paused: boolean; min_order_cents: number | null; logo_url: string | null; cover_url: string | null; status: string; regions: string[]; kind?: string; cuisines?: string[]; kitchen_type?: 'home' | 'restaurant'; video_url?: string | null };
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function StoreSettings() {
@@ -23,7 +23,7 @@ function ProfileForm() {
   const save = useAction(async () => {
     if (!f) return;
     await put(`/vendor/stores/${storeId}/profile`, { description: f.description || null, address_line: f.address_line ?? undefined, city: f.city, postal_code: f.postal_code ?? undefined, phone: f.phone ?? undefined, policies: f.policies || null,
-      offers_delivery: f.offers_delivery, offers_pickup: f.offers_pickup, ordering_paused: f.ordering_paused, min_order_cents: min ? dollarsToCents(min) : null, logo_url: f.logo_url, cover_url: f.cover_url, regions: f.regions, ...(f.kind === 'kitchen' ? { cuisines: f.cuisines ?? [] } : {}) });
+      offers_delivery: f.offers_delivery, offers_pickup: f.offers_pickup, ordering_paused: f.ordering_paused, min_order_cents: min ? dollarsToCents(min) : null, logo_url: f.logo_url, cover_url: f.cover_url, regions: f.regions, video_url: f.video_url ?? null, ...(f.kind === 'kitchen' ? { cuisines: f.cuisines ?? [], kitchen_type: f.kitchen_type } : {}) });
     toast('Store saved.'); p.reload();
   });
   if (p.loading && !f) return <Loading />;
@@ -45,6 +45,8 @@ function ProfileForm() {
           <Field label="Phone"><Input type="tel" value={f.phone ?? ''} onChange={(e) => set('phone', e.target.value)} required /></Field>
           <Field label="Minimum order (CAD, optional)"><Input type="number" step="0.01" min="0" value={min} onChange={(e) => setMin(e.target.value)} inputMode="decimal" /></Field></div>
         <div className="row wrap"><label className="check"><input type="checkbox" checked={f.offers_delivery} onChange={(e) => set('offers_delivery', e.target.checked)} />We offer delivery</label><label className="check"><input type="checkbox" checked={f.offers_pickup} onChange={(e) => set('offers_pickup', e.target.checked)} />We offer pickup</label></div>
+        {f.kind === 'kitchen' && <Field label="Business type" hint="A restaurant's address and phone are shown publicly and it needs a business licence. A home cook's address is never shown. This is fixed once you are approved."><Select value={f.kitchen_type ?? 'home'} onChange={(e) => set('kitchen_type', e.target.value as 'home' | 'restaurant')}><option value="home">Home chef</option><option value="restaurant">Restaurant</option></Select></Field>}
+        <div><span className="label" style={{ fontWeight: 600, fontSize: '.9rem' }}>Video (optional)</span><VideoUpload value={f.video_url} onChange={(u) => set('video_url', u)} label="Video" /></div>
         {f.kind === 'kitchen' && <Field label="Cuisines you cook" hint="Separate with commas, e.g. Nigerian, West African"><Input value={(f.cuisines ?? []).join(', ')} onChange={(e) => set('cuisines', e.target.value.split(',').map((c) => c.trim()).filter(Boolean).slice(0, 8))} /></Field>}
         <fieldset style={{ border: 0, padding: 0, margin: '10px 0' }}><legend className="label" style={{ fontWeight: 600, fontSize: '.9rem' }}>Regional specialties</legend>
           <div className="pill-list">{regions.data?.map((r) => <label key={r.slug} className="check"><input type="checkbox" checked={f.regions.includes(r.slug)} onChange={(e) => set('regions', e.target.checked ? [...f.regions, r.slug] : f.regions.filter((x) => x !== r.slug))} />{r.name}</label>)}</div></fieldset>

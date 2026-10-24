@@ -51,7 +51,7 @@ export function VendorDetail() {
           <>
             <PageHeader title={v.name} sub={<><StatusBadge status={v.status} /> {v.legal_name && <>· {v.legal_name}</>} · <Link to="/admin/vendors">All vendors</Link></>} actions={can('control.manage') ? <Button size="sm" onClick={async () => { await post(`/admin/control/act-as/${id}`); await reloadStaff(); nav('/vendor'); }}>Open their portal</Button> : undefined} />
             {act.error && <Notice tone="error">{act.error}</Notice>}
-            {v.kind === 'chef' && <Notice tone="warn"><strong>Home chef.</strong> Approval needs a verified <strong>food premises permit</strong> and a verified <strong>food-handler certificate</strong>. Check both are genuine and current.</Notice>}
+            {v.kind === 'chef' && <Notice tone="warn"><strong>Home chef or restaurant.</strong> Approval needs a verified <strong>food premises permit</strong> plus a verified <strong>food-handler certificate</strong> (home chef) or <strong>business licence</strong> (restaurant). Check they are genuine and current.</Notice>}
             {v.status === 'submitted' && !verified && <Notice tone="warn">This vendor cannot be approved until at least one business document is <strong>verified</strong> (open the documents below, check them, then verify).</Notice>}
             <div className="row wrap" style={{ marginBottom: 14 }}>
               {v.status !== 'approved' && <Confirm variant="primary" message={`Approve ${v.name}? Their stores can then be published and take orders.`} onConfirm={() => act.run(() => patch(`/admin/vendors/${id}/status`, { status: 'approved' }), 'Vendor approved', reload) as any}>Approve vendor</Confirm>}

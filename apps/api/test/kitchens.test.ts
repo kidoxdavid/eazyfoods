@@ -11,7 +11,7 @@ const dishOffer = async (kitchen: string, like: string) =>
 describe('kitchens are separate from the grocery catalogue', () => {
   it('lists kitchens, keeps them out of grocery stores and search, and hides cooks’ street addresses', async () => {
     const k = (await call(null, 'GET', '/api/kitchens')).body;
-    expect(k.map((x: any) => x.slug).sort()).toEqual(['demo-habesha-table', K1]);
+    expect(k.map((x: any) => x.slug).sort()).toEqual(['demo-habesha-table', K1, 'demo-suya-spot']);
     expect(k[0].dish_count).toBeGreaterThan(0);
     expect((await call(null, 'GET', '/api/stores')).body.map((s: any) => s.slug)).not.toContain(K1);
     expect((await call(null, 'GET', `/api/stores/${K1}`)).status).toBe(404);
@@ -115,6 +115,6 @@ describe('cook onboarding and the kill switch', () => {
       expect((await call(null, 'GET', '/api/kitchens')).body).toEqual([]);
       expect((await call(null, 'GET', `/api/kitchens/${K1}`)).status).toBe(404);
     } finally { await call(owner, 'PUT', '/api/admin/settings/kitchens.enabled', { value: true }); }
-    expect((await call(null, 'GET', '/api/kitchens')).body.length).toBe(2);
+    expect((await call(null, 'GET', '/api/kitchens')).body.length).toBe(3);
   });
 });

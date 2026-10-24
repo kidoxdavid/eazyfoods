@@ -88,6 +88,7 @@ const STORES = [
 
 export async function seed(log = console.log) {
   if (process.env.NODE_ENV === 'production') throw new Error('Refusing to seed test data in production');
+  if ((await pool.query(`SELECT 1 FROM app_settings WHERE key = 'demo.purged'`)).rowCount) { log('demo data was removed on purpose; not re-seeding it'); return; }
   await tx(async (c) => {
     const regionId: Record<string, string> = {};
     const countryId: Record<string, string> = {};
@@ -256,6 +257,13 @@ export async function seed(log = console.log) {
           ['Shiro wat', 'Silky spiced chickpea stew with injera.', 'Ethiopian', 1599, 10, 'Serves 1', 2, 40, ['gluten'], ['vegan'], 'Ground chickpea flour, onion, garlic, berbere, injera.'],
           ['Kitfo (lightly cooked beef)', 'Minced beef with spiced butter and mitmita. Served lightly cooked.', 'Ethiopian', 2299, 5, 'Serves 1', 3, 45, ['milk'], ['gluten_free'], 'Beef, spiced butter, mitmita, cottage cheese.'],
         ] },
+      { email: 'restaurant1@example.test', owner: 'Test Restaurant 1', vendor: 'Demo Suya Spot Ltd. (test)', slug: 'demo-suya-spot', name: 'Demo Suya Spot', postal: 'T2E 0A1', cuisines: ['Nigerian', 'Grill'], regions: ['west-africa'], type: 'restaurant',
+        about: 'TEST DATA - not a real restaurant. Charcoal grill and West African classics.',
+        dishes: [
+          ['Chicken suya platter', 'Spiced grilled chicken with onions, tomato and yaji.', 'Nigerian', 1799, 15, 'Serves 1', 3, 30, ['peanuts'], ['halal'], 'Chicken, peanut spice (yaji), onion, tomato, oil.'],
+          ['Jollof rice and grilled fish', 'Smoky jollof with a whole grilled tilapia.', 'Nigerian', 2199, 10, 'Serves 1', 2, 40, ['fish'], ['gluten_free', 'dairy_free'], 'Rice, tomato, pepper, tilapia, spices.'],
+          ['Puff puff (6)', 'Soft fried dough balls dusted with sugar.', 'Nigerian', 699, 20, '6 pieces', 0, 20, ['wheat'], ['vegan'], 'Flour, yeast, sugar, oil.'],
+        ] },
     ] as const;
     for (const k of KITCHENS) {
       if ((await c.query('SELECT 1 FROM stores WHERE slug=$1', [k.slug])).rowCount) continue;
@@ -264,6 +272,7 @@ export async function seed(log = console.log) {
       const st = (await c.query(
         `INSERT INTO stores(vendor_id,slug,name,description,address_line,postal_code,phone,status,is_test_data,min_order_cents,kind,cuisines,offers_pickup,preorders_enabled)
          VALUES ($1,$2,$3,$4,'1 Test Kitchen Rd',$5,'000-000-0000','published',true,2000,'kitchen',$6,false,true) RETURNING id`, [v, k.slug, k.name, k.about, k.postal, [...k.cuisines]])).rows[0].id;
+      if ('type' in k) await c.query('UPDATE stores SET kitchen_type = $2 WHERE id = $1', [st, k.type]);
       const [o, cl] = process.env.DEMO_ALWAYS_OPEN === '1' ? ['00:00', '23:59:59'] : ['11:00', '20:00'];
       for (let d = 0; d < 7; d++) await c.query(`INSERT INTO store_hours VALUES ($1,$2,$3,$4)`, [st, d, o, cl]);
       for (const r of k.regions) await c.query('INSERT INTO store_regions VALUES ($1,$2) ON CONFLICT DO NOTHING', [st, regionId[r]]);
@@ -276,6 +285,7 @@ export async function seed(log = console.log) {
         const off = (await c.query('INSERT INTO store_offers(store_id,product_id,price_cents,stock_on_hand) VALUES ($1,$2,$3,$4) RETURNING id', [st, p, price, portions])).rows[0].id;
         await c.query(`INSERT INTO inventory_adjustments(offer_id,delta,reason,resulting_on_hand) VALUES ($1,$2,'initial',$2)`, [off, portions]);
       }
+      if ('type' in k) await c.query(`UPDATE products SET menu_section = CASE WHEN name LIKE 'Puff%' THEN 'Sides and desserts' ELSE 'Mains' END WHERE owner_store_id = $1`, [st]);
     }
   });
   log('seeded (test data only)');

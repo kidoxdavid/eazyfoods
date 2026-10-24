@@ -54,8 +54,9 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
       }
       if (status === 'approved' && (await c.query(`SELECT 1 FROM vendors WHERE id = $1 AND kind = 'chef'`, [id])).rowCount) {
         const have = new Set((await c.query(`SELECT kind FROM vendor_documents WHERE vendor_id = $1 AND status = 'verified'`, [id])).rows.map((r) => r.kind));
-        const missing = ['food_premises_permit', 'food_handler_cert'].filter((k) => !have.has(k));
-        if (missing.length) throw conflict('chef_docs_required', `A home cook needs a verified ${missing.map((m) => m.replace(/_/g, ' ')).join(' and a verified ')} before approval.`);
+        const restaurant = !!(await c.query(`SELECT 1 FROM stores WHERE vendor_id = $1 AND kitchen_type = 'restaurant'`, [id])).rowCount;
+        const missing = (restaurant ? ['food_premises_permit', 'business_licence'] : ['food_premises_permit', 'food_handler_cert']).filter((k) => !have.has(k));
+        if (missing.length) throw conflict('chef_docs_required', `A ${restaurant ? 'restaurant' : 'home cook'} needs a verified ${missing.map((m) => m.replace(/_/g, ' ')).join(' and a verified ')} before approval.`);
       }
       const r = await c.query('UPDATE vendors SET status = $2 WHERE id = $1 RETURNING id, status', [id, status]);
       await audit(req.user!.id, `vendor.${status}`, 'vendor', id, {}, c);

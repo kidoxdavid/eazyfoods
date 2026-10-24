@@ -7,6 +7,7 @@ import { bad, notFound } from '../lib/errors.js';
 import { requireLogin, requirePerm } from '../lib/permissions.js';
 import { allFlags, clearFeatureCache, VENDOR_CAPS, vendorCaps, type VendorCap } from '../services/features.js';
 import { vendorIdsOf } from './vendorOrders.js';
+import { purgeDemoData } from '../services/purge.js';
 
 const PORTALS = ['admin', 'marketing', 'vendor', 'chef', 'driver'] as const;
 /** Existing yes/no settings that the control centre may flip. */
@@ -52,6 +53,16 @@ export const controlRoutes: FastifyPluginAsync = async (app) => {
       const r = await pool.query('UPDATE sessions SET acting_vendor_id = NULL WHERE token_hash = $1 AND acting_vendor_id IS NOT NULL RETURNING 1', [hashToken(tok)]);
       if (r.rowCount) await audit(req.user!.id, 'act_as.stop', 'user', req.user!.id);
     }
+    return { ok: true };
+  });
+
+ // Start from scratch. Irreversible, so it needs the exact phrase typed, and is audited.
+  app.post('/purge-demo', async (req) => {
+    const { confirm } = z.object({ confirm: z.string() }).parse(req.body);
+    if (confirm !== 'DELETE DEMO DATA') throw bad('confirm_required', 'Type DELETE DEMO DATA to confirm.');
+    await purgeDemoData();
+    await audit(req.user!.id, 'control.purge_demo', 'user', req.user!.id);
+    clearFeatureCache();
     return { ok: true };
   });
 

@@ -10,13 +10,13 @@ import { Badge, ErrorBox, Loading, Notice } from '../ui';
 import { BasketBar, ProductGrid, StoreList, type Card } from '../cards';
 import { IconPin } from '../icons';
 import { paletteCss } from '../theme';
-import { KitchenRedirect } from './Kitchens';
+import { ClipPlayer, KitchenRedirect } from './Kitchens';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 type SP = Card & { offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; available: number; category: string | null; category_slug: string | null };
 type S = {
   name: string; description: string; address_line: string | null; city: string; province: string; postal_code: string | null; phone: string | null; is_open: boolean; min_order_cents: number | null; is_test_data: boolean;
-  logo_url: string | null; cover_url: string | null; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; ordering_paused: boolean;
+  video_url?: string | null; logo_url: string | null; cover_url: string | null; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; ordering_paused: boolean;
   branding: { accent: { primary: string; deep: string; tint: string; glow: string } | null; tagline: string | null; story: string | null; announcement: string | null; featured_slugs: string[]; website: string | null; instagram: string | null; facebook: string | null } | null;
   hours: { dow: number; opens: string; closes: string }[]; regions: { slug: string; name: string }[]; products: SP[];
 };
@@ -81,6 +81,7 @@ export function StorePage() {
       {s.ordering_paused && <Notice tone="warn">This store has paused online orders for now.</Notice>}
       {!s.is_open && !s.ordering_paused && <Notice>This store is closed right now. You can fill your basket, but you can only check out while it is open.</Notice>}
       <p style={{ marginTop: 14 }}>{s.description}</p>
+        {s.video_url && <ClipPlayer src={s.video_url} label={`Video from ${s.name}`} />}
       {br?.story && <section className="store-story" aria-label={`About ${s.name}`}><h2>Our story</h2><p>{br.story}</p>{!!links.length && <p className="store-links">{links.map(([l, u]) => <a key={l} href={u} target="_blank" rel="noopener noreferrer">{l}</a>)}</p>}</section>}
       {!!featured.length && <section className="block" aria-labelledby="feat-h"><h2 id="feat-h">Featured by {s.name}</h2><ProductGrid products={featured} /></section>}
       <details><summary style={{ cursor: 'pointer', minHeight: 32 }}>Opening hours{s.policies ? ' and store policies' : ''}</summary>

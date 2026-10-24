@@ -11,6 +11,7 @@ export const VENDOR_CAPS = {
   schedule: 'Take pre-orders and set time slots',
   questions: 'Answer customer questions',
   messages: 'Message the EAZyfoods team',
+  videos: 'Upload videos to their store, kitchen or dishes',
 } as const;
 export type VendorCap = keyof typeof VENDOR_CAPS;
 

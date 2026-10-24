@@ -96,11 +96,10 @@ describe('separate staff and shop sign-ins (browser)', () => {
     await page.fill('input[name=password]', 'dev-password-123');
     await page.click('.auth button[type=submit]');
     await page.waitForURL('**/admin');
-    await seeText(page.locator('.bo-top'), 'Admin');
+    await seeText(page.locator('.bo-brandbar'), 'Admin');
     await page.goto(`${base()}/account`);
     await seeText(page.locator('main'), 'customer@example.test');       // the shop still knows the customer
     await page.goto(`${base()}/admin`);
-    await page.locator('.bo-user summary').click();
     await page.getByRole('button', { name: 'Sign out' }).click();
     await page.waitForURL(base() + '/');
     await page.goto(`${base()}/account`);
@@ -113,7 +112,7 @@ describe('separate staff and shop sign-ins (browser)', () => {
   it('each area opens only for its own account: the wrong one is signed out and asked for the right email', async () => {
     const { page } = await newPage(browser, DESKTOP);
     await signInStaff(page, 'marketing@example.test', 'dev-password-123', '/marketing');
-    await seeText(page.locator('.bo-top'), 'Marketing');
+    await seeText(page.locator('.bo-brandbar'), 'Marketing');
     await page.goto(`${base()}/driver`);
     await page.waitForURL(/\/signin\?next=%2Fdriver&wrong=1/);
     await seeText(page.locator('main'), 'cannot open the driver area');

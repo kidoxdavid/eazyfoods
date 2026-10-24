@@ -35,7 +35,7 @@ const LABEL: Record<string, string> = { placed: 'Order placed', accepted: 'Store
 
 type Sub = {
   id: string; store_name: string; store_slug: string; store_phone: string | null; status: string; fulfilment_method: string; subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; total_cents: number;
-  promised_at: string | null; eta_minutes?: number | null; driver_first_name?: string; picked_up_at?: string; tip_cents?: number; scheduled_for?: string | null; scheduled_until?: string | null; reject_reason: string | null; handover_code?: string; pickup_address?: string; reviewed_store: boolean;
+  promised_at: string | null; eta_minutes?: number | null; driver_first_name?: string; picked_up_at?: string; tip_cents?: number; scheduled_for?: string | null; scheduled_until?: string | null; reject_reason: string | null; handover_code?: string; pickup_address?: string; driver_location?: { lat: number; lng: number; updated_at: string }; can_rate_driver?: boolean; driver_rating?: number; reviewed_store: boolean;
   lines: { id: string; product_id: string; product_slug: string; name: string; brand: string | null; pack_label: string | null; quantity: number; unit_price_cents: number; line_total_cents: number; refunded_quantity: number; substitution_status: string; substitute_name: string | null; sub_pref?: string; reviewed: boolean }[];
   timeline: { status: string; note: string | null; at: string }[]; refunds: { status: string; amount_cents: number; reason: string }[];
 };
@@ -101,6 +101,8 @@ export function OrderPage() {
               </ol>
             )}
             {s.status === 'out_for_delivery' && <p className="small"><strong>{s.driver_first_name ? `${s.driver_first_name} is on the way` : 'Your driver is on the way'}.</strong> {s.promised_at ? `Estimated arrival around ${fmtDate(s.promised_at, { timeStyle: 'short' })}.` : ''}</p>}
+            {s.driver_location && <DriverMap loc={s.driver_location} reload={reload} />}
+            {(s.can_rate_driver || s.driver_rating) && <RateDriver orderId={id!} sid={s.id} rated={s.driver_rating} onDone={reload} />}
             {s.status === 'ready' && s.fulfilment_method === 'delivery' && <p className="small">{s.driver_first_name ? `${s.driver_first_name} is picking this up.` : 'Waiting for a driver to pick this up.'}</p>}
             {!failed && s.status !== 'awaiting_payment' && (
               <ol className="timeline" aria-label="Progress">
@@ -207,5 +209,33 @@ function ReviewModal({ orderId, sub, line, onClose }: { orderId: string; sub: Su
         <div className="row end"><Button type="button" variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" busy={send.busy}>Submit</Button></div>
       </form>
     </Modal>
+  );
+}
+
+/** Live position, shared by the driver only while they are delivering. Refreshes every 20 seconds. */
+function DriverMap({ loc, reload }: { loc: { lat: number; lng: number; updated_at: string }; reload: () => void }) {
+  useEffect(() => { const t = setInterval(reload, 20000); return () => clearInterval(t); }, [reload]);
+  const d = 0.008;
+  const src = `https://www.openstreetmap.org/export/embed.html?bbox=${loc.lng - d},${loc.lat - d},${loc.lng + d},${loc.lat + d}&layer=mapnik&marker=${loc.lat},${loc.lng}`;
+  return (
+    <div className="driver-map">
+      <iframe title="Where your driver is now" loading="lazy" referrerPolicy="no-referrer" src={src} style={{ width: '100%', height: 220, border: '1px solid var(--line)', borderRadius: 12 }} />
+      <p className="muted small">Driver location updated {fmtDate(loc.updated_at, { timeStyle: 'short' })}. It is only shared while your order is on its way.</p>
+    </div>
+  );
+}
+
+function RateDriver({ orderId, sid, rated, onDone }: { orderId: string; sid: string; rated?: number; onDone: () => void }) {
+  const [stars, setStars] = useState(0); const [comment, setComment] = useState('');
+  const send = useAction(async () => { await post(`/orders/${orderId}/suborders/${sid}/driver-rating`, { rating: stars, comment: comment || undefined }); onDone(); });
+  if (rated) return <p className="small muted">You rated your driver {'★'.repeat(rated)}. Thank you.</p>;
+  return (
+    <div className="notice">
+      <strong>How was your delivery?</strong>
+      <div className="row" role="group" aria-label="Rate your driver">{[1, 2, 3, 4, 5].map((n) => <Button key={n} size="sm" variant={n <= stars ? 'primary' : 'secondary'} onClick={() => setStars(n)} aria-label={`${n} star${n > 1 ? 's' : ''}`} aria-pressed={n === stars}>★</Button>)}</div>
+      <Textarea value={comment} onChange={(e) => setComment(e.target.value)} maxLength={300} placeholder="Optional comment" aria-label="Comment about your driver" />
+      {send.error && <Notice tone="error">{send.error}</Notice>}
+      <Button size="sm" busy={send.busy} disabled={!stars} onClick={() => send.run()}>Send rating</Button>
+    </div>
   );
 }

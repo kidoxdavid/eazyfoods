@@ -225,8 +225,8 @@ describe('home chefs (browser)', () => {
     await page.fill('input[name=email]', 'chef1@example.test'); await page.fill('input[name=password]', 'dev-password-123');
     await page.click('.auth button[type=submit]');
     await page.waitForURL('**/vendor**');
-    await page.waitForSelector('.bo-top');
-    expect(await page.locator('.bo-top').innerText()).toContain('Chef portal');
+    await page.waitForSelector('.bo-brandbar', { state: 'attached' });
+    expect(await page.locator('.bo-brandbar').innerText()).toContain('Chef');
   });
 });
 
