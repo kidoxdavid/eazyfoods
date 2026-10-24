@@ -1,3 +1,4 @@
+import { requireFeature } from '../services/features.js';
 import { isOurImageUrl } from '../lib/storage.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
@@ -14,6 +15,7 @@ export const engagementRoutes: FastifyPluginAsync = async (app) => {
   app.post<{ Params: { id: string } }>('/orders/:id/reviews', { preHandler: requireLogin }, async (req, reply) => {
     const id = z.string().uuid().parse(req.params.id);
     const b = z.object({ suborder_id: z.string().uuid(), product_id: z.string().uuid().optional(), rating: z.number().int().min(1).max(5), body: z.string().max(1000).optional(), photo_url: z.string().refine(isOurImageUrl, 'Use a photo uploaded here.').optional() }).parse(req.body);
+    if (b.photo_url) await requireFeature('shop.review_photos');
     const s = (await pool.query(
       `SELECT s.id, s.store_id FROM suborders s JOIN orders o ON o.id = s.order_id WHERE s.id = $1 AND o.id = $2 AND o.user_id = $3 AND s.status IN ('delivered','collected')`, [b.suborder_id, id, req.user!.id])).rows[0];
     if (!s) throw notFound('You can review an order after it has been delivered.');

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useFeatures } from '../features';
 import { useT } from '../i18n';
 import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, api, money, post } from '../api';
@@ -39,6 +40,7 @@ export function AddressForm({ onSaved, onCancel, name }: { onSaved: (a: Address)
 }
 
 export function CheckoutPage() {
+  const on = useFeatures();
   const t = useT();
   const { me } = useAuth();
   const { cart, refresh } = useCart();
@@ -147,7 +149,7 @@ export function CheckoutPage() {
           )}
           <section className="panel">
             <h2>{(method === 'delivery' ? 3 : 2) + (quote?.suborders.some((s) => s.preorders_enabled) ? 1 : 0)}. {t('Extras')}</h2>
-            {method === 'delivery' && (
+            {method === 'delivery' && on('shop.tips') && (
               <fieldset className="tip-box">
                 <legend>{t('Tip your driver')}</legend>
                 <p className="muted small" style={{ margin: '0 0 8px' }}>{t('100% goes to the driver who delivers your order. If the delivery doesn’t happen, it’s refunded.')}</p>
@@ -160,8 +162,8 @@ export function CheckoutPage() {
                 </div>
               </fieldset>
             )}
-            <label className="check" style={{ marginTop: 10 }}><input type="checkbox" checked={gift} onChange={(e) => setGift(e.target.checked)} /> {t('This is a gift (add a note for the store)')}</label>
-            {gift && <Field label={t('Gift note')} hint="The store will see this with your order. No prices are shared with the recipient."><Textarea rows={2} maxLength={300} value={giftMessage} onChange={(e) => setGiftMessage(e.target.value)} placeholder="Happy birthday, Mum!" /></Field>}
+            {on('shop.gift_notes') && <label className="check" style={{ marginTop: 10 }}><input type="checkbox" checked={gift} onChange={(e) => setGift(e.target.checked)} /> {t('This is a gift (add a note for the store)')}</label>}
+            {gift && on('shop.gift_notes') && <Field label={t('Gift note')} hint="The store will see this with your order. No prices are shared with the recipient."><Textarea rows={2} maxLength={300} value={giftMessage} onChange={(e) => setGiftMessage(e.target.value)} placeholder="Happy birthday, Mum!" /></Field>}
           </section>
           <section className="panel">
             <h2>{(method === 'delivery' ? 4 : 3) + (quote?.suborders.some((s) => s.preorders_enabled) ? 1 : 0)}. {t('Notes and discount code')}</h2>
@@ -197,7 +199,7 @@ export function CheckoutPage() {
                 <div className="summary-row"><span>{t('GST on taxable items')}</span><span>{money(quote.tax_cents)}</span></div>
                 {quote.tip_cents > 0 && <div className="summary-row"><span>{t('Driver tip')}</span><span>{money(quote.tip_cents)}</span></div>}
                 <div className="summary-row total"><span>{t('Total')}</span><span>{money(quote.total_cents)}</span></div>
-                {quote.credit_available_cents > 0 && quote.suborders.length > 0 && (
+                {on('shop.store_credit') && quote.credit_available_cents > 0 && quote.suborders.length > 0 && (
                   <label className="check" style={{ margin: '8px 0' }}><input type="checkbox" checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)} /> {t('Use my store credit')} ({money(quote.credit_available_cents)} available)</label>)}
                 {quote.credit_applied_cents > 0 && <><div className="summary-row okc"><span>{t('Store credit')}</span><span>−{money(quote.credit_applied_cents)}</span></div><div className="summary-row"><span><strong>{t('To pay by card')}</strong></span><strong>{money(quote.pay_cents)}</strong></div></>}
                 {quote.warnings.map((w, i) => <Notice key={i} tone="warn">{w.message}</Notice>)}

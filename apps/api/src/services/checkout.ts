@@ -1,3 +1,4 @@
+import { featureOn } from './features.js';
 import { pool, tx } from '../db/pool.js';
 import { bad, conflict, HttpError } from '../lib/errors.js';
 import { orderNumber } from '../lib/ids.js';
@@ -34,6 +35,7 @@ export async function placeOrder(user: { id: string; email: string; full_name: s
       // Serialise bookings of the same slot so two checkouts cannot both take the last place.
       for (const [slug, start] of Object.entries(input.slots ?? {}).sort()) await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`${slug}|${start}`]);
       if (input.useCredit) await c.query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [user.id]);   // one checkout at a time spends a customer's credit
+      const giftOn = await featureOn('shop.gift_notes', c);
       const q: Quote = await buildQuote(c, user.id, { addressId: input.addressId, method: input.method, couponCode: input.couponCode, slots: input.slots, tipCents: input.tipCents, useCredit: input.useCredit });
       if (!q.ok) throw new HttpError(409, 'checkout_blocked', 'Some things in your basket need attention before you can pay.', { issues: q.issues, coupon_error: q.coupon_error });
 
@@ -46,7 +48,7 @@ export async function placeOrder(user: { id: string; email: string; full_name: s
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id`,
         [num, user.id, input.method, address ? { line1: address.line1, line2: address.line2, city: address.city, province: address.province, postal_code: address.postal_code } : null,
          address?.recipient_name ?? user.full_name, phone, user.email, input.instructions ?? address?.instructions ?? null,
-         q.subtotal_cents, q.discount_cents, q.delivery_cents, q.tax_cents, q.total_cents, q.coupon?.id ?? null, input.idempotencyKey, q.tip_cents, !!input.giftMessage?.trim(), input.giftMessage?.trim() || null, q.credit_applied_cents])).rows[0];
+         q.subtotal_cents, q.discount_cents, q.delivery_cents, q.tax_cents, q.total_cents, q.coupon?.id ?? null, input.idempotencyKey, q.tip_cents, giftOn && !!input.giftMessage?.trim(), giftOn ? input.giftMessage?.trim() || null : null, q.credit_applied_cents])).rows[0];
       await redeemForOrder(c, user.id, o.id, q.credit_applied_cents);
       await history(c, o.id, null, null, 'pending_payment', user.id);
 

@@ -1,4 +1,5 @@
 import { StrictMode } from 'react';
+import { FeaturesProvider } from './features';
 import { createRoot } from 'react-dom/client';
 import { registerServiceWorker } from './pwa';
 import { LangProvider } from './i18n';
@@ -11,5 +12,5 @@ import './store.css';
 
 registerServiceWorker();
 createRoot(document.getElementById('root')!).render(
-  <StrictMode><LangProvider><BrowserRouter><App /></BrowserRouter></LangProvider></StrictMode>,
+  <StrictMode><LangProvider><FeaturesProvider><BrowserRouter><App /></BrowserRouter></FeaturesProvider></LangProvider></StrictMode>,
 );

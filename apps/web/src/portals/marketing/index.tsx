@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from '../../auth';
-import { PortalLayout } from '../../ui';
+import { PortalLayout } from '../backoffice';
 import { NoAccess } from '../admin/common';
 import { canDo } from '../admin/perms';
 import { Analytics, Dashboard } from './Overview';
@@ -12,9 +12,12 @@ import Settings from './Settings';
 import Rewards from './Rewards';
 
 const NAV = [
-  { to: '/marketing', label: 'Dashboard', end: true }, { to: '/marketing/emails', label: 'Email campaigns' }, { to: '/marketing/audiences', label: 'Audiences' }, { to: '/marketing/campaigns', label: 'Campaigns' },
-  { to: '/marketing/automations', label: 'Automations' }, { to: '/marketing/calendar', label: 'Calendar' }, { to: '/marketing/social', label: 'Social posts' }, { to: '/marketing/budget', label: 'Budget' },
-  { to: '/marketing/library', label: 'Library' }, { to: '/marketing/analytics', label: 'Analytics' }, { to: '/admin/studio', label: 'Storefront studio' }, { to: '/admin/promotions', label: 'Coupons' }, { to: '/marketing/rewards', label: 'Rewards & credit' }, { to: '/marketing/settings', label: 'Settings' },
+  { to: '/marketing', label: 'Dashboard', end: true, group: 'Overview' }, { to: '/marketing/analytics', label: 'Analytics', group: 'Overview' },
+  { to: '/marketing/emails', label: 'Email campaigns', group: 'Reach' }, { to: '/marketing/automations', label: 'Automations', group: 'Reach' }, { to: '/marketing/audiences', label: 'Audiences', group: 'Reach' },
+  { to: '/marketing/campaigns', label: 'Campaigns', group: 'Reach' }, { to: '/marketing/social', label: 'Social posts', group: 'Reach' },
+  { to: '/marketing/calendar', label: 'Calendar', group: 'Plan' }, { to: '/marketing/budget', label: 'Budget', group: 'Plan' }, { to: '/marketing/library', label: 'Library', group: 'Plan' },
+  { to: '/admin/studio', label: 'Storefront studio', group: 'Offers' }, { to: '/admin/promotions', label: 'Coupons', group: 'Offers' }, { to: '/marketing/rewards', label: 'Rewards & credit', group: 'Offers' },
+  { to: '/marketing/settings', label: 'Settings', group: 'Setup' },
 ];
 
 export default function Marketing() {

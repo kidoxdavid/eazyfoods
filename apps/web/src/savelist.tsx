@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useFeature } from './features';
 import { Link } from 'react-router-dom';
 import { post, put } from './api';
 import { useAuth } from './auth';
@@ -9,6 +10,7 @@ import { Button, Input, Select } from './ui';
 /** "Save to a list": pick one of your shopping lists (or start a new one). Signed-in customers only. */
 export function SaveToList({ slug, compact = false }: { slug: string; compact?: boolean }) {
   const { me } = useAuth(); const toast = useToast();
+  const on = useFeature('shop.lists');
   const [open, setOpen] = useState(false);
   const lists = useApi<{ id: string; name: string }[]>(open && me ? '/lists' : null);
   const [pick, setPick] = useState(''); const [name, setName] = useState('');
@@ -18,6 +20,7 @@ export function SaveToList({ slug, compact = false }: { slug: string; compact?: 
     await put(`/lists/${id}/items`, { slug, quantity: 1 });
     toast('Saved to your list'); setOpen(false); setName(''); lists.reload();
   });
+  if (!on) return null;
   if (!me) return <Link to={`/signin?next=/p/${slug}`} className={`btn ghost ${compact ? 'sm' : 'sm'}`}>♡ Save to a list</Link>;
   if (!open) return <button type="button" className="btn ghost sm" onClick={() => setOpen(true)}>♡ Save to a list</button>;
   const none = lists.data && !lists.data.length;

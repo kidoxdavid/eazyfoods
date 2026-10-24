@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useFeatures } from '../features';
 import { useT } from '../i18n';
 import { Link, useParams } from 'react-router-dom';
 import { api, del, money, packLabel, post, put, trackRecent, unitPrice, unitText } from '../api';
@@ -64,6 +65,7 @@ function Questions({ slug }: { slug: string }) {
 }
 
 export function ProductPage() {
+  const on = useFeatures();
   const t = useT();
   const { slug } = useParams();
   const { data: p, loading, error, reload } = useApi<P>(`/products/${slug}`);
@@ -131,10 +133,10 @@ export function ProductPage() {
               </select></label>
             <div className="ship"><IconTruck width={18} height={18} style={{ verticalAlign: -4 }} /> {place?.serviceable ? <>Delivers to <b>{place.fsa}</b> in about {place.eta_minutes} min · {money(place.fee_cents)} per store</> : place ? <>Not delivering to {place.fsa} yet</> : <button className="link" onClick={() => setOpen(true)}>Enter postal code to see delivery</button>}</div>
             {!cur.is_open && <Notice tone="warn">{cur.store_name} is closed now. You can add it, but you can only check out while it is open.</Notice>}
-            {cur.tiers.length > 0 && <ul className="tiers" aria-label="Multi-buy prices">{cur.tiers.map((t) => <li key={t.min_qty}>Buy {t.min_qty}+ <strong>{money(t.unit_price_cents)}</strong> each <span className="muted">· save {Math.round((1 - t.unit_price_cents / cur.price_cents) * 100)}%</span></li>)}</ul>}
+            {on('shop.multibuy') && cur.tiers.length > 0 && <ul className="tiers" aria-label="Multi-buy prices">{cur.tiers.map((t) => <li key={t.min_qty}>Buy {t.min_qty}+ <strong>{money(t.unit_price_cents)}</strong> each <span className="muted">· save {Math.round((1 - t.unit_price_cents / cur.price_cents) * 100)}%</span></li>)}</ul>}
             {unitText(unitPrice(cur.price_cents, p.pack_size, p.pack_unit)) && <div className="unit">{unitText(unitPrice(cur.price_cents, p.pack_size, p.pack_unit))}</div>}
             <AddToBasket cta size="lg" offer={mk(cur)} />
-            <div className="bb-actions"><AlertButton slug={slug!} inStock={p.offers.some((o) => o.in_stock)} /><SaveToList slug={slug!} /></div>
+            <div className="bb-actions">{on('shop.alerts') && <AlertButton slug={slug!} inStock={p.offers.some((o) => o.in_stock)} />}<SaveToList slug={slug!} /></div>
             <div className="small muted"><IconShield width={16} height={16} style={{ verticalAlign: -3 }} /> Pay securely. We never see your card number. <Link to="/pages/refund-policy">{t('Refund policy')}</Link></div>
             {cur.is_test_data && <Badge tone="demo">Demo store</Badge>}
           </> : <Notice tone="warn">No store is currently selling this.</Notice>}
@@ -157,8 +159,8 @@ export function ProductPage() {
         <section className="block"><h2>{t('Customer reviews')}</h2><p><Stars value={reviews.data.average} /> <strong>{reviews.data.average}</strong> out of 5 · {reviews.data.count} verified purchases</p>
           {reviews.data.reviews.filter((r) => r.body).map((r, i) => <div key={i} className="panel"><Stars value={r.rating} /> <span className="muted small">{r.first_name} · verified purchase</span><p style={{ margin: '4px 0 0' }}>{r.body}</p>{r.photo_url && <img className="review-photo" src={r.photo_url} alt={`Photo from ${r.first_name}'s review`} loading="lazy" />}</div>)}</section>
       )}
-      {(together.data?.length ?? 0) > 0 && <Shelf title={t('Frequently bought together')} items={together.data ?? []} />}
-      <Questions slug={slug!} />
+      {on('shop.frequently_bought') && (together.data?.length ?? 0) > 0 && <Shelf title={t('Frequently bought together')} items={together.data ?? []} />}
+      {on('shop.questions') && <Questions slug={slug!} />}
       <Shelf title={t('You might also like')} items={related.data ?? []} />
       <BasketBar />
     </article>

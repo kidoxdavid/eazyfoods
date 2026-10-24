@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from '../../auth';
-import { PortalLayout, type NavItem } from '../../ui';
+import type { NavItem } from '../../ui';
+import { PortalLayout } from '../backoffice';
+import { ControlCentre } from './Control';
 import { NoAccess } from './common';
 import { canDo, STAFF_ROLES } from './perms';
 import './admin.css';
@@ -29,30 +31,31 @@ import { System } from './System';
 
 type Item = NavItem & { need: string[]; any?: boolean };
 const ITEMS: Item[] = [
-  { to: '/admin', label: 'Dashboard', end: true, need: ['orders.view', 'dispatch.manage', 'support.manage', 'reports.view'] },
-  { to: '/admin/orders', label: 'Orders', need: ['orders.view'] },
-  { to: '/admin/dispatch', label: 'Dispatch', need: ['dispatch.manage'] },
-  { to: '/admin/drivers', label: 'Drivers', need: ['drivers.manage'] },
-  { to: '/admin/support', label: 'Support', need: ['support.manage'] },
-  { to: '/admin/refunds', label: 'Refunds', need: ['refunds.approve', 'refunds.request'] },
-  { to: '/admin/vendors', label: 'Vendors', need: ['vendors.manage'] },
-  { to: '/admin/messages', label: 'Vendor messages', need: ['vendors.manage'] },
-  { to: '/admin/stores', label: 'Stores', need: ['stores.manage'] },
-  { to: '/admin/catalogue', label: 'Catalogue', need: ['catalog.manage'] },
-  { to: '/admin/dishes', label: 'Home-chef dishes', need: ['catalog.manage', 'vendors.manage'] },
-  { to: '/admin/taxonomy', label: 'Taxonomy', need: ['catalog.manage'] },
-  { to: '/admin/zones', label: 'Delivery zones', need: ['stores.manage'] },
-  { to: '/admin/promotions', label: 'Promotions', need: ['promotions.manage'] },
-  { to: '/admin/ads', label: 'Advertising', need: ['ads.manage'] },
-  { to: '/marketing', label: 'Marketing →', need: ['marketing.manage'] },
-  { to: '/admin/studio', label: 'Storefront studio', need: ['content.manage'] },
-  { to: '/admin/content', label: 'Content', need: ['content.manage'] },
-  { to: '/admin/crm', label: 'Vendor pipeline', need: ['crm.manage'] },
-  { to: '/admin/finance', label: 'Finance', need: ['ledger.view', 'payouts.manage'] },
-  { to: '/admin/insights', label: 'Insights', need: ['reports.view'] },
-  { to: '/admin/reports', label: 'Reports', need: ['reports.view'] },
-  { to: '/admin/settings', label: 'Settings & access', need: ['settings.view', 'users.view'] },
-  { to: '/admin/system', label: 'System & audit', need: ['settings.view', 'orders.view', 'audit.view'] },
+  { to: '/admin', label: 'Dashboard', group: 'Operations', end: true, need: ['orders.view', 'dispatch.manage', 'support.manage', 'reports.view'] },
+  { to: '/admin/orders', label: 'Orders', group: 'Operations', need: ['orders.view'] },
+  { to: '/admin/dispatch', label: 'Dispatch', group: 'Operations', need: ['dispatch.manage'] },
+  { to: '/admin/drivers', label: 'Drivers', group: 'Operations', need: ['drivers.manage'] },
+  { to: '/admin/support', label: 'Support', group: 'Operations', need: ['support.manage'] },
+  { to: '/admin/refunds', label: 'Refunds', group: 'Operations', need: ['refunds.approve', 'refunds.request'] },
+  { to: '/admin/vendors', label: 'Vendors', group: 'Marketplace', need: ['vendors.manage'] },
+  { to: '/admin/messages', label: 'Vendor messages', group: 'Marketplace', need: ['vendors.manage'] },
+  { to: '/admin/stores', label: 'Stores', group: 'Marketplace', need: ['stores.manage'] },
+  { to: '/admin/catalogue', label: 'Catalogue', group: 'Marketplace', need: ['catalog.manage'] },
+  { to: '/admin/dishes', label: 'Home-chef dishes', group: 'Marketplace', need: ['catalog.manage', 'vendors.manage'] },
+  { to: '/admin/taxonomy', label: 'Taxonomy', group: 'Marketplace', need: ['catalog.manage'] },
+  { to: '/admin/zones', label: 'Delivery zones', group: 'Marketplace', need: ['stores.manage'] },
+  { to: '/admin/promotions', label: 'Promotions', group: 'Growth', need: ['promotions.manage'] },
+  { to: '/admin/ads', label: 'Advertising', group: 'Growth', need: ['ads.manage'] },
+  { to: '/marketing', label: 'Marketing →', group: 'Growth', need: ['marketing.manage'] },
+  { to: '/admin/studio', label: 'Storefront studio', group: 'Growth', need: ['content.manage'] },
+  { to: '/admin/content', label: 'Content', group: 'Growth', need: ['content.manage'] },
+  { to: '/admin/crm', label: 'Vendor pipeline', group: 'Growth', need: ['crm.manage'] },
+  { to: '/admin/finance', label: 'Finance', group: 'Finance & insight', need: ['ledger.view', 'payouts.manage'] },
+  { to: '/admin/insights', label: 'Insights', group: 'Finance & insight', need: ['reports.view'] },
+  { to: '/admin/reports', label: 'Reports', group: 'Finance & insight', need: ['reports.view'] },
+  { to: '/admin/control', label: 'Control centre', group: 'Platform', need: ['control.manage'] },
+  { to: '/admin/settings', label: 'Settings & access', group: 'Platform', need: ['settings.view', 'users.view'] },
+  { to: '/admin/system', label: 'System & audit', group: 'Platform', need: ['settings.view', 'orders.view', 'audit.view'] },
 ];
 
 /** Each role lands on the screen most useful to it. */
@@ -80,7 +83,7 @@ export default function Admin() {
         <Route path="messages" element={<MessagesPage base="/admin/messages" staff />} /><Route path="content" element={<Content />} /><Route path="studio" element={<Studio />} />
         <Route path="crm" element={<Crm />} /><Route path="crm/:id" element={<ProspectDetail />} />
         <Route path="insights" element={<InsightsView path="/admin/reports/insights" title="Insights" sub="Sales, customers and speed across the whole marketplace." />} /><Route path="finance" element={<Finance />} /><Route path="reports" element={<Reports />} />
-        <Route path="settings" element={<Settings />} /><Route path="system" element={<System />} />
+        <Route path="control" element={<ControlCentre />} /><Route path="settings" element={<Settings />} /><Route path="system" element={<System />} />
         <Route path="*" element={<NoAccess what="this page" />} />
       </Routes>
     </PortalLayout>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useFeature } from './features';
 import { useT } from './i18n';
 import { Link } from 'react-router-dom';
 import { money, packLabel, post, unitPrice, unitText, type StoreCard } from './api';
@@ -45,6 +46,7 @@ export function QuickAdd({ p }: { p: Card }) {
 
 export function ProductCard({ p }: { p: Card }) {
   const t = useT();
+  const mbOn = useFeature('shop.multibuy');
   useAdImpression(p.sponsored_campaign_id);
   const [quick, setQuick] = useState(false);
   const click = () => { if (p.sponsored_campaign_id) post(`/ads/${p.sponsored_campaign_id}/event`, { type: 'click' }).catch(() => {}); };
@@ -67,7 +69,7 @@ export function ProductCard({ p }: { p: Card }) {
           {was && <s className="was">{money(was)}</s>}
         </div>
         {p.unit_price_cents != null && p.unit_basis && <span className="unit">{unitText({ cents: p.unit_price_cents, basis: p.unit_basis })}</span>}
-        {p.multibuy && <span className="multibuy">Buy {p.multibuy.min_qty}+: {money(p.multibuy.unit_price_cents)} each</span>}
+        {p.multibuy && mbOn && <span className="multibuy">Buy {p.multibuy.min_qty}+: {money(p.multibuy.unit_price_cents)} each</span>}
         {(p.store_count ?? 1) > 1 && <span className="from">lowest of {p.store_count} stores</span>}
         <Link to={`/p/${p.slug}`} className="pname" onClick={click}>{p.name}</Link>
         <span className="pmeta">{[p.brand, packLabel(p)].filter(Boolean).join(' · ')}</span>

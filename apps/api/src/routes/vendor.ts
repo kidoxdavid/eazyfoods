@@ -1,3 +1,4 @@
+import { assertVendorCan, vendorOfStore } from '../services/features.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
@@ -50,6 +51,7 @@ export const vendorRoutes: FastifyPluginAsync = async (app) => {
   app.put('/stores/:storeId/offers/:productId/tiers', async (req, reply) => {
     const { storeId, productId } = ids.parse(req.params);
     if (!(await canManageStore(req.user!, storeId))) return reply.code(403).send({ error: 'forbidden' });
+    await assertVendorCan((await vendorOfStore(storeId))!, 'multibuy');
     const { tiers } = z.object({ tiers: z.array(z.object({ min_qty: z.number().int().min(2).max(99), unit_price_cents: z.number().int().positive() })).max(3) }).parse(req.body);
     const offer = (await pool.query('SELECT id, price_cents FROM store_offers WHERE store_id = $1 AND product_id = $2', [storeId, productId])).rows[0];
     if (!offer) return reply.code(404).send({ error: 'not_found' });

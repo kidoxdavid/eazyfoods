@@ -1,6 +1,7 @@
 import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from '../../auth';
-import { Notice, PortalLayout } from '../../ui';
+import { Notice } from '../../ui';
+import { PortalLayout } from '../backoffice';
 import './vendor.css';
 import Apply from './Apply';
 import Dashboard from './Dashboard';
@@ -24,11 +25,17 @@ import Questions from './Questions';
 function Shell() {
   const { pending, store, isChef } = useVendor();
   const unread = useApi<{ count: number }>('/vendor/messages/unread');
+  const caps = useApi<Record<string, boolean>>('/vendor/capabilities');
+  const can = (k: string) => caps.data?.[k] !== false;
   return (
     <PortalLayout tone={isChef ? 'chef' : 'vendor'} title={isChef ? 'Chef portal' : 'Vendor portal'} subtitle={store.name} nav={[
-      { to: '/vendor', label: 'Dashboard', end: true }, { to: '/vendor/orders', label: 'Orders', badge: pending }, isChef ? { to: '/vendor/menu', label: 'Menu' } : { to: '/vendor/inventory', label: 'Inventory' },
-      { to: '/vendor/promotions', label: 'Promotions' }, { to: '/vendor/ads', label: 'Ads' }, { to: '/vendor/insights', label: 'Insights' }, { to: '/vendor/payouts', label: 'Payouts' }, { to: '/vendor/reports', label: 'Reports' },
-      { to: '/vendor/store', label: isChef ? 'Kitchen' : 'Store' }, { to: '/vendor/storefront', label: 'Storefront' }, { to: '/vendor/onboarding', label: 'Setup' }, { to: '/vendor/questions', label: 'Questions' }, { to: '/vendor/messages', label: 'Messages', badge: unread.data?.count }, { to: '/vendor/help', label: 'Help' }]}>
+      { to: '/vendor', label: 'Dashboard', end: true, group: 'Sell' }, { to: '/vendor/orders', label: 'Orders', badge: pending, group: 'Sell' },
+      isChef ? { to: '/vendor/menu', label: 'Menu', group: 'Sell' } : { to: '/vendor/inventory', label: 'Inventory', group: 'Sell' },
+      ...(can('questions') ? [{ to: '/vendor/questions', label: 'Questions', group: 'Sell' }] : []),
+      ...(can('promotions') ? [{ to: '/vendor/promotions', label: 'Promotions', group: 'Grow' }] : []), ...(can('ads') ? [{ to: '/vendor/ads', label: 'Ads', group: 'Grow' }] : []), ...(can('storefront') ? [{ to: '/vendor/storefront', label: 'Storefront', group: 'Grow' }] : []),
+      { to: '/vendor/insights', label: 'Insights', group: 'Money & reports' }, { to: '/vendor/payouts', label: 'Payouts', group: 'Money & reports' }, { to: '/vendor/reports', label: 'Reports', group: 'Money & reports' },
+      { to: '/vendor/store', label: isChef ? 'Kitchen' : 'Store', group: 'Account' }, { to: '/vendor/onboarding', label: 'Setup', group: 'Account' },
+      ...(can('messages') ? [{ to: '/vendor/messages', label: 'Messages', badge: unread.data?.count, group: 'Account' }] : []), { to: '/vendor/help', label: 'Help', group: 'Account' }]}>
       {store.status !== 'published' && <Notice tone="warn">Your store is not public yet (status: {store.status}). <Link to="/vendor/onboarding">Finish setup</Link>.</Notice>}
       <Routes>
         <Route index element={<Dashboard />} /><Route path="orders" element={<Orders />} /><Route path="inventory" element={isChef ? <Navigate to="/vendor/menu" replace /> : <Inventory />} /><Route path="menu" element={isChef ? <Menu /> : <Navigate to="/vendor/inventory" replace />} /><Route path="promotions" element={<Promotions />} />

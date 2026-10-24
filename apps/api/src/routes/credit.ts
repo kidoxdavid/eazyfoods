@@ -1,3 +1,4 @@
+import { requireFeature } from '../services/features.js';
 import { randomBytes } from 'node:crypto';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
@@ -40,6 +41,7 @@ export const creditRoutes: FastifyPluginAsync = async (app) => {
 
   // Gift codes are guessable only by luck (about 40 bits), and attempts are rate limited per person.
   app.post('/me/credit/redeem', rl(5, '1 hour'), async (req) => {
+    await requireFeature('shop.store_credit');
     const { code } = z.object({ code: z.string().trim().min(6).max(30) }).parse(req.body);
     const norm = code.toUpperCase().replace(/\s+/g, '');
     return tx(async (c) => {

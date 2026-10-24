@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useFeatures } from './features';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { money, type Region } from './api';
 import { useApi } from './hooks';
@@ -45,6 +46,7 @@ function Acc({ id, title, open, onToggle, children }: { id: string; title: strin
 }
 
 function Mega({ onClose, closing }: { onClose: () => void; closing: boolean }) {
+  const on = useFeatures();
   const t = useT();
   const regions = useApi<Region[]>('/regions');
   const cats = useApi<{ slug: string; name: string }[]>('/categories');
@@ -62,7 +64,7 @@ function Mega({ onClose, closing }: { onClose: () => void; closing: boolean }) {
       <div className="mega" role="dialog" aria-label={t('All departments')}>
         <div className="mega-head"><strong>{t('Shop EAZyfoods')}</strong><button className="icon-btn" onClick={onClose} aria-label={t('Close menu')}><IconClose /></button></div>
         <div className="mega-quick" aria-label={t('Quick links')}>
-          <Link to="/deals" className="hot">{t('Weekly deals')}</Link><Link to="/flyer">{t('Weekly flyer')}</Link><Link to="/new">{t('New arrivals')}</Link><Link to="/recipes">{t('Recipes')}</Link><Link to="/kitchens">{t('Home chefs')}</Link><Link to="/stores">{t('All stores')}</Link>
+          <Link to="/deals" className="hot">{t('Weekly deals')}</Link>{on('shop.flyer') && <Link to="/flyer">{t('Weekly flyer')}</Link>}<Link to="/new">{t('New arrivals')}</Link><Link to="/recipes">{t('Recipes')}</Link><Link to="/kitchens">{t('Home chefs')}</Link><Link to="/stores">{t('All stores')}</Link>
         </div>
         <div className="mega-cols">
           <Acc id="region" title={t('By region')} open={openSec === 'region'} onToggle={setOpenSec}>
@@ -79,7 +81,7 @@ function Mega({ onClose, closing }: { onClose: () => void; closing: boolean }) {
             <Acc id="partner" title={t('Partner with us')} open={openSec === 'partner'} onToggle={setOpenSec}>
               <ul role="list"><li><Link to="/vendor">{t('Sell on EAZyfoods')}</Link></li><li><Link to="/vendor?kind=chef">{t('Cook with us')}</Link></li><li><Link to="/driver">{t('Drive with us')}</Link></li></ul>
             </Acc>
-            <h3 className="mega-help"><Link to="/help">{t('Help centre')}</Link></h3>
+            {on('shop.help_centre') && <h3 className="mega-help"><Link to="/help">{t('Help centre')}</Link></h3>}
           </div>
         </div>
       </div>
@@ -88,6 +90,7 @@ function Mega({ onClose, closing }: { onClose: () => void; closing: boolean }) {
 }
 
 export function Header() {
+  const on = useFeatures();
   const t = useT();
   const nav = useNavigate(); const loc = useLocation();
   const { me, logout, isStaff, isVendor, has } = useAuth();
@@ -130,7 +133,7 @@ export function Header() {
       <header className={`hdr${away && !menu ? ' away' : ''}`}>
         <div className="hdr-util"><div className="wrap">
           <span>{t('Calgary, Alberta · African groceries from local stores')}</span>
-          <span className="util-links"><Link to="/vendor">{t('Sell on EAZyfoods')}</Link><Link to="/vendor?kind=chef">{t('Cook with us')}</Link><Link to="/driver">{t('Drive with us')}</Link><Link to="/pages/how-it-works">{t('How it works')}</Link><Link to="/help">{t('Help')}</Link><LangSwitch /></span>
+          <span className="util-links"><Link to="/vendor">{t('Sell on EAZyfoods')}</Link><Link to="/vendor?kind=chef">{t('Cook with us')}</Link><Link to="/driver">{t('Drive with us')}</Link><Link to="/pages/how-it-works">{t('How it works')}</Link>{on('shop.help_centre') && <Link to="/help">{t('Help')}</Link>}{on('shop.language_switch') && <LangSwitch />}</span>
         </div></div>
         <div className="hdr-main"><div className="wrap hdr-row">
           <button className="icon-btn menu-btn" aria-label={t('Open all departments')} aria-expanded={menu} onClick={openMenu}><IconMenu /></button>
@@ -182,6 +185,7 @@ export function TabBar() {
 }
 
 export function Footer() {
+  const on = useFeatures();
   const t = useT();
   const pages = useApi<{ slug: string; title: string }[]>('/pages');
   const regions = useApi<Region[]>('/regions');
@@ -189,8 +193,8 @@ export function Footer() {
     <footer className="ftr">
       <button className="totop" onClick={() => window.scrollTo({ top: 0 })}>{t('Back to top')}</button>
       <div className="wrap ftr-cols">
-        <div><h3>{t('Shop')}</h3><ul role="list">{regions.data?.map((r) => <li key={r.slug}><Link to={`/search?region=${r.slug}`}>{r.name}</Link></li>)}<li><Link to="/deals">{t('Weekly deals')}</Link></li><li><Link to="/flyer">{t('Weekly flyer')}</Link></li><li><Link to="/new">{t('New arrivals')}</Link></li><li><Link to="/stores">{t('Stores')}</Link></li></ul></div>
-        <div><h3>{t('Help')}</h3><ul role="list">{pages.data?.filter((p) => ['how-it-works', 'delivery-policy', 'refund-policy', 'our-guarantee', 'faq'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}<li><Link to="/help">{t('Help centre')}</Link></li><li><Link to="/orders">{t('Your orders')}</Link></li><li><InstallApp /></li></ul></div>
+        <div><h3>{t('Shop')}</h3><ul role="list">{regions.data?.map((r) => <li key={r.slug}><Link to={`/search?region=${r.slug}`}>{r.name}</Link></li>)}<li><Link to="/deals">{t('Weekly deals')}</Link></li>{on('shop.flyer') && <li><Link to="/flyer">{t('Weekly flyer')}</Link></li>}<li><Link to="/new">{t('New arrivals')}</Link></li><li><Link to="/stores">{t('Stores')}</Link></li></ul></div>
+        <div><h3>{t('Help')}</h3><ul role="list">{pages.data?.filter((p) => ['how-it-works', 'delivery-policy', 'refund-policy', 'our-guarantee', 'faq'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}{on('shop.help_centre') && <li><Link to="/help">{t('Help centre')}</Link></li>}<li><Link to="/orders">{t('Your orders')}</Link></li>{on('shop.install_app') && <li><InstallApp /></li>}</ul></div>
         <div><h3>{t('Work with us')}</h3><ul role="list"><li><Link to="/vendor">{t('Sell on EAZyfoods')}</Link></li><li><Link to="/vendor?kind=chef">{t('Cook with us')}</Link></li><li><Link to="/driver">{t('Drive with us')}</Link></li></ul></div>
         <div><h3>{t('Legal')}</h3><ul role="list">{pages.data?.filter((p) => ['privacy', 'terms'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}</ul></div>
       </div>

@@ -1,3 +1,4 @@
+import { featureOn } from '../services/features.js';
 import { isCanadianPostal, normalisePostal } from '../services/pricing.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { ACCENTS } from '../lib/themes.js';
@@ -19,6 +20,7 @@ export const storeRoutes: FastifyPluginAsync = async (app) => {
 
   // Which stores bring to this area, and at what fee and speed. Postal-area level only; checkout re-checks the exact address.
   app.get('/stores-compare', async (req, reply) => {
+    if (!(await featureOn('shop.compare_stores'))) return reply.code(404).send({ error: 'not_found' });
     const raw = String((req.query as any).postal ?? '');
     if (!isCanadianPostal(raw.length === 3 ? raw + '0A0' : raw)) return reply.code(400).send({ error: 'invalid_postal', message: 'Enter a Canadian postal code, e.g. T2A 0A0.' });
     const fsa = normalisePostal(raw).slice(0, 3);

@@ -11,12 +11,13 @@ type Offer = { product_id: string; name: string; slug: string; price_cents: numb
 
 export default function Inventory() {
   const { storeId } = useVendor();
+  const caps = useApi<Record<string, boolean>>('/vendor/capabilities');
   const [tab, setTab] = useState('list');
   return (
     <>
       <PageHeader title="Inventory" sub="Your prices and stock. Every stock change is recorded." />
       <StoreSelect />
-      <Tabs value={tab} onChange={setTab} tabs={[{ id: 'list', label: 'My products' }, { id: 'add', label: 'Add from catalogue' }, { id: 'suggest', label: 'Suggest new product' }, { id: 'csv', label: 'CSV import' }]} />
+      <Tabs value={tab} onChange={setTab} tabs={[{ id: 'list', label: 'My products' }, { id: 'add', label: 'Add from catalogue' }, { id: 'suggest', label: 'Suggest new product' }, ...(caps.data?.csv_import === false ? [] : [{ id: 'csv', label: 'CSV import' }])]} />
       {tab === 'list' && <List key={storeId} />}{tab === 'add' && <AddFromCatalogue key={storeId} />}{tab === 'suggest' && <Suggest />}{tab === 'csv' && <CsvImport key={storeId} />}
     </>
   );
@@ -24,6 +25,7 @@ export default function Inventory() {
 
 function List() {
   const { storeId } = useVendor(); const toast = useToast();
+  const caps = useApi<Record<string, boolean>>('/vendor/capabilities');
   const { data, loading, error, reload } = useApi<Offer[]>(`/vendor/stores/${storeId}/offers`);
   const [tiers, setTiers] = useState<Offer | null>(null); const [edit, setEdit] = useState<Offer | null>(null); const [stock, setStock] = useState<Offer | null>(null); const [hist, setHist] = useState<Offer | null>(null);
   const [q, setQ] = useState('');
@@ -39,7 +41,7 @@ function List() {
       { key: 'stock', header: 'On hand / reserved', render: (o) => `${o.stock_on_hand} / ${o.stock_reserved}` },
       { key: 'avail', header: 'Available', render: (o) => <>{o.available} {o.available <= 0 ? <Badge tone="danger">Out of stock</Badge> : o.low_stock ? <Badge tone="warn">Low</Badge> : null}</> },
       { key: 'active', header: 'Shown to customers', render: (o) => <label className="check"><input type="checkbox" checked={o.is_active} onChange={() => toggle(o)} aria-label={`Show ${o.name} to customers`} />{o.is_active ? 'Yes' : 'Hidden'}</label> },
-      { key: 'act', header: '', render: (o) => <div className="row wrap"><Button size="sm" variant="secondary" onClick={() => setEdit(o)}>Price</Button><Button size="sm" variant="secondary" onClick={() => setTiers(o)}>Multi-buy{o.tiers.length ? ` (${o.tiers.length})` : ''}</Button><Button size="sm" variant="secondary" onClick={() => setStock(o)}>Stock</Button><Button size="sm" variant="ghost" onClick={() => setHist(o)}>History</Button></div> },
+      { key: 'act', header: '', render: (o) => <div className="row wrap"><Button size="sm" variant="secondary" onClick={() => setEdit(o)}>Price</Button>{caps.data?.multibuy !== false && <Button size="sm" variant="secondary" onClick={() => setTiers(o)}>Multi-buy{o.tiers.length ? ` (${o.tiers.length})` : ''}</Button>}<Button size="sm" variant="secondary" onClick={() => setStock(o)}>Stock</Button><Button size="sm" variant="ghost" onClick={() => setHist(o)}>History</Button></div> },
     ]} />
     {edit && <PriceModal o={edit} onClose={() => setEdit(null)} onDone={() => { setEdit(null); reload(); }} />}
     {tiers && <TiersModal o={tiers} onClose={() => setTiers(null)} onDone={() => { setTiers(null); reload(); }} />}

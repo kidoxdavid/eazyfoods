@@ -1,3 +1,4 @@
+import { assertVendorCan, featureOn, requireFeature } from '../services/features.js';
 import { randomBytes } from 'node:crypto';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
@@ -23,6 +24,7 @@ export const cardRoutes: FastifyPluginAsync = async (app) => {
 
   // Frequently bought together: products that share paid orders with this one. Only shown when at least 3 different orders back it.
   app.get<{ Params: { slug: string } }>('/products/:slug/together', async (req) => {
+    if (!(await featureOn('shop.frequently_bought'))) return [];
     const rows = (await pool.query(
       `WITH me AS (SELECT id FROM products WHERE slug = $1),
             mine AS (SELECT DISTINCT s.order_id FROM order_lines l JOIN suborders s ON s.id = l.suborder_id JOIN orders o ON o.id = s.order_id
@@ -37,6 +39,7 @@ export const cardRoutes: FastifyPluginAsync = async (app) => {
 
   // Weekly flyer: everything on sale or on a multi-buy price right now, grouped by store.
   app.get('/flyer', async () => {
+    await requireFeature('shop.flyer');
     const rows = (await pool.query(
       `SELECT s.slug AS store_slug, s.name AS store_name, p.slug, p.name, b.name AS brand, p.pack_size, p.pack_unit,
               (SELECT url FROM product_images WHERE product_id = p.id ORDER BY sort_order LIMIT 1) AS image_url,
@@ -54,6 +57,7 @@ export const cardRoutes: FastifyPluginAsync = async (app) => {
 
   // Questions about a product. Answered by a store that sells it (or staff); hidden ones never show.
   app.get<{ Params: { slug: string } }>('/products/:slug/questions', async (req) => {
+    if (!(await featureOn('shop.questions'))) return [];
     const rows = (await pool.query(
       `SELECT q.id, q.question, q.answer, q.answered_at, q.created_at, split_part(u.full_name, ' ', 1) AS first_name,
               (SELECT st.name FROM stores st WHERE st.vendor_id = au.vendor_id ORDER BY st.name LIMIT 1) AS answered_by_store
@@ -81,6 +85,13 @@ async function listItems(listId: string) {
 /** Signed-in customer features: buy again, shopping lists, alerts. */
 export const customerRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', requireLogin);
+  // Switches an admin can turn off: whole groups of customer routes answer "switched off" instead of working.
+  app.addHook('preHandler', async (req) => {
+    const u = req.url;
+    if (/^\/api\/(lists|me\/buy-again)/.test(u)) await requireFeature('shop.lists');
+    else if (/^\/api\/alerts/.test(u)) await requireFeature('shop.alerts');
+    else if (/^\/api\/(questions|products\/[^/]+\/questions)/.test(u)) await requireFeature('shop.questions');
+  });
 
   app.post<{ Params: { slug: string } }>('/products/:slug/questions', rl(5, '1 hour'), async (req, reply) => {
     const { question } = z.object({ question: z.string().trim().min(5).max(400) }).parse(req.body);
@@ -106,7 +117,8 @@ export const customerRoutes: FastifyPluginAsync = async (app) => {
     const q = (await pool.query('SELECT product_id FROM product_questions WHERE id = $1', [id])).rows[0];
     if (!q) throw notFound('Question not found');
     const sells = vids.length > 0 && (await pool.query('SELECT 1 FROM store_offers o JOIN stores s ON s.id = o.store_id WHERE o.is_active AND o.product_id = $1 AND s.vendor_id = ANY($2::uuid[]) LIMIT 1', [q.product_id, vids])).rowCount;
-    if (!staff && !sells) throw notFound('Question not found');   // 404, not 403: do not reveal questions on products you do not sell
+    if (!staff && !sells) throw notFound('Question not found');
+    if (!staff) for (const v of vids) await assertVendorCan(v, 'questions');   // 404, not 403: do not reveal questions on products you do not sell
     if (hide) await pool.query('UPDATE product_questions SET is_hidden = true WHERE id = $1', [id]);
     else if (answer) await pool.query('UPDATE product_questions SET answer = $2, answered_by = $3, answered_at = now() WHERE id = $1', [id, answer, req.user!.id]);
     else throw bad('nothing_to_do', 'Write an answer or hide the question.');

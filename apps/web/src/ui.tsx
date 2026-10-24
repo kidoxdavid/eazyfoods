@@ -180,18 +180,17 @@ export function ImageUpload({ value, onChange, label = 'Image', endpoint = '/upl
   );
 }
 
-// ---------- Portal shell (sidebar on desktop, scrolling tab strip on phones) ----------
-export type NavItem = { to: string; label: string; end?: boolean; badge?: number };
-export function PortalLayout({ title, subtitle, nav, tone, children }: { title: string; subtitle?: string; nav: NavItem[]; tone?: 'admin' | 'vendor' | 'driver' | 'chef' | 'marketing'; children: ReactNode }) {
+// ---------- Toggle switch (used all over the back office) ----------
+export function Switch({ checked, onChange, label, hint, disabled, busy }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint?: string; disabled?: boolean; busy?: boolean }) {
   return (
-    <div className="portal" data-portal={tone}>
-      <aside className="portal-nav" aria-label={`${title} navigation`}>
-        <div className="portal-title"><Link to="/" aria-label="Back to the shop">← Shop</Link><strong className="portal-brand"><img src="/logo-64.png" alt="" width={22} height={22} style={{ marginRight: 8, verticalAlign: -5 }} />{title}</strong>{subtitle && <span className="muted small">{subtitle}</span>}</div>
-        <nav>{nav.map((n) => <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => (isActive ? 'active' : '')}>{n.label}{n.badge ? <span className="count">{n.badge}</span> : null}</NavLink>)}</nav>
-      </aside>
-      <div className="portal-main">{children}</div>
-    </div>
+    <label className={`switch${disabled ? ' disabled' : ''}`}>
+      <input type="checkbox" role="switch" checked={checked} disabled={disabled || busy} onChange={(e) => onChange(e.target.checked)} aria-label={label} />
+      <span className="switch-track" aria-hidden="true"><i /></span>
+      <span className="switch-text"><b>{label}</b>{hint ? <small>{hint}</small> : null}</span>
+    </label>
   );
 }
+
+export type NavItem = { to: string; label: string; end?: boolean; badge?: number; group?: string };
 
 export const formValues = (e: React.FormEvent<HTMLFormElement>) => { e.preventDefault(); return Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>; };

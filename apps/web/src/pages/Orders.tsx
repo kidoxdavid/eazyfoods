@@ -1,4 +1,5 @@
 import { slotText } from '../slots';
+import { useFeatures } from '../features';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { fmtDate, money, packLabel, post } from '../api';
@@ -182,6 +183,7 @@ function ReportModal({ order, sub, onClose }: { order: Order; sub: Sub; onClose:
 }
 
 function ReviewModal({ orderId, sub, line, onClose }: { orderId: string; sub: Sub; line?: Sub['lines'][0]; onClose: () => void }) {
+  const on = useFeatures();
   const toast = useToast();
   const [rating, setRating] = useState(5);
   const [photo, setPhoto] = useState<string | null>(null);
@@ -199,7 +201,7 @@ function ReviewModal({ orderId, sub, line, onClose }: { orderId: string; sub: Su
           {[1, 2, 3, 4, 5].map((n) => <button type="button" key={n} role="radio" aria-checked={rating === n} aria-label={`${n} star${n > 1 ? 's' : ''}`} className="icon-btn" style={{ fontSize: 30, color: n <= rating ? 'var(--ochre)' : 'var(--line-2)' }} onClick={() => setRating(n)}>★</button>)}
         </div>
         <Field label="Comment (optional)"><Textarea name="body" rows={3} maxLength={1000} /></Field>
-        {line && <ImageUpload value={photo} onChange={setPhoto} label="photo" endpoint="/uploads/review-photo" />}
+        {line && on('shop.review_photos') && <ImageUpload value={photo} onChange={setPhoto} label="photo" endpoint="/uploads/review-photo" />}
         <p className="small muted">Your review is marked as a verified purchase.</p>
         <div className="row end"><Button type="button" variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" busy={send.busy}>Submit</Button></div>
       </form>

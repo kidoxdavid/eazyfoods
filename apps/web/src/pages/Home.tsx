@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useFeature } from '../features';
 import { Link } from 'react-router-dom';
 import { recentSlugs, type Region, type StoreCard } from '../api';
 import { useAuth } from '../auth';
@@ -53,8 +54,9 @@ function CollectionShelf({ slug }: { slug: string }) {
 
 /** Personal shelves: what you buy often, and what you looked at lately. Both stay empty (and invisible) for new visitors. */
 function Personal() {
+  const on = useFeature('shop.lists');
   const { me } = useAuth();
-  const again = useApi<Card[]>(me ? '/me/buy-again' : null);
+  const again = useApi<Card[]>(me && on ? '/me/buy-again' : null);
   const slugs = recentSlugs();
   const recent = useApi<Card[]>(slugs.length ? `/products-cards?slugs=${slugs.join(',')}` : null);
   return (

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useFeatures } from '../features';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, del, post, put } from '../api';
 import { useAuth } from '../auth';
@@ -10,6 +11,7 @@ import { AddressForm } from './Checkout';
 import { fmtDate } from '../api';
 
 export function AccountPage() {
+  const on = useFeatures();
   const [tab, setTab] = useState('profile');
   const { me, logout, isVendor, has, isStaff } = useAuth();
   return (
@@ -17,7 +19,7 @@ export function AccountPage() {
       <h1>Your account</h1>
       <p className="muted">{me?.email}</p>
       <div className="row wrap">{isVendor && <Link to="/vendor" className="btn secondary sm">Vendor portal</Link>}{has('driver') && <Link to="/driver" className="btn secondary sm">Driver portal</Link>}{isStaff && <Link to="/admin" className="btn secondary sm">Admin</Link>}</div>
-      <div className="row wrap"><Link to="/lists" className="btn secondary sm">Shopping lists</Link><Link to="/alerts" className="btn secondary sm">Alerts</Link><Link to="/credit" className="btn secondary sm">Store credit</Link></div>
+      <div className="row wrap">{on('shop.lists') && <Link to="/lists" className="btn secondary sm">Shopping lists</Link>}{on('shop.alerts') && <Link to="/alerts" className="btn secondary sm">Alerts</Link>}{on('shop.store_credit') && <Link to="/credit" className="btn secondary sm">Store credit</Link>}</div>
       <Tabs value={tab} onChange={setTab} tabs={[{ id: 'profile', label: 'Profile' }, { id: 'addresses', label: 'Addresses' }, { id: 'favourites', label: 'Saved' }, { id: 'support', label: 'Help requests' }, { id: 'privacy', label: 'Privacy & security' }]} />
       {tab === 'profile' && <Profile />}{tab === 'addresses' && <Addresses />}{tab === 'favourites' && <Favourites />}{tab === 'support' && <Tickets />}{tab === 'privacy' && <Privacy />}
       <hr /><Button variant="ghost" onClick={logout}>Sign out</Button>

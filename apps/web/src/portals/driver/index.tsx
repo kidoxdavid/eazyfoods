@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { PortalLayout } from '../backoffice';
 import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { api, fmtDate, money, post, put } from '../../api';
 import { useApi } from '../../hooks';
 import { useToast } from '../../toast';
-import { Badge, Button, Card, DataTable, Empty, ErrorBox, Field, Input, Loading, Modal, Notice, PageHeader, PortalLayout, Stat, Textarea, formValues } from '../../ui';
+import { Badge, Button, Card, DataTable, Empty, ErrorBox, Field, Input, Loading, Modal, Notice, PageHeader, Stat, Textarea, formValues } from '../../ui';
 import './driver.css';
 
 type Addr = { line1?: string; line2?: string; city?: string; postal_code?: string; first_name?: string; phone?: string };
@@ -25,7 +26,7 @@ function useAction<A extends unknown[], R>(fn: (...a: A) => Promise<R>) {
   return { run, busy, error };
 }
 
-const NAV = [{ to: '/driver', label: 'Jobs', end: true }, { to: '/driver/history', label: 'History' }, { to: '/driver/earnings', label: 'Earnings' }];
+const NAV = [{ to: '/driver', label: 'Jobs', end: true, group: 'Deliveries' }, { to: '/driver/history', label: 'History', group: 'Deliveries' }, { to: '/driver/earnings', label: 'Earnings', group: 'Money' }];
 const mapUrl = (q: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 const isLate = (j: Job) => !!j.promised_at && new Date(j.promised_at).getTime() < Date.now() && ['assigned', 'picked_up'].includes(j.status);
 const dropAddr = (d: Addr) => [d.line1, d.line2, d.city, d.postal_code].filter(Boolean).join(', ');

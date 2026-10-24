@@ -1,3 +1,4 @@
+import { assertVendorCan, vendorOfStore } from '../services/features.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
@@ -132,7 +133,7 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
     return { ...b, accents: Object.entries(ACCENTS).map(([key, v]) => ({ key, ...v })), products };
   });
   app.put<{ Params: { storeId: string } }>('/stores/:storeId/branding', async (req) => {
-    const id = await store(req);
+    const id = await store(req); await assertVendorCan((await vendorOfStore(id))!, 'storefront');
     const b = z.object({
       accent: z.enum(Object.keys(ACCENTS) as [string, ...string[]]).nullable(), tagline: z.string().max(80).nullable(), story: z.string().max(1200).nullable(),
       announcement: z.string().max(140).nullable(), featured_slugs: z.array(z.string().max(120)).max(8), website: url, instagram: url, facebook: url,
@@ -156,7 +157,7 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
     return { ...s, closures };
   });
   app.put<{ Params: { storeId: string } }>('/stores/:storeId/schedule', async (req) => {
-    const id = await store(req);
+    const id = await store(req); await assertVendorCan((await vendorOfStore(id))!, 'schedule');
     const b = z.object({
       preorders_enabled: z.boolean(), preorder_lead_minutes: z.number().int().min(30).max(2880), preorder_max_days: z.number().int().min(1).max(14),
       slot_minutes: z.union([z.literal(30), z.literal(60), z.literal(90), z.literal(120)]), slot_capacity: z.number().int().min(1).max(50),
@@ -257,7 +258,7 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
        FROM offer_promotions pr JOIN store_offers o ON o.id = pr.offer_id JOIN products p ON p.id = o.product_id WHERE o.store_id = $1 ORDER BY pr.starts_at DESC`, [await store(req)])).rows);
 
   app.post<{ Params: { storeId: string } }>('/stores/:storeId/promotions', async (req, reply) => {
-    const sid = await store(req);
+    const sid = await store(req); await assertVendorCan((await vendorOfStore(sid))!, 'promotions');
     const b = z.object({ product_id: uuid, sale_price_cents: z.number().int().positive(), starts_at: z.coerce.date(), ends_at: z.coerce.date() }).parse(req.body);
     if (b.ends_at <= b.starts_at) throw bad('invalid_dates', 'The end must be after the start.');
     const o = (await pool.query('SELECT id, price_cents FROM store_offers WHERE store_id = $1 AND product_id = $2', [sid, b.product_id])).rows[0];
@@ -278,7 +279,7 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
     .send(toCsv([['barcode', 'sku', 'slug', 'price', 'stock', 'active'], ['', '', 'garri-white', '4.99', '25', 'yes'], ['0123456789012', '', '', '12.50', '8', 'yes']])));
 
   app.post<{ Params: { storeId: string } }>('/stores/:storeId/import', async (req, reply) => {
-    const sid = await store(req);
+    const sid = await store(req); await assertVendorCan((await vendorOfStore(sid))!, 'csv_import');
     const { csv, dry_run } = z.object({ csv: z.string().min(1).max(1_000_000), dry_run: z.boolean().default(false) }).parse(req.body);
     const rows = parseCsv(csv);
     const header = (rows.shift() ?? []).map((h) => h.trim().toLowerCase());
@@ -379,7 +380,7 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
        FROM ad_campaigns c LEFT JOIN ad_events e ON e.campaign_id = c.id WHERE c.vendor_id = $1 GROUP BY c.id ORDER BY c.created_at DESC`, [vendorId(req)])).rows);
 
   app.post('/ads', async (req, reply) => {
-    const vid = vendorId(req); ownerOnly(req);
+    const vid = vendorId(req); ownerOnly(req); await assertVendorCan(vid, 'ads');
     const b = z.object({
       store_id: uuid, product_slug: z.string().optional(), placement: z.enum(['home_banner', 'region_banner', 'search_sponsored', 'sponsored_store']), region_slug: z.string().optional(),
       title: z.string().min(3).max(80), body: z.string().max(200).optional(), image_url: img, cpc_cents: z.number().int().positive(), budget_cents: z.number().int().positive(),

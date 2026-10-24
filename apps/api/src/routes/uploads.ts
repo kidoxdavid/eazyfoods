@@ -1,3 +1,4 @@
+import { requireFeature } from '../services/features.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool } from '../db/pool.js';
@@ -28,6 +29,7 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
 
   // A photo for a review: only customers with a delivered order, a few per hour. Staff can hide any review that misuses it.
   app.post('/uploads/review-photo', rl(10, '1 hour'), async (req) => {
+    await requireFeature('shop.review_photos');
     const ok = (await pool.query(`SELECT 1 FROM suborders s JOIN orders o ON o.id = s.order_id WHERE o.user_id = $1 AND s.status IN ('delivered','collected') LIMIT 1`, [req.user!.id])).rowCount;
     if (!ok) throw forbidden('You can add photos once you have received an order.');
     const buf = await readFile(req);

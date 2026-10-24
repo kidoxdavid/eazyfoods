@@ -1,3 +1,4 @@
+import { assertVendorCan } from '../services/features.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
@@ -41,6 +42,7 @@ export const vendorMessageRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post('/messages', rl(20, '1 hour'), async (req, reply) => {
+    { const v = vendorIdsOf(req.user!)[0]; if (v) await assertVendorCan(v, 'messages'); }
     const b = z.object({ subject: z.string().trim().min(2).max(120), body }).parse(req.body);
     const id = await tx(async (c) => {
       const t = (await c.query('INSERT INTO vendor_threads(vendor_id, subject, created_by) VALUES ($1,$2,$3) RETURNING id', [vids(req)[0], b.subject, req.user!.id])).rows[0];

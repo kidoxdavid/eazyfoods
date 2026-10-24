@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useFeature } from '../features';
 import { Link, useParams } from 'react-router-dom';
 import { money, type StoreCard } from '../api';
 import { useApi } from '../hooks';
@@ -41,10 +42,11 @@ function CompareStores() {
 }
 
 export function StoresPage() {
+  const compare = useFeature('shop.compare_stores');
   const { data, loading, error, reload } = useApi<StoreCard[]>('/stores');
   if (loading) return <Loading />;
   if (error) return <ErrorBox message={error} retry={reload} />;
-  return <><h1>Stores</h1><p className="muted">Independent African grocers, each with its own prices and stock.</p><CompareStores />{data && <StoreList stores={data} />}</>;
+  return <><h1>Stores</h1><p className="muted">Independent African grocers, each with its own prices and stock.</p>{compare && <CompareStores />}{data && <StoreList stores={data} />}</>;
 }
 
 export function StorePage() {

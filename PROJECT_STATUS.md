@@ -126,3 +126,12 @@ Buy it again and Recently viewed shelves; unit prices (per 100 g / 100 ml, weigh
 ## Phone fit pass (added)
 - Fixed the basket page being wider than the screen (the "If unavailable" choice pushed it out); a test now checks 12 customer pages for sideways scrolling at phone width.
 - Compact phone layout: smaller base type and spacing, denser cards and basket, shorter hero banner, smaller pictures, product page now shows picture, name and the price/Add box before the details, header slides away when scrolling down and returns on scrolling up, vendor order lines keep price beside the item.
+
+## Back-office redesign and Control centre (added)
+- **New back-office frame** for Admin, Marketing, Vendor, Chef and Driver: thin top bar (area name, "Go to…" quick jump with `/`, Switch area, account menu), grouped collapsible sidebar (Operations, Marketplace, Growth, Finance & insight, Platform for admin; similar groups elsewhere), breadcrumb, and a slide-out menu on phones. Flat, dense, system font; each area keeps its colour. Toggle switch component used throughout.
+- **Control centre** (Admin → Platform; roles owner and admin): 
+  - *Shop features*: 16 switches (tips, gift notes, store credit, substitution choices, pre-orders, multi-buy, flyer, frequently bought together, lists, alerts, compare stores, product questions, review photos, language switch, install prompt, help centre). The server enforces them (not just hidden in the page).
+  - *Vendor permissions*: defaults for every vendor plus per-vendor overrides for promotions, ads, multi-buy, CSV import, storefront customisation, pre-order scheduling, answering questions, messaging. Enforced by the API; the vendor menu hides what is blocked.
+  - *Menus & notices*: hide menu items per area and post a notice at the top of every page of an area (menu hiding only tidies the menu; permissions are what block actions).
+  - *Platform*: home chefs on/off, orders only while open, require verified documents, automatic payouts.
+  - Every change is written to the audit log. Everything starts ON, so nothing changes until an admin decides.

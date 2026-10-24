@@ -1,3 +1,4 @@
+import { allFlags } from './features.js';
 import type { Queryable } from '../lib/db-types.js';
 import { allocate, bps } from '../lib/money.js';
 import { getSetting } from '../lib/settings.js';
@@ -39,6 +40,8 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
   const taxRates = await getSetting<Record<string, number>>('tax.rates_bps', c);
   const defaultBps = await getSetting<number>('commission.default_bps', c);
   const requireOpen = await getSetting<boolean>('ordering.require_open', c);
+  const flags = await allFlags(c);
+  const on = (k: string) => flags[k] !== false;
 
   const items = (await c.query(
     `SELECT ci.offer_id, ci.quantity, ci.added_price_cents, ci.sub_pref,
@@ -48,7 +51,7 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
             v.commission_bps
        FROM cart_items ci JOIN carts ct ON ct.id = ci.cart_id
        JOIN offers_live o ON o.id = ci.offer_id
-       LEFT JOIN LATERAL (SELECT unit_price_cents FROM offer_tiers WHERE offer_id = ci.offer_id AND min_qty <= ci.quantity ORDER BY min_qty DESC LIMIT 1) t ON true
+       LEFT JOIN LATERAL (SELECT unit_price_cents FROM offer_tiers WHERE offer_id = ci.offer_id AND min_qty <= ci.quantity AND COALESCE((SELECT enabled FROM feature_flags WHERE key = 'shop.multibuy'), true) ORDER BY min_qty DESC LIMIT 1) t ON true
        JOIN products p ON p.id = o.product_id
        JOIN storefronts s ON s.id = o.store_id
        JOIN vendors v ON v.id = s.vendor_id
@@ -94,7 +97,7 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
     let slot: { start: string; end: string } | null = null;
     const wanted = opts.slots?.[f.store_slug];
     if (wanted) {
-      if (!f.preorders_enabled) issues.push({ type: 'preorder_unavailable', message: `${f.store_name} does not take pre-orders.`, store_slug: f.store_slug });
+      if (!f.preorders_enabled || !on('shop.preorders')) issues.push({ type: 'preorder_unavailable', message: `${f.store_name} does not take pre-orders.`, store_slug: f.store_slug });
       else {
         slot = await findSlot(c, storeId, wanted);
         if (!slot) issues.push({ type: 'slot_unavailable', message: `The time you chose at ${f.store_name} is no longer available. Please pick another.`, store_slug: f.store_slug });
@@ -113,7 +116,7 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
       return {
         offer_id: r.offer_id, product_id: r.product_id, product_slug: r.product_slug, name: r.name, brand: r.brand,
         pack_label: r.pack_size ? `${Number(r.pack_size)} ${r.pack_unit ?? ''}`.trim() : r.pack_unit ? `per ${r.pack_unit}` : null, sold_by: r.sold_by,
-        unit_price_cents: r.price_cents, added_price_cents: r.added_price_cents, quantity: r.quantity, sub_pref: r.sub_pref,
+        unit_price_cents: r.price_cents, added_price_cents: r.added_price_cents, quantity: r.quantity, sub_pref: on('shop.substitution_prefs') ? r.sub_pref : 'ask',
         line_total_cents: total, discount_cents: 0, tax_rate_bps: rate, tax_cents: 0, commission_cents: 0,
       };
     });
@@ -125,7 +128,7 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
       store_id: storeId, store_slug: f.store_slug, store_name: f.store_name, vendor_id: f.vendor_id, lines, subtotal_cents: subtotal, discount_cents: 0,
       delivery_cents: 0, delivery_tax_cents: 0, tax_cents: 0, tip_cents: 0, total_cents: 0, commission_bps: cbps, commission_cents: 0,
       eta_minutes: opts.method === 'delivery' && !slot ? zone?.eta_minutes ?? null : null, fulfilment_method: opts.method,
-      scheduled_for: slot?.start ?? null, scheduled_until: slot?.end ?? null, preorders_enabled: !!f.preorders_enabled,
+      scheduled_for: slot?.start ?? null, scheduled_until: slot?.end ?? null, preorders_enabled: !!f.preorders_enabled && on('shop.preorders'),
     });
   }
 
@@ -162,13 +165,13 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
 
   // Tip goes to whoever delivers: split across the delivery suborders, never taxed, never touches the store.
   const tipSubs = opts.method === 'delivery' ? subs.filter((s) => s.fulfilment_method === 'delivery') : [];
-  const tip = tipSubs.length ? Math.max(0, Math.min(10000, Math.round(opts.tipCents ?? 0))) : 0;
+  const tip = tipSubs.length && on('shop.tips') ? Math.max(0, Math.min(10000, Math.round(opts.tipCents ?? 0))) : 0;
   if (tip) allocate(tip, tipSubs.map(() => 1)).forEach((t, i) => (tipSubs[i].tip_cents = t));
 
   const sum = (f: (s: QuoteSub) => number) => subs.reduce((a, s) => a + f(s), 0);
   const total = sum((s) => s.total_cents) + tip;
   const available = await creditBalance(c, userId);
-  const applied = opts.useCredit && subs.length ? Math.max(0, Math.min(available, total - MIN_CARD_CENTS)) : 0;
+  const applied = opts.useCredit && on('shop.store_credit') && subs.length ? Math.max(0, Math.min(available, total - MIN_CARD_CENTS)) : 0;
   return {
     credit_available_cents: available, credit_applied_cents: applied, pay_cents: total - applied,
     ok: issues.length === 0 && !couponError, issues, warnings, suborders: subs,

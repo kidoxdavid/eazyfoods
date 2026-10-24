@@ -2,7 +2,7 @@
 export const ROLE_PERMS: Record<string, string[]> = {
   owner: ['*'],
   admin: ['vendors.manage', 'stores.manage', 'catalog.manage', 'dispatch.manage', 'drivers.manage', 'content.manage', 'promotions.manage',
-    'ads.manage', 'crm.manage', 'support.manage', 'orders.view', 'orders.manage', 'users.view', 'reports.view', 'settings.view', 'audit.view', 'refunds.request'],
+    'ads.manage', 'crm.manage', 'support.manage', 'orders.view', 'orders.manage', 'users.view', 'reports.view', 'settings.view', 'audit.view', 'refunds.request', 'control.manage'],
   support: ['orders.view', 'orders.manage', 'support.manage', 'refunds.request', 'users.view'],
   finance: ['orders.view', 'refunds.approve', 'payouts.manage', 'reports.view', 'ledger.view', 'settings.view', 'audit.view'],
   dispatcher: ['dispatch.manage', 'orders.view', 'orders.manage', 'drivers.manage'],

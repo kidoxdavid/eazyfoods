@@ -1,4 +1,5 @@
 import { usePlace } from '../place';
+import { useFeatures } from '../features';
 import { useT } from '../i18n';
 import { Link } from 'react-router-dom';
 import { money, packLabel, post, put } from '../api';
@@ -9,6 +10,7 @@ import { Badge, Button, Empty, Loading, Notice, Stepper } from '../ui';
 import { ProductArt } from '../art';
 
 export function CartPage() {
+  const on = useFeatures();
   const t = useT();
   const { me } = useAuth();
   const { cart, guest, loading, setQty, replace, count } = useCart();
@@ -62,11 +64,12 @@ export function CartPage() {
                 <div className="muted small">{packLabel(i)} · {money(i.unit_price_cents)}{i.price_changed && <> <Badge tone="warn">was {money(i.previous_price_cents)}</Badge></>}</div>
                 {(() => {
                   const next = i.tiers.find((t) => t.min_qty > i.quantity);
+                  if (!on('shop.multibuy')) return null;
                   const got = i.unit_price_cents < i.base_price_cents;
                   return got ? <div className="small okc">Multi-buy price applied: save {money((i.base_price_cents - i.unit_price_cents) * i.quantity)}</div>
                     : next ? <div className="small okc">Buy {next.min_qty} or more: {money(next.unit_price_cents)} each</div> : null;
                 })()}
-                {!i.unavailable && (
+                {!i.unavailable && on('shop.substitution_prefs') && (
                   <label className="small sub-pref">{t('If unavailable:')}{' '}
                     <select value={i.sub_pref} aria-label={`If ${i.name} is unavailable`} onChange={async (e) => replace(await put('/cart/items/' + i.offer_id + '/preference', { sub_pref: e.target.value }))}>
                       <option value="ask">{t('Ask me first')}</option><option value="closest">{t('Swap for the closest match')}</option><option value="refund">{t('Just refund it')}</option>

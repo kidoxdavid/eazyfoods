@@ -1,3 +1,4 @@
+import { requireFeature } from '../services/features.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
@@ -12,7 +13,7 @@ const ITEMS_SQL = `
          s.slug AS store_slug, s.name AS store_name, s.orderable, s.is_open, s.min_order_cents, s.is_test_data
     FROM cart_items ci JOIN carts ct ON ct.id = ci.cart_id
     JOIN offers_live o ON o.id = ci.offer_id
-    LEFT JOIN LATERAL (SELECT unit_price_cents FROM offer_tiers WHERE offer_id = ci.offer_id AND min_qty <= ci.quantity ORDER BY min_qty DESC LIMIT 1) t ON true
+    LEFT JOIN LATERAL (SELECT unit_price_cents FROM offer_tiers WHERE offer_id = ci.offer_id AND min_qty <= ci.quantity AND COALESCE((SELECT enabled FROM feature_flags WHERE key = 'shop.multibuy'), true) ORDER BY min_qty DESC LIMIT 1) t ON true
     JOIN products p ON p.id = o.product_id JOIN storefronts s ON s.id = o.store_id
     LEFT JOIN brands b ON b.id = p.brand_id
    WHERE ct.user_id = $1 ORDER BY s.name, p.name`;
@@ -66,6 +67,7 @@ export const cartRoutes: FastifyPluginAsync = async (app) => {
   // What should the store do if this item turns out to be unavailable?
   app.put<{ Params: { offerId: string } }>('/cart/items/:offerId/preference', async (req) => {
     const offerId = z.string().uuid().parse(req.params.offerId);
+    await requireFeature('shop.substitution_prefs');
     const { sub_pref } = z.object({ sub_pref: z.enum(['closest', 'ask', 'refund']) }).parse(req.body);
     const r = await pool.query('UPDATE cart_items ci SET sub_pref = $3 FROM carts ct WHERE ct.id = ci.cart_id AND ct.user_id = $1 AND ci.offer_id = $2', [req.user!.id, offerId, sub_pref]);
     if (!r.rowCount) throw notFound('That item is not in your basket.');
