@@ -4,6 +4,12 @@ import { bps } from '../lib/money.js';
 import { getSetting } from '../lib/settings.js';
 import { post } from './ledger.js';
 
+import { randomBytes } from 'node:crypto';
+
+const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // no 0/O/1/I
+export const newCode = (len: number) => Array.from(randomBytes(len), (b) => ALPHABET[b % ALPHABET.length]).join('');
+export const giftCode = () => `EAZY-${newCode(4)}-${newCode(4)}`;
+
 type Kind = 'grant' | 'cashback' | 'referral' | 'gift_code' | 'redeem' | 'release' | 'refund' | 'adjust';
 
 export async function creditBalance(c: Queryable, userId: string): Promise<number> {
@@ -11,11 +17,12 @@ export async function creditBalance(c: Queryable, userId: string): Promise<numbe
 }
 
 /** Money the company gives away (rewards, referrals, gift codes): an expense now and a liability to honour the credit later. */
-export async function grantCredit(c: PoolClient, userId: string, cents: number, kind: Exclude<Kind, 'redeem' | 'release' | 'refund'>, o: { orderId?: string | null; note?: string; by?: string | null } = {}) {
+export async function grantCredit(c: PoolClient, userId: string, cents: number, kind: Exclude<Kind, 'redeem' | 'release' | 'refund'>, o: { orderId?: string | null; note?: string; by?: string | null; alreadyBooked?: boolean } = {}) {
   const r = await c.query(
     `INSERT INTO credit_entries(user_id, delta_cents, kind, order_id, note, created_by) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING RETURNING id`,
     [userId, cents, kind, o.orderId ?? null, o.note ?? null, o.by ?? null]);
   if (!r.rowCount) return false;
+  if (o.alreadyBooked) return true;   // a gift card someone paid for: the liability was booked when it was sold, so redeeming it is not a new expense
   await post(c, 'credit_grant', { type: 'credit', id: String(r.rows[0].id) }, [
     { account: 'credit_expense', amount: cents, orderId: o.orderId ?? null }, { account: 'store_credit_liability', amount: -cents, orderId: o.orderId ?? null }]);
   return true;

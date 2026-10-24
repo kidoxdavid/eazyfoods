@@ -1,5 +1,4 @@
 import { requireFeature } from '../services/features.js';
-import { randomBytes } from 'node:crypto';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
@@ -11,9 +10,7 @@ import { requireLogin, requirePerm } from '../lib/permissions.js';
 import { rl } from '../lib/ratelimit.js';
 import { creditBalance, grantCredit } from '../services/credit.js';
 
-const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // no 0/O/1/I
-const newCode = (len: number) => Array.from(randomBytes(len), (b) => ALPHABET[b % ALPHABET.length]).join('');
-const giftCode = () => `EAZY-${newCode(4)}-${newCode(4)}`;
+import { giftCode, newCode } from '../services/credit.js';
 
 /** Store credit for the signed-in customer: balance, history, invite link, gift codes. */
 export const creditRoutes: FastifyPluginAsync = async (app) => {
@@ -45,9 +42,9 @@ export const creditRoutes: FastifyPluginAsync = async (app) => {
     const { code } = z.object({ code: z.string().trim().min(6).max(30) }).parse(req.body);
     const norm = code.toUpperCase().replace(/\s+/g, '');
     return tx(async (c) => {
-      const g = (await c.query(`UPDATE gift_codes SET redeemed_by = $2, redeemed_at = now() WHERE code = $1 AND redeemed_at IS NULL AND (expires_at IS NULL OR expires_at > now()) RETURNING amount_cents`, [norm, req.user!.id])).rows[0];
+      const g = (await c.query(`UPDATE gift_codes SET redeemed_by = $2, redeemed_at = now() WHERE code = $1 AND redeemed_at IS NULL AND (expires_at IS NULL OR expires_at > now()) RETURNING amount_cents, purchase_id`, [norm, req.user!.id])).rows[0];
       if (!g) throw bad('invalid_code', 'That code is not valid, has expired, or was already used.');
-      await grantCredit(c, req.user!.id, g.amount_cents, 'gift_code', { note: `Gift code ${norm.slice(0, 7)}…` });
+      await grantCredit(c, req.user!.id, g.amount_cents, 'gift_code', { note: `Gift code ${norm.slice(0, 7)}…`, alreadyBooked: !!g.purchase_id });
       return { ok: true, added_cents: g.amount_cents, balance_cents: await creditBalance(c, req.user!.id) };
     });
   });

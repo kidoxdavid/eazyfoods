@@ -20,7 +20,7 @@ const FR: Record<string, string> = {
   'By region': 'Par région', 'By department': 'Par rayon', 'Partner with us': 'Devenez partenaire', 'Quick links': 'Liens rapides',
   // footer
   'Back to top': 'Haut de page', 'Work with us': 'Travailler avec nous', 'Legal': 'Mentions légales', 'Your orders': 'Vos commandes', 'Install the EAZyfoods app': 'Installer l’application EAZyfoods',
-  'Language': 'Langue',
+  'Language': 'Langue', 'Gift cards': 'Cartes-cadeaux',
   // product and cards
   'Add to basket': 'Ajouter au panier', 'Out of stock': 'Rupture de stock', 'In stock': 'En stock', 'Quick view': 'Aperçu rapide', 'View basket': 'Voir le panier', 'View': 'Voir',
   'Sold by': 'Vendu par', 'Frequently bought together': 'Souvent achetés ensemble', 'You might also like': 'Vous aimerez aussi', 'Customer reviews': 'Avis des clients', 'Questions about this product': 'Questions sur ce produit',

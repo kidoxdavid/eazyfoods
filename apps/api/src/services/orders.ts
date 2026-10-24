@@ -1,4 +1,6 @@
 import { awardOrderRewards } from './credit.js';
+import { queueSms } from './sms.js';
+import { config } from '../config.js';
 import type { PoolClient } from 'pg';
 import { pool, type After } from '../db/pool.js';
 import { bad, conflict, forbidden, notFound } from '../lib/errors.js';
@@ -76,6 +78,8 @@ export async function moveSuborder(c: PoolClient, after: After, suborderId: stri
     await history(c, s.oid, null, 'placed', done ? 'completed' : 'cancelled', actor.userId);
     if (done) await awardOrderRewards(c, s.oid);
   }
+  if (to === 'out_for_delivery' || (to === 'ready' && s.fulfilment_method === 'pickup'))
+    after.push(() => queueSms(pool, s.user_id, to === 'ready' ? `EAZyfoods: order ${s.order_number} is ready for pickup.` : `EAZyfoods: order ${s.order_number} is out for delivery. Track it: ${config.WEB_ORIGIN}/orders`).then(() => {}));
   if (CUSTOMER_NOTIFY[to])
     after.push(() => notify(pool, { userId: s.user_id, email: s.customer_email, template: 'order_status', transactional: false, vars: { order_number: s.order_number, status: CUSTOMER_NOTIFY[to], note: note ?? '' } }));
   return { id: suborderId, status: to };

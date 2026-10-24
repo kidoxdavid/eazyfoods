@@ -4,6 +4,7 @@ import { HttpError } from '../lib/errors.js';
 import { getProvider } from '../payments/provider.js';
 import { postPaymentCaptured } from './ledger.js';
 import { redeemForOrder, releaseOrderCredit } from './credit.js';
+import { onGiftFailed, onGiftPaid } from './giftcards.js';
 import { history } from './orders.js';
 import { refundWholeSuborder } from './refunds.js';
 import { notify, notifyVendorOwners } from './notify.js';
@@ -20,6 +21,7 @@ async function releaseReservations(c: PoolClient, orderId: string) {
 
 /** A verified, matching payment: commit stock, place the order, book the ledger. Idempotent. */
 async function onPaymentSucceeded(c: PoolClient, after: After, payment: any) {
+  if (payment.gift_purchase_id) return onGiftPaid(c, after, payment);
   const order = (await c.query('SELECT * FROM orders WHERE id = $1 FOR UPDATE', [payment.order_id])).rows[0];
   if (order.payment_status === 'paid' || order.payment_status.includes('refunded')) return 'already_paid';
   await c.query(`UPDATE payments SET status='succeeded' WHERE id=$1`, [payment.id]);
@@ -86,6 +88,7 @@ async function restockCommitted(c: PoolClient, suborderId: string, reservations:
 }
 
 async function onPaymentFailed(c: PoolClient, payment: any, message?: string) {
+  if (payment.gift_purchase_id) return onGiftFailed(c, payment, message);
   const order = (await c.query('SELECT * FROM orders WHERE id = $1 FOR UPDATE', [payment.order_id])).rows[0];
   if (order.payment_status === 'paid' || order.payment_status.includes('refunded')) return 'ignored_already_paid';
   await c.query(`UPDATE payments SET status='failed', failure_message=$2 WHERE id=$1`, [payment.id, message ?? null]);

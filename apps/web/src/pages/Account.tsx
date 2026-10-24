@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useFeatures } from '../features';
+import { useFeature, useFeatures } from '../features';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, del, post, put } from '../api';
 import { useAuth } from '../auth';
@@ -28,11 +28,12 @@ export function AccountPage() {
 }
 
 function Profile() {
-  const p = useApi<{ full_name: string; phone: string | null; email_verified_at: string | null; notify_email: boolean; marketing_opt_in_at: string | null }>('/account/profile');
+  const p = useApi<{ full_name: string; phone: string | null; email_verified_at: string | null; notify_email: boolean; marketing_opt_in_at: string | null; sms_opt_in_at: string | null }>('/account/profile');
+  const smsOn = useFeature('shop.sms');
   const toast = useToast();
   const save = useAction(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); const f = new FormData(e.currentTarget);
-    await put('/account/profile', { full_name: f.get('full_name'), phone: f.get('phone') || null, notify_email: f.get('notify') === 'on', marketing_opt_in: f.get('marketing') === 'on' });
+    await put('/account/profile', { full_name: f.get('full_name'), phone: f.get('phone') || null, notify_email: f.get('notify') === 'on', marketing_opt_in: f.get('marketing') === 'on', ...(smsOn ? { sms_opt_in: f.get('sms') === 'on' } : {}) });
     toast('Saved'); p.reload();
   });
   const verify = useAction(async () => { await post('/auth/verify/request'); toast('Verification email sent'); });
@@ -46,6 +47,7 @@ function Profile() {
       <p>{p.data.email_verified_at ? <Badge tone="ok">Email verified</Badge> : <>Email not verified yet. <button type="button" className="link" onClick={() => verify.run()}>Send verification email</button></>}</p>
       <label className="check"><input type="checkbox" name="notify" defaultChecked={p.data.notify_email} /> Email me order progress updates (payment and order confirmations are always sent)</label>
       <label className="check"><input type="checkbox" name="marketing" defaultChecked={!!p.data.marketing_opt_in_at} /> Email me offers and news{p.data.marketing_opt_in_at ? ` (opted in ${fmtDate(p.data.marketing_opt_in_at, { dateStyle: 'medium' })})` : ''}</label>
+      {smsOn && <label className="check"><input type="checkbox" name="sms" defaultChecked={!!p.data.sms_opt_in_at} /> Text me when my order is out for delivery or ready for pickup (uses the phone number above; message and data rates may apply; reply STOP to stop)</label>}
       <Button type="submit" busy={save.busy}>Save changes</Button>
     </form>
   );

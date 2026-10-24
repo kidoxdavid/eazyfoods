@@ -24,6 +24,7 @@ import { vendorPortalRoutes } from './routes/vendorPortal.js';
 import { supportRoutes } from './routes/support.js';
 import { creditAdminRoutes, creditRoutes } from './routes/credit.js';
 import { controlRoutes, featureRoutes } from './routes/control.js';
+import { giftCardRoutes } from './routes/giftcards.js';
 import { applySeo, robotsTxt, seoFor, seoIndexing, siteOrigin, sitemapXml } from './services/seo.js';
 import { engagementRoutes } from './routes/engagement.js';
 import { recipeRoutes } from './routes/recipes.js';
@@ -101,6 +102,7 @@ export async function buildApp() {
   await app.register(creditAdminRoutes, { prefix: '/api/marketing' });
   await app.register(creditRoutes, { prefix: '/api' });
   await app.register(featureRoutes, { prefix: '/api' });
+  await app.register(giftCardRoutes, { prefix: '/api' });
   await app.register(controlRoutes, { prefix: '/api/admin/control' });
   await app.register(marketingPublicRoutes, { prefix: '/api' });
   await app.register(adminRoutes, { prefix: '/api/admin' });

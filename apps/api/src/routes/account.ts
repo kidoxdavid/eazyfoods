@@ -1,3 +1,4 @@
+import { toE164 } from '../services/sms.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
@@ -55,17 +56,23 @@ export const accountRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.get('/account/profile', async (req) => {
-    const u = (await pool.query('SELECT id, email, full_name, phone, email_verified_at, notify_email, marketing_opt_in_at FROM users WHERE id = $1', [req.user!.id])).rows[0];
+    const u = (await pool.query('SELECT id, email, full_name, phone, email_verified_at, notify_email, marketing_opt_in_at, sms_opt_in_at FROM users WHERE id = $1', [req.user!.id])).rows[0];
     return { ...u, roles: req.user!.roles };
   });
   app.put('/account/profile', async (req) => {
-    const b = z.object({ full_name: z.string().min(1).max(120), phone: z.string().max(25).nullable().optional(), notify_email: z.boolean(), marketing_opt_in: z.boolean() }).parse(req.body);
+    const b = z.object({ full_name: z.string().min(1).max(120), phone: z.string().max(25).nullable().optional(), notify_email: z.boolean(), marketing_opt_in: z.boolean(), sms_opt_in: z.boolean().optional() }).parse(req.body);
+    if (b.sms_opt_in && !toE164(b.phone)) throw bad('phone_required', 'Enter a Canadian mobile number to get text updates.');
     // Consent is recorded with a timestamp when granted, and cleared when withdrawn.
     const was = !!(await pool.query('SELECT marketing_opt_in_at FROM users WHERE id = $1', [req.user!.id])).rows[0]?.marketing_opt_in_at;
     if (was !== b.marketing_opt_in) await pool.query(`INSERT INTO marketing_consent_log(user_id, action, source) VALUES ($1,$2,'account settings')`, [req.user!.id, b.marketing_opt_in ? 'opt_in' : 'opt_out']);
+    if (b.sms_opt_in !== undefined) {
+      const wasSms = !!(await pool.query('SELECT sms_opt_in_at FROM users WHERE id = $1', [req.user!.id])).rows[0]?.sms_opt_in_at;
+      if (wasSms !== b.sms_opt_in) await pool.query(`INSERT INTO marketing_consent_log(user_id, action, source) VALUES ($1,$2,'sms: account settings')`, [req.user!.id, b.sms_opt_in ? 'opt_in' : 'opt_out']);
+    }
     await pool.query(
-      `UPDATE users SET full_name=$2, phone=$3, notify_email=$4, marketing_opt_in_at = CASE WHEN $5 THEN COALESCE(marketing_opt_in_at, now()) ELSE NULL END WHERE id=$1`,
-      [req.user!.id, b.full_name, b.phone ?? null, b.notify_email, b.marketing_opt_in]);
+      `UPDATE users SET full_name=$2, phone=$3, notify_email=$4, marketing_opt_in_at = CASE WHEN $5 THEN COALESCE(marketing_opt_in_at, now()) ELSE NULL END,
+              sms_opt_in_at = CASE WHEN $6::boolean IS NULL THEN sms_opt_in_at WHEN $6 THEN COALESCE(sms_opt_in_at, now()) ELSE NULL END WHERE id=$1`,
+      [req.user!.id, b.full_name, b.phone ?? null, b.notify_email, b.marketing_opt_in, b.sms_opt_in ?? null]);
     return { ok: true };
   });
   app.post('/account/password', rl(5, '10 minutes'), async (req) => {

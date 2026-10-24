@@ -53,3 +53,27 @@ describe('store credit, help and store comparison, on a phone', () => {
     await seeText(page.locator('table.compare'), 'Minimum order');
   });
 });
+
+describe('gift cards you can buy (browser)', () => {
+  it('buys a gift card on a phone, sees the code after paying, and redeems it for store credit', async () => {
+    const { page, errors } = await newPage(browser, MOBILE);
+    await page.goto(`${base()}/gift-cards`);
+    await seeText(page.locator('main'), 'create an account');            // signed out: asked to sign in first
+    await page.goto(`${base()}/register?next=/gift-cards`);
+    await page.fill('input[name=full_name]', 'Gift Giver'); await page.fill('input[name=email]', `gc+${Date.now()}@example.test`); await page.fill('input[name=password]', 'a-long-password');
+    await page.click('.auth button[type=submit]');
+    await page.waitForURL('**/gift-cards');
+    await page.getByRole('button', { name: '$25.00' }).click();
+    await page.getByRole('button', { name: /Continue to payment · \$25\.00/ }).click();
+    await page.waitForSelector('.test-banner');
+    await page.getByRole('button', { name: 'Simulate successful payment' }).click();
+    await page.waitForURL(/\/gift-cards\/[0-9a-f-]+/);
+    const code = await page.locator('.code-box').innerText();
+    expect(code).toMatch(/^EAZY-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    await page.goto(`${base()}/credit`);
+    await page.fill('input[name=code]', code);
+    await page.getByRole('button', { name: 'Add', exact: true }).click();
+    await seeText(page.locator('main'), '$25.00');
+    expect(errors.filter((e) => !/40[0-9]|409/.test(e))).toEqual([]);
+  });
+});

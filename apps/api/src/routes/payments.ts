@@ -37,6 +37,17 @@ export const paymentRoutes: FastifyPluginAsync = async (app) => {
       await pool.query(`INSERT INTO app_settings(key, value) VALUES ($1, 'true') ON CONFLICT (key) DO UPDATE SET value = 'true'`, [`mock_connect:${acct}`]);
       return { ok: true };
     });
+    app.post<{ Params: { id: string } }>('/dev/gift-cards/:id/simulate-payment', { preHandler: requireLogin }, async (req) => {
+      const id = z.string().uuid().parse(req.params.id);
+      const { outcome } = z.object({ outcome: z.enum(['succeeded', 'failed']) }).parse(req.body);
+      const p = (await pool.query(`SELECT p.* FROM payments p JOIN gift_purchases g ON g.id = p.gift_purchase_id WHERE g.id = $1 AND g.buyer_id = $2 ORDER BY p.created_at DESC LIMIT 1`, [id, req.user!.id])).rows[0];
+      if (!p) throw notFound('No payment for this gift card');
+      if (p.status !== 'requires_payment') throw conflict('not_payable', 'This payment is no longer waiting for a card.');
+      const body = Buffer.from(JSON.stringify({
+        id: 'evt_' + randomBytes(8).toString('hex'), type: outcome === 'succeeded' ? 'payment.succeeded' : 'payment.failed',
+        payment_id: p.provider_payment_id, amount_cents: p.amount_cents, failure_message: outcome === 'failed' ? 'Your card was declined (simulated).' : undefined }));
+      return handleWebhook(body, { 'x-mock-signature': MockProvider.sign(body) });
+    });
     app.post<{ Params: { id: string } }>('/dev/orders/:id/simulate-payment', { preHandler: requireLogin }, async (req) => {
       const id = z.string().uuid().parse(req.params.id);
       const { outcome } = z.object({ outcome: z.enum(['succeeded', 'failed']) }).parse(req.body);

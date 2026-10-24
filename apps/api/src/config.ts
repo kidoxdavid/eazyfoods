@@ -17,6 +17,11 @@ const schema = z.object({
   EMAIL_TRANSPORT: z.enum(['log', 'resend']).default('log'),
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default('EAZyfoods <orders@example.invalid>'),
+  // Text messages: 'log' only records them. 'twilio' needs the three values below (UNVERIFIED against a live Twilio account).
+  SMS_TRANSPORT: z.enum(['log', 'twilio']).default('log'),
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_FROM: z.string().optional(),
   UPLOAD_DIR: z.string().default('./uploads'),
   PUBLIC_API_URL: z.string().default('http://localhost:4000'),
   SENTRY_DSN: z.string().optional(),

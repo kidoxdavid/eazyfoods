@@ -216,13 +216,13 @@ export function CheckoutPage() {
   );
 }
 
-export function PaymentStep({ order, cfg, onPaid }: { order: { id: string; order_number: string; total_cents: number; pay_cents?: number; client_secret: string | null }; cfg?: Cfg; onPaid: () => void }) {
+export function PaymentStep({ order, cfg, onPaid, kind = 'order' }: { order: { id: string; order_number: string; total_cents: number; pay_cents?: number; client_secret: string | null }; cfg?: Cfg; onPaid: () => void; kind?: 'order' | 'gift' }) {
   const [err, setErr] = useState<string>();
   const [busy, setBusy] = useState(false);
   const simulate = async (outcome: 'succeeded' | 'failed') => {
     setBusy(true); setErr(undefined);
     try {
-      await post(`/dev/orders/${order.id}/simulate-payment`, { outcome });
+      await post(kind === 'gift' ? `/dev/gift-cards/${order.id}/simulate-payment` : `/dev/orders/${order.id}/simulate-payment`, { outcome });
       if (outcome === 'succeeded') onPaid(); else setErr('Your card was declined (simulated). Nothing was charged. You can go back and try again.');
     } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
   };
@@ -230,8 +230,8 @@ export function PaymentStep({ order, cfg, onPaid }: { order: { id: string; order
   return (
     <div style={{ maxWidth: 560, margin: '0 auto' }}>
       <h1>Payment</h1>
-      <p>Order <strong>{order.order_number}</strong> · Total <strong>{money(order.pay_cents ?? order.total_cents)}</strong>{order.pay_cents != null && order.pay_cents < order.total_cents && <span className="muted small"> (after {money(order.total_cents - order.pay_cents)} store credit)</span>}</p>
-      <Notice>Your stock is being held for you for a short time while you pay.</Notice>
+      <p>{kind === 'gift' ? 'Gift card' : <>Order <strong>{order.order_number}</strong></>} · Total <strong>{money(order.pay_cents ?? order.total_cents)}</strong>{order.pay_cents != null && order.pay_cents < order.total_cents && <span className="muted small"> (after {money(order.total_cents - order.pay_cents)} store credit)</span>}</p>
+      {kind === 'order' && <Notice>Your stock is being held for you for a short time while you pay.</Notice>}
       {cfg.payment_provider === 'mock' ? (
         <div className="test-banner" role="region" aria-label="Test payment">
           <strong>TEST MODE: no real money moves.</strong>
@@ -239,14 +239,14 @@ export function PaymentStep({ order, cfg, onPaid }: { order: { id: string; order
           {err && <Notice tone="error">{err}</Notice>}
           <div className="stack"><Button size="lg" busy={busy} onClick={() => simulate('succeeded')}>Simulate successful payment</Button><Button variant="secondary" busy={busy} onClick={() => simulate('failed')}>Simulate declined card</Button></div>
         </div>
-      ) : <StripePay order={order} publishableKey={cfg.stripe_publishable_key} onSubmitted={onPaid} />}
-      <p className="row" style={{ marginTop: 14 }}><Link to={`/orders/${order.id}`}>View this order</Link></p>
+      ) : <StripePay order={order} publishableKey={cfg.stripe_publishable_key} onSubmitted={onPaid} returnPath={kind === 'gift' ? `/gift-cards/${order.id}` : `/orders/${order.id}`} />}
+      {kind === 'order' && <p className="row" style={{ marginTop: 14 }}><Link to={`/orders/${order.id}`}>View this order</Link></p>}
     </div>
   );
 }
 
 /** Stripe Payment Element. UNVERIFIED against a live Stripe account (no credentials were available); see docs/PAYMENTS.md. */
-function StripePay({ order, publishableKey, onSubmitted }: { order: { id: string; client_secret: string | null }; publishableKey: string | null; onSubmitted: () => void }) {
+function StripePay({ order, publishableKey, onSubmitted, returnPath }: { order: { id: string; client_secret: string | null }; publishableKey: string | null; onSubmitted: () => void; returnPath: string }) {
   const mount = useRef<HTMLDivElement>(null);
   const ctx = useRef<{ stripe: any; elements: any } | null>(null);
   const [err, setErr] = useState<string>();
@@ -270,7 +270,7 @@ function StripePay({ order, publishableKey, onSubmitted }: { order: { id: string
       {err && <Notice tone="error">{err}</Notice>}
       <Button size="lg" style={{ width: '100%', marginTop: 12 }} busy={busy} onClick={async () => {
         if (!ctx.current) return; setBusy(true);
-        const r = await ctx.current.stripe.confirmPayment({ elements: ctx.current.elements, redirect: 'if_required', confirmParams: { return_url: `${location.origin}/orders/${order.id}` } });
+        const r = await ctx.current.stripe.confirmPayment({ elements: ctx.current.elements, redirect: 'if_required', confirmParams: { return_url: `${location.origin}${returnPath}` } });
         setBusy(false);
         if (r.error) setErr(r.error.message); else onSubmitted();   // the order page waits for the webhook before showing "paid"
       }}>Pay now</Button>
