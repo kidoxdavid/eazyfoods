@@ -4,7 +4,7 @@ import { Loading, ErrorBox, Select, Field, Empty } from '../../ui';
 
 export type VStore = { id: string; slug: string; name: string; status: string; orderable: boolean; is_open: boolean; kind: 'grocery' | 'kitchen' };
 export type VOrder = {
-  id: string; status: string; fulfilment_method: string; subtotal_cents: number; discount_cents: number; total_cents: number; commission_cents: number; placed_at: string | null; promised_at: string | null;
+  id: string; status: string; fulfilment_method: string; subtotal_cents: number; discount_cents: number; total_cents: number; commission_cents: number; placed_at: string | null; promised_at: string | null; scheduled_for?: string | null; scheduled_until?: string | null;
   store_name: string; store_id: string; order_number: string; customer_first_name: string; delivery_instructions: string | null; needs_attention: boolean;
   lines: { id: string; name: string; brand: string | null; pack_label: string | null; quantity: number; unit_price_cents: number; status: string; substitution_status: string; substitute_name: string | null; sold_by: string; refunded_quantity: number }[] | null;
 };

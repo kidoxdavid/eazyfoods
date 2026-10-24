@@ -26,6 +26,9 @@ export const SETTING_SCHEMAS: Record<string, z.ZodTypeAny> = {
   'ads.min_budget_cents': int(100, 1000000),
   'vendor.agreement_version': z.string().min(1).max(40),
   'kitchens.enabled': z.boolean(),
+  'payout.hold_days_kitchen': int(0, 30),
+  'payout.auto_enabled': z.boolean(),
+  'payout.auto_min_cents': int(100, 1000000),
 };
 
 export const adminSystemRoutes: FastifyPluginAsync = async (app) => {
@@ -86,7 +89,7 @@ export const adminSystemRoutes: FastifyPluginAsync = async (app) => {
   // Payout account (set after Stripe Connect onboarding; finance only).
   app.patch<{ Params: { id: string } }>('/vendors/:id/payout-account', { preHandler: requirePerm('payouts.manage') }, async (req) => {
     const { stripe_account_id } = z.object({ stripe_account_id: z.string().regex(/^acct_[A-Za-z0-9]+$/).nullable() }).parse(req.body);
-    const r = await pool.query('UPDATE vendors SET stripe_account_id = $2 WHERE id = $1 RETURNING id', [uuid.parse(req.params.id), stripe_account_id]);
+    const r = await pool.query(`UPDATE vendors SET stripe_account_id = $2, payout_status = CASE WHEN $2::text IS NULL THEN 'none' ELSE 'enabled' END WHERE id = $1 RETURNING id`, [uuid.parse(req.params.id), stripe_account_id]);
     if (!r.rowCount) throw notFound('Vendor not found');
     await audit(req.user!.id, 'vendor.payout_account_set', 'vendor', req.params.id, { connected: !!stripe_account_id });
     return { ok: true };

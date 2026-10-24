@@ -55,7 +55,7 @@ async function onPaymentSucceeded(c: PoolClient, after: After, payment: any) {
       await refundWholeSuborder(c, after, s.id, 'Items were no longer available', null);
       continue;
     }
-    await c.query(`UPDATE suborders SET status='placed', promised_at = CASE WHEN eta_minutes IS NULL THEN NULL ELSE now() + make_interval(mins => eta_minutes) END WHERE id=$1`, [s.id]);
+    await c.query(`UPDATE suborders SET status='placed', promised_at = CASE WHEN scheduled_until IS NOT NULL THEN scheduled_until WHEN eta_minutes IS NULL THEN NULL ELSE now() + make_interval(mins => eta_minutes) END WHERE id=$1`, [s.id]);
     await history(c, order.id, s.id, s.status, 'placed', null);
     after.push(() => notifyVendorOwners(pool, s.vendor_id, 'vendor_new_order', { order_number: order.order_number }));
   }

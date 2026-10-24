@@ -29,6 +29,14 @@ export const paymentRoutes: FastifyPluginAsync = async (app) => {
   if (!isProd && config.PAYMENT_PROVIDER === 'mock') {
     // DEV ONLY. Builds a correctly signed provider event and sends it through the real webhook handler.
     // It cannot mark anything paid by itself and does not exist in production.
+    // DEV ONLY: finishes the mock Connect onboarding for the signed-in vendor's own account.
+    app.post<{ Params: { acct: string } }>('/dev/connect/:acct/complete', { preHandler: requireLogin }, async (req) => {
+      const acct = z.string().regex(/^acct_mock[a-f0-9]+$/).parse(req.params.acct);
+      const own = (await pool.query(`SELECT 1 FROM vendors WHERE stripe_account_id = $1 AND id = ANY($2::uuid[])`, [acct, req.user!.roles.map((r) => r.vendor_id).filter(Boolean)])).rowCount;
+      if (!own) return { ok: false };
+      await pool.query(`INSERT INTO app_settings(key, value) VALUES ($1, 'true') ON CONFLICT (key) DO UPDATE SET value = 'true'`, [`mock_connect:${acct}`]);
+      return { ok: true };
+    });
     app.post<{ Params: { id: string } }>('/dev/orders/:id/simulate-payment', { preHandler: requireLogin }, async (req) => {
       const id = z.string().uuid().parse(req.params.id);
       const { outcome } = z.object({ outcome: z.enum(['succeeded', 'failed']) }).parse(req.body);

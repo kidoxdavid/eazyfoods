@@ -7,6 +7,7 @@ import { bad, conflict, notFound } from '../lib/errors.js';
 import { getSetting } from '../lib/settings.js';
 import { moveSuborder } from '../services/orders.js';
 import { postPayout } from '../services/ledger.js';
+import { createVendorPayout, holdDays, runAutoPayouts, settlePayout, vendorBalance } from '../services/payouts.js';
 import { getProvider } from '../payments/provider.js';
 
 const uuid = z.string().uuid();
@@ -131,33 +132,34 @@ export const adminOpsRoutes: FastifyPluginAsync = async (app) => {
   // ---- Ledger, balances & payouts (finance) ----
   app.get('/finance/summary', { preHandler: requirePerm('ledger.view') }, async () => {
     const accounts = (await pool.query(`SELECT account, sum(amount_cents)::int AS balance_cents FROM ledger_entries GROUP BY account ORDER BY account`)).rows;
-    const holdDays = await getSetting<number>('payout.hold_days');
-    const vendors = (await pool.query(
-      `SELECT v.id, v.name, v.stripe_account_id IS NOT NULL AS has_payout_account,
-              COALESCE(-(SELECT sum(l.amount_cents) FROM ledger_entries l WHERE l.vendor_id = v.id AND l.account = 'vendor_payable'), 0)::int AS owed_cents,
-              COALESCE((SELECT sum(-(SELECT COALESCE(sum(l.amount_cents),0) FROM ledger_entries l WHERE l.suborder_id = s.id AND l.account = 'vendor_payable'))
-                          FROM suborders s WHERE s.vendor_id = v.id AND s.status IN ('delivered','collected') AND s.payout_id IS NULL AND s.completed_at < now() - make_interval(days => $1)), 0)::int AS payable_now_cents
-         FROM vendors v WHERE EXISTS (SELECT 1 FROM suborders s WHERE s.vendor_id = v.id) ORDER BY v.name`, [holdDays])).rows;
+    const days = await holdDays('store'), kitchenDays = await holdDays('chef');
+    const rows = (await pool.query(`SELECT v.id, v.name, v.kind, v.stripe_account_id IS NOT NULL AS has_payout_account, v.payout_status FROM vendors v WHERE EXISTS (SELECT 1 FROM suborders s WHERE s.vendor_id = v.id) ORDER BY v.name`)).rows;
+    const vendors = [];
+    for (const v of rows) { const b = await vendorBalance(v.id); vendors.push({ ...v, owed_cents: b.owed_cents, payable_now_cents: b.payable_now_cents, in_hold_cents: b.in_hold_cents }); }
     const drivers = (await pool.query(`SELECT d.id, u.full_name, COALESCE(sum(e.amount_cents) FILTER (WHERE e.payout_id IS NULL),0)::int AS unpaid_cents FROM drivers d JOIN users u ON u.id = d.user_id LEFT JOIN driver_earnings e ON e.driver_id = d.id GROUP BY d.id, u.full_name HAVING count(e.id) > 0`)).rows;
-    const payouts = (await pool.query(`SELECT p.id, p.payee_type, p.amount_cents, p.status, p.created_at, v.name AS vendor_name FROM payouts p LEFT JOIN vendors v ON v.id = p.vendor_id ORDER BY p.created_at DESC LIMIT 50`)).rows;
-    return { accounts, vendors, drivers, payouts, hold_days: holdDays };
+    const payouts = (await pool.query(`SELECT p.id, p.payee_type, p.amount_cents, p.status, p.created_at, p.trigger, p.attempts, p.note, v.name AS vendor_name FROM payouts p LEFT JOIN vendors v ON v.id = p.vendor_id ORDER BY p.created_at DESC LIMIT 50`)).rows;
+    return { accounts, vendors, drivers, payouts, hold_days: days, hold_days_kitchen: kitchenDays, auto: { enabled: await getSetting<boolean>('payout.auto_enabled'), min_cents: await getSetting<number>('payout.auto_min_cents') } };
   });
 
   app.post<{ Params: { vendorId: string } }>('/payouts/vendor/:vendorId', { preHandler: requirePerm('payouts.manage') }, async (req, reply) => {
-    const vendorId = uuid.parse(req.params.vendorId);
-    const holdDays = await getSetting<number>('payout.hold_days');
-    const p = await tx(async (c) => {
-      const subs = (await c.query(
-        `SELECT s.id, -(SELECT COALESCE(sum(l.amount_cents),0) FROM ledger_entries l WHERE l.suborder_id = s.id AND l.account = 'vendor_payable')::int AS net
-           FROM suborders s WHERE s.vendor_id = $1 AND s.status IN ('delivered','collected') AND s.payout_id IS NULL AND s.completed_at < now() - make_interval(days => $2) FOR UPDATE OF s`, [vendorId, holdDays])).rows;
-      const amount = subs.reduce((a, s) => a + s.net, 0);
-      if (amount <= 0) throw bad('nothing_payable', 'Nothing is payable to this vendor yet (orders must be delivered and past the hold period).');
-      const row = (await c.query(`INSERT INTO payouts(payee_type, vendor_id, amount_cents, created_by) VALUES ('vendor',$1,$2,$3) RETURNING *`, [vendorId, amount, req.user!.id])).rows[0];
-      await c.query('UPDATE suborders SET payout_id = $2 WHERE id = ANY($1::uuid[])', [subs.map((s) => s.id), row.id]);
-      await audit(req.user!.id, 'payout.created', 'payout', row.id, { vendorId, amount }, c);
-      return row;
-    });
+    const p = await createVendorPayout(uuid.parse(req.params.vendorId), req.user!.id, 'manual');
     return reply.code(201).send(await settlePayout(p.id, req.user!.id));
+  });
+
+  /** Try again after a failed transfer (for example the cook's account needed more details). */
+  app.post<{ Params: { id: string } }>('/payouts/:id/retry', { preHandler: requirePerm('payouts.manage') }, async (req) => {
+    const id = uuid.parse(req.params.id);
+    const p = (await pool.query(`SELECT status FROM payouts WHERE id = $1`, [id])).rows[0];
+    if (!p) throw notFound('Payout not found');
+    if (p.status === 'paid') throw conflict('already_paid', 'This payout has already been paid.');
+    return settlePayout(id, req.user!.id);
+  });
+
+  /** Run the automatic payout pass now (the same one that runs in the background when automatic payouts are turned on). */
+  app.post('/payouts/run-auto', { preHandler: requirePerm('payouts.manage') }, async (req) => {
+    const r = await runAutoPayouts();
+    await audit(req.user!.id, 'payout.auto_run', 'payout', 'auto', r);
+    return r;
   });
 
   app.post<{ Params: { driverId: string } }>('/payouts/driver/:driverId', { preHandler: requirePerm('payouts.manage') }, async (req, reply) => {
@@ -180,7 +182,7 @@ export const adminOpsRoutes: FastifyPluginAsync = async (app) => {
     return tx(async (c) => {
       const p = (await c.query(`SELECT * FROM payouts WHERE id = $1 AND status IN ('pending','failed') FOR UPDATE`, [id])).rows[0];
       if (!p) throw conflict('not_pending', 'This payout is not waiting to be paid.');
-      await c.query(`UPDATE payouts SET status='paid', provider_transfer_id=$2, note='Paid manually' WHERE id=$1`, [id, reference]);
+      await c.query(`UPDATE payouts SET status='paid', provider_transfer_id=$2, paid_at=now(), note='Paid manually' WHERE id=$1`, [id, reference]);
       await postPayout(c, { id, payee_type: p.payee_type, vendor_id: p.vendor_id, driver_id: p.driver_id, amount: p.amount_cents });
       await audit(req.user!.id, 'payout.marked_paid', 'payout', id, { reference }, c);
       return { id, status: 'paid' };
@@ -194,24 +196,3 @@ export const adminOpsRoutes: FastifyPluginAsync = async (app) => {
         WHERE ($1::text IS NULL OR o.order_number = $1) ORDER BY l.id DESC LIMIT 300`, [q.order_number ?? null])).rows;
   });
 };
-
-/** Try to pay out through the provider (Stripe Connect transfer) when the payee has an account; otherwise leave it for a manual bank transfer. */
-async function settlePayout(payoutId: string, actor: string) {
-  const p = (await pool.query(`SELECT p.*, v.stripe_account_id FROM payouts p LEFT JOIN vendors v ON v.id = p.vendor_id WHERE p.id = $1`, [payoutId])).rows[0];
-  const provider = getProvider();
-  if (p.payee_type === 'vendor' && p.stripe_account_id && provider.transfer) {
-    try {
-      const t = await provider.transfer({ destinationAccount: p.stripe_account_id, amountCents: p.amount_cents, idempotencyKey: `payout:${p.id}` });
-      await tx(async (c) => {
-        await c.query(`UPDATE payouts SET status='paid', provider_transfer_id=$2 WHERE id=$1`, [p.id, t.transferId]);
-        await postPayout(c, { id: p.id, payee_type: 'vendor', vendor_id: p.vendor_id, amount: p.amount_cents });
-        await audit(actor, 'payout.paid', 'payout', p.id, { transfer: t.transferId }, c);
-      });
-      return { id: p.id, status: 'paid', amount_cents: p.amount_cents };
-    } catch (e: any) {
-      await pool.query(`UPDATE payouts SET status='failed', note=$2 WHERE id=$1`, [p.id, String(e.message)]);
-      return { id: p.id, status: 'failed', amount_cents: p.amount_cents, error: String(e.message) };
-    }
-  }
-  return { id: p.id, status: 'pending', amount_cents: p.amount_cents, message: 'No payout account connected. Pay by bank transfer, then mark it paid with the reference.' };
-}

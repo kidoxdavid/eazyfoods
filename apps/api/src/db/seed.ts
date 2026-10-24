@@ -258,8 +258,8 @@ export async function seed(log = console.log) {
       const v = (await c.query(`INSERT INTO vendors(name,legal_name,status,is_test_data,kind) VALUES ($1,$1,'approved',true,'chef') RETURNING id`, [k.vendor])).rows[0].id;
       await user(k.email, k.owner, 'vendor_owner', v);
       const st = (await c.query(
-        `INSERT INTO stores(vendor_id,slug,name,description,address_line,postal_code,phone,status,is_test_data,min_order_cents,kind,cuisines,offers_pickup)
-         VALUES ($1,$2,$3,$4,'1 Test Kitchen Rd',$5,'000-000-0000','published',true,2000,'kitchen',$6,false) RETURNING id`, [v, k.slug, k.name, k.about, k.postal, [...k.cuisines]])).rows[0].id;
+        `INSERT INTO stores(vendor_id,slug,name,description,address_line,postal_code,phone,status,is_test_data,min_order_cents,kind,cuisines,offers_pickup,preorders_enabled)
+         VALUES ($1,$2,$3,$4,'1 Test Kitchen Rd',$5,'000-000-0000','published',true,2000,'kitchen',$6,false,true) RETURNING id`, [v, k.slug, k.name, k.about, k.postal, [...k.cuisines]])).rows[0].id;
       const [o, cl] = process.env.DEMO_ALWAYS_OPEN === '1' ? ['00:00', '23:59:59'] : ['11:00', '20:00'];
       for (let d = 0; d < 7; d++) await c.query(`INSERT INTO store_hours VALUES ($1,$2,$3,$4)`, [st, d, o, cl]);
       for (const r of k.regions) await c.query('INSERT INTO store_regions VALUES ($1,$2) ON CONFLICT DO NOTHING', [st, regionId[r]]);

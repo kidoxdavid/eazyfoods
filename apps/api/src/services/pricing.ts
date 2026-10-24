@@ -1,6 +1,7 @@
 import type { Queryable } from '../lib/db-types.js';
 import { allocate, bps } from '../lib/money.js';
 import { getSetting } from '../lib/settings.js';
+import { findSlot } from './slots.js';
 
 export type Issue = { type: string; message: string; offer_id?: string; store_slug?: string; available?: number };
 export type QuoteLine = {
@@ -12,6 +13,7 @@ export type QuoteSub = {
   store_id: string; store_slug: string; store_name: string; vendor_id: string; lines: QuoteLine[];
   subtotal_cents: number; discount_cents: number; delivery_cents: number; delivery_tax_cents: number; tax_cents: number; total_cents: number;
   commission_bps: number; commission_cents: number; eta_minutes: number | null; fulfilment_method: 'delivery' | 'pickup';
+  scheduled_for: string | null; scheduled_until: string | null; preorders_enabled: boolean;
 };
 export type Quote = {
   ok: boolean; issues: Issue[]; warnings: Issue[]; suborders: QuoteSub[];
@@ -23,7 +25,7 @@ export type Quote = {
 export const normalisePostal = (s: string) => s.replace(/\s+/g, '').toUpperCase();
 export const isCanadianPostal = (s: string) => /^[A-Z][0-9][A-Z][0-9][A-Z][0-9]$/.test(normalisePostal(s));
 
-type Opts = { addressId?: string | null; method: 'delivery' | 'pickup'; couponCode?: string | null };
+type Opts = { addressId?: string | null; method: 'delivery' | 'pickup'; couponCode?: string | null; slots?: Record<string, string> };
 
 export async function buildQuote(c: Queryable, userId: string, opts: Opts): Promise<Quote> {
   const issues: Issue[] = [];
@@ -37,7 +39,7 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
     `SELECT ci.offer_id, ci.quantity, ci.added_price_cents,
             o.price_cents, o.is_active, o.stock_on_hand - o.stock_reserved AS available, o.store_id,
             p.id AS product_id, p.slug AS product_slug, p.name, p.status AS pstatus, p.tax_class, p.sold_by, p.pack_size, p.pack_unit, b.name AS brand,
-            s.slug AS store_slug, s.name AS store_name, s.orderable, s.is_open, s.ordering_paused, s.min_order_cents, s.offers_delivery, s.offers_pickup, s.vendor_id,
+            s.slug AS store_slug, s.name AS store_name, s.orderable, s.is_open, s.ordering_paused, s.min_order_cents, s.offers_delivery, s.offers_pickup, s.vendor_id, s.preorders_enabled,
             v.commission_bps
        FROM cart_items ci JOIN carts ct ON ct.id = ci.cart_id
        JOIN offers_live o ON o.id = ci.offer_id
@@ -83,7 +85,17 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
   const stdRate = taxRates.standard ?? 0;
   for (const [storeId, rows] of groups) {
     const f = rows[0];
-    if (requireOpen && f.orderable && !f.is_open) issues.push({ type: 'store_closed', message: `${f.store_name} is closed right now. Come back during opening hours.`, store_slug: f.store_slug });
+    let slot: { start: string; end: string } | null = null;
+    const wanted = opts.slots?.[f.store_slug];
+    if (wanted) {
+      if (!f.preorders_enabled) issues.push({ type: 'preorder_unavailable', message: `${f.store_name} does not take pre-orders.`, store_slug: f.store_slug });
+      else {
+        slot = await findSlot(c, storeId, wanted);
+        if (!slot) issues.push({ type: 'slot_unavailable', message: `The time you chose at ${f.store_name} is no longer available. Please pick another.`, store_slug: f.store_slug });
+      }
+    }
+    if (requireOpen && f.orderable && !f.is_open && !slot)
+      issues.push({ type: 'store_closed', message: f.preorders_enabled ? `${f.store_name} is closed right now. Choose a time for later.` : `${f.store_name} is closed right now. Come back during opening hours.`, store_slug: f.store_slug });
     if (opts.method === 'pickup' && !f.offers_pickup) issues.push({ type: 'pickup_unavailable', message: `${f.store_name} does not offer pickup.`, store_slug: f.store_slug });
     if (opts.method === 'delivery') {
       if (!f.offers_delivery) issues.push({ type: 'delivery_unavailable', message: `${f.store_name} does not offer delivery.`, store_slug: f.store_slug });
@@ -106,7 +118,8 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
     subs.push({
       store_id: storeId, store_slug: f.store_slug, store_name: f.store_name, vendor_id: f.vendor_id, lines, subtotal_cents: subtotal, discount_cents: 0,
       delivery_cents: 0, delivery_tax_cents: 0, tax_cents: 0, total_cents: 0, commission_bps: cbps, commission_cents: 0,
-      eta_minutes: opts.method === 'delivery' ? zone?.eta_minutes ?? null : null, fulfilment_method: opts.method,
+      eta_minutes: opts.method === 'delivery' && !slot ? zone?.eta_minutes ?? null : null, fulfilment_method: opts.method,
+      scheduled_for: slot?.start ?? null, scheduled_until: slot?.end ?? null, preorders_enabled: !!f.preorders_enabled,
     });
   }
 

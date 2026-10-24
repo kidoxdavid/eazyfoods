@@ -20,7 +20,7 @@ export const vendorOrderRoutes: FastifyPluginAsync = async (app) => {
     const vids = vendorIdsOf(req.user!);
     const acceptTimeout = await getSetting<number>('vendor.accept_timeout_minutes');
     const { rows } = await pool.query(
-      `SELECT s.id, s.status, s.fulfilment_method, s.subtotal_cents, s.discount_cents, s.total_cents, s.commission_cents, s.created_at, s.promised_at, st.name AS store_name, st.id AS store_id,
+      `SELECT s.id, s.status, s.fulfilment_method, s.subtotal_cents, s.discount_cents, s.total_cents, s.commission_cents, s.created_at, s.promised_at, s.scheduled_for, s.scheduled_until, st.name AS store_name, st.id AS store_id,
               o.order_number, split_part(o.customer_name,' ',1) AS customer_first_name, o.delivery_instructions, o.placed_at,
               (s.status = 'placed' AND o.placed_at < now() - make_interval(mins => $3)) AS needs_attention,
               (SELECT json_agg(json_build_object('id', l.id, 'name', l.product_name, 'brand', l.brand, 'pack_label', l.pack_label, 'quantity', l.quantity, 'unit_price_cents', l.unit_price_cents,

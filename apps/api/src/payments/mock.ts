@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { config } from '../config.js';
+import { pool } from '../db/pool.js';
 import type { NormalizedEvent, PaymentProvider } from './provider.js';
 
 /**
@@ -16,6 +17,14 @@ export class MockProvider implements PaymentProvider {
   async cancelPayment() {}
   async refund() { return { providerRefundId: 'mock_re_' + randomBytes(8).toString('hex') }; }
   async transfer() { return { transferId: 'mock_tr_' + randomBytes(8).toString('hex') }; }
+  // Mock Connect: an account becomes "enabled" when the dev-only completion endpoint is called (state is kept in app_settings so it survives restarts).
+  async createConnectAccount() { return { accountId: 'acct_mock' + randomBytes(6).toString('hex') }; }
+  async createOnboardingLink(a: { accountId: string; returnUrl: string }) { return { url: `${a.returnUrl}${a.returnUrl.includes('?') ? '&' : '?'}mock_connect=${a.accountId}` }; }
+  async getAccountStatus(accountId: string) {
+    const r = await pool.query(`SELECT value FROM app_settings WHERE key = $1`, [`mock_connect:${accountId}`]);
+    const done = r.rows[0]?.value === true;
+    return { payoutsEnabled: done, detailsSubmitted: done, requirementsDue: done ? [] : ['external_account', 'individual.verification.document'] };
+  }
 
   static sign(raw: Buffer | string) {
     return createHmac('sha256', config.MOCK_WEBHOOK_SECRET).update(raw).digest('hex');

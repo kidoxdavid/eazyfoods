@@ -15,7 +15,7 @@ const TAGS: Record<string, string> = { halal: 'Halal', vegan: 'Vegan', vegetaria
 type KCard = { slug: string; name: string; description: string | null; city: string; area: string; is_open: boolean; min_order_cents: number | null; is_test_data: boolean; logo_url: string | null; cover_url: string | null; cuisines: string[]; ordering_paused: boolean; dish_count: number; from_cents: number | null };
 type Dish = { slug: string; name: string; description: string | null; cuisine: string | null; spice_level: number | null; serves: string | null; prep_minutes: number | null; allergens: string[] | null; ingredients: string | null; dish_tags: string[];
   offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; available: number; image_url: string | null };
-type K = Omit<KCard, 'dish_count' | 'from_cents'> & { policies: string | null; offers_delivery: boolean; offers_pickup: boolean; hours: { dow: number; opens: string; closes: string }[]; dishes: Dish[]; allergen_notice: string;
+type K = Omit<KCard, 'dish_count' | 'from_cents'> & { preorders_enabled?: boolean; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; hours: { dow: number; opens: string; closes: string }[]; dishes: Dish[]; allergen_notice: string;
   branding: { accent: { primary: string; deep: string; tint: string; glow: string } | null; tagline: string | null; story: string | null; announcement: string | null; website: string | null; instagram: string | null; facebook: string | null } | null };
 
 function KitchenTile({ k }: { k: KCard }) {
@@ -111,7 +111,7 @@ export function KitchenPage() {
           <div className="shead-body">
             {k.logo_url ? <img className="logo-img" src={k.logo_url} alt="" width={64} height={64} style={{ borderRadius: '50%', objectFit: 'cover' }} /> : <StoreMark name={k.name} size={64} />}
             <div className="grow"><h1>{k.name}</h1>{br?.tagline && <p className="tagline">{br.tagline}</p>}
-              <div className="row wrap"><Badge tone={k.is_open ? 'ok' : 'warn'}>{k.is_open ? 'Open now' : 'Closed now'}</Badge>{k.cuisines.map((c) => <Badge key={c}>{c}</Badge>)}{k.offers_pickup && <Badge tone="info">Pickup available</Badge>}{k.is_test_data && <Badge tone="demo">Demo cook</Badge>}</div></div>
+              <div className="row wrap"><Badge tone={k.is_open ? 'ok' : 'warn'}>{k.is_open ? 'Open now' : 'Closed now'}</Badge>{k.cuisines.map((c) => <Badge key={c}>{c}</Badge>)}{k.offers_pickup && <Badge tone="info">Pickup available</Badge>}{k.preorders_enabled && <Badge tone="info">Pre-orders welcome</Badge>}{k.is_test_data && <Badge tone="demo">Demo cook</Badge>}</div></div>
           </div>
           <div className="shead-meta small muted">Home kitchen in {k.city}{k.area ? ` (${k.area})` : ''}. The cook’s address is shared only for pickup orders.{k.min_order_cents ? ` · Minimum order ${money(k.min_order_cents)}` : ''}</div>
         </div>

@@ -1,3 +1,4 @@
+import { slotText } from '../slots';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { fmtDate, money, packLabel, post } from '../api';
@@ -32,7 +33,7 @@ const LABEL: Record<string, string> = { placed: 'Order placed', accepted: 'Store
 
 type Sub = {
   id: string; store_name: string; store_slug: string; store_phone: string | null; status: string; fulfilment_method: string; subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; total_cents: number;
-  promised_at: string | null; reject_reason: string | null; handover_code?: string; pickup_address?: string; reviewed_store: boolean;
+  promised_at: string | null; scheduled_for?: string | null; scheduled_until?: string | null; reject_reason: string | null; handover_code?: string; pickup_address?: string; reviewed_store: boolean;
   lines: { id: string; product_id: string; product_slug: string; name: string; brand: string | null; pack_label: string | null; quantity: number; unit_price_cents: number; line_total_cents: number; refunded_quantity: number; substitution_status: string; substitute_name: string | null; reviewed: boolean }[];
   timeline: { status: string; note: string | null; at: string }[]; refunds: { status: string; amount_cents: number; reason: string }[];
 };
@@ -86,7 +87,8 @@ export function OrderPage() {
         return (
           <section key={s.id} className="panel" aria-label={s.store_name}>
             <div className="row between wrap"><h2 style={{ margin: 0, fontSize: '1.25rem' }}><Link to={`/s/${s.store_slug}`} style={{ color: 'inherit' }}>{s.store_name}</Link></h2><StatusBadge status={s.status} /></div>
-            {s.promised_at && !done && !failed && <p className="muted small">Estimated arrival around {fmtDate(s.promised_at, { timeStyle: 'short' })}. This is an estimate, not a guarantee.</p>}
+            {s.scheduled_for && !done && !failed && <p className="small"><Badge tone="info">Scheduled</Badge> <strong>{slotText(s.scheduled_for, s.scheduled_until)}</strong></p>}
+            {s.promised_at && !s.scheduled_for && !done && !failed && <p className="muted small">Estimated arrival around {fmtDate(s.promised_at, { timeStyle: 'short' })}. This is an estimate, not a guarantee.</p>}
             {failed && <Notice tone="error">{LABEL[s.status]}{s.reject_reason ? `: ${s.reject_reason}` : ''}. {o.payment_status === 'refunded' || s.refunds.length ? 'You have been refunded.' : ''}</Notice>}
             {s.pickup_address && !failed && <p>Collect from: <strong>{s.pickup_address}</strong>{s.store_phone ? ` · ${s.store_phone}` : ''}</p>}
 

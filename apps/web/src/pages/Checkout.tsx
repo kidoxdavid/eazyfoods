@@ -4,12 +4,13 @@ import { ApiError, api, money, post } from '../api';
 import { useCart } from '../cart';
 import { useAuth } from '../auth';
 import { useAction, useApi } from '../hooks';
+import { SlotPicker, slotText } from '../slots';
 import { Badge, Button, ErrorBox, Field, Input, Loading, Notice, Select, Textarea } from '../ui';
 
 type Address = { id: string; label: string | null; recipient_name: string; phone: string; line1: string; line2: string | null; city: string; province: string; postal_code: string; instructions: string | null; is_default: boolean; serviceable: boolean; zone: string | null };
 type Line = { name: string; quantity: number; unit_price_cents: number; line_total_cents: number };
-type Sub = { store_slug: string; store_name: string; lines: Line[]; subtotal_cents: number; discount_cents: number; delivery_cents: number; delivery_tax_cents: number; tax_cents: number; total_cents: number; eta_minutes: number | null };
-type Quote = { ok: boolean; issues: { type: string; message: string }[]; warnings: { message: string }[]; suborders: Sub[]; subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; total_cents: number; coupon: { code: string; discount_cents: number } | null; coupon_error?: string; separate_deliveries: boolean };
+type Sub = { store_slug: string; store_name: string; lines: Line[]; subtotal_cents: number; discount_cents: number; delivery_cents: number; delivery_tax_cents: number; tax_cents: number; total_cents: number; eta_minutes: number | null; preorders_enabled?: boolean; scheduled_for?: string | null; scheduled_until?: string | null };
+type Quote = { ok: boolean; issues: { type: string; message: string; store_slug?: string }[]; warnings: { message: string }[]; suborders: Sub[]; subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; total_cents: number; coupon: { code: string; discount_cents: number } | null; coupon_error?: string; separate_deliveries: boolean };
 type Cfg = { payment_provider: 'mock' | 'stripe'; stripe_publishable_key: string | null; test_mode: boolean };
 
 export function AddressForm({ onSaved, onCancel, name }: { onSaved: (a: Address) => void; onCancel?: () => void; name?: string }) {
@@ -47,6 +48,8 @@ export function CheckoutPage() {
   const [couponInput, setCouponInput] = useState('');
   const [instructions, setInstructions] = useState('');
   const [adding, setAdding] = useState(false);
+  const [slots, setSlots] = useState<Record<string, string>>({});
+  const [later, setLater] = useState<Record<string, boolean>>({});
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteErr, setQuoteErr] = useState<string>();
   const [order, setOrder] = useState<{ id: string; order_number: string; total_cents: number; client_secret: string | null } | null>(null);
@@ -56,23 +59,23 @@ export function CheckoutPage() {
   useEffect(() => { refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-price on the server whenever anything that affects the price changes. A new key marks a new attempt.
-  const sig = useMemo(() => JSON.stringify([addressId, method, coupon, cart?.stores.map((s) => s.items.map((i) => [i.offer_id, i.quantity]))]), [addressId, method, coupon, cart]);
+  const sig = useMemo(() => JSON.stringify([addressId, method, coupon, slots, cart?.stores.map((s) => s.items.map((i) => [i.offer_id, i.quantity]))]), [addressId, method, coupon, slots, cart]);
   useEffect(() => {
     if (order) return;
     keyRef.current = crypto.randomUUID();
     if (!cart?.item_count) return;
     let live = true;
-    post<Quote>('/checkout/quote', { address_id: method === 'delivery' ? addressId : null, method, coupon_code: coupon || null }).then((q) => live && (setQuote(q), setQuoteErr(undefined)), (e) => live && setQuoteErr(e.message));
+    post<Quote>('/checkout/quote', { address_id: method === 'delivery' ? addressId : null, method, coupon_code: coupon || null, slots }).then((q) => live && (setQuote(q), setQuoteErr(undefined)), (e) => live && setQuoteErr(e.message));
     return () => { live = false; };
   }, [sig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const place = useAction(async () => {
     try {
       const r = await post<{ order: { id: string; order_number: string; total_cents: number }; payment: { client_secret: string | null } | null }>(
-        '/checkout', { address_id: method === 'delivery' ? addressId : null, method, coupon_code: coupon || null, instructions: instructions || null }, { 'idempotency-key': keyRef.current });
+        '/checkout', { address_id: method === 'delivery' ? addressId : null, method, coupon_code: coupon || null, instructions: instructions || null, slots }, { 'idempotency-key': keyRef.current });
       setOrder({ ...r.order, client_secret: r.payment?.client_secret ?? null });
     } catch (e) {
-      if (e instanceof ApiError && e.code === 'checkout_blocked') { await refresh(); const q = await post<Quote>('/checkout/quote', { address_id: addressId, method, coupon_code: coupon || null }); setQuote(q); }
+      if (e instanceof ApiError && e.code === 'checkout_blocked') { await refresh(); const q = await post<Quote>('/checkout/quote', { address_id: addressId, method, coupon_code: coupon || null, slots }); setQuote(q); }
       throw e;
     }
   });
@@ -117,8 +120,25 @@ export function CheckoutPage() {
             </section>
           )}
 
+          {quote?.suborders.some((s) => s.preorders_enabled) && (
+            <section className="panel">
+              <h2>{method === 'delivery' ? '3' : '2'}. When?</h2>
+              {quote.suborders.filter((s) => s.preorders_enabled).map((s) => {
+                const closedNow = quote.issues.some((i) => i.type === 'store_closed' && i.store_slug === s.store_slug);
+                const chosen = !!slots[s.store_slug] || later[s.store_slug] || closedNow;
+                return (
+                  <div key={s.store_slug} style={{ marginBottom: 12 }}>
+                    <strong>{s.store_name}</strong>
+                    {!closedNow && <label className={`choice ${!chosen ? 'selected' : ''}`}><input type="radio" name={`when-${s.store_slug}`} checked={!chosen} onChange={() => { setLater((l) => ({ ...l, [s.store_slug]: false })); setSlots(({ [s.store_slug]: _drop, ...rest }) => rest); }} /><span><strong>As soon as possible</strong></span></label>}
+                    <label className={`choice ${chosen ? 'selected' : ''}`}><input type="radio" name={`when-${s.store_slug}`} checked={chosen} onChange={() => setLater((l) => ({ ...l, [s.store_slug]: true }))} /><span><strong>Choose a time</strong>{closedNow && <><br /><span className="muted small">This store is closed right now, so pick a time for later.</span></>}</span></label>
+                    {chosen && <SlotPicker slug={s.store_slug} value={slots[s.store_slug]} onChange={(v) => setSlots((cur) => { const { [s.store_slug]: _drop, ...rest } = cur; return v ? { ...rest, [s.store_slug]: v } : rest; })} />}
+                  </div>
+                );
+              })}
+            </section>
+          )}
           <section className="panel">
-            <h2>{method === 'delivery' ? '3' : '2'}. Notes and discount code</h2>
+            <h2>{(method === 'delivery' ? 3 : 2) + (quote?.suborders.some((s) => s.preorders_enabled) ? 1 : 0)}. Notes and discount code</h2>
             <Field label="Notes for the stores (optional)"><Textarea rows={2} value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="Allergies, ripeness, anything the store should know…" /></Field>
             <form className="row top" onSubmit={(e) => { e.preventDefault(); setCoupon(couponInput.trim()); }}>
               <div className="grow"><Field label="Discount code"><Input value={couponInput} onChange={(e) => setCouponInput(e.target.value)} placeholder="Enter code" autoCapitalize="characters" /></Field></div>
@@ -139,7 +159,7 @@ export function CheckoutPage() {
                 {quote.separate_deliveries && <Notice tone="warn">{quote.suborders.length} stores = {quote.suborders.length} separate deliveries, each with its own fee and arrival time.</Notice>}
                 {quote.suborders.map((s) => (
                   <div key={s.store_slug} style={{ marginBottom: 14 }}>
-                    <strong>{s.store_name}</strong>{s.eta_minutes && <span className="muted small"> · arrives about {s.eta_minutes} min after the store confirms</span>}
+                    <strong>{s.store_name}</strong>{s.scheduled_for ? <span className="muted small"> · scheduled for {slotText(s.scheduled_for, s.scheduled_until)}</span> : s.eta_minutes && <span className="muted small"> · arrives about {s.eta_minutes} min after the store confirms</span>}
                     {s.lines.map((l, i) => <div key={i} className="summary-row small"><span>{l.quantity} × {l.name}</span><span>{money(l.line_total_cents)}</span></div>)}
                     {method === 'delivery' && <div className="summary-row small"><span>Delivery</span><span>{money(s.delivery_cents)}</span></div>}
                   </div>

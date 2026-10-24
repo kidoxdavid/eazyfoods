@@ -15,6 +15,7 @@ import { cartView } from './cart.js';
 const checkoutBody = z.object({
   address_id: z.string().uuid().nullish(), method: z.enum(['delivery', 'pickup']).default('delivery'),
   coupon_code: z.string().max(40).nullish(), instructions: z.string().max(300).nullish(),
+  slots: z.record(z.string().max(80), z.string().datetime()).optional(),
 });
 
 export async function loadOrder(orderId: string, userId: string | null) {
@@ -37,7 +38,7 @@ export async function loadOrder(orderId: string, userId: string | null) {
     suborders: subs.map((s) => ({
       id: s.id, store_name: s.store_name, store_slug: s.store_slug, store_phone: s.store_phone, status: s.status, fulfilment_method: s.fulfilment_method,
       subtotal_cents: s.subtotal_cents, discount_cents: s.discount_cents, delivery_cents: s.delivery_cents + s.delivery_tax_cents, tax_cents: s.tax_cents, total_cents: s.total_cents,
-      promised_at: s.promised_at, reject_reason: s.reject_reason, delivery_status: s.delivery_status,
+      promised_at: s.promised_at, scheduled_for: s.scheduled_for, scheduled_until: s.scheduled_until, reject_reason: s.reject_reason, delivery_status: s.delivery_status,
       // The handover code is shown to the customer only while a delivery is on its way.
       handover_code: ['ready', 'out_for_delivery'].includes(s.status) && s.fulfilment_method === 'delivery' ? s.handover_code : undefined,
       pickup_address: s.fulfilment_method === 'pickup' ? `${s.store_address ?? ''}, ${s.store_city}` : undefined,
@@ -59,7 +60,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
 
   app.post('/checkout/quote', async (req) => {
     const b = checkoutBody.parse(req.body);
-    const q = await buildQuote(pool, req.user!.id, { addressId: b.address_id, method: b.method, couponCode: b.coupon_code });
+    const q = await buildQuote(pool, req.user!.id, { addressId: b.address_id, method: b.method, couponCode: b.coupon_code, slots: b.slots });
     await pool.query(`INSERT INTO analytics_events(type, user_id) VALUES ('checkout_started', $1)`, [req.user!.id]).catch(() => {});
     return q;
   });
@@ -68,7 +69,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
     const key = String(req.headers['idempotency-key'] ?? '');
     if (key.length < 8 || key.length > 100) throw bad('idempotency_key_required', 'Missing Idempotency-Key header.');
     const b = checkoutBody.parse(req.body);
-    const r = await placeOrder(req.user!, { addressId: b.address_id, method: b.method, couponCode: b.coupon_code, instructions: b.instructions, idempotencyKey: key });
+    const r = await placeOrder(req.user!, { addressId: b.address_id, method: b.method, couponCode: b.coupon_code, instructions: b.instructions, idempotencyKey: key, slots: b.slots });
     return reply.code(201).send(r);
   });
 

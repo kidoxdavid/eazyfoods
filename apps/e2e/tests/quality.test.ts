@@ -10,7 +10,7 @@ afterAll(async () => { await browser?.close(); });
 const PUBLIC = ['/', '/search?q=garri', '/search?region=east-africa', '/stores', '/kitchens', '/k/demo-mama-ngozi-kitchen', '/k/demo-habesha-table', '/s/demo-calgary-west-african-market', '/p/garri-white', '/recipes', '/recipes/jollof-rice-nigerian-style', '/cart', '/signin', '/register', '/pages/refund-policy'];
 const SIGNED_IN = ['/account', '/orders', '/checkout'];
 const PORTALS: [string, string][] = [['owner1@example.test', '/vendor'], ['owner1@example.test', '/vendor/orders'], ['owner1@example.test', '/vendor/inventory'], ['owner1@example.test', '/vendor/store'],
-  ['owner@example.test', '/admin'], ['owner@example.test', '/admin/catalogue'], ['owner@example.test', '/admin/settings'], ['owner@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/storefront'], ['owner1@example.test', '/vendor/messages'], ['chef1@example.test', '/vendor'], ['chef1@example.test', '/vendor/menu'], ['chef1@example.test', '/vendor/store'], ['owner@example.test', '/admin/dishes'], ['owner1@example.test', '/vendor/insights'], ['owner@example.test', '/admin/insights'], ['owner@example.test', '/admin/messages'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
+  ['owner@example.test', '/admin'], ['owner@example.test', '/admin/catalogue'], ['owner@example.test', '/admin/settings'], ['owner@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/storefront'], ['owner1@example.test', '/vendor/messages'], ['chef1@example.test', '/vendor'], ['chef1@example.test', '/vendor/menu'], ['chef1@example.test', '/vendor/store'], ['chef1@example.test', '/vendor/orders'], ['chef1@example.test', '/vendor/payouts'], ['owner1@example.test', '/vendor/payouts'], ['finance@example.test', '/admin/finance'], ['owner@example.test', '/admin/dishes'], ['owner1@example.test', '/vendor/insights'], ['owner@example.test', '/admin/insights'], ['owner@example.test', '/admin/messages'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
 const WIDTHS = [360, 390, 768, 1280];
 
 describe('responsive: no horizontal scrolling at common widths', () => {
@@ -218,5 +218,44 @@ describe('home chefs (browser)', () => {
     await page.goto(base() + '/vendor?kind=chef');
     await page.getByRole('heading', { name: 'Cook with EAZyfoods' }).waitFor();
     await page.getByLabel('Cuisines you cook').waitFor();
+  });
+});
+
+describe('pre-order slots (browser)', () => {
+  it('a customer books a time slot for a dish, pays, and sees the scheduled time; the cook sees it too', async () => {
+    const { page } = await newPage(browser, DESKTOP); await signIn(page, 'customer@example.test');
+    const db1 = await db(); await db1.query(`UPDATE store_offers SET stock_on_hand = 40, stock_reserved = 0 WHERE product_id IN (SELECT id FROM products WHERE name LIKE 'Jollof%')`); await db1.end();
+    await page.goto(base() + '/k/demo-mama-ngozi-kitchen'); await page.waitForLoadState('networkidle');
+    await page.locator('li.dish', { hasText: 'Jollof rice' }).getByRole('button', { name: /Add to basket/ }).click();
+    await page.locator('li.dish', { hasText: 'Jollof rice' }).getByRole('button', { name: /Add one Jollof/ }).click();   // $15.99 x2 clears the $20 minimum
+    await page.goto(base() + '/checkout'); await page.waitForLoadState('networkidle');
+    await page.getByRole('heading', { name: /When\?/ }).waitFor();
+    await page.getByRole('radio', { name: /Choose a time/ }).check();
+    const first = page.locator('.slot-grid .slot').first();
+    await first.waitFor();
+    const label = (await first.innerText()).split('–')[0].trim();
+    await first.click();
+    await page.getByText(/scheduled for/i).first().waitFor();
+    await page.getByRole('button', { name: /Continue to payment/ }).click();
+    await page.getByRole('button', { name: 'Simulate successful payment' }).click();
+    await page.getByText('Scheduled', { exact: true }).first().waitFor();
+    expect(label.length).toBeGreaterThan(3);
+    const chef = await newPage(browser, DESKTOP); await signIn(chef.page, 'chef1@example.test');
+    await chef.page.goto(base() + '/vendor/orders'); await chef.page.waitForLoadState('networkidle');
+    await chef.page.getByText(/SCHEDULED for/).first().waitFor();
+  });
+});
+
+describe('payouts (browser)', () => {
+  it('a cook connects a (test) payout account and sees it connected', async () => {
+    const { page } = await newPage(browser, DESKTOP); await signIn(page, 'chef2@example.test');
+    await page.goto(base() + '/vendor/payouts'); await page.waitForLoadState('networkidle');
+    await page.getByText('Not connected').waitFor();
+    await page.getByRole('button', { name: 'Connect payout account' }).click();
+    await page.getByRole('button', { name: 'Finish test onboarding' }).waitFor();
+    await page.getByRole('button', { name: 'Finish test onboarding' }).click();
+    await page.getByText('Connected', { exact: true }).waitFor();
+    await page.getByText('Payable now').waitFor();
+    await page.getByText('TEST MODE').waitFor();
   });
 });

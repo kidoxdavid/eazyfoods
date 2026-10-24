@@ -9,6 +9,7 @@ import { requireLogin, requirePerm } from '../lib/permissions.js';
 import { isOurImageUrl } from '../lib/storage.js';
 import { ACCENTS } from '../lib/themes.js';
 import { notifyVendorOwners } from '../services/notify.js';
+import { listSlots } from '../services/slots.js';
 
 /** Canada's priority food allergens, plus gluten sources. Cooks must declare allergens for every dish. */
 export const ALLERGENS = ['peanuts', 'tree_nuts', 'sesame', 'milk', 'eggs', 'fish', 'crustaceans', 'molluscs', 'soy', 'wheat', 'gluten', 'mustard', 'sulphites'] as const;
@@ -29,6 +30,14 @@ export const kitchenRoutes: FastifyPluginAsync = async (app) => {
          FROM storefronts s
         WHERE s.orderable AND s.kind = 'kitchen' AND ($1::text IS NULL OR $1 = ANY(s.cuisines))
         ORDER BY s.is_open DESC, s.name`, [cuisine ?? null])).rows;
+  });
+
+  /** Bookable pre-order slots for any store that takes pre-orders (kitchens by default). */
+  app.get<{ Params: { slug: string } }>('/slots/:slug', async (req) => {
+    const s = (await pool.query(`SELECT id, name, preorders_enabled, preorder_lead_minutes, preorder_max_days, slot_minutes, timezone FROM storefronts WHERE slug = $1 AND orderable`, [req.params.slug])).rows[0];
+    if (!s) throw notFound('Store not found');
+    if (!s.preorders_enabled) return { enabled: false, slots: [] };
+    return { enabled: true, timezone: s.timezone, lead_minutes: s.preorder_lead_minutes, max_days: s.preorder_max_days, slot_minutes: s.slot_minutes, slots: await listSlots(pool, s.id) };
   });
 
   app.get('/kitchens/cuisines', async () =>
@@ -59,7 +68,7 @@ export const kitchenRoutes: FastifyPluginAsync = async (app) => {
     return {
       slug: s.slug, name: s.name, description: s.description, city: s.city, area: (s.postal_code ?? '').slice(0, 3), phone: null, is_open: s.is_open, min_order_cents: s.min_order_cents,
       is_test_data: s.is_test_data, logo_url: s.logo_url, cover_url: s.cover_url, policies: s.policies, offers_delivery: s.offers_delivery, offers_pickup: s.offers_pickup, ordering_paused: s.ordering_paused,
-      cuisines: s.cuisines, hours: hours.rows, dishes: dishes.rows,
+      cuisines: s.cuisines, preorders_enabled: s.preorders_enabled, hours: hours.rows, dishes: dishes.rows,
       branding: br ? { ...br, accent: br.accent && ACCENTS[br.accent] ? { primary: ACCENTS[br.accent].primary, deep: ACCENTS[br.accent].deep, tint: ACCENTS[br.accent].tint, glow: ACCENTS[br.accent].glow } : null } : null,
       allergen_notice: 'Allergens and dietary labels are declared by the cook and are not verified by EAZyfoods. If you have a severe allergy, message the cook before ordering.',
     };

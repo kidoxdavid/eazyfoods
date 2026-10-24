@@ -9,6 +9,10 @@ import { isOurImageUrl } from '../lib/storage.js';
 import { parseCsv, toCsv } from '../lib/csv.js';
 import { slugify, norm } from '../lib/norm.js';
 import { vendorIdsOf } from './vendorOrders.js';
+import { config } from '../config.js';
+import { getProvider } from '../payments/provider.js';
+import { vendorBalance } from '../services/payouts.js';
+import { rl } from '../lib/ratelimit.js';
 import { insights } from '../services/insights.js';
 import { ACCENTS } from '../lib/themes.js';
 import { normalisePostal, isCanadianPostal } from '../services/pricing.js';
@@ -143,6 +147,72 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
     await audit(req.user!.id, 'store.branding_updated', 'store', id);
     return { ok: true };
   });
+
+  // ---------- Pre-orders and days off ----------
+  app.get<{ Params: { storeId: string } }>('/stores/:storeId/schedule', async (req) => {
+    const id = await store(req);
+    const s = (await pool.query('SELECT preorders_enabled, preorder_lead_minutes, preorder_max_days, slot_minutes, slot_capacity, timezone FROM stores WHERE id = $1', [id])).rows[0];
+    const closures = (await pool.query(`SELECT to_char(on_date, 'YYYY-MM-DD') AS on_date, reason FROM store_closures WHERE store_id = $1 AND on_date >= current_date - 1 ORDER BY on_date`, [id])).rows;
+    return { ...s, closures };
+  });
+  app.put<{ Params: { storeId: string } }>('/stores/:storeId/schedule', async (req) => {
+    const id = await store(req);
+    const b = z.object({
+      preorders_enabled: z.boolean(), preorder_lead_minutes: z.number().int().min(30).max(2880), preorder_max_days: z.number().int().min(1).max(14),
+      slot_minutes: z.union([z.literal(30), z.literal(60), z.literal(90), z.literal(120)]), slot_capacity: z.number().int().min(1).max(50),
+      closures: z.array(z.object({ on_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), reason: z.string().trim().max(80).nullable().optional() })).max(60),
+    }).parse(req.body);
+    await tx(async (c) => {
+      await c.query('UPDATE stores SET preorders_enabled=$2, preorder_lead_minutes=$3, preorder_max_days=$4, slot_minutes=$5, slot_capacity=$6 WHERE id=$1', [id, b.preorders_enabled, b.preorder_lead_minutes, b.preorder_max_days, b.slot_minutes, b.slot_capacity]);
+      await c.query('DELETE FROM store_closures WHERE store_id = $1 AND on_date >= current_date - 1', [id]);
+      for (const x of b.closures) await c.query('INSERT INTO store_closures(store_id, on_date, reason) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING', [id, x.on_date, x.reason || null]);
+      await audit(req.user!.id, 'store.schedule_updated', 'store', id, { preorders: b.preorders_enabled, closures: b.closures.length }, c);
+    });
+    return { ok: true };
+  });
+
+  // ---------- Payout account (Stripe Connect, hosted onboarding) and payout history ----------
+  const refreshAccount = async (vid: string) => {
+    const v = (await pool.query('SELECT stripe_account_id, payout_status FROM vendors WHERE id = $1', [vid])).rows[0];
+    const provider = getProvider();
+    if (!v.stripe_account_id || !provider.getAccountStatus) return v.payout_status as string;
+    const st = await provider.getAccountStatus(v.stripe_account_id);
+    const next = st.payoutsEnabled ? 'enabled' : st.detailsSubmitted ? 'restricted' : 'pending';
+    await pool.query('UPDATE vendors SET payout_status = $2, payout_requirements = $3, payout_checked_at = now() WHERE id = $1', [vid, next, JSON.stringify(st.requirementsDue)]);
+    return next;
+  };
+
+  app.get('/payouts', async (req) => {
+    const vid = vendorId(req);
+    const v0 = (await pool.query('SELECT stripe_account_id, payout_status FROM vendors WHERE id = $1', [vid])).rows[0];
+    if (v0.stripe_account_id && v0.payout_status !== 'enabled') await refreshAccount(vid).catch(() => {});   // pick up onboarding finished in another tab
+    const v = (await pool.query('SELECT stripe_account_id IS NOT NULL AS connected, payout_status, payout_requirements, kind FROM vendors WHERE id = $1', [vid])).rows[0];
+    const history = (await pool.query(`SELECT id, amount_cents, status, trigger, note, created_at, paid_at FROM payouts WHERE vendor_id = $1 ORDER BY created_at DESC LIMIT 50`, [vid])).rows;
+    return {
+      account: { connected: v.connected, status: v.payout_status, requirements: v.payout_requirements, can_connect: !!getProvider().createConnectAccount, provider: getProvider().name },
+      balance: await vendorBalance(vid), history,
+    };
+  });
+
+  app.post('/payout-account/start', rl(10, '1 hour'), async (req) => {
+    ownerOnly(req);
+    const vid = vendorId(req);
+    const provider = getProvider();
+    if (!provider.createConnectAccount || !provider.createOnboardingLink) throw conflict('not_supported', 'Online payout setup is not available. Finance will pay you by bank transfer.');
+    const v = (await pool.query('SELECT name, contact_email, stripe_account_id, status FROM vendors WHERE id = $1', [vid])).rows[0];
+    if (v.status !== 'approved') throw conflict('not_approved', 'You can connect a payout account after your application is approved.');
+    let account = v.stripe_account_id as string | null;
+    if (!account) {
+      account = (await provider.createConnectAccount({ email: v.contact_email ?? req.user!.email, businessName: v.name, vendorId: vid })).accountId;
+      await pool.query(`UPDATE vendors SET stripe_account_id = $2, payout_status = 'pending' WHERE id = $1 AND stripe_account_id IS NULL`, [vid, account]);
+      account = (await pool.query('SELECT stripe_account_id FROM vendors WHERE id = $1', [vid])).rows[0].stripe_account_id;
+      await audit(req.user!.id, 'vendor.payout_account_created', 'vendor', vid, {});
+    }
+    const url = (await provider.createOnboardingLink({ accountId: account!, returnUrl: `${config.WEB_ORIGIN}/vendor/payouts?connect=return`, refreshUrl: `${config.WEB_ORIGIN}/vendor/payouts?connect=refresh` })).url;
+    return { url };
+  });
+
+  app.post('/payout-account/refresh', rl(30, '1 hour'), async (req) => ({ status: await refreshAccount(vendorId(req)) }));
 
   // ---------- Catalogue: find shared products, suggest new ones ----------
   app.get('/catalogue/search', async (req) => {

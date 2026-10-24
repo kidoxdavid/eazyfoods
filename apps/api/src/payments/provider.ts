@@ -19,6 +19,10 @@ export interface PaymentProvider {
   parseWebhook(raw: Buffer, headers: Record<string, string | string[] | undefined>): NormalizedEvent;
   refund(a: { providerPaymentId: string; amountCents: number; idempotencyKey: string }): Promise<{ providerRefundId: string }>;
   transfer?(a: { destinationAccount: string; amountCents: number; idempotencyKey: string }): Promise<{ transferId: string }>;
+  /** Connect onboarding for payees (hosted by the provider, so we never handle bank details or identity documents). */
+  createConnectAccount?(a: { email: string; businessName: string; vendorId: string }): Promise<{ accountId: string }>;
+  createOnboardingLink?(a: { accountId: string; returnUrl: string; refreshUrl: string }): Promise<{ url: string }>;
+  getAccountStatus?(accountId: string): Promise<{ payoutsEnabled: boolean; detailsSubmitted: boolean; requirementsDue: string[] }>;
 }
 
 let provider: PaymentProvider | undefined;

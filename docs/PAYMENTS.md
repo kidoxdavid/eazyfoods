@@ -40,3 +40,16 @@ Customers cannot refund themselves: they report a problem. Support/admin **reque
 4. Reconcile the Stripe balance report with the ledger `cash_provider` account for the test period.
 5. Implement/verify vendor Connect onboarding (accounts are currently attached by an admin entering the `acct_...` id) and import processing fees into the ledger.
 6. Only then switch to live keys. Never fabricate events to "prove" it works.
+
+## Payout accounts (Stripe Connect Express) and automatic payouts
+Vendors and home cooks connect a payout account from Vendor portal → Payouts. Onboarding is hosted by Stripe (account links), so EAZyfoods never handles bank details or identity documents. The account state (`none`, `pending`, `restricted`, `enabled`) is read from Stripe when the vendor opens the Payouts page; a transfer is only attempted for `enabled` accounts. Everything else stays a manual bank transfer that finance marks paid.
+
+**NOT VERIFIED against a live or test Stripe account.** The Stripe calls (`accounts.create` type express/CA, `accountLinks.create`, `accounts.retrieve`, `transfers.create`) were written from the API docs and exercised only against the mock provider. Before go-live, in Stripe test mode:
+1. Enable Connect for the platform and confirm Express accounts and the `transfers` capability are available for Canadian platforms and Canadian payees; read Stripe's Connect terms and any cross-border rules.
+2. Connect a test vendor end to end (start → hosted form with test data → return); confirm `payout_status` becomes `enabled`.
+3. Pay a test order, mark it delivered, age it past the hold, create a payout, and confirm the Transfer appears in the Stripe dashboard for the right amount and account, and that the ledger booking matches.
+4. Make a transfer fail (e.g. insufficient available balance) and confirm the payout shows `failed`, then retry succeeds exactly once (idempotency key `payout:<id>`).
+5. Consider linking transfers to the original charge (`source_transaction`) so funds are available at transfer time; with separate charges and transfers, the platform balance must hold the funds first.
+6. Decide who bears Stripe fees, refunds and disputes after a transfer (currently the platform absorbs refunds' commission return per the ledger rules).
+
+Settings (Admin → Settings): `payout.hold_days` (stores), `payout.hold_days_kitchen` (home kitchens), `payout.auto_enabled`, `payout.auto_min_cents`. Automatic payouts run hourly in the API process and are safe to run from several instances (orders are locked and payouts are idempotent); finance can also run the pass on demand from Finance. Do not turn automatic payouts on until the checklist above is done.

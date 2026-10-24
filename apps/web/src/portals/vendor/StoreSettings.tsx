@@ -5,13 +5,14 @@ import { useAction, useApi } from '../../hooks';
 import { useToast } from '../../toast';
 import { Button, Card, ErrorBox, Field, ImageUpload, Input, Loading, Notice, PageHeader, Textarea } from '../../ui';
 import { StoreSelect, useVendor } from './Shared';
+import Schedule from './Schedule';
 
 type Profile = { name: string; description: string | null; address_line: string | null; city: string; postal_code: string | null; phone: string | null; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; ordering_paused: boolean; min_order_cents: number | null; logo_url: string | null; cover_url: string | null; status: string; regions: string[]; kind?: string; cuisines?: string[] };
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function StoreSettings() {
   const { storeId, isChef } = useVendor();
-  return (<><PageHeader title={isChef ? 'Kitchen' : 'Store'} sub={isChef ? 'What customers see on your kitchen page.' : 'What customers see on your storefront.'} /><StoreSelect /><ProfileForm key={storeId} /><HoursForm key={storeId + 'h'} /></>);
+  return (<><PageHeader title={isChef ? 'Kitchen' : 'Store'} sub={isChef ? 'What customers see on your kitchen page.' : 'What customers see on your storefront.'} /><StoreSelect /><ProfileForm key={storeId} /><HoursForm key={storeId + 'h'} /><Schedule key={storeId + 's'} /></>);
 }
 
 function ProfileForm() {

@@ -6,7 +6,7 @@ import { getProvider } from '../payments/provider.js';
 import { buildQuote, type Quote } from './pricing.js';
 import { history } from './orders.js';
 
-export type CheckoutInput = { addressId?: string | null; method: 'delivery' | 'pickup'; couponCode?: string | null; instructions?: string | null; idempotencyKey: string };
+export type CheckoutInput = { addressId?: string | null; method: 'delivery' | 'pickup'; couponCode?: string | null; instructions?: string | null; idempotencyKey: string; slots?: Record<string, string> };
 
 async function view(orderId: string) {
   const o = (await pool.query('SELECT * FROM orders WHERE id = $1', [orderId])).rows[0];
@@ -30,7 +30,9 @@ export async function placeOrder(user: { id: string; email: string; full_name: s
       const offerIds = (await c.query(`SELECT ci.offer_id FROM cart_items ci JOIN carts ct ON ct.id = ci.cart_id WHERE ct.user_id = $1 ORDER BY ci.offer_id`, [user.id])).rows.map((r) => r.offer_id);
       if (offerIds.length) await c.query('SELECT id FROM store_offers WHERE id = ANY($1::uuid[]) ORDER BY id FOR UPDATE', [offerIds]);
 
-      const q: Quote = await buildQuote(c, user.id, { addressId: input.addressId, method: input.method, couponCode: input.couponCode });
+      // Serialise bookings of the same slot so two checkouts cannot both take the last place.
+      for (const [slug, start] of Object.entries(input.slots ?? {}).sort()) await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`${slug}|${start}`]);
+      const q: Quote = await buildQuote(c, user.id, { addressId: input.addressId, method: input.method, couponCode: input.couponCode, slots: input.slots });
       if (!q.ok) throw new HttpError(409, 'checkout_blocked', 'Some things in your basket need attention before you can pay.', { issues: q.issues, coupon_error: q.coupon_error });
 
       const address = input.method === 'delivery' ? (await c.query('SELECT * FROM addresses WHERE id = $1 AND user_id = $2', [input.addressId, user.id])).rows[0] : null;
@@ -49,9 +51,9 @@ export async function placeOrder(user: { id: string; email: string; full_name: s
       for (const s of q.suborders) {
         const sub = (await c.query(
           `INSERT INTO suborders(order_id, store_id, vendor_id, fulfilment_method, subtotal_cents, discount_cents, delivery_cents, delivery_tax_cents, tax_cents, total_cents,
-                                 commission_bps, commission_cents, eta_minutes)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
-          [o.id, s.store_id, s.vendor_id, s.fulfilment_method, s.subtotal_cents, s.discount_cents, s.delivery_cents, s.delivery_tax_cents, s.tax_cents, s.total_cents, s.commission_bps, s.commission_cents, s.eta_minutes])).rows[0];
+                                 commission_bps, commission_cents, eta_minutes, scheduled_for, scheduled_until)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
+          [o.id, s.store_id, s.vendor_id, s.fulfilment_method, s.subtotal_cents, s.discount_cents, s.delivery_cents, s.delivery_tax_cents, s.tax_cents, s.total_cents, s.commission_bps, s.commission_cents, s.eta_minutes, s.scheduled_for, s.scheduled_until])).rows[0];
         for (const l of s.lines) {
           const line = (await c.query(
             `INSERT INTO order_lines(suborder_id, offer_id, product_id, product_name, brand, pack_label, sold_by, unit_price_cents, quantity, line_total_cents, discount_cents, tax_rate_bps, tax_cents, commission_cents)

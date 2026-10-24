@@ -25,13 +25,13 @@ function MenuList() {
   if (!d.data) return null;
   return (
     <>
-      <Notice>Every dish must list its allergens. Customers rely on this, and you are responsible for it being complete and correct. Dishes are made to order: set today’s portions and they sell down automatically.</Notice>
+      <Notice>Every dish must list its allergens. Customers rely on this, and you are responsible for it being complete and correct. Dishes are made to order: set how many portions you can make (including pre-orders) and they sell down automatically.</Notice>
       {portions.error && <Notice tone="error">{portions.error}</Notice>}
       <div className="row end" style={{ margin: '10px 0' }}><Button onClick={() => setEdit('new')}>Add a dish</Button></div>
       <DataTable rows={d.data.dishes} rowKey={(r) => r.product_id} empty="No dishes yet. Add your first dish." columns={[
         { key: 'n', header: 'Dish', render: (r) => <><strong>{r.name}</strong>{r.status === 'draft' && <> <Badge tone="danger">Hidden by EAZyfoods</Badge></>}{!r.is_active && r.status !== 'draft' && <> <Badge>Off the menu</Badge></>}<div className="small muted">{(r.allergens ?? []).length ? `Contains ${(r.allergens ?? []).map(nice).join(', ')}` : 'No priority allergens declared'}</div></> },
         { key: 'p', header: 'Price', render: (r) => money(r.price_cents) },
-        { key: 's', header: 'Portions today', render: (r) => (
+        { key: 's', header: 'Portions available', render: (r) => (
           <span className="row" style={{ gap: 6 }}>
             <Button size="sm" variant="secondary" aria-label={`Fewer portions of ${r.name}`} disabled={portions.busy || r.stock_on_hand - 1 < r.stock_reserved} onClick={() => portions.run(r, r.stock_on_hand - 1)}>−</Button>
             <strong aria-label={`${r.stock_on_hand} portions`}>{r.stock_on_hand}</strong>
@@ -67,7 +67,7 @@ function DishEditor({ list, dish, onClose, onDone }: { list: List; dish: Dish | 
         <Field label="Description"><Textarea value={f.description} onChange={(e) => set('description', e.target.value)} maxLength={600} style={{ minHeight: 70 }} /></Field>
         <div className="form-grid">
           <Field label="Price (CAD)"><Input type="number" step="0.01" min="1" value={f.price} onChange={(e) => set('price', e.target.value)} inputMode="decimal" required /></Field>
-          <Field label="Portions available today"><Input type="number" min="0" max="200" step="1" value={f.portions} onChange={(e) => set('portions', e.target.value)} inputMode="numeric" /></Field>
+          <Field label="Portions available (including pre-orders)"><Input type="number" min="0" max="200" step="1" value={f.portions} onChange={(e) => set('portions', e.target.value)} inputMode="numeric" /></Field>
           <Field label="Serves"><Input value={f.serves} onChange={(e) => set('serves', e.target.value)} maxLength={30} /></Field>
           <Field label="Cuisine"><Input value={f.cuisine} onChange={(e) => set('cuisine', e.target.value)} maxLength={40} placeholder="e.g. Nigerian" /></Field>
           <Field label="Spice level"><Select value={f.spice} onChange={(e) => set('spice', e.target.value)}><option value="">Not shown</option><option value="0">Mild</option><option value="1">Medium-mild</option><option value="2">Hot</option><option value="3">Very hot</option></Select></Field>

@@ -1,3 +1,4 @@
+import { slotText } from '../../slots';
 import { useState } from 'react';
 import { post, money, fmtDate } from '../../api';
 import { useApi, useAction } from '../../hooks';
@@ -45,7 +46,7 @@ function OrderCard({ o, onChanged, onPrint }: { o: VOrder; onChanged: () => void
   return (
     <Card className={`order-card ${o.needs_attention ? 'attention' : ''}`}>
       <div className="row between wrap"><div><strong className="display">#{o.order_number}</strong> <StatusBadge status={o.status} /> <span className="badge neutral">{o.fulfilment_method === 'pickup' ? 'Pickup' : 'Delivery'}</span>{o.needs_attention && <span className="badge danger" style={{ marginLeft: 6 }}>Waiting too long</span>}</div>
-        <span className="muted small">Placed {fmtDate(o.placed_at)}{o.promised_at ? ` · promised by ${fmtDate(o.promised_at, { timeStyle: 'short' })}` : ''}</span></div>
+        <span className="muted small">Placed {fmtDate(o.placed_at)}{o.scheduled_for ? ` · SCHEDULED for ${slotText(o.scheduled_for, o.scheduled_until)}` : o.promised_at ? ` · promised by ${fmtDate(o.promised_at, { timeStyle: 'short' })}` : ''}</span></div>
       <p className="small"><strong>{o.customer_first_name}</strong>{o.delivery_instructions ? ` — “${o.delivery_instructions}”` : ''}</p>
       <ul className="order-lines">{lines.map((l) => (
         <li key={l.id}><div><strong>{l.quantity} × {l.name}</strong> <span className="muted small">{l.brand ?? ''} {l.pack_label ?? ''}</span>

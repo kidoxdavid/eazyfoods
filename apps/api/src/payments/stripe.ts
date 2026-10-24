@@ -43,4 +43,18 @@ export class StripeProvider implements PaymentProvider {
     const t = await this.stripe.transfers.create({ amount: a.amountCents, currency: 'cad', destination: a.destinationAccount }, { idempotencyKey: a.idempotencyKey });
     return { transferId: t.id };
   }
+  async createConnectAccount(a: { email: string; businessName: string; vendorId: string }) {
+    const acct = await this.stripe.accounts.create({
+      type: 'express', country: 'CA', email: a.email, business_profile: { name: a.businessName }, capabilities: { transfers: { requested: true } }, metadata: { vendor_id: a.vendorId },
+    }, { idempotencyKey: `connect:${a.vendorId}` });
+    return { accountId: acct.id };
+  }
+  async createOnboardingLink(a: { accountId: string; returnUrl: string; refreshUrl: string }) {
+    const l = await this.stripe.accountLinks.create({ account: a.accountId, return_url: a.returnUrl, refresh_url: a.refreshUrl, type: 'account_onboarding' });
+    return { url: l.url };
+  }
+  async getAccountStatus(accountId: string) {
+    const a = await this.stripe.accounts.retrieve(accountId);
+    return { payoutsEnabled: !!a.payouts_enabled && !!a.capabilities?.transfers && a.capabilities.transfers === 'active', detailsSubmitted: !!a.details_submitted, requirementsDue: a.requirements?.currently_due ?? [] };
+  }
 }
