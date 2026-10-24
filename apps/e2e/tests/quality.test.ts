@@ -10,7 +10,7 @@ afterAll(async () => { await browser?.close(); });
 const PUBLIC = ['/', '/search?q=garri', '/search?region=east-africa', '/stores', '/s/demo-calgary-west-african-market', '/p/garri-white', '/recipes', '/recipes/jollof-rice-nigerian-style', '/cart', '/signin', '/register', '/pages/refund-policy'];
 const SIGNED_IN = ['/account', '/orders', '/checkout'];
 const PORTALS: [string, string][] = [['owner1@example.test', '/vendor'], ['owner1@example.test', '/vendor/orders'], ['owner1@example.test', '/vendor/inventory'], ['owner1@example.test', '/vendor/store'],
-  ['owner@example.test', '/admin'], ['owner@example.test', '/admin/catalogue'], ['owner@example.test', '/admin/settings'], ['owner@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/storefront'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
+  ['owner@example.test', '/admin'], ['owner@example.test', '/admin/catalogue'], ['owner@example.test', '/admin/settings'], ['owner@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/storefront'], ['owner1@example.test', '/vendor/messages'], ['owner@example.test', '/admin/messages'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
 const WIDTHS = [360, 390, 768, 1280];
 
 describe('responsive: no horizontal scrolling at common widths', () => {
@@ -153,5 +153,25 @@ describe('festival and season themes', () => {
       const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
       expect(r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
     } finally { await c.query(`DELETE FROM store_branding WHERE store_id IN (SELECT id FROM stores WHERE slug = 'demo-calgary-west-african-market')`); await c.end(); }
+  });
+});
+
+describe('vendor messages (browser)', () => {
+  it('a vendor starts a conversation and staff reply appears for them', async () => {
+    const subject = `Hello ${Date.now()}`;
+    const v = await newPage(browser, DESKTOP); await signIn(v.page, 'owner1@example.test');
+    await v.page.goto(base() + '/vendor/messages');
+    await v.page.getByRole('button', { name: 'New conversation' }).click();
+    await v.page.getByLabel('Subject').fill(subject); await v.page.getByLabel('Message').fill('Can you help me list a new product?');
+    await v.page.getByRole('button', { name: 'Send', exact: true }).click();
+    await v.page.getByRole('heading', { name: subject }).waitFor();
+    const a = await newPage(browser, DESKTOP); await signIn(a.page, 'owner@example.test');
+    await a.page.goto(base() + '/admin/messages');
+    await a.page.getByRole('button', { name: new RegExp(subject) }).click();
+    await a.page.getByLabel('Reply', { exact: true }).fill('Yes: use Add from catalogue.');
+    await a.page.getByRole('button', { name: 'Send', exact: true }).click();
+    await a.page.getByText('Yes: use Add from catalogue.').waitFor();
+    await v.page.reload(); await v.page.getByRole('button', { name: new RegExp(subject) }).click();
+    await v.page.getByText('Yes: use Add from catalogue.').waitFor();
   });
 });

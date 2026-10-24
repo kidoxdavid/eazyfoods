@@ -108,3 +108,28 @@ describe('studio API', () => {
     await call(owner, 'PUT', `/api/vendor/stores/${sid}/branding`, { accent: null, tagline: null, story: null, announcement: null, featured_slugs: [], website: null, instagram: null, facebook: null });
   });
 });
+
+describe('vendor messages', () => {
+  it('vendor and staff can talk; vendors cannot see each other’s threads; unread counts work', async () => {
+    const o1 = (await login('owner1@example.test')).cookie, o2 = (await login('owner2@example.test')).cookie, admin = (await login('admin@example.test')).cookie, cust = (await login('customer@example.test')).cookie;
+    const made = await call(o1, 'POST', '/api/vendor/messages', { subject: 'Payout question', body: 'When is my payout?' });
+    expect(made.status).toBe(201);
+    const id = made.body.id;
+    expect((await call(admin, 'GET', '/api/admin/messages/unread')).body.count).toBeGreaterThanOrEqual(1);
+    expect((await call(o2, 'GET', `/api/vendor/messages/${id}`)).status).toBe(404);
+    expect((await call(o2, 'POST', `/api/vendor/messages/${id}/reply`, { body: 'hijack' })).status).toBe(404);
+    expect((await call(cust, 'GET', '/api/admin/messages')).status).toBe(403);
+    expect((await call(cust, 'GET', '/api/vendor/messages')).status).toBe(403);
+    const seen = await call(admin, 'GET', `/api/admin/messages/${id}`);
+    expect(seen.body.messages).toHaveLength(1);
+    expect((await call(admin, 'POST', `/api/admin/messages/${id}/reply`, { body: 'Fridays.' })).status).toBe(200);
+    const before = (await call(o1, 'GET', '/api/vendor/messages/unread')).body.count; expect(before).toBeGreaterThanOrEqual(1);
+    const read = await call(o1, 'GET', `/api/vendor/messages/${id}`);
+    expect(read.body.messages.map((m: any) => m.body)).toEqual(['When is my payout?', 'Fridays.']);
+    expect((await call(o1, 'GET', '/api/vendor/messages/unread')).body.count).toBe(before - 1);
+    expect((await call(admin, 'POST', `/api/admin/messages/${id}/status`, { status: 'closed' })).status).toBe(200);
+    await call(o1, 'POST', `/api/vendor/messages/${id}/reply`, { body: 'Thanks' });
+    expect((await call(o1, 'GET', `/api/vendor/messages/${id}`)).body.thread.status).toBe('open'); // a vendor reply reopens it
+    expect((await call(o1, 'POST', '/api/vendor/messages', { subject: 'x', body: '' })).status).toBe(400);
+  });
+});

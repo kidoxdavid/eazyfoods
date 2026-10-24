@@ -56,3 +56,7 @@ See `docs/DECISIONS.md`: commission 12%, delivery $5.99/store, driver pay $4.50,
 - **Portals** have their own colours: admin indigo, vendor teal, driver terracotta.
 - Colour safety is enforced by tests for every preset and store accent (light and dark); browser accessibility scans cover a sample of themes.
 - Not yet built: more admin analytics/CRM depth from the old site (activity logs, chat, barcode tools), per-vendor page builder beyond the above.
+
+## Messaging and barcode scan (added)
+- **Vendor messages**: vendors and staff (vendors.manage) hold threaded conversations; unread badges in both menus; staff replies email the vendor owners; vendors only see their own threads; a vendor reply reopens a closed thread.
+- **Barcode scan**: on phones/browsers that support it, vendors can scan a pack's barcode when adding from the shared catalogue; typing always works.

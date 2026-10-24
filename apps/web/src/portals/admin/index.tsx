@@ -5,6 +5,8 @@ import { NoAccess } from './common';
 import { canDo, STAFF_ROLES } from './perms';
 import './admin.css';
 import Studio from './Studio';
+import { MessagesPage } from '../../messages';
+import { useApi } from '../../hooks';
 import { Dashboard } from './Dashboard';
 import { Vendors, VendorDetail, StoresAdmin } from './Vendors';
 import { Catalogue, ProductEditor } from './Catalogue';
@@ -32,6 +34,7 @@ const ITEMS: Item[] = [
   { to: '/admin/support', label: 'Support', need: ['support.manage'] },
   { to: '/admin/refunds', label: 'Refunds', need: ['refunds.approve', 'refunds.request'] },
   { to: '/admin/vendors', label: 'Vendors', need: ['vendors.manage'] },
+  { to: '/admin/messages', label: 'Vendor messages', need: ['vendors.manage'] },
   { to: '/admin/stores', label: 'Stores', need: ['stores.manage'] },
   { to: '/admin/catalogue', label: 'Catalogue', need: ['catalog.manage'] },
   { to: '/admin/taxonomy', label: 'Taxonomy', need: ['catalog.manage'] },
@@ -53,9 +56,10 @@ const LANDING: [string, string][] = [['owner', '/admin'], ['admin', '/admin'], [
 export default function Admin() {
   const { me } = useAuth();
   const roles = me?.roles ?? [];
+  const unread = useApi<{ count: number }>(canDo(roles, 'vendors.manage') ? '/admin/messages/unread' : null);
   if (!roles.some((r) => STAFF_ROLES.includes(r.role)))
     return <div className="wrap" style={{ paddingTop: 24 }}><NoAccess what="the admin console" /></div>;
-  const nav = ITEMS.filter((i) => canDo(roles, ...i.need));
+  const nav = ITEMS.filter((i) => canDo(roles, ...i.need)).map((i) => (i.to === '/admin/messages' ? { ...i, badge: unread.data?.count } : i));
   const landing = LANDING.find(([r]) => roles.some((x) => x.role === r))?.[1] ?? nav[0]?.to ?? '/admin';
   return (
     <PortalLayout tone="admin" title="Admin" subtitle={roles.filter((r) => STAFF_ROLES.includes(r.role)).map((r) => r.role).join(', ')} nav={nav}>
@@ -68,7 +72,7 @@ export default function Admin() {
         <Route path="vendors" element={<Vendors />} /><Route path="vendors/:id" element={<VendorDetail />} /><Route path="stores" element={<StoresAdmin />} />
         <Route path="catalogue" element={<Catalogue />} /><Route path="catalogue/:id" element={<ProductEditor />} /><Route path="taxonomy" element={<Taxonomy />} />
         <Route path="zones" element={<Zones />} /><Route path="promotions" element={<Promotions />} /><Route path="ads" element={<Ads />} />
-        <Route path="content" element={<Content />} /><Route path="studio" element={<Studio />} />
+        <Route path="messages" element={<MessagesPage base="/admin/messages" staff />} /><Route path="content" element={<Content />} /><Route path="studio" element={<Studio />} />
         <Route path="crm" element={<Crm />} /><Route path="crm/:id" element={<ProspectDetail />} />
         <Route path="finance" element={<Finance />} /><Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} /><Route path="system" element={<System />} />

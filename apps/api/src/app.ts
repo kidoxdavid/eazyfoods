@@ -15,6 +15,7 @@ import { vendorRoutes } from './routes/vendor.js';
 import { adminRoutes } from './routes/admin.js';
 import { vendorOrderRoutes } from './routes/vendorOrders.js';
 import { driverRoutes } from './routes/driver.js';
+import { vendorMessageRoutes } from './routes/messages.js';
 import { vendorPortalRoutes } from './routes/vendorPortal.js';
 import { supportRoutes } from './routes/support.js';
 import { engagementRoutes } from './routes/engagement.js';
@@ -83,6 +84,7 @@ export async function buildApp() {
   await app.register(vendorRoutes, { prefix: '/api/vendor' });
   await app.register(vendorOrderRoutes, { prefix: '/api/vendor' });
   await app.register(vendorPortalRoutes, { prefix: '/api/vendor' });
+  await app.register(vendorMessageRoutes, { prefix: '/api/vendor' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(cartRoutes, { prefix: '/api' });
   await app.register(accountRoutes, { prefix: '/api' });

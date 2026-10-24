@@ -4,6 +4,7 @@ import type { Region } from '../../api';
 import { useAction, useApi, useDebounced } from '../../hooks';
 import { useToast } from '../../toast';
 import { Badge, Button, Card, DataTable, Empty, ErrorBox, Field, ImageUpload, Input, Loading, Modal, Notice, PageHeader, Select, Tabs, Textarea, formValues } from '../../ui';
+import { ScanButton } from './Scanner';
 import { StoreSelect, useVendor } from './Shared';
 
 type Offer = { product_id: string; name: string; slug: string; price_cents: number; compare_at_cents: number | null; is_active: boolean; stock_on_hand: number; stock_reserved: number; available: number; low_stock: boolean };
@@ -97,6 +98,7 @@ function AddFromCatalogue() {
   });
   return (<>
     <Field label="Search the shared catalogue" hint="Search by name, brand, barcode or a known alternative name."><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. garri, shito, berbere" /></Field>
+    <div className="row" style={{ marginTop: -6, marginBottom: 8 }}><ScanButton onCode={setQ} /></div>
     {res.loading && <Loading />}{res.error && <ErrorBox message={res.error} />}
     {res.data && <DataTable rows={res.data} rowKey={(r) => r.id} empty={<>No match. Try another spelling, or <em>Suggest new product</em>.</>} columns={[
       { key: 'name', header: 'Product', render: (r) => <><strong>{r.name}</strong> <span className="muted small">{r.brand ?? ''} {r.pack_size ? `${Number(r.pack_size)} ${r.pack_unit ?? ''}` : ''}</span></> },

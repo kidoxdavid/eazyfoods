@@ -171,3 +171,13 @@ main { padding-top: 18px; padding-bottom: calc(var(--tab-h) + 28px + env(safe-ar
 
 /* shared: store accent picker (vendor) */
 .accent-pick { display: flex; gap: 10px; flex-wrap: wrap; } .accent-pick button { display: flex; align-items: center; gap: 8px; border: 2px solid var(--line-2); background: var(--card); color: var(--ink); border-radius: 999px; padding: 6px 14px 6px 8px; min-height: 40px; font-weight: 600; cursor: pointer; } .accent-pick button[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ink); } .accent-pick i { width: 24px; height: 24px; border-radius: 50%; display: inline-block; }
+
+/* ---------- Messages (vendor and admin) ---------- */
+.msg-layout { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); } @media (min-width: 900px) { .msg-layout { grid-template-columns: 320px minmax(0, 1fr); align-items: start; } }
+.thread-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.thread { width: 100%; text-align: left; display: grid; gap: 3px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: pointer; min-height: 44px; font: inherit; } .thread.on { border-color: var(--green); background: var(--green-bg); }
+.thread-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; } .thread-prev { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
+.bubbles { display: grid; gap: 10px; margin: 14px 0; max-height: 52vh; overflow-y: auto; padding-right: 4px; }
+.bubble { max-width: 85%; border-radius: 14px; padding: 8px 12px; border: 1px solid var(--line); background: var(--card); } .bubble p { margin: 2px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bubble.mine { justify-self: end; background: var(--green-bg); border-color: transparent; } .bubble.theirs { justify-self: start; }
+.back-only { display: inline-flex; } @media (min-width: 900px) { .back-only { display: none; } }
