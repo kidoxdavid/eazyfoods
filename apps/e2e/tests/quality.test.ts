@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Browser } from 'playwright-core';
-import { base, DESKTOP, launch, MOBILE, newPage, signIn } from './helpers.js';
+import { base, db, DESKTOP, launch, MOBILE, newPage, signIn } from './helpers.js';
 
 let browser: Browser;
 beforeAll(async () => { browser = await launch(); });
@@ -10,7 +10,7 @@ afterAll(async () => { await browser?.close(); });
 const PUBLIC = ['/', '/search?q=garri', '/search?region=east-africa', '/stores', '/s/demo-calgary-west-african-market', '/p/garri-white', '/recipes', '/recipes/jollof-rice-nigerian-style', '/cart', '/signin', '/register', '/pages/refund-policy'];
 const SIGNED_IN = ['/account', '/orders', '/checkout'];
 const PORTALS: [string, string][] = [['owner1@example.test', '/vendor'], ['owner1@example.test', '/vendor/orders'], ['owner1@example.test', '/vendor/inventory'], ['owner1@example.test', '/vendor/store'],
-  ['owner@example.test', '/admin'], ['owner@example.test', '/admin/catalogue'], ['owner@example.test', '/admin/settings'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
+  ['owner@example.test', '/admin'], ['owner@example.test', '/admin/catalogue'], ['owner@example.test', '/admin/settings'], ['owner@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/storefront'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
 const WIDTHS = [360, 390, 768, 1280];
 
 describe('responsive: no horizontal scrolling at common widths', () => {
@@ -101,5 +101,57 @@ describe('home carousel', () => {
     // once slides exist they are always the same list (no insertion later)
     expect(new Set(withSlides.map((l) => l.li.join('~'))).size).toBe(1);
     expect(withSlides[0].li[0]).toContain('African groceries');     // the welcome slide is first
+  });
+});
+
+describe('festival and season themes', () => {
+  it('a forced theme re-colours the shop, leads the carousel and shows its banner strip; auto returns to normal', async () => {
+    const c = await db();
+    try {
+      await c.query(`UPDATE themes SET status = 'on' WHERE slug = 'diwali'`);
+      const { page } = await newPage(browser, DESKTOP);
+      await page.goto(base()); await page.waitForLoadState('networkidle');
+      const first = page.locator('.hero-slide').first();
+      await first.waitFor({ state: 'visible' });
+      expect(await first.innerText()).toContain('Happy Diwali');
+      expect(await page.locator('.announce.festive').innerText()).toContain('Diwali');
+      const green = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--green').trim());
+      expect(green).toMatch(/^#[0-9a-f]{6}$/i); expect(green).not.toBe('#1f5b3a');
+      await page.goto(base() + '/vendor'); // staff areas keep their own colours
+    } finally { await c.query(`UPDATE themes SET status = 'auto' WHERE slug = 'diwali'`); await c.end(); }
+    const { page } = await newPage(browser, DESKTOP);
+    await page.goto(base()); await page.waitForLoadState('networkidle');
+    expect(await page.locator('.hero-slide').first().innerText()).not.toContain('Diwali');
+  });
+
+  for (const scheme of ['light', 'dark'] as const) {
+    it(`every preset theme passes the accessibility scan on the homepage (${scheme})`, async () => {
+      const c = await db(); const slugs = (await c.query('SELECT slug FROM themes ORDER BY slug')).rows.map((r) => r.slug as string).filter((_, i) => i % 3 === 0); await c.end();
+      const { page } = await newPage(browser, MOBILE, scheme);
+      await signIn(page, 'owner@example.test');
+      const found: string[] = [];
+      for (const slug of slugs) {
+        await page.goto(`${base()}/?preview_theme=${slug}`); await page.waitForLoadState('networkidle');
+        await page.locator('.hero-slide').first().waitFor({ state: 'visible' });
+        const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+        found.push(...r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${scheme} ${slug}: ${v.id} (${v.nodes.length}) ${v.help}`));
+      }
+      expect(found).toEqual([]);
+    }, 240_000);
+  }
+
+  it('a store page picks up the vendor’s brand colour, story and announcement', async () => {
+    const c = await db();
+    try {
+      await c.query(`INSERT INTO store_branding(store_id, accent, tagline, story, announcement) SELECT id, 'plum', 'Fresh every morning', 'We started in a garage.', 'Closed Monday' FROM stores WHERE slug = 'demo-calgary-west-african-market' ON CONFLICT (store_id) DO UPDATE SET accent = 'plum', tagline = 'Fresh every morning', story = 'We started in a garage.', announcement = 'Closed Monday'`);
+      const { page } = await newPage(browser, MOBILE);
+      await page.goto(base() + '/s/demo-calgary-west-african-market'); await page.waitForLoadState('networkidle');
+      const body = await page.locator('main').innerText();
+      for (const t of ['Fresh every morning', 'We started in a garage.', 'Closed Monday']) expect(body).toContain(t);
+      const g = await page.evaluate(() => getComputedStyle(document.querySelector('.store-page')!).getPropertyValue('--green').trim());
+      expect(g).toBe('#7a2e5d');
+      const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+      expect(r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
+    } finally { await c.query(`DELETE FROM store_branding WHERE store_id IN (SELECT id FROM stores WHERE slug = 'demo-calgary-west-african-market')`); await c.end(); }
   });
 });

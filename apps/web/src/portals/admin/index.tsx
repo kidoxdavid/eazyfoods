@@ -4,6 +4,7 @@ import { PortalLayout, type NavItem } from '../../ui';
 import { NoAccess } from './common';
 import { canDo, STAFF_ROLES } from './perms';
 import './admin.css';
+import Studio from './Studio';
 import { Dashboard } from './Dashboard';
 import { Vendors, VendorDetail, StoresAdmin } from './Vendors';
 import { Catalogue, ProductEditor } from './Catalogue';
@@ -37,6 +38,7 @@ const ITEMS: Item[] = [
   { to: '/admin/zones', label: 'Delivery zones', need: ['stores.manage'] },
   { to: '/admin/promotions', label: 'Promotions', need: ['promotions.manage'] },
   { to: '/admin/ads', label: 'Advertising', need: ['ads.manage'] },
+  { to: '/admin/studio', label: 'Storefront studio', need: ['content.manage'] },
   { to: '/admin/content', label: 'Content', need: ['content.manage'] },
   { to: '/admin/crm', label: 'Vendor pipeline', need: ['crm.manage'] },
   { to: '/admin/finance', label: 'Finance', need: ['ledger.view', 'payouts.manage'] },
@@ -56,7 +58,7 @@ export default function Admin() {
   const nav = ITEMS.filter((i) => canDo(roles, ...i.need));
   const landing = LANDING.find(([r]) => roles.some((x) => x.role === r))?.[1] ?? nav[0]?.to ?? '/admin';
   return (
-    <PortalLayout title="Admin" subtitle={roles.filter((r) => STAFF_ROLES.includes(r.role)).map((r) => r.role).join(', ')} nav={nav}>
+    <PortalLayout tone="admin" title="Admin" subtitle={roles.filter((r) => STAFF_ROLES.includes(r.role)).map((r) => r.role).join(', ')} nav={nav}>
       <Routes>
         <Route index element={landing === '/admin' ? <Dashboard /> : <Navigate to={landing} replace />} />
         <Route path="orders" element={<Orders />} /><Route path="orders/:id" element={<OrderDetail />} />
@@ -66,7 +68,7 @@ export default function Admin() {
         <Route path="vendors" element={<Vendors />} /><Route path="vendors/:id" element={<VendorDetail />} /><Route path="stores" element={<StoresAdmin />} />
         <Route path="catalogue" element={<Catalogue />} /><Route path="catalogue/:id" element={<ProductEditor />} /><Route path="taxonomy" element={<Taxonomy />} />
         <Route path="zones" element={<Zones />} /><Route path="promotions" element={<Promotions />} /><Route path="ads" element={<Ads />} />
-        <Route path="content" element={<Content />} />
+        <Route path="content" element={<Content />} /><Route path="studio" element={<Studio />} />
         <Route path="crm" element={<Crm />} /><Route path="crm/:id" element={<ProspectDetail />} />
         <Route path="finance" element={<Finance />} /><Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} /><Route path="system" element={<System />} />

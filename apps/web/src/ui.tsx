@@ -163,9 +163,9 @@ export function ImageUpload({ value, onChange, label = 'Image' }: { value?: stri
 
 // ---------- Portal shell (sidebar on desktop, scrolling tab strip on phones) ----------
 export type NavItem = { to: string; label: string; end?: boolean; badge?: number };
-export function PortalLayout({ title, subtitle, nav, children }: { title: string; subtitle?: string; nav: NavItem[]; children: ReactNode }) {
+export function PortalLayout({ title, subtitle, nav, tone, children }: { title: string; subtitle?: string; nav: NavItem[]; tone?: 'admin' | 'vendor' | 'driver'; children: ReactNode }) {
   return (
-    <div className="portal">
+    <div className="portal" data-portal={tone}>
       <aside className="portal-nav" aria-label={`${title} navigation`}>
         <div className="portal-title"><Link to="/" aria-label="Back to the shop">← Shop</Link><strong>{title}</strong>{subtitle && <span className="muted small">{subtitle}</span>}</div>
         <nav>{nav.map((n) => <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => (isActive ? 'active' : '')}>{n.label}{n.badge ? <span className="count">{n.badge}</span> : null}</NavLink>)}</nav>

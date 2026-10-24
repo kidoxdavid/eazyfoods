@@ -4,6 +4,7 @@ import { AuthProvider } from './auth';
 import { CartProvider } from './cart';
 import { ToastProvider } from './toast';
 import { PlaceProvider } from './place';
+import { ThemeProvider } from './theme';
 import { Footer, Header, TabBar } from './shell';
 import { Empty, Loading } from './ui';
 import { RequireAuth } from './guard';
@@ -40,6 +41,7 @@ export function App() {
       <AuthProvider>
         <CartProvider>
          <PlaceProvider>
+          <ThemeProvider>
           <Suspense fallback={<div className="wrap"><Loading /></div>}>
             <Routes>
               <Route path="/vendor/*" element={<RequireAuth><Vendor /></RequireAuth>} />
@@ -75,6 +77,7 @@ export function App() {
               } />
             </Routes>
           </Suspense>
+          </ThemeProvider>
          </PlaceProvider>
         </CartProvider>
       </AuthProvider>

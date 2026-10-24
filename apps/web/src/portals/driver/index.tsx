@@ -34,7 +34,7 @@ const pickAddr = (p: Job['pickup']) => [p.address_line, p.city, p.postal_code].f
 export default function DriverPortal() {
   const me = useApi<Me>('/driver/me');
   return (
-    <PortalLayout title="Driver" nav={NAV}>
+    <PortalLayout tone="driver" title="Driver" nav={NAV}>
       {me.loading ? <Loading /> : me.error ? <ErrorBox message={me.error} retry={me.reload} /> : me.data?.status === 'none' ? <Apply onDone={me.reload} />
         : me.data?.status !== 'approved' ? <Status status={me.data!.status} />
         : (

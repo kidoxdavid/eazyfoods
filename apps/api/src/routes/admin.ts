@@ -12,6 +12,7 @@ import { adminCatalogRoutes } from './adminCatalog.js';
 import { adminOpsRoutes } from './adminOps.js';
 import { adminSystemRoutes } from './adminSystem.js';
 import { adminReportRoutes } from './adminReports.js';
+import { adminStudioRoutes } from './adminStudio.js';
 
 const uuid = z.string().uuid();
 
@@ -141,5 +142,6 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
   await app.register(adminOpsRoutes);
   await app.register(adminSystemRoutes);
   await app.register(adminReportRoutes);
+  await app.register(adminStudioRoutes);
   void can;
 };

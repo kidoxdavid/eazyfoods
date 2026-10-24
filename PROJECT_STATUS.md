@@ -47,3 +47,12 @@ See `docs/DECISIONS.md`: commission 12%, delivery $5.99/store, driver pay $4.50,
 3. Recruit the 3-5 pilot stores (LAUNCH_PLAN.md); load real catalogues and photos; verify aliases and tax classes.
 4. Legal and accountant review; complete LAUNCH_CHECKLIST.md.
 5. Stand up staging with managed Postgres, run the e2e suite there, rehearse backup restore.
+
+## Storefront studio (added)
+- **Themes** (admin → Storefront studio): 22 presets (festivals, holidays, seasons). Auto by date, force On, or Off. Re-colours the shop, leads the homepage carousel, shows a top strip, optional falling decoration. Staff can preview any theme with `/?preview_theme=<slug>`. Moving festivals (Easter, Ramadan, Eid, Diwali, Lunar New Year, Thanksgiving, Black Friday, Mother's Day) hold only their NEXT dates: update yearly. Seasons are Off by default.
+- **Banners**: custom carousel slides (colours or picture, link, schedule, order).
+- **Homepage layout**: reorder or hide the nine homepage sections.
+- **Vendor → Storefront**: brand colour (8 contrast-checked options), tagline, announcement, story, links, featured products.
+- **Portals** have their own colours: admin indigo, vendor teal, driver terracotta.
+- Colour safety is enforced by tests for every preset and store accent (light and dark); browser accessibility scans cover a sample of themes.
+- Not yet built: more admin analytics/CRM depth from the old site (activity logs, chat, barcode tools), per-vendor page builder beyond the above.

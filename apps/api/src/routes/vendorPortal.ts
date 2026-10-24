@@ -9,6 +9,7 @@ import { isOurImageUrl } from '../lib/storage.js';
 import { parseCsv, toCsv } from '../lib/csv.js';
 import { slugify, norm } from '../lib/norm.js';
 import { vendorIdsOf } from './vendorOrders.js';
+import { ACCENTS } from '../lib/themes.js';
 import { normalisePostal, isCanadianPostal } from '../services/pricing.js';
 
 const uuid = z.string().uuid();
@@ -112,6 +113,32 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
     const s = (await pool.query('SELECT id, slug, name, description, address_line, city, postal_code, phone, policies, offers_delivery, offers_pickup, ordering_paused, min_order_cents, logo_url, cover_url, status FROM stores WHERE id = $1', [await store(req)])).rows[0];
     const regions = (await pool.query('SELECT r.slug FROM store_regions sr JOIN regions r ON r.id = sr.region_id WHERE sr.store_id = $1', [s.id])).rows.map((r) => r.slug);
     return { ...s, regions };
+  });
+
+  // ---------- Storefront branding (accent colour, story, announcement, featured products) ----------
+  const url = z.string().max(200).regex(/^https:\/\/[^\s]+$/, 'Links must start with https://').nullable().optional();
+  app.get<{ Params: { storeId: string } }>('/stores/:storeId/branding', async (req) => {
+    const id = await store(req);
+    const b = (await pool.query('SELECT accent, tagline, story, announcement, featured_slugs, website, instagram, facebook FROM store_branding WHERE store_id = $1', [id])).rows[0]
+      ?? { accent: null, tagline: null, story: null, announcement: null, featured_slugs: [], website: null, instagram: null, facebook: null };
+    const products = (await pool.query(`SELECT p.slug, p.name FROM store_offers o JOIN products p ON p.id = o.product_id WHERE o.store_id = $1 AND o.is_active ORDER BY p.name`, [id])).rows;
+    return { ...b, accents: Object.entries(ACCENTS).map(([key, v]) => ({ key, ...v })), products };
+  });
+  app.put<{ Params: { storeId: string } }>('/stores/:storeId/branding', async (req) => {
+    const id = await store(req);
+    const b = z.object({
+      accent: z.enum(Object.keys(ACCENTS) as [string, ...string[]]).nullable(), tagline: z.string().max(80).nullable(), story: z.string().max(1200).nullable(),
+      announcement: z.string().max(140).nullable(), featured_slugs: z.array(z.string().max(120)).max(8), website: url, instagram: url, facebook: url,
+    }).parse(req.body);
+    const own = (await pool.query(`SELECT p.slug FROM store_offers o JOIN products p ON p.id = o.product_id WHERE o.store_id = $1 AND p.slug = ANY($2::text[])`, [id, b.featured_slugs])).rows.map((r) => r.slug);
+    if (own.length !== new Set(b.featured_slugs).size) throw bad('not_your_products', 'You can only feature products your store sells.');
+    const t = (s: string | null | undefined) => (s && s.trim() ? s.trim() : null);
+    await pool.query(
+      `INSERT INTO store_branding(store_id, accent, tagline, story, announcement, featured_slugs, website, instagram, facebook) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       ON CONFLICT (store_id) DO UPDATE SET accent=$2, tagline=$3, story=$4, announcement=$5, featured_slugs=$6, website=$7, instagram=$8, facebook=$9, updated_at=now()`,
+      [id, b.accent, t(b.tagline), t(b.story), t(b.announcement), [...new Set(b.featured_slugs)], t(b.website), t(b.instagram), t(b.facebook)]);
+    await audit(req.user!.id, 'store.branding_updated', 'store', id);
+    return { ok: true };
   });
 
   // ---------- Catalogue: find shared products, suggest new ones ----------

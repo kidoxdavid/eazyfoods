@@ -4,8 +4,9 @@ import { ProductArt } from './art';
 import { IconChevron, IconChevronL } from './icons';
 import type { Card } from './cards';
 import { packLabel } from './api';
+import { Motif, type SiteTheme } from './theme';
 
-export type Slide = { id: string; from: string; to: string; eyebrow: string; title: string; text: string; cta: { to: string; label: string }; art: Card[]; light?: boolean };
+export type Slide = { id: string; from: string; to: string; eyebrow: string; title: string; text: string; cta: { to: string; label: string }; art: Card[]; light?: boolean; image?: string | null; motif?: SiteTheme['motif'] };
 
 /** Hero carousel: scroll-snap (native swipe), arrows, dots, auto-advance that stops on hover/focus and for reduced-motion users. */
 export function HeroCarousel({ slides }: { slides: Slide[] }) {
@@ -24,6 +25,7 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
       <ul className="hero-track" ref={ref} onScroll={onScroll} role="list">
         {slides.map((s, k) => (
           <li key={s.id} className={`hero-slide ${s.light ? 'light' : ''}`} style={{ background: `linear-gradient(115deg, ${s.from}, ${s.to})` }} aria-roledescription="slide" aria-label={`${k + 1} of ${slides.length}`} aria-hidden={k !== i}>
+            {s.motif && <Motif kind={s.motif} />}
             <div className="hero-copy">
               <span className="hero-eyebrow">{s.eyebrow}</span>
               <h2>{s.title}</h2>
@@ -32,6 +34,7 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
             </div>
             <div className="hero-art" aria-hidden="true">
               <span className="blob b1" /><span className="blob b2" />
+              {s.image && <img className="hero-img" src={s.image} alt="" loading="lazy" />}
               {s.art.slice(0, 3).map((p, n) => <ProductArt key={p.slug} bare name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} className={`hp hp${n}`} />)}
             </div>
           </li>

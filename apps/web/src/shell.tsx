@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { money, type Region } from './api';
 import { useApi } from './hooks';
+import { useSiteTheme } from './theme';
 import { useAuth } from './auth';
 import { useCart } from './cart';
 import { usePlace } from './place';
@@ -68,6 +69,7 @@ export function Header() {
   const regions = useApi<Region[]>('/regions');
   const cats = useApi<{ slug: string; name: string }[]>('/categories');
   const content = useApi<{ announcement?: { text: string; active: boolean } }>('/content/home');
+  const { theme } = useSiteTheme();
   const active = loc.pathname === '/search' ? new URLSearchParams(loc.search).get('region') : null;
   const ann = content.data?.announcement;
   const subtotal = cart ? cart.subtotal_cents : guest.reduce((a, g) => a + g.unit_price_cents * g.quantity, 0);
@@ -75,7 +77,8 @@ export function Header() {
   const closeMenu = useRef(() => setMenu(false)).current;
   return (
     <>
-      {ann?.active && ann.text && <div className="announce" role="note">{ann.text}</div>}
+      {ann?.active && ann.text ? <div className="announce" role="note">{ann.text}</div>
+        : theme?.banner_text ? <div className="announce festive" role="note"><span aria-hidden="true">{theme.emoji} </span>{theme.banner_text}{theme.preview && ' (preview)'}</div> : null}
       <header className="hdr">
         <div className="hdr-util"><div className="wrap">
           <span>Calgary, Alberta · African groceries from local stores</span>

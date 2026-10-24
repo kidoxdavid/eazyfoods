@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
+import { ACCENTS } from '../lib/themes.js';
 import { pool } from '../db/pool.js';
 
 export const storeRoutes: FastifyPluginAsync = async (app) => {
@@ -18,7 +19,7 @@ export const storeRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Params: { slug: string } }>('/stores/:slug', async (req, reply) => {
     const s = (await pool.query(`SELECT * FROM storefronts WHERE slug = $1 AND orderable`, [req.params.slug])).rows[0];
     if (!s) return reply.code(404).send({ error: 'not_found' });
-    const [hours, regions, products] = await Promise.all([
+    const [hours, regions, products, branding] = await Promise.all([
       pool.query('SELECT dow, opens, closes FROM store_hours WHERE store_id = $1 ORDER BY dow, opens', [s.id]),
       pool.query('SELECT r.slug, r.name FROM store_regions sr JOIN regions r ON r.id = sr.region_id WHERE sr.store_id = $1', [s.id]),
       pool.query(
@@ -28,12 +29,16 @@ export const storeRoutes: FastifyPluginAsync = async (app) => {
            FROM offers_live o JOIN products p ON p.id = o.product_id AND p.status = 'published'
            LEFT JOIN brands b ON b.id = p.brand_id LEFT JOIN categories c ON c.id = p.category_id
           WHERE o.store_id = $1 AND o.is_active ORDER BY p.name`, [s.id]),
+      pool.query('SELECT accent, tagline, story, announcement, featured_slugs, website, instagram, facebook FROM store_branding WHERE store_id = $1', [s.id]),
     ]);
+    const br = branding.rows[0];
     return {
       slug: s.slug, name: s.name, description: s.description, address_line: s.address_line, city: s.city, province: s.province,
       postal_code: s.postal_code, phone: s.phone, is_open: s.is_open, min_order_cents: s.min_order_cents, is_test_data: s.is_test_data,
       logo_url: s.logo_url, cover_url: s.cover_url, policies: s.policies, offers_delivery: s.offers_delivery, offers_pickup: s.offers_pickup, ordering_paused: s.ordering_paused,
       hours: hours.rows, regions: regions.rows, products: products.rows,
+      branding: br ? { accent: br.accent && ACCENTS[br.accent] ? { primary: ACCENTS[br.accent].primary, deep: ACCENTS[br.accent].deep, tint: ACCENTS[br.accent].tint, glow: ACCENTS[br.accent].glow } : null,
+        tagline: br.tagline, story: br.story, announcement: br.announcement, featured_slugs: br.featured_slugs, website: br.website, instagram: br.instagram, facebook: br.facebook } : null,
     };
   });
 };

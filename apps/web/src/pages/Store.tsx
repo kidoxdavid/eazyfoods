@@ -6,12 +6,14 @@ import { StoreBanner, StoreMark } from '../art';
 import { Badge, ErrorBox, Loading, Notice } from '../ui';
 import { BasketBar, ProductGrid, StoreList, type Card } from '../cards';
 import { IconPin } from '../icons';
+import { paletteCss } from '../theme';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 type SP = Card & { offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; available: number; category: string | null; category_slug: string | null };
 type S = {
   name: string; description: string; address_line: string | null; city: string; province: string; postal_code: string | null; phone: string | null; is_open: boolean; min_order_cents: number | null; is_test_data: boolean;
   logo_url: string | null; cover_url: string | null; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; ordering_paused: boolean;
+  branding: { accent: { primary: string; deep: string; tint: string; glow: string } | null; tagline: string | null; story: string | null; announcement: string | null; featured_slugs: string[]; website: string | null; instagram: string | null; facebook: string | null } | null;
   hours: { dow: number; opens: string; closes: string }[]; regions: { slug: string; name: string }[]; products: SP[];
 };
 type Reviews = { count: number; average: number | null };
@@ -33,21 +35,29 @@ export function StorePage() {
   if (error) return <ErrorBox message={error} retry={reload} />;
   if (!s) return null;
   const items: Card[] = s.products.filter((p) => !cat || p.category_slug === cat).map((p) => ({ ...p, min_price: p.price_cents, was_price: p.compare_at_cents, in_stock: p.available > 0, on_sale: p.on_promotion, store_count: 1, store_name: s.name, store_slug: slug!, available: p.available }));
+  const br = s.branding;
+  const featured = items.filter((p) => br?.featured_slugs.includes(p.slug));
+  const links = [['Website', br?.website], ['Instagram', br?.instagram], ['Facebook', br?.facebook]].filter(([, u]) => u) as [string, string][];
   return (
     <>
+      {br?.accent && <style>{paletteCss(br.accent, '.store-page')}</style>}
+      <div className="store-page">
       <div className="shead">
         <div className="shead-cover">{s.cover_url ? <img src={s.cover_url} alt="" /> : <StoreBanner name={s.name} />}</div>
         <div className="shead-body">
           {s.logo_url ? <img className="logo-img" src={s.logo_url} alt="" width={64} height={64} style={{ borderRadius: '50%', objectFit: 'cover' }} /> : <StoreMark name={s.name} size={64} />}
-          <div className="grow"><h1>{s.name}</h1>
+          <div className="grow"><h1>{s.name}</h1>{br?.tagline && <p className="tagline">{br.tagline}</p>}
             <div className="row wrap"><Badge tone={s.is_open ? 'ok' : 'warn'}>{s.is_open ? 'Open now' : 'Closed now'}</Badge>{s.regions.map((r) => <Link key={r.slug} to={`/search?region=${r.slug}&store=${slug}`}><Badge>{r.name}</Badge></Link>)}{s.offers_pickup && <Badge tone="info">Pickup available</Badge>}{rev.data?.average != null && <Badge tone="info">★ {rev.data.average} ({rev.data.count})</Badge>}{s.is_test_data && <Badge tone="demo">Demo store</Badge>}</div></div>
         </div>
         <div className="shead-meta small muted"><IconPin width={16} height={16} style={{ verticalAlign: -3 }} /> {[s.address_line, s.city, s.province, s.postal_code].filter(Boolean).join(', ')}{s.phone ? ` · ${s.phone}` : ''}{s.min_order_cents ? ` · Minimum order ${money(s.min_order_cents)}` : ''}</div>
       </div>
+      {br?.announcement && <div className="store-ann" role="note">{br.announcement}</div>}
       {s.is_test_data && <Notice tone="warn">Demo store with invented data for development. It is not a real business.</Notice>}
       {s.ordering_paused && <Notice tone="warn">This store has paused online orders for now.</Notice>}
       {!s.is_open && !s.ordering_paused && <Notice>This store is closed right now. You can fill your basket, but you can only check out while it is open.</Notice>}
       <p style={{ marginTop: 14 }}>{s.description}</p>
+      {br?.story && <section className="store-story" aria-label={`About ${s.name}`}><h2>Our story</h2><p>{br.story}</p>{!!links.length && <p className="store-links">{links.map(([l, u]) => <a key={l} href={u} target="_blank" rel="noopener noreferrer">{l}</a>)}</p>}</section>}
+      {!!featured.length && <section className="block" aria-labelledby="feat-h"><h2 id="feat-h">Featured by {s.name}</h2><ProductGrid products={featured} /></section>}
       <details><summary style={{ cursor: 'pointer', minHeight: 32 }}>Opening hours{s.policies ? ' and store policies' : ''}</summary>
         <ul role="list" style={{ paddingLeft: 18 }}>{s.hours.map((h, i) => <li key={i}>{DAYS[h.dow]} {h.opens.slice(0, 5)}–{h.closes.slice(0, 5)}</li>)}</ul>{s.policies && <p>{s.policies}</p>}</details>
       <div className="catchips" role="group" aria-label="Departments in this store">
@@ -55,6 +65,7 @@ export function StorePage() {
         {cats.map(([k, n]) => <button key={k} className={cat === k ? 'on' : ''} onClick={() => setCat(k)}>{n}</button>)}
       </div>
       <ProductGrid products={items} />
+      </div>
       <BasketBar />
     </>
   );

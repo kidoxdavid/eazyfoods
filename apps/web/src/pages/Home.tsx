@@ -8,6 +8,10 @@ import { ErrorBox, Loading, Notice } from '../ui';
 import { IconShield, IconStore, IconSwap, IconTruck, IconBook } from '../icons';
 import { post } from '../api';
 import { useAdImpression } from '../cards';
+import { useSiteTheme } from '../theme';
+
+type Layout = { sections: { id: string; enabled: boolean }[] };
+const DEFAULT_LAYOUT = ['regions', 'deals', 'departments', 'collections_a', 'new', 'collections_b', 'stores', 'recipes', 'trust'];
 
 type Search = { results: Card[] };
 const REGION_COLOURS: [string, string][] = [['#0f5a3a', '#1f8f5b'], ['#a3470f', '#e08a1e'], ['#254e8f', '#4a86d4'], ['#7a2e5d', '#b4508a'], ['#136f63', '#2bb3a1'], ['#8c2f39', '#d4564a']];
@@ -45,7 +49,9 @@ function CollectionShelf({ slug }: { slug: string }) {
 }
 
 export function Home() {
-  const content = useApi<{ home_hero?: { title: string; subtitle: string } }>('/content/home');
+  const content = useApi<{ home_hero?: { title: string; subtitle: string }; home_layout?: Layout }>('/content/home');
+  const { theme, loading: themeLoading } = useSiteTheme();
+  const banners = useApi<{ id: string; title: string; subtitle: string; cta_label: string; cta_link: string; image_url: string | null; from_color: string; to_color: string }[]>('/home/banners');
   const regions = useApi<Region[]>('/regions');
   const stores = useApi<StoreCard[]>('/stores');
   const cols = useApi<{ slug: string }[]>('/collections');
@@ -60,51 +66,53 @@ export function Home() {
 
   // Build the slides only once every feed has settled, so they appear together and in a fixed order. Building them as data
   // arrives made the first-to-load slide (e.g. the red deals slide) flash and then jump when the welcome slide was inserted.
-  const ready = !featured.loading && !deals.loading && !regions.loading && !eastSearch.loading && !recipes.loading && !content.loading;
+  const ready = !themeLoading && !banners.loading && !featured.loading && !deals.loading && !regions.loading && !eastSearch.loading && !recipes.loading && !content.loading;
   const slides: Slide[] = [];
+  if (ready && theme) slides.push({ id: 'theme', from: theme.palette.hero_from, to: theme.palette.hero_to, eyebrow: `${theme.emoji} ${theme.name}`.trim(), title: theme.headline, text: theme.subtitle, cta: { to: theme.cta_link || '/search', label: theme.cta_label || 'Start shopping' }, art: featured.data?.results ?? [], motif: theme.motif });
+  if (ready) for (const b of banners.data ?? []) slides.push({ id: `banner-${b.id}`, from: b.from_color, to: b.to_color, eyebrow: 'Featured', title: b.title, text: b.subtitle, cta: { to: b.cta_link || '/', label: b.cta_label || 'Learn more' }, art: b.image_url ? [] : featured.data?.results ?? [], image: b.image_url });
   if (ready && featured.data) slides.push({ id: 'welcome', from: '#0b3a24', to: '#1d7a4c', eyebrow: 'Calgary · African groceries', title: (hero?.title ?? 'African groceries, from the stores you trust.').replace('\n', ' '), text: hero?.subtitle ?? 'Compare each store’s own price and stock, then have it delivered.', cta: { to: '/search', label: 'Start shopping' }, art: featured.data.results });
   if (ready && deals.data?.length) slides.push({ id: 'deals', from: '#b8260f', to: '#f0701f', eyebrow: 'Weekly deals', title: 'Save on pantry staples this week', text: 'Live promotions from local stores, priced as you’ll pay.', cta: { to: '/deals', label: 'Shop deals' }, art: deals.data });
   if (ready && east && eastSearch.data?.results.length) slides.push({ id: 'east', from: '#7a3a0b', to: '#d98b1f', eyebrow: east.name, title: `Discover ${east.name.replace(' Africa', '')} African ingredients`, text: east.countries.slice(0, 4).map((c) => c.name).join(' · '), cta: { to: `/search?region=${east.slug}`, label: `Shop ${east.name}` }, art: eastSearch.data.results });
   if (ready && recipes.data?.length && featured.data) slides.push({ id: 'cook', from: '#3b2a6b', to: '#7a4bb8', eyebrow: 'Cook tonight', title: recipes.data[0].title, text: 'Add the ingredients that are in stock to your basket in one tap.', cta: { to: `/recipes`, label: 'See recipes' }, art: [...featured.data.results].reverse() });
 
+  const parts: Record<string, JSX.Element | null> = {
+    regions: <div key="regions" className="quads">{regions.data?.slice(0, 4).map((r) => <RegionQuad key={r.slug} r={r} />)}</div>,
+    deals: <Shelf key="deals" title="Today’s deals" subtitle="Live promotions — the price shown is what you pay" to="/deals" items={deals.data ?? []} />,
+    departments: (
+      <section key="departments" className="block" aria-labelledby="dept-h">
+        <h2 id="dept-h">Shop by department</h2>
+        <ul className="depts" role="list">{cats.data?.map((c) => <CatTile key={c.slug} slug={c.slug} name={c.name} />)}</ul>
+      </section>),
+    collections_a: <div key="collections_a">{cols.data?.slice(0, 2).map((c) => <CollectionShelf key={c.slug} slug={c.slug} />)}</div>,
+    new: <Shelf key="new" title="New arrivals" subtitle="Just added to the catalogue" to="/new" items={fresh.data ?? []} />,
+    collections_b: <div key="collections_b">{cols.data?.slice(2, 4).map((c) => <CollectionShelf key={c.slug} slug={c.slug} />)}</div>,
+    stores: (
+      <section key="stores" className="block" aria-labelledby="stores-h">
+        <div className="shelf-head"><h2 id="stores-h">Stores near you</h2><Link to="/stores" className="seeall">All stores</Link></div>
+        {stores.loading && <Loading />}{stores.error && <ErrorBox message={stores.error} retry={stores.reload} />}
+        {stores.data && <StoreList stores={stores.data} />}
+      </section>),
+    recipes: recipes.data?.length ? (
+      <section key="recipes" className="block" aria-labelledby="rec-h">
+        <div className="shelf-head"><div><h2 id="rec-h">Cook something tonight</h2><p className="muted">Recipes linked to what’s in stock.</p></div><Link to="/recipes" className="seeall">All recipes</Link></div>
+        <ul className="recipe-tiles" role="list">{recipes.data.slice(0, 4).map((r, i) => <li key={r.slug}><Link to={`/recipes/${r.slug}`} className="rtile" style={{ background: `linear-gradient(135deg, ${REGION_COLOURS[i % 6][0]}, ${REGION_COLOURS[i % 6][1]})` }}><h3>{r.title}</h3><p>{r.summary}</p></Link></li>)}</ul>
+      </section>) : null,
+    trust: (
+      <div key="trust" className="trust">
+        <div><IconStore /><span><b>Local African grocers</b>Real stores, each with its own stock and prices.</span></div>
+        <div><IconSwap /><span><b>Compare stores</b>See every store’s price side by side.</span></div>
+        <div><IconTruck /><span><b>Delivery you can see</b>Fees and times shown per store before you pay.</span></div>
+        <div><IconShield /><span><b>Help when it goes wrong</b>Report a problem and we’ll make it right. <Link to="/pages/refund-policy">Policy</Link></span></div>
+      </div>),
+  };
+  const order = content.data?.home_layout?.sections ?? DEFAULT_LAYOUT.map((id) => ({ id, enabled: true }));
   return (
     <>
       {slides.length ? <HeroCarousel slides={slides} /> : ready ? null : <div className="hero-skel" aria-hidden="true" />}
       {stores.data?.some((s) => s.is_test_data) && <Notice tone="warn"><strong>Development data.</strong> Stores marked “Demo store” are invented for testing and are not real businesses. Product pictures are illustrations until stores upload photos.</Notice>}
       <HomeBanner />
       {regions.error && <ErrorBox message={regions.error} retry={regions.reload} />}
-      <div className="quads">{regions.data?.slice(0, 4).map((r) => <RegionQuad key={r.slug} r={r} />)}</div>
-
-      <Shelf title="Today’s deals" subtitle="Live promotions — the price shown is what you pay" to="/deals" items={deals.data ?? []} />
-
-      <section className="block" aria-labelledby="dept-h">
-        <h2 id="dept-h">Shop by department</h2>
-        <ul className="depts" role="list">{cats.data?.map((c) => <CatTile key={c.slug} slug={c.slug} name={c.name} />)}</ul>
-      </section>
-
-      {cols.data?.slice(0, 2).map((c) => <CollectionShelf key={c.slug} slug={c.slug} />)}
-      <Shelf title="New arrivals" subtitle="Just added to the catalogue" to="/new" items={fresh.data ?? []} />
-      {cols.data?.slice(2, 4).map((c) => <CollectionShelf key={c.slug} slug={c.slug} />)}
-
-      <section className="block" aria-labelledby="stores-h">
-        <div className="shelf-head"><h2 id="stores-h">Stores near you</h2><Link to="/stores" className="seeall">All stores</Link></div>
-        {stores.loading && <Loading />}{stores.error && <ErrorBox message={stores.error} retry={stores.reload} />}
-        {stores.data && <StoreList stores={stores.data} />}
-      </section>
-
-      {!!recipes.data?.length && (
-        <section className="block" aria-labelledby="rec-h">
-          <div className="shelf-head"><div><h2 id="rec-h">Cook something tonight</h2><p className="muted">Recipes linked to what’s in stock.</p></div><Link to="/recipes" className="seeall">All recipes</Link></div>
-          <ul className="recipe-tiles" role="list">{recipes.data.slice(0, 4).map((r, i) => <li key={r.slug}><Link to={`/recipes/${r.slug}`} className="rtile" style={{ background: `linear-gradient(135deg, ${REGION_COLOURS[i % 6][0]}, ${REGION_COLOURS[i % 6][1]})` }}><h3>{r.title}</h3><p>{r.summary}</p></Link></li>)}</ul>
-        </section>
-      )}
-
-      <div className="trust">
-        <div><IconStore /><span><b>Local African grocers</b>Real stores, each with its own stock and prices.</span></div>
-        <div><IconSwap /><span><b>Compare stores</b>See every store’s price side by side.</span></div>
-        <div><IconTruck /><span><b>Delivery you can see</b>Fees and times shown per store before you pay.</span></div>
-        <div><IconShield /><span><b>Help when it goes wrong</b>Report a problem and we’ll make it right. <Link to="/pages/refund-policy">Policy</Link></span></div>
-      </div>
+      {order.filter((x) => x.enabled).map((x) => parts[x.id])}
       <span hidden><IconBook /></span>
     </>
   );
