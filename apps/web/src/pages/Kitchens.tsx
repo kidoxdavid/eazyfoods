@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { SkelGrid, SkelStore } from '../skeletons';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { money } from '../api';
 import { useApi } from '../hooks';
@@ -48,7 +49,7 @@ export function KitchensPage() {
       <h1>Home chefs</h1>
       <p className="muted">Meals cooked to order by local home cooks. Every cook uploads a food-premises permit and food-handler certificate that our team checks before they can sell, and every dish lists its allergens.</p>
       {!!cuisines.data?.length && <div className="catchips" role="group" aria-label="Cuisine"><button className={!cuisine ? 'on' : ''} onClick={() => setCuisine('')}>All</button>{cuisines.data.map((c) => <button key={c.name} className={cuisine === c.name ? 'on' : ''} onClick={() => setCuisine(c.name)}>{c.name}</button>)}</div>}
-      {loading && !data && <Loading />}
+      {loading && !data && <SkelGrid n={6} label="Loading kitchens" />}
       {error && <ErrorBox message={error} retry={reload} />}
       {data && !data.length && <Notice>No home chefs are available yet{cuisine ? ` for ${cuisine}` : ''}. Check back soon, or <Link to="/vendor">apply to cook with us</Link>.</Notice>}
       {data && <KitchenList items={data} />}
@@ -98,7 +99,7 @@ export function KitchenPage() {
   const br = k?.branding;
   const dishes = useMemo(() => (k?.dishes ?? []).filter((d) => !cuisine || d.cuisine === cuisine), [k, cuisine]);
   const cuisines = useMemo(() => [...new Set((k?.dishes ?? []).map((d) => d.cuisine).filter(Boolean))] as string[], [k]);
-  if (loading) return <Loading />;
+  if (loading) return <SkelStore />;
   if (error) return <ErrorBox message={error} retry={reload} />;
   if (!k) return null;
   const hidden = dishes.filter((d) => (d.allergens ?? []).some((a) => avoid.includes(a))).length;

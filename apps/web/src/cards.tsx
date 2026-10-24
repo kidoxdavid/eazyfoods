@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { SkelRows } from './skeletons';
 import { useFeature } from './features';
 import { useT } from './i18n';
 import { Link } from 'react-router-dom';
@@ -95,7 +96,7 @@ export function QuickView({ slug, onClose }: { slug: string; onClose: () => void
   const cur = p?.offers.find((o) => o.offer_id === sel) ?? best;
   return (
     <Modal open onClose={onClose} title={p?.name ?? 'Quick view'} className="qv-modal">
-      {loading && <Loading />}
+      {loading && <SkelRows n={1} label="Loading product" />}
       {error && <Notice tone="error">Could not load this product. <Link to={`/p/${slug}`} onClick={onClose}>Open the full page</Link></Notice>}
       {p && (
         <div className="qv-body">

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SkelRows } from '../skeletons';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { del, post, put } from '../api';
 import { useAuth } from '../auth';
@@ -25,7 +26,7 @@ export function ListsPage() {
         <Button type="submit" busy={create.busy} disabled={!name.trim()}>Create list</Button>
       </form>
       {create.error && <ErrorBox message={create.error} />}
-      {loading && <Loading />}{error && <ErrorBox message={error} retry={reload} />}
+      {loading && <SkelRows n={3} />}{error && <ErrorBox message={error} retry={reload} />}
       {data && !data.length && <Empty title="No lists yet"><p>Create one above, or press “Save to a list” on a product.</p></Empty>}
       <ul className="lists" role="list">{data?.map((l) => <li key={l.id}><Link to={`/lists/${l.id}`} className="panel"><strong>{l.name}</strong><span className="muted small">{l.items} item{l.items === 1 ? '' : 's'}{l.shared && ' · shared'}</span></Link></li>)}</ul>
     </>

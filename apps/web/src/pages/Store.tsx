@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { SkelRows, SkelStore } from '../skeletons';
 import { useFeature } from '../features';
 import { Link, useParams } from 'react-router-dom';
 import { money, type StoreCard } from '../api';
@@ -31,7 +32,7 @@ function CompareStores() {
   return (
     <section className="panel" aria-label="Compare stores for your area"><h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>Compare delivery to your area</h2>
       <form className="row" onSubmit={(e) => { e.preventDefault(); setAsked(postal.trim() || null); }}><input className="input" aria-label="Postal code" value={postal} onChange={(e) => setPostal(e.target.value)} placeholder="Postal code, e.g. T2A 0A0" maxLength={7} autoComplete="postal-code" /><button className="btn secondary" type="submit">Compare</button></form>
-      {loading && <Loading />}{error && <p className="error-text">{error}</p>}
+      {loading && <SkelRows n={5} />}{error && <p className="error-text">{error}</p>}
       {data && !data.serviceable && <p className="muted">We do not deliver to {data.fsa} yet.</p>}
       {data?.serviceable && <>
         <p className="small muted">Delivery to {data.fsa}: {money(data.fee_cents!)} per store{data.free_over_cents ? `, free over ${money(data.free_over_cents)}` : ''}, about {data.eta_minutes} min once the store confirms.</p>
@@ -44,7 +45,7 @@ function CompareStores() {
 export function StoresPage() {
   const compare = useFeature('shop.compare_stores');
   const { data, loading, error, reload } = useApi<StoreCard[]>('/stores');
-  if (loading) return <Loading />;
+  if (loading) return <><h1>Stores</h1><SkelRows n={5} /></>;
   if (error) return <ErrorBox message={error} retry={reload} />;
   return <><h1>Stores</h1><p className="muted">Independent African grocers, each with its own prices and stock.</p>{compare && <CompareStores />}{data && <StoreList stores={data} />}</>;
 }
@@ -55,7 +56,7 @@ export function StorePage() {
   const rev = useApi<Reviews>(`/stores/${slug}/reviews`);
   const [cat, setCat] = useState<string>('');
   const cats = useMemo(() => { const m = new Map<string, string>(); s?.products.forEach((p) => p.category_slug && m.set(p.category_slug, p.category ?? p.category_slug)); return [...m.entries()]; }, [s]);
-  if (loading) return <Loading />;
+  if (loading) return <SkelStore />;
   if (error) return <><KitchenRedirect slug={slug!} /><ErrorBox message={error} retry={reload} /></>;
   if (!s) return null;
   const items: Card[] = s.products.filter((p) => !cat || p.category_slug === cat).map((p) => ({ ...p, min_price: p.price_cents, was_price: p.compare_at_cents, in_stock: p.available > 0, on_sale: p.on_promotion, store_count: 1, store_name: s.name, store_slug: slug!, available: p.available }));

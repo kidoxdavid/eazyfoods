@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { SkelRows } from '../skeletons';
 import { useFeatures } from '../features';
 import { useT } from '../i18n';
 import { Link, useNavigate } from 'react-router-dom';
@@ -92,7 +93,7 @@ export function CheckoutPage() {
 
   if (!me) return null;
   if (order) return <PaymentStep order={order} cfg={cfg.data} onPaid={() => { refresh(); nav(`/orders/${order.id}`); }} />;
-  if (!cart) return <Loading />;
+  if (!cart) return <><h1>{t('Checkout')}</h1><SkelRows n={3} label="Loading checkout" /></>;
   if (!cart.item_count) return <Notice>Your basket is empty. <Link to="/search">Find something to buy</Link>.</Notice>;
 
   const pickupOk = quote ? !quote.issues.some((i) => i.type === 'pickup_unavailable') || method === 'pickup' : true;
@@ -181,7 +182,7 @@ export function CheckoutPage() {
           <section className="panel" aria-label="Order summary">
             <h2>{t('Summary')}</h2>
             {quoteErr && <ErrorBox message={quoteErr} />}
-            {!quote && !quoteErr && <Loading label="Checking prices" />}
+            {!quote && !quoteErr && <SkelRows n={2} label="Checking prices" />}
             {quote && (
               <>
                 {quote.separate_deliveries && <Notice tone="warn">{quote.suborders.length} stores = {quote.suborders.length} separate deliveries, each with its own fee and arrival time.</Notice>}

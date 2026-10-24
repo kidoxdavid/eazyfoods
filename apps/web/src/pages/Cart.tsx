@@ -1,4 +1,5 @@
 import { usePlace } from '../place';
+import { SkelRows } from '../skeletons';
 import { useFeatures } from '../features';
 import { useT } from '../i18n';
 import { Link } from 'react-router-dom';
@@ -38,7 +39,7 @@ export function CartPage() {
     );
   }
 
-  if (loading && !cart) return <Loading />;
+  if (loading && !cart) return <><h1>{t('Your basket')}</h1><SkelRows n={3} label="Loading your basket" /></>;
   if (!cart || !cart.stores.length) return <Empty title={t('Your basket is empty')}><p>{t('Find something you love.')}</p><Link to="/search" className="btn primary">{t('Browse products')}</Link></Empty>;
 
   const priceChanged = cart.stores.some((s) => s.items.some((i) => i.price_changed));

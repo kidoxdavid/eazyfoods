@@ -1,4 +1,5 @@
 import { Link, useSearchParams } from 'react-router-dom';
+import { SkelGrid } from '../skeletons';
 import { money, type Region } from '../api';
 import { useApi } from '../hooks';
 import { Button, Empty, ErrorBox, Loading, Select } from '../ui';
@@ -56,7 +57,7 @@ export function SearchPage() {
           </div>
           {active.length > 0 && <div className="chips">{active.map(([k, label, key]) => <button key={k} className="chip-x" onClick={() => clear(key)} aria-label={`Remove filter ${label}`}>{label} ✕</button>)}</div>}
           {region?.description && <p className="muted">{region.description}</p>}
-          {loading && <Loading />}{error && <ErrorBox message={error} retry={reload} />}
+          {loading && <SkelGrid />}{error && <ErrorBox message={error} retry={reload} />}
           {data && data.total > 0 && <ProductGrid products={data.results} />}
           {data && data.total === 0 && (
             <Empty title="Nothing found"><p>{data.suggestions?.message}</p>

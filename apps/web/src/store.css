@@ -299,3 +299,11 @@ main { padding-top: 14px; }
   .order-card { padding: 10px 12px; } .order-card .summary-row { padding: 2px 0; }
 }
 @media (max-width: 599px) { .depts { margin: 0 -12px; padding-left: 12px; padding-right: 12px; gap: 10px; } .dept { flex-basis: 80px; } }
+
+/* Skeleton loading: soft grey shapes with a slow shimmer (still, for people who prefer less motion) */
+.skel { --skel-a: color-mix(in srgb, var(--ink) 10%, var(--paper)); --skel-b: color-mix(in srgb, var(--ink) 4%, var(--paper)); background: linear-gradient(100deg, var(--skel-a) 30%, var(--skel-b) 50%, var(--skel-a) 70%); background-size: 220% 100%; animation: skel-shimmer 1.3s linear infinite; }
+@keyframes skel-shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+.skel-card { pointer-events: none; } .skel-img { display: block; aspect-ratio: 1 / 1; } @media (max-width: 599px) { .skel-img { aspect-ratio: 4 / 3; } }
+.skel-rows { display: grid; gap: 8px; } .skel-row { display: flex; align-items: center; gap: 12px; margin: 0; } .skel-thumb { width: 56px; height: 56px; border-radius: 10px; flex: none; }
+.skel-pdp { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }

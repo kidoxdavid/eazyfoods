@@ -1,4 +1,5 @@
 import { slotText } from '../slots';
+import { SkelRows } from '../skeletons';
 import { useFeatures } from '../features';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -11,7 +12,7 @@ import { PaymentStep } from './Checkout';
 
 export function OrdersPage() {
   const { data, loading, error, reload } = useApi<{ id: string; order_number: string; status: string; payment_status: string; total_cents: number; created_at: string; fulfilment_method: string; stores: { store: string; status: string }[] | null }[]>('/orders');
-  if (loading) return <Loading />;
+  if (loading) return <><h1>Your orders</h1><SkelRows n={4} label="Loading your orders" /></>;
   if (error) return <ErrorBox message={error} retry={reload} />;
   return (
     <>
@@ -59,7 +60,7 @@ export function OrderPage() {
   const answer = useAction(async (lineId: string, accept: boolean) => { await post(`/orders/${id}/lines/${lineId}/substitution`, { accept }); reload(); });
   const cancel = async (sid: string) => { await post(`/orders/${id}/suborders/${sid}/cancel`); toast('Order cancelled. Your refund is on its way.'); reload(); };
 
-  if (loading && !o) return <Loading />;
+  if (loading && !o) return <SkelRows n={3} label="Loading your order" />;
   if (error) return <ErrorBox message={error} retry={reload} />;
   if (!o) return null;
   const paidWaiting = o.status === 'pending_payment';

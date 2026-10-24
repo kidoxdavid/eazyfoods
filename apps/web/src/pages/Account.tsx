@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SkelRows, SkelGrid } from '../skeletons';
 import { useFeature, useFeatures } from '../features';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, del, post, put } from '../api';
@@ -55,7 +56,7 @@ function Profile() {
 
 function Addresses() {
   const a = useApi<any[]>('/addresses'); const [adding, setAdding] = useState(false); const toast = useToast();
-  if (a.loading) return <Loading />;
+  if (a.loading) return <SkelRows n={2} />;
   return (
     <>
       {!a.data?.length && !adding && <Empty title="No saved addresses" />}
@@ -73,7 +74,7 @@ function Addresses() {
 
 function Favourites() {
   const f = useApi<any[]>('/favourites');
-  if (f.loading) return <Loading />;
+  if (f.loading) return <SkelGrid n={4} />;
   if (!f.data?.length) return <Empty title="Nothing saved yet"><p>Tap “Save” on any product to keep it here.</p></Empty>;
   return <ProductGrid products={f.data} />;
 }
@@ -81,7 +82,7 @@ function Favourites() {
 function Tickets() {
   const t = useApi<{ id: string; subject: string; status: string; created_at: string }[]>('/support/tickets');
   const [open, setOpen] = useState<string | null>(null);
-  if (t.loading) return <Loading />;
+  if (t.loading) return <SkelRows n={3} />;
   if (!t.data?.length) return <Empty title="No help requests"><p>To report a problem, open an order and choose “Report a problem”.</p></Empty>;
   return <>{t.data.map((x) => <div key={x.id} className="panel"><div className="row between"><strong>{x.subject}</strong><StatusBadge status={x.status} /></div><div className="small muted">{fmtDate(x.created_at)}</div>
     <button className="link" onClick={() => setOpen(open === x.id ? null : x.id)}>{open === x.id ? 'Hide conversation' : 'View conversation'}</button>{open === x.id && <Thread id={x.id} />}</div>)}</>;

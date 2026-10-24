@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { SkelPdp } from '../skeletons';
 import { useFeatures } from '../features';
 import { useT } from '../i18n';
 import { Link, useParams } from 'react-router-dom';
@@ -82,7 +83,7 @@ export function ProductPage() {
   }, [slug]);
   useEffect(() => { if (p) trackRecent(slug!); }, [p, slug]);
   useEffect(() => { if (p) document.title = `${p.name} – EAZyfoods`; return () => { document.title = 'EAZyfoods – African groceries from local stores'; }; }, [p]);
-  if (loading) return <Loading />;
+  if (loading) return <SkelPdp />;
   if (error) return <><DishRedirect slug={slug!} /><ErrorBox message={error} retry={reload} /></>;
   if (!p) return null;
 

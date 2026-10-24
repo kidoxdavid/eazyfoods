@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { SkelShelf } from '../skeletons';
 import { useFeature } from '../features';
 import { Link } from 'react-router-dom';
 import { recentSlugs, type Region, type StoreCard } from '../api';
@@ -115,7 +116,7 @@ export function Home() {
     stores: (
       <section key="stores" className="block" aria-labelledby="stores-h">
         <div className="shelf-head"><h2 id="stores-h">Stores near you</h2><Link to="/stores" className="seeall">All stores</Link></div>
-        {stores.loading && <Loading />}{stores.error && <ErrorBox message={stores.error} retry={stores.reload} />}
+        {stores.loading && <SkelShelf />}{stores.error && <ErrorBox message={stores.error} retry={stores.reload} />}
         {stores.data && <StoreList stores={stores.data} />}
       </section>),
     kitchens: kitchens.data?.length ? (

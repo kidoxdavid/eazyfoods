@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { SkelGrid } from '../skeletons';
 import { money, packLabel } from '../api';
 import { useApi } from '../hooks';
 import { AddToBasket } from '../cards';
@@ -14,7 +15,7 @@ type Flyer = { stores: { slug: string; name: string; items: Item[] }[] };
 /** This week's offers from every store, in a layout that prints cleanly. Prices are live, so there is nothing to go out of date. */
 export function FlyerPage() {
   const { data, loading, error, reload } = useApi<Flyer>('/flyer');
-  if (loading) return <Loading />;
+  if (loading) return <><h1>This week’s flyer</h1><SkelGrid n={8} label="Loading offers" /></>;
   if (error) return <ErrorBox message={error} retry={reload} />;
   return (
     <>

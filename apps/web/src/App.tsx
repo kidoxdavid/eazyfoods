@@ -1,4 +1,5 @@
 import { lazy, Suspense, type ReactNode } from 'react';
+import { SkelPage } from './skeletons';
 import { Link, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth';
 import { CartProvider } from './cart';
@@ -50,7 +51,7 @@ export function App() {
         <CartProvider>
          <PlaceProvider>
           <ThemeProvider>
-          <Suspense fallback={<div className="wrap"><Loading /></div>}>
+          <Suspense fallback={<SkelPage />}>
             <Routes>
               <Route path="/vendor/*" element={<RequireAuth><Vendor /></RequireAuth>} />
               <Route path="/admin/*" element={<RequireAuth><Admin /></RequireAuth>} />

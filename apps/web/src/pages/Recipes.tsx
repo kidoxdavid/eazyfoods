@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SkelGrid, SkelRows } from '../skeletons';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { money, post } from '../api';
 import { useAuth } from '../auth';
@@ -18,7 +19,7 @@ export function RecipesPage() {
         <Button size="sm" variant={sp.get('region') ? 'secondary' : 'primary'} onClick={() => setSp({})}>All</Button>
         {regions.data?.map((r) => <Button key={r.slug} size="sm" variant={sp.get('region') === r.slug ? 'primary' : 'secondary'} onClick={() => setSp({ region: r.slug })}>{r.name}</Button>)}
       </div>
-      {loading && <Loading />}{error && <ErrorBox message={error} retry={reload} />}
+      {loading && <SkelGrid n={6} label="Loading recipes" />}{error && <ErrorBox message={error} retry={reload} />}
       {data && !data.length && <Empty title="No recipes here yet" />}
       <ul className="cards stores" role="list">{data?.map((r) => <li key={r.slug}><Link to={`/recipes/${r.slug}`} className="card"><div className="card-body" style={{ padding: 14 }}><h3>{r.title}</h3><span className="muted small">{r.summary}</span><span className="small">{[r.country ?? r.region, `${r.servings} servings`, r.cook_minutes ? `${(r.prep_minutes ?? 0) + r.cook_minutes} min` : null].filter(Boolean).join(' · ')}</span></div></Link></li>)}</ul>
     </>
@@ -31,7 +32,7 @@ type Recipe = { title: string; summary: string; region: string | null; country: 
 export function RecipePage() {
   const { slug } = useParams(); const { me } = useAuth(); const { refresh } = useCart();
   const { data: r, loading, error, reload } = useApi<Recipe>(`/recipes/${slug}`);
-  if (loading) return <Loading />;
+  if (loading) return <SkelRows n={4} label="Loading recipe" />;
   if (error) return <ErrorBox message={error} retry={reload} />;
   if (!r) return null;
   const buyable = r.ingredients.filter((i) => i.product_slug);
