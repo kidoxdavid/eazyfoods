@@ -135,3 +135,6 @@ Buy it again and Recently viewed shelves; unit prices (per 100 g / 100 ml, weigh
   - *Menus & notices*: hide menu items per area and post a notice at the top of every page of an area (menu hiding only tidies the menu; permissions are what block actions).
   - *Platform*: home chefs on/off, orders only while open, require verified documents, automatic payouts.
   - Every change is written to the audit log. Everything starts ON, so nothing changes until an admin decides.
+
+## Getting admin access on a real account (added)
+Set `OWNER_EMAILS` (comma-separated) in the host's environment, e.g. in Render → eazyfoods → Environment, then restart. Anyone listed who has already created an account is made an **owner** at start-up (in production their email must also be verified). Demo staff logins (`admin@example.test` etc.) still work on the demo.

@@ -1,8 +1,10 @@
 import { buildApp } from './app.js';
 import { config } from './config.js';
 import { startJobs } from './jobs.js';
+import { grantOwners } from './services/bootstrap.js';
 
 const app = await buildApp();
+for (const e of await grantOwners(config.OWNER_EMAILS.split(','), config.NODE_ENV === 'production')) app.log.info(`owner access granted to ${e}`);
 await app.listen({ port: config.PORT, host: '0.0.0.0' });
 if (!config.DISABLE_BACKGROUND_JOBS) startJobs();
 
