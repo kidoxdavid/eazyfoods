@@ -26,3 +26,20 @@ export async function runProductAlerts() {
   }
   return sent;
 }
+
+/** Restock reminders the customer asked for on a shopping list. The next one is booked before sending, so a crash never double-sends. */
+export async function runListReminders() {
+  const due = (await pool.query(
+    `SELECT r.list_id, r.every_days, l.name, u.id AS user_id, u.email FROM list_reminders r JOIN shopping_lists l ON l.id = r.list_id
+       JOIN users u ON u.id = r.user_id AND u.disabled_at IS NULL AND u.deleted_at IS NULL
+      WHERE r.next_at <= now() AND EXISTS (SELECT 1 FROM shopping_list_items i WHERE i.list_id = r.list_id) LIMIT 100`)).rows;
+  let sent = 0;
+  for (const d of due) {
+    const claimed = await pool.query(`UPDATE list_reminders SET next_at = now() + make_interval(days => every_days) WHERE list_id = $1 AND next_at <= now() RETURNING list_id`, [d.list_id]);
+    if (!claimed.rowCount) continue;
+    await notify(pool, { userId: d.user_id, email: d.email, template: 'list_reminder', vars: { list: d.name, list_id: d.list_id }, transactional: true });   // requested by the customer, not marketing
+    sent++;
+  }
+  await pool.query(`UPDATE list_reminders SET next_at = now() + make_interval(days => every_days) WHERE next_at <= now()`);   // empty lists just skip this round
+  return sent;
+}

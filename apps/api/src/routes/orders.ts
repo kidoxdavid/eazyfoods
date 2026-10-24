@@ -16,7 +16,7 @@ const checkoutBody = z.object({
   address_id: z.string().uuid().nullish(), method: z.enum(['delivery', 'pickup']).default('delivery'),
   coupon_code: z.string().max(40).nullish(), instructions: z.string().max(300).nullish(),
   slots: z.record(z.string().max(80), z.string().datetime()).optional(),
-  tip_cents: z.number().int().min(0).max(10000).default(0), gift_message: z.string().max(300).nullish(),
+  tip_cents: z.number().int().min(0).max(10000).default(0), use_credit: z.boolean().default(false), gift_message: z.string().max(300).nullish(),
 });
 
 export async function loadOrder(orderId: string, userId: string | null) {
@@ -34,7 +34,7 @@ export async function loadOrder(orderId: string, userId: string | null) {
   return {
     id: o.id, order_number: o.order_number, status: o.status, payment_status: o.payment_status, fulfilment_method: o.fulfilment_method, address: o.address,
     customer_name: o.customer_name, delivery_instructions: o.delivery_instructions,
-    subtotal_cents: o.subtotal_cents, discount_cents: o.discount_cents, delivery_cents: o.delivery_cents, tax_cents: o.tax_cents, total_cents: o.total_cents, tip_cents: o.tip_cents, is_gift: o.is_gift, gift_message: o.gift_message,
+    subtotal_cents: o.subtotal_cents, discount_cents: o.discount_cents, delivery_cents: o.delivery_cents, tax_cents: o.tax_cents, total_cents: o.total_cents, credit_cents: o.credit_cents, tip_cents: o.tip_cents, is_gift: o.is_gift, gift_message: o.gift_message,
     placed_at: o.placed_at, created_at: o.created_at,
     suborders: subs.map((s) => ({
       id: s.id, store_name: s.store_name, store_slug: s.store_slug, store_phone: s.store_phone, status: s.status, fulfilment_method: s.fulfilment_method,
@@ -61,7 +61,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
 
   app.post('/checkout/quote', async (req) => {
     const b = checkoutBody.parse(req.body);
-    const q = await buildQuote(pool, req.user!.id, { addressId: b.address_id, method: b.method, couponCode: b.coupon_code, slots: b.slots, tipCents: b.tip_cents });
+    const q = await buildQuote(pool, req.user!.id, { addressId: b.address_id, method: b.method, couponCode: b.coupon_code, slots: b.slots, tipCents: b.tip_cents, useCredit: b.use_credit });
     await pool.query(`INSERT INTO analytics_events(type, user_id) VALUES ('checkout_started', $1)`, [req.user!.id]).catch(() => {});
     return q;
   });
@@ -70,7 +70,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
     const key = String(req.headers['idempotency-key'] ?? '');
     if (key.length < 8 || key.length > 100) throw bad('idempotency_key_required', 'Missing Idempotency-Key header.');
     const b = checkoutBody.parse(req.body);
-    const r = await placeOrder(req.user!, { addressId: b.address_id, method: b.method, couponCode: b.coupon_code, instructions: b.instructions, idempotencyKey: key, slots: b.slots, tipCents: b.tip_cents, giftMessage: b.gift_message });
+    const r = await placeOrder(req.user!, { addressId: b.address_id, method: b.method, couponCode: b.coupon_code, instructions: b.instructions, idempotencyKey: key, slots: b.slots, tipCents: b.tip_cents, giftMessage: b.gift_message, useCredit: b.use_credit });
     return reply.code(201).send(r);
   });
 

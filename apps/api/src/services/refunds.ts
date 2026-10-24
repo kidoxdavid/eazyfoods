@@ -108,16 +108,22 @@ export async function processRefund(refundId: string, decidedBy: string | null) 
     if (r.include_delivery) { a.delivery = sub.delivery_cents; a.tax += sub.delivery_tax_cents; }
     if (r.include_tip) a.tip = sub.tip_cents;
     a.amount = a.merchandise - a.discount + a.tax + a.delivery + (a.tip ?? 0);
-    await c.query(`UPDATE refunds SET status='approved', decided_by=$2, decided_at=now(), merchandise_cents=$3, discount_cents=$4, tax_cents=$5, delivery_cents=$6, commission_cents=$7, amount_cents=$8 WHERE id=$1`,
-      [refundId, decidedBy, a.merchandise, a.discount, a.tax, a.delivery, a.commission, a.amount]);
+    // Money goes back to the card first, up to what the card paid; anything beyond that (the part paid with store credit) returns as store credit.
+    const ord = (await c.query('SELECT total_cents, credit_cents FROM orders WHERE id = $1 FOR UPDATE', [r.order_id])).rows[0];
+    const cardRefunded = (await c.query(`SELECT COALESCE(sum(amount_cents - credit_cents), 0)::int AS s FROM refunds WHERE order_id = $1 AND id <> $2 AND status IN ('approved','succeeded')`, [r.order_id, refundId])).rows[0].s;
+    const cardLeft = Math.max(0, ord.total_cents - ord.credit_cents - cardRefunded);
+    a.credit = Math.max(0, a.amount - cardLeft);
+    await c.query(`UPDATE refunds SET status='approved', decided_by=$2, decided_at=now(), merchandise_cents=$3, discount_cents=$4, tax_cents=$5, delivery_cents=$6, commission_cents=$7, amount_cents=$8, credit_cents=$9 WHERE id=$1`,
+      [refundId, decidedBy, a.merchandise, a.discount, a.tax, a.delivery, a.commission, a.amount, a.credit]);
     const pay = (await c.query('SELECT provider_payment_id FROM payments WHERE id = $1', [r.payment_id])).rows[0];
-    return { refund: { ...r, ...{ amount_cents: a.amount } }, providerPaymentId: pay.provider_payment_id as string, amounts: a, lines };
+    return { refund: { ...r, ...{ amount_cents: a.amount, credit_cents: a.credit } }, providerPaymentId: pay.provider_payment_id as string, amounts: a, lines };
   });
 
   let providerRefundId: string | null = null;
   let failure: string | null = null;
   try {
-    providerRefundId = (await getProvider().refund({ providerPaymentId: claimed.providerPaymentId, amountCents: claimed.refund.amount_cents, idempotencyKey: claimed.refund.idempotency_key })).providerRefundId;
+    const cardCents = claimed.refund.amount_cents - claimed.refund.credit_cents;
+    if (cardCents > 0) providerRefundId = (await getProvider().refund({ providerPaymentId: claimed.providerPaymentId, amountCents: cardCents, idempotencyKey: claimed.refund.idempotency_key })).providerRefundId;
   } catch (e: any) { failure = String(e.message ?? e); }
 
   return tx(async (c, after) => {
@@ -132,7 +138,11 @@ export async function processRefund(refundId: string, decidedBy: string | null) 
     }
     const sub = (await c.query('SELECT vendor_id FROM suborders WHERE id = $1', [r.suborder_id])).rows[0];
     await c.query(`UPDATE refunds SET status='succeeded', provider_refund_id=$2 WHERE id=$1`, [r.id, providerRefundId]);
-    await postRefund(c, { id: r.id, order_id: r.order_id, suborder_id: r.suborder_id, vendor_id: sub.vendor_id, vendor_funded: r.vendor_funded, ...claimed.amounts });
+    if (r.credit_cents > 0) {
+      const o2 = (await c.query('SELECT user_id FROM orders WHERE id = $1', [r.order_id])).rows[0];
+      await c.query(`INSERT INTO credit_entries(user_id, delta_cents, kind, order_id, note) VALUES ($1,$2,'refund',$3,'Refunded to store credit')`, [o2.user_id, r.credit_cents, r.order_id]);
+    }
+    await postRefund(c, { id: r.id, order_id: r.order_id, suborder_id: r.suborder_id, vendor_id: sub.vendor_id, vendor_funded: r.vendor_funded, ...claimed.amounts, credit: r.credit_cents });
     const o = (await c.query('SELECT id, total_cents, user_id, customer_email, order_number FROM orders WHERE id = $1 FOR UPDATE', [r.order_id])).rows[0];
     const refunded = (await c.query(`SELECT COALESCE(sum(amount_cents),0)::int AS s FROM refunds WHERE order_id = $1 AND status = 'succeeded'`, [r.order_id])).rows[0].s;
     await c.query('UPDATE orders SET payment_status = $2 WHERE id = $1', [r.order_id, refunded >= o.total_cents ? 'refunded' : 'partially_refunded']);

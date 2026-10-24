@@ -4,11 +4,23 @@ import { pool, tx } from '../db/pool.js';
 import { requireLogin } from '../lib/permissions.js';
 import { bad, notFound } from '../lib/errors.js';
 import { vendorIdsOf } from './vendorOrders.js';
+import { rl } from '../lib/ratelimit.js';
 
 const categories = ['missing_item', 'incorrect_item', 'damaged_item', 'substituted_item', 'late_order', 'payment', 'other'] as const;
 
 export const supportRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', requireLogin);
+
+  // General question to the support team (help centre). Not tied to an order.
+  app.post('/support/contact', rl(5, '1 hour'), async (req, reply) => {
+    const b = z.object({ subject: z.string().trim().min(3).max(120), message: z.string().trim().min(10).max(2000) }).parse(req.body);
+    const t = await tx(async (c) => {
+      const ticket = (await c.query(`INSERT INTO support_tickets(user_id, kind, category, subject) VALUES ($1,'customer','other',$2) RETURNING id`, [req.user!.id, b.subject])).rows[0];
+      await c.query('INSERT INTO ticket_messages(ticket_id, author_user_id, body) VALUES ($1,$2,$3)', [ticket.id, req.user!.id, b.message]);
+      return ticket;
+    });
+    return reply.code(201).send({ id: t.id });
+  });
 
   // Report a problem with part of an order. Allowed on paid orders owned by the caller.
   app.post<{ Params: { id: string } }>('/orders/:id/issues', async (req, reply) => {

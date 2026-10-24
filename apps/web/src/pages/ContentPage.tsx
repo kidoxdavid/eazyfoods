@@ -14,8 +14,9 @@ function render(body: string): ReactNode {
   });
 }
 
-export function ContentPage() {
-  const { slug } = useParams();
+export function ContentPage({ slugOverride }: { slugOverride?: string } = {}) {
+  const params = useParams();
+  const slug = slugOverride ?? params.slug;
   const { data, loading, error, reload } = useApi<{ title: string; body: string; needs_legal_review: boolean }>(`/pages/${slug}`);
   useEffect(() => { if (data) document.title = `${data.title} – EAZyfoods`; }, [data]);
   if (loading) return <Loading />;

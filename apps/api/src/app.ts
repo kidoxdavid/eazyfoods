@@ -21,6 +21,7 @@ import { marketingPublicRoutes, marketingRoutes } from './routes/marketing.js';
 import { cardRoutes, customerRoutes } from './routes/customer.js';
 import { vendorPortalRoutes } from './routes/vendorPortal.js';
 import { supportRoutes } from './routes/support.js';
+import { creditAdminRoutes, creditRoutes } from './routes/credit.js';
 import { engagementRoutes } from './routes/engagement.js';
 import { recipeRoutes } from './routes/recipes.js';
 import { adRoutes } from './routes/ads.js';
@@ -93,6 +94,8 @@ export async function buildApp() {
   await app.register(cardRoutes, { prefix: '/api' });
   await app.register(customerRoutes, { prefix: '/api' });
   await app.register(marketingRoutes, { prefix: '/api/marketing' });
+  await app.register(creditAdminRoutes, { prefix: '/api/marketing' });
+  await app.register(creditRoutes, { prefix: '/api' });
   await app.register(marketingPublicRoutes, { prefix: '/api' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(cartRoutes, { prefix: '/api' });

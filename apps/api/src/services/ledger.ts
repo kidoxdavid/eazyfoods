@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 
 export type Entry = {
-  account: 'cash_provider' | 'vendor_payable' | 'commission_revenue' | 'delivery_revenue' | 'tax_payable' | 'discount_expense' | 'driver_payable' | 'delivery_cost' | 'refund_loss' | 'tips_payable';
+  account: 'cash_provider' | 'vendor_payable' | 'commission_revenue' | 'delivery_revenue' | 'tax_payable' | 'discount_expense' | 'driver_payable' | 'delivery_cost' | 'refund_loss' | 'tips_payable' | 'store_credit_liability' | 'credit_expense';
   amount: number; // debit +, credit -
   vendorId?: string | null; driverId?: string | null; orderId?: string | null; suborderId?: string | null;
 };
@@ -22,9 +22,10 @@ export async function post(c: PoolClient, kind: string, ref: { type: string; id:
 type SubRow = { id: string; vendor_id: string; subtotal_cents: number; delivery_cents: number; delivery_tax_cents: number; tax_cents: number; commission_cents: number; tip_cents?: number };
 
 /** Customer payment confirmed: money held at provider is owed to vendors, minus our commission, delivery fee and tax. */
-export async function postPaymentCaptured(c: PoolClient, order: { id: string; total_cents: number; discount_cents: number }, subs: SubRow[], paymentId: string) {
+export async function postPaymentCaptured(c: PoolClient, order: { id: string; total_cents: number; discount_cents: number; credit_cents?: number }, subs: SubRow[], paymentId: string) {
   const entries: Entry[] = [
-    { account: 'cash_provider', amount: order.total_cents, orderId: order.id },
+    { account: 'cash_provider', amount: order.total_cents - (order.credit_cents ?? 0), orderId: order.id },
+    { account: 'store_credit_liability', amount: order.credit_cents ?? 0, orderId: order.id },
     { account: 'discount_expense', amount: order.discount_cents, orderId: order.id },
   ];
   for (const s of subs) {
@@ -39,7 +40,7 @@ export async function postPaymentCaptured(c: PoolClient, order: { id: string; to
   await post(c, 'payment_captured', { type: 'payment', id: paymentId }, entries);
 }
 
-export type RefundAmounts = { merchandise: number; discount: number; tax: number; delivery: number; commission: number; amount: number; tip?: number };
+export type RefundAmounts = { merchandise: number; discount: number; tax: number; delivery: number; commission: number; amount: number; tip?: number; credit?: number };
 
 /**
  * Refund reversal. vendor_funded: the vendor gives back its share (merchandise minus commission) and we return the commission.
@@ -48,7 +49,8 @@ export type RefundAmounts = { merchandise: number; discount: number; tax: number
 export async function postRefund(c: PoolClient, r: { id: string; order_id: string; suborder_id: string; vendor_id: string; vendor_funded: boolean } & RefundAmounts) {
   const ctx = { vendorId: r.vendor_id, orderId: r.order_id, suborderId: r.suborder_id };
   const entries: Entry[] = [
-    { account: 'cash_provider', amount: -r.amount, ...ctx },
+    { account: 'cash_provider', amount: -(r.amount - (r.credit ?? 0)), ...ctx },
+    { account: 'store_credit_liability', amount: -(r.credit ?? 0), ...ctx },
     { account: 'delivery_revenue', amount: r.delivery, ...ctx },
     { account: 'tax_payable', amount: r.tax, ...ctx },
     { account: 'discount_expense', amount: -r.discount, ...ctx },

@@ -27,9 +27,11 @@ export function SignIn() {
 
 export function Register() {
   const [sp] = useSearchParams(); const nav = useNavigate(); const { reload } = useAuth();
+  useEffect(() => { const r = sp.get('ref'); if (r) try { sessionStorage.setItem('ez_ref', r); } catch { /* private mode */ } }, [sp]);
   const go = useAction(async (e: FormEvent<HTMLFormElement>) => {
     const f = values(e);
-    await post('/auth/register', { email: f.email, password: f.password, full_name: f.full_name });
+    const ref = sp.get('ref') ?? (() => { try { return sessionStorage.getItem('ez_ref') ?? undefined; } catch { return undefined; } })();
+    await post('/auth/register', { email: f.email, password: f.password, full_name: f.full_name, ref: ref || undefined });
     if (f.marketing) await fetch('/api/account/profile', { method: 'PUT', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ full_name: f.full_name, phone: null, notify_email: true, marketing_opt_in: true }) });
     await reload(); nav(safeNext(sp.get('next')));
   });

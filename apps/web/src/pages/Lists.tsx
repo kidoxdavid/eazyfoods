@@ -45,11 +45,12 @@ function AddAll({ items }: { items: Item[] }) {
 
 export function ListPage() {
   const { id } = useParams(); const nav = useNavigate(); const toast = useToast();
-  const { data, loading, error, reload } = useApi<{ id: string; name: string; share_token: string | null; items: Item[] }>(`/lists/${id}`);
+  const { data, loading, error, reload } = useApi<{ id: string; name: string; share_token: string | null; reminder: { every_days: number } | null; items: Item[] }>(`/lists/${id}`);
   const [rename, setRename] = useState<string | null>(null);
   const setQty = useAction(async (slug: string, quantity: number) => { await put(`/lists/${id}/items`, { slug, quantity }); reload(); });
   const share = useAction(async (on: boolean) => { if (on) await post(`/lists/${id}/share`); else await del(`/lists/${id}/share`); reload(); });
   const doRename = useAction(async () => { await put(`/lists/${id}`, { name: rename }); setRename(null); reload(); });
+  const remind = useAction(async (days: number | null) => { await put(`/lists/${id}/reminder`, { every_days: days }); toast(days ? `We will remind you every ${days} days.` : 'Reminders stopped.'); reload(); });
   const remove = useAction(async () => { await del(`/lists/${id}`); nav('/lists'); });
   if (loading && !data) return <Loading />;
   if (error) return <ErrorBox message={error} retry={reload} />;
@@ -70,6 +71,12 @@ export function ListPage() {
             <Stepper value={i.list_quantity} max={99} label={`${i.name ?? i.slug} on this list`} onChange={(n) => setQty.run(i.slug, n)} />
           </li>))}</ul>
       </>}
+      <div className="panel">
+        <h2 style={{ marginTop: 0 }}>Remind me to restock</h2>
+        <p className="small muted">We email you a link that adds this whole list to your basket. Nothing is ordered or charged automatically.</p>
+        <label className="small">Remind me <select aria-label="Reminder every" value={data.reminder?.every_days ?? ''} onChange={(e) => remind.run(e.target.value ? Number(e.target.value) : null)}>
+          <option value="">never</option><option value="7">every week</option><option value="14">every 2 weeks</option><option value="30">every month</option><option value="60">every 2 months</option></select></label>
+      </div>
       <div className="panel">
         <h2 style={{ marginTop: 0 }}>Share this list</h2>
         {link ? <><p className="small">Anyone with this link can see the list (not change it). Your email and address are never shown.</p><div className="row wrap"><Input readOnly aria-label="Share link" value={link} onFocus={(e) => e.currentTarget.select()} /><Button variant="secondary" onClick={copy}>Copy link</Button><Button variant="ghost" busy={share.busy} onClick={() => share.run(false)}>Stop sharing</Button></div></>

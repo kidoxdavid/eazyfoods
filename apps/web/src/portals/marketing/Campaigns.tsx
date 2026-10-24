@@ -59,7 +59,7 @@ export function Automations() {
   const { data, reload } = useApi<any[]>('/marketing/automations');
   const [edit, setEdit] = useState<any>(null);
   const save = useAction(async (a?: any) => { const x = a ?? edit; await put(`/marketing/automations/${x.id}`, { name: x.name, delay_days: Number(x.delay_days), subject: x.subject, body: x.body, enabled: x.enabled }); toast('Saved'); setEdit(null); reload(); });
-  const WHEN: Record<string, string> = { welcome: 'After someone signs up (and has agreed to marketing email)', winback: 'When a customer has not ordered for a while', first_order_followup: 'After a customer’s first order' };
+  const WHEN: Record<string, string> = { welcome: 'After someone signs up (and has agreed to marketing email)', winback: 'When a customer has not ordered for a while', first_order_followup: 'After a customer’s first order', abandoned_basket: 'When items were left in a basket for a few hours (at most once a week per person)' };
   return (
     <>
       <PageHeader title="Automations" sub="Emails that send themselves. All are off until you turn them on, and only reach people who agreed to marketing." />

@@ -1,3 +1,4 @@
+import { isCanadianPostal, normalisePostal } from '../services/pricing.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { ACCENTS } from '../lib/themes.js';
 import { pool } from '../db/pool.js';
@@ -14,6 +15,22 @@ export const storeRoutes: FastifyPluginAsync = async (app) => {
       [req.query.region ?? null],
     );
     return rows;
+  });
+
+  // Which stores bring to this area, and at what fee and speed. Postal-area level only; checkout re-checks the exact address.
+  app.get('/stores-compare', async (req, reply) => {
+    const raw = String((req.query as any).postal ?? '');
+    if (!isCanadianPostal(raw.length === 3 ? raw + '0A0' : raw)) return reply.code(400).send({ error: 'invalid_postal', message: 'Enter a Canadian postal code, e.g. T2A 0A0.' });
+    const fsa = normalisePostal(raw).slice(0, 3);
+    const z = (await pool.query(`SELECT z.id, z.fee_cents, z.free_over_cents, z.eta_minutes FROM delivery_zone_fsas f JOIN delivery_zones z ON z.id = f.zone_id AND z.is_active WHERE f.fsa = $1`, [fsa])).rows[0];
+    if (!z) return { fsa, serviceable: false, stores: [] };
+    const stores = (await pool.query(
+      `SELECT s.slug, s.name, s.is_open, s.min_order_cents, s.offers_delivery, s.offers_pickup, s.is_test_data,
+              (SELECT CASE WHEN count(*) >= 3 THEN round(avg(r.rating)::numeric, 1)::float END FROM reviews r WHERE r.store_id = s.id AND r.product_id IS NULL AND NOT r.is_hidden) AS rating_avg,
+              (SELECT count(*)::int FROM store_offers o WHERE o.store_id = s.id AND o.is_active AND o.stock_on_hand > o.stock_reserved) AS items_in_stock
+         FROM storefronts s JOIN store_delivery_zones sz ON sz.store_id = s.id AND sz.zone_id = $1
+        WHERE s.orderable AND s.kind = 'grocery' AND s.offers_delivery ORDER BY s.is_open DESC, s.name`, [z.id])).rows;
+    return { fsa, serviceable: true, fee_cents: z.fee_cents, free_over_cents: z.free_over_cents, eta_minutes: z.eta_minutes, stores };
   });
 
   app.get<{ Params: { slug: string } }>('/stores/:slug', async (req, reply) => {

@@ -108,8 +108,10 @@ export async function runAutomations(cap = 200) {
     let extra = '';
     if (a.trigger === 'welcome') extra = `u.created_at <= now() - make_interval(days => ${a.delay_days}) AND u.created_at > now() - interval '30 days'`;
     else if (a.trigger === 'winback') extra = `st.last_order IS NOT NULL AND st.last_order <= now() - make_interval(days => ${a.delay_days}) AND st.last_order > now() - make_interval(days => ${a.delay_days + 30})`;
+    else if (a.trigger === 'abandoned_basket') extra = `EXISTS (SELECT 1 FROM carts ct WHERE ct.user_id = u.id AND ct.updated_at <= now() - interval '3 hours' AND ct.updated_at > now() - interval '3 days'
+        AND EXISTS (SELECT 1 FROM cart_items ci WHERE ci.cart_id = ct.id) AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id AND o.created_at > ct.updated_at))`;
     else extra = `st.orders = 1 AND st.last_order <= now() - make_interval(days => ${a.delay_days}) AND st.last_order > now() - make_interval(days => ${a.delay_days + 14})`;
-    const sql = `${base.sql} AND ${extra} AND NOT EXISTS (SELECT 1 FROM automation_runs r WHERE r.automation_id = '${a.id}' AND r.user_id = u.id AND r.created_at > now() - interval '90 days') LIMIT ${cap}`;
+    const sql = `${base.sql} AND ${extra} AND NOT EXISTS (SELECT 1 FROM automation_runs r WHERE r.automation_id = '${a.id}' AND r.user_id = u.id AND r.created_at > now() - interval '${a.trigger === 'abandoned_basket' ? '7' : '90'} days') LIMIT ${cap}`;
     const rows = (await pool.query(sql, base.params)).rows;
     if (!rows.length) continue;
     await tx(async (c) => {

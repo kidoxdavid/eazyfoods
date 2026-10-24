@@ -1,3 +1,4 @@
+import { awardOrderRewards } from './credit.js';
 import type { PoolClient } from 'pg';
 import { pool, type After } from '../db/pool.js';
 import { bad, conflict, forbidden, notFound } from '../lib/errors.js';
@@ -73,6 +74,7 @@ export async function moveSuborder(c: PoolClient, after: After, suborderId: stri
     const done = subs.some((x) => x === 'delivered' || x === 'collected');
     await c.query('UPDATE orders SET status = $2 WHERE id = $1', [s.oid, done ? 'completed' : 'cancelled']);
     await history(c, s.oid, null, 'placed', done ? 'completed' : 'cancelled', actor.userId);
+    if (done) await awardOrderRewards(c, s.oid);
   }
   if (CUSTOMER_NOTIFY[to])
     after.push(() => notify(pool, { userId: s.user_id, email: s.customer_email, template: 'order_status', transactional: false, vars: { order_number: s.order_number, status: CUSTOMER_NOTIFY[to], note: note ?? '' } }));

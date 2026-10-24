@@ -140,13 +140,23 @@ export const customerRoutes: FastifyPluginAsync = async (app) => {
   });
   app.get<{ Params: { id: string } }>('/lists/:id', async (req) => {
     const l = await own(req, uuid.parse(req.params.id));
-    return { id: l.id, name: l.name, share_token: l.share_token, items: await listItems(l.id) };
+    const rem = (await pool.query('SELECT every_days, next_at FROM list_reminders WHERE list_id = $1', [l.id])).rows[0];
+    return { id: l.id, name: l.name, share_token: l.share_token, reminder: rem ?? null, items: await listItems(l.id) };
   });
   app.put<{ Params: { id: string } }>('/lists/:id', async (req) => {
     const l = await own(req, uuid.parse(req.params.id));
     const b = z.object({ name: z.string().trim().min(1).max(60) }).parse(req.body);
     await pool.query('UPDATE shopping_lists SET name = $2, updated_at = now() WHERE id = $1', [l.id, b.name]);
     return { ok: true };
+  });
+  // "Remind me to restock": an email every N days with a one-tap link back to the list. Stops with one click here or by deleting the list.
+  app.put<{ Params: { id: string } }>('/lists/:id/reminder', async (req) => {
+    const l = await own(req, uuid.parse(req.params.id));
+    const { every_days } = z.object({ every_days: z.number().int().min(7).max(90).nullable() }).parse(req.body);
+    if (every_days == null) { await pool.query('DELETE FROM list_reminders WHERE list_id = $1', [l.id]); return { reminder: null }; }
+    const r = await pool.query(`INSERT INTO list_reminders(list_id, user_id, every_days, next_at) VALUES ($1,$2,$3, now() + make_interval(days => $3))
+      ON CONFLICT (list_id) DO UPDATE SET every_days = $3, next_at = now() + make_interval(days => $3) RETURNING every_days, next_at`, [l.id, req.user!.id, every_days]);
+    return { reminder: r.rows[0] };
   });
   app.delete<{ Params: { id: string } }>('/lists/:id', async (req) => { const l = await own(req, uuid.parse(req.params.id)); await pool.query('DELETE FROM shopping_lists WHERE id = $1', [l.id]); return { ok: true }; });
   app.put<{ Params: { id: string } }>('/lists/:id/items', async (req) => {

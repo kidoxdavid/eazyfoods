@@ -3,6 +3,7 @@ import { pool, tx, type After } from '../db/pool.js';
 import { HttpError } from '../lib/errors.js';
 import { getProvider } from '../payments/provider.js';
 import { postPaymentCaptured } from './ledger.js';
+import { redeemForOrder, releaseOrderCredit } from './credit.js';
 import { history } from './orders.js';
 import { refundWholeSuborder } from './refunds.js';
 import { notify, notifyVendorOwners } from './notify.js';
@@ -22,6 +23,12 @@ async function onPaymentSucceeded(c: PoolClient, after: After, payment: any) {
   const order = (await c.query('SELECT * FROM orders WHERE id = $1 FOR UPDATE', [payment.order_id])).rows[0];
   if (order.payment_status === 'paid' || order.payment_status.includes('refunded')) return 'already_paid';
   await c.query(`UPDATE payments SET status='succeeded' WHERE id=$1`, [payment.id]);
+  // Paid after the hold expired and the credit went back: take it again, since the order was charged net of it. (If the customer already spent
+  // it elsewhere in between, their balance dips below zero and the next credit they earn covers it.)
+  if (order.credit_released) {
+    await c.query('UPDATE orders SET credit_released = false WHERE id = $1', [order.id]);
+    await redeemForOrder(c, order.user_id, order.id, order.credit_cents);
+  }
 
   const subs = (await c.query('SELECT * FROM suborders WHERE order_id = $1 ORDER BY id', [order.id])).rows;
   const short = new Set<string>();
@@ -84,6 +91,7 @@ async function onPaymentFailed(c: PoolClient, payment: any, message?: string) {
   await c.query(`UPDATE payments SET status='failed', failure_message=$2 WHERE id=$1`, [payment.id, message ?? null]);
   await releaseReservations(c, order.id);
   await c.query(`UPDATE orders SET status='payment_failed', payment_status='failed' WHERE id=$1`, [order.id]);
+  await releaseOrderCredit(c, order.id);
   await c.query(`UPDATE suborders SET status='cancelled' WHERE order_id=$1 AND status='awaiting_payment'`, [order.id]);
   await history(c, order.id, null, order.status, 'payment_failed', null, message ?? 'Payment failed');
   return 'processed';
@@ -131,6 +139,7 @@ export async function releaseExpiredReservations() {
       if (!o) return null;
       await releaseReservations(c, id);
       await c.query(`UPDATE orders SET status='expired', payment_status='failed' WHERE id=$1`, [id]);
+      await releaseOrderCredit(c, id);
       await c.query(`UPDATE suborders SET status='expired' WHERE order_id=$1 AND status='awaiting_payment'`, [id]);
       await history(c, id, null, 'pending_payment', 'expired', null, 'Payment not completed in time');
       const p = (await c.query(`UPDATE payments SET status='canceled' WHERE order_id=$1 AND status='requires_payment' RETURNING provider_payment_id`, [id])).rows[0];

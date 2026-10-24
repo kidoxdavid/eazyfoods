@@ -10,7 +10,7 @@ import { Badge, Button, ErrorBox, Field, Input, Loading, Notice, Select, Textare
 type Address = { id: string; label: string | null; recipient_name: string; phone: string; line1: string; line2: string | null; city: string; province: string; postal_code: string; instructions: string | null; is_default: boolean; serviceable: boolean; zone: string | null };
 type Line = { name: string; quantity: number; unit_price_cents: number; line_total_cents: number };
 type Sub = { store_slug: string; store_name: string; lines: Line[]; subtotal_cents: number; discount_cents: number; delivery_cents: number; delivery_tax_cents: number; tax_cents: number; total_cents: number; eta_minutes: number | null; preorders_enabled?: boolean; scheduled_for?: string | null; scheduled_until?: string | null };
-type Quote = { ok: boolean; issues: { type: string; message: string; store_slug?: string }[]; warnings: { message: string }[]; suborders: Sub[]; subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; tip_cents: number; total_cents: number; coupon: { code: string; discount_cents: number } | null; coupon_error?: string; separate_deliveries: boolean };
+type Quote = { ok: boolean; issues: { type: string; message: string; store_slug?: string }[]; warnings: { message: string }[]; suborders: Sub[]; subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; tip_cents: number; total_cents: number; credit_available_cents: number; credit_applied_cents: number; pay_cents: number; coupon: { code: string; discount_cents: number } | null; coupon_error?: string; separate_deliveries: boolean };
 type Cfg = { payment_provider: 'mock' | 'stripe'; stripe_publishable_key: string | null; test_mode: boolean };
 
 export function AddressForm({ onSaved, onCancel, name }: { onSaved: (a: Address) => void; onCancel?: () => void; name?: string }) {
@@ -49,6 +49,7 @@ export function CheckoutPage() {
   const [instructions, setInstructions] = useState('');
   const [tip, setTip] = useState(0);   // never pre-filled: a tip is the customer's choice
   const [customTip, setCustomTip] = useState('');
+  const [useCredit, setUseCredit] = useState(false);
   const [gift, setGift] = useState(false);
   const [giftMessage, setGiftMessage] = useState('');
   const [adding, setAdding] = useState(false);
@@ -56,30 +57,30 @@ export function CheckoutPage() {
   const [later, setLater] = useState<Record<string, boolean>>({});
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteErr, setQuoteErr] = useState<string>();
-  const [order, setOrder] = useState<{ id: string; order_number: string; total_cents: number; client_secret: string | null } | null>(null);
+  const [order, setOrder] = useState<{ id: string; order_number: string; total_cents: number; pay_cents?: number; client_secret: string | null } | null>(null);
   const keyRef = useRef(crypto.randomUUID());
 
   useEffect(() => { if (addrs.data && !addressId) setAddressId(addrs.data.find((a) => a.is_default)?.id ?? addrs.data[0]?.id ?? null); }, [addrs.data, addressId]);
   useEffect(() => { refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-price on the server whenever anything that affects the price changes. A new key marks a new attempt.
-  const sig = useMemo(() => JSON.stringify([addressId, method, coupon, slots, tip, cart?.stores.map((s) => s.items.map((i) => [i.offer_id, i.quantity]))]), [addressId, method, coupon, slots, tip, cart]);
+  const sig = useMemo(() => JSON.stringify([addressId, method, coupon, slots, tip, useCredit, cart?.stores.map((s) => s.items.map((i) => [i.offer_id, i.quantity]))]), [addressId, method, coupon, slots, tip, useCredit, cart]);
   useEffect(() => {
     if (order) return;
     keyRef.current = crypto.randomUUID();
     if (!cart?.item_count) return;
     let live = true;
-    post<Quote>('/checkout/quote', { address_id: method === 'delivery' ? addressId : null, method, coupon_code: coupon || null, slots, tip_cents: method === 'delivery' ? tip : 0 }).then((q) => live && (setQuote(q), setQuoteErr(undefined)), (e) => live && setQuoteErr(e.message));
+    post<Quote>('/checkout/quote', { address_id: method === 'delivery' ? addressId : null, method, coupon_code: coupon || null, slots, tip_cents: method === 'delivery' ? tip : 0, use_credit: useCredit }).then((q) => live && (setQuote(q), setQuoteErr(undefined)), (e) => live && setQuoteErr(e.message));
     return () => { live = false; };
   }, [sig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const place = useAction(async () => {
     try {
-      const r = await post<{ order: { id: string; order_number: string; total_cents: number }; payment: { client_secret: string | null } | null }>(
-        '/checkout', { address_id: method === 'delivery' ? addressId : null, method, coupon_code: coupon || null, instructions: instructions || null, slots, tip_cents: method === 'delivery' ? tip : 0, gift_message: gift && giftMessage.trim() ? giftMessage.trim() : null }, { 'idempotency-key': keyRef.current });
+      const r = await post<{ order: { id: string; order_number: string; total_cents: number; pay_cents: number }; payment: { client_secret: string | null } | null }>(
+        '/checkout', { address_id: method === 'delivery' ? addressId : null, method, coupon_code: coupon || null, instructions: instructions || null, slots, tip_cents: method === 'delivery' ? tip : 0, gift_message: gift && giftMessage.trim() ? giftMessage.trim() : null, use_credit: useCredit }, { 'idempotency-key': keyRef.current });
       setOrder({ ...r.order, client_secret: r.payment?.client_secret ?? null });
     } catch (e) {
-      if (e instanceof ApiError && e.code === 'checkout_blocked') { await refresh(); const q = await post<Quote>('/checkout/quote', { address_id: addressId, method, coupon_code: coupon || null, slots, tip_cents: method === 'delivery' ? tip : 0 }); setQuote(q); }
+      if (e instanceof ApiError && e.code === 'checkout_blocked') { await refresh(); const q = await post<Quote>('/checkout/quote', { address_id: addressId, method, coupon_code: coupon || null, slots, tip_cents: method === 'delivery' ? tip : 0, use_credit: useCredit }); setQuote(q); }
       throw e;
     }
   });
@@ -193,10 +194,13 @@ export function CheckoutPage() {
                 <div className="summary-row"><span>GST on taxable items</span><span>{money(quote.tax_cents)}</span></div>
                 {quote.tip_cents > 0 && <div className="summary-row"><span>Driver tip</span><span>{money(quote.tip_cents)}</span></div>}
                 <div className="summary-row total"><span>Total</span><span>{money(quote.total_cents)}</span></div>
+                {quote.credit_available_cents > 0 && quote.suborders.length > 0 && (
+                  <label className="check" style={{ margin: '8px 0' }}><input type="checkbox" checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)} /> Use my store credit ({money(quote.credit_available_cents)} available)</label>)}
+                {quote.credit_applied_cents > 0 && <><div className="summary-row okc"><span>Store credit</span><span>−{money(quote.credit_applied_cents)}</span></div><div className="summary-row"><span><strong>To pay by card</strong></span><strong>{money(quote.pay_cents)}</strong></div></>}
                 {quote.warnings.map((w, i) => <Notice key={i} tone="warn">{w.message}</Notice>)}
                 {issues.length > 0 && <Notice tone="error"><strong>Before you can pay:</strong><ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>{issues.map((i, k) => <li key={k}>{i.message}</li>)}</ul><p style={{ margin: '8px 0 0' }}><Link to="/cart">Edit basket</Link></p></Notice>}
                 {place.error && <ErrorBox message={place.error} />}
-                <Button size="lg" style={{ width: '100%' }} busy={place.busy} disabled={!quote.ok || (method === 'delivery' && !addressId)} onClick={() => place.run()}>Continue to payment · {money(quote.total_cents)}</Button>
+                <Button size="lg" style={{ width: '100%' }} busy={place.busy} disabled={!quote.ok || (method === 'delivery' && !addressId)} onClick={() => place.run()}>Continue to payment · {money(quote.pay_cents)}</Button>
                 <p className="small muted" style={{ marginTop: 8 }}>You are not charged until the next step. We never see or store your card number.</p>
               </>
             )}
@@ -207,7 +211,7 @@ export function CheckoutPage() {
   );
 }
 
-export function PaymentStep({ order, cfg, onPaid }: { order: { id: string; order_number: string; total_cents: number; client_secret: string | null }; cfg?: Cfg; onPaid: () => void }) {
+export function PaymentStep({ order, cfg, onPaid }: { order: { id: string; order_number: string; total_cents: number; pay_cents?: number; client_secret: string | null }; cfg?: Cfg; onPaid: () => void }) {
   const [err, setErr] = useState<string>();
   const [busy, setBusy] = useState(false);
   const simulate = async (outcome: 'succeeded' | 'failed') => {
@@ -221,7 +225,7 @@ export function PaymentStep({ order, cfg, onPaid }: { order: { id: string; order
   return (
     <div style={{ maxWidth: 560, margin: '0 auto' }}>
       <h1>Payment</h1>
-      <p>Order <strong>{order.order_number}</strong> · Total <strong>{money(order.total_cents)}</strong></p>
+      <p>Order <strong>{order.order_number}</strong> · Total <strong>{money(order.pay_cents ?? order.total_cents)}</strong>{order.pay_cents != null && order.pay_cents < order.total_cents && <span className="muted small"> (after {money(order.total_cents - order.pay_cents)} store credit)</span>}</p>
       <Notice>Your stock is being held for you for a short time while you pay.</Notice>
       {cfg.payment_provider === 'mock' ? (
         <div className="test-banner" role="region" aria-label="Test payment">

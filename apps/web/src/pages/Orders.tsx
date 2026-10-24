@@ -37,7 +37,7 @@ type Sub = {
   lines: { id: string; product_id: string; product_slug: string; name: string; brand: string | null; pack_label: string | null; quantity: number; unit_price_cents: number; line_total_cents: number; refunded_quantity: number; substitution_status: string; substitute_name: string | null; sub_pref?: string; reviewed: boolean }[];
   timeline: { status: string; note: string | null; at: string }[]; refunds: { status: string; amount_cents: number; reason: string }[];
 };
-type Order = { id: string; order_number: string; status: string; payment_status: string; fulfilment_method: string; address: any; subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; total_cents: number; tip_cents?: number; is_gift?: boolean; gift_message?: string | null; placed_at: string | null; created_at: string; suborders: Sub[] };
+type Order = { id: string; order_number: string; status: string; payment_status: string; fulfilment_method: string; address: any; subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; total_cents: number; credit_cents?: number; tip_cents?: number; is_gift?: boolean; gift_message?: string | null; placed_at: string | null; created_at: string; suborders: Sub[] };
 
 export function OrderPage() {
   const { id } = useParams();
@@ -72,7 +72,7 @@ export function OrderPage() {
         <section className="panel">
           <h2>Waiting for payment</h2>
           <p>We only confirm your order once your payment is confirmed. If you just paid, this page updates in a moment.</p>
-          {pay.data?.payable && cfg.data ? <PaymentStep order={{ id: o.id, order_number: o.order_number, total_cents: o.total_cents, client_secret: pay.data.client_secret }} cfg={cfg.data} onPaid={reload} /> : <Loading label="Checking payment" />}
+          {pay.data?.payable && cfg.data ? <PaymentStep order={{ id: o.id, order_number: o.order_number, total_cents: o.total_cents, pay_cents: o.total_cents - (o.credit_cents ?? 0), client_secret: pay.data.client_secret }} cfg={cfg.data} onPaid={reload} /> : <Loading label="Checking payment" />}
         </section>
       )}
       {o.status === 'payment_failed' && <Notice tone="error"><strong>Your payment did not go through.</strong> You were not charged. <Link to="/cart">Go back to your basket</Link> to try again.</Notice>}
@@ -145,6 +145,7 @@ export function OrderPage() {
         <div className="summary-row"><span>GST on items</span><span>{money(o.tax_cents)}</span></div>
         {(o.tip_cents ?? 0) > 0 && <div className="summary-row"><span>Driver tip</span><span>{money(o.tip_cents!)}</span></div>}
         <div className="summary-row total"><span>Total</span><span>{money(o.total_cents)}</span></div>
+        {(o.credit_cents ?? 0) > 0 && <div className="summary-row okc"><span>Paid with store credit</span><span>{money(o.credit_cents!)}</span></div>}
         <p className="small muted">Payment: <StatusBadge status={o.payment_status} /></p>
         {!paidWaiting && <Button variant="secondary" busy={reorder.busy} onClick={() => reorder.run()}>Order these again</Button>}
         {reorder.error && <ErrorBox message={reorder.error} />}

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { money, type StoreCard } from '../api';
 import { useApi } from '../hooks';
+import { usePlace } from '../place';
 import { StoreBanner, StoreMark } from '../art';
 import { Badge, ErrorBox, Loading, Notice } from '../ui';
 import { BasketBar, ProductGrid, StoreList, type Card } from '../cards';
@@ -19,11 +20,31 @@ type S = {
 };
 type Reviews = { count: number; average: number | null };
 
+type Cmp = { fsa: string; serviceable: boolean; fee_cents?: number; free_over_cents?: number | null; eta_minutes?: number; stores: { slug: string; name: string; is_open: boolean; min_order_cents: number | null; rating_avg: number | null; items_in_stock: number; is_test_data: boolean }[] };
+/** Which stores deliver to my area, at what fee, how fast, and what the minimum order is. */
+function CompareStores() {
+  const { place } = usePlace();
+  const [postal, setPostal] = useState(place?.fsa ?? '');
+  const [asked, setAsked] = useState<string | null>(place?.fsa ?? null);
+  const { data, loading, error } = useApi<Cmp>(asked ? `/stores-compare?postal=${encodeURIComponent(asked)}` : null);
+  return (
+    <section className="panel" aria-label="Compare stores for your area"><h2 style={{ marginTop: 0, fontSize: '1.15rem' }}>Compare delivery to your area</h2>
+      <form className="row" onSubmit={(e) => { e.preventDefault(); setAsked(postal.trim() || null); }}><input className="input" aria-label="Postal code" value={postal} onChange={(e) => setPostal(e.target.value)} placeholder="Postal code, e.g. T2A 0A0" maxLength={7} autoComplete="postal-code" /><button className="btn secondary" type="submit">Compare</button></form>
+      {loading && <Loading />}{error && <p className="error-text">{error}</p>}
+      {data && !data.serviceable && <p className="muted">We do not deliver to {data.fsa} yet.</p>}
+      {data?.serviceable && <>
+        <p className="small muted">Delivery to {data.fsa}: {money(data.fee_cents!)} per store{data.free_over_cents ? `, free over ${money(data.free_over_cents)}` : ''}, about {data.eta_minutes} min once the store confirms.</p>
+        <table className="compare"><thead><tr><th>Store</th><th>Status</th><th>Minimum order</th><th>Rating</th><th>Items in stock</th></tr></thead>
+          <tbody>{data.stores.map((s) => <tr key={s.slug}><td data-l="Store"><Link to={`/s/${s.slug}`}><strong>{s.name}</strong></Link></td><td data-l="Status">{s.is_open ? 'Open now' : 'Closed now'}</td><td data-l="Minimum order">{s.min_order_cents ? money(s.min_order_cents) : 'None'}</td><td data-l="Rating">{s.rating_avg ?? '—'}</td><td data-l="Items in stock">{s.items_in_stock}</td></tr>)}</tbody></table></>}
+    </section>
+  );
+}
+
 export function StoresPage() {
   const { data, loading, error, reload } = useApi<StoreCard[]>('/stores');
   if (loading) return <Loading />;
   if (error) return <ErrorBox message={error} retry={reload} />;
-  return <><h1>Stores</h1><p className="muted">Independent African grocers, each with its own prices and stock.</p>{data && <StoreList stores={data} />}</>;
+  return <><h1>Stores</h1><p className="muted">Independent African grocers, each with its own prices and stock.</p><CompareStores />{data && <StoreList stores={data} />}</>;
 }
 
 export function StorePage() {

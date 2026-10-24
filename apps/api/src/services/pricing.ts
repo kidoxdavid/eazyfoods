@@ -2,6 +2,10 @@ import type { Queryable } from '../lib/db-types.js';
 import { allocate, bps } from '../lib/money.js';
 import { getSetting } from '../lib/settings.js';
 import { findSlot } from './slots.js';
+import { creditBalance } from './credit.js';
+
+/** Card payments below this cannot be processed, so credit never covers the last bit of an order. */
+export const MIN_CARD_CENTS = 50;
 
 export type Issue = { type: string; message: string; offer_id?: string; store_slug?: string; available?: number };
 export type QuoteLine = {
@@ -20,12 +24,13 @@ export type Quote = {
   subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; tip_cents: number; total_cents: number;
   coupon: { id: string; code: string; discount_cents: number } | null; coupon_error?: string;
   separate_deliveries: boolean;
+  credit_available_cents: number; credit_applied_cents: number; pay_cents: number;
 };
 
 export const normalisePostal = (s: string) => s.replace(/\s+/g, '').toUpperCase();
 export const isCanadianPostal = (s: string) => /^[A-Z][0-9][A-Z][0-9][A-Z][0-9]$/.test(normalisePostal(s));
 
-type Opts = { addressId?: string | null; method: 'delivery' | 'pickup'; couponCode?: string | null; slots?: Record<string, string>; tipCents?: number };
+type Opts = { addressId?: string | null; method: 'delivery' | 'pickup'; couponCode?: string | null; slots?: Record<string, string>; tipCents?: number; useCredit?: boolean };
 
 export async function buildQuote(c: Queryable, userId: string, opts: Opts): Promise<Quote> {
   const issues: Issue[] = [];
@@ -161,7 +166,11 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
   if (tip) allocate(tip, tipSubs.map(() => 1)).forEach((t, i) => (tipSubs[i].tip_cents = t));
 
   const sum = (f: (s: QuoteSub) => number) => subs.reduce((a, s) => a + f(s), 0);
+  const total = sum((s) => s.total_cents) + tip;
+  const available = await creditBalance(c, userId);
+  const applied = opts.useCredit && subs.length ? Math.max(0, Math.min(available, total - MIN_CARD_CENTS)) : 0;
   return {
+    credit_available_cents: available, credit_applied_cents: applied, pay_cents: total - applied,
     ok: issues.length === 0 && !couponError, issues, warnings, suborders: subs,
     subtotal_cents: merch, discount_cents: sum((s) => s.discount_cents), delivery_cents: sum((s) => s.delivery_cents + s.delivery_tax_cents),
     tax_cents: sum((s) => s.tax_cents), tip_cents: tip, total_cents: sum((s) => s.total_cents) + tip, coupon, coupon_error: couponError, separate_deliveries: subs.length > 1,

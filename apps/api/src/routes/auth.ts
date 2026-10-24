@@ -28,11 +28,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   const limit = rl(10, '1 minute');
 
   app.post('/register', limit, async (req, reply) => {
-    const body = creds.extend({ full_name: z.string().min(1).max(120) }).parse(req.body);
+    const body = creds.extend({ full_name: z.string().min(1).max(120), ref: z.string().max(20).optional() }).parse(req.body);
     const hash = await hashPassword(body.password);
     try {
       const u = await pool.query('INSERT INTO users(email,password_hash,full_name) VALUES ($1,$2,$3) RETURNING id', [body.email, hash, body.full_name]);
       await pool.query(`INSERT INTO user_roles(user_id, role) VALUES ($1,'customer')`, [u.rows[0].id]);
+      if (body.ref) await pool.query(`INSERT INTO referrals(referred_user, referrer_user) SELECT $1, id FROM users WHERE referral_code = $2 ON CONFLICT DO NOTHING`, [u.rows[0].id, body.ref.toUpperCase()]);
       await createSession(u.rows[0].id, reply);
       await sendVerification(u.rows[0].id, body.email).catch(() => {});
       return reply.code(201).send({ id: u.rows[0].id, email: body.email, full_name: body.full_name });

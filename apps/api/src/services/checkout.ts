@@ -4,14 +4,15 @@ import { orderNumber } from '../lib/ids.js';
 import { getSetting } from '../lib/settings.js';
 import { getProvider } from '../payments/provider.js';
 import { buildQuote, type Quote } from './pricing.js';
+import { redeemForOrder, releaseOrderCredit } from './credit.js';
 import { history } from './orders.js';
 
-export type CheckoutInput = { addressId?: string | null; method: 'delivery' | 'pickup'; couponCode?: string | null; instructions?: string | null; idempotencyKey: string; slots?: Record<string, string>; tipCents?: number; giftMessage?: string | null };
+export type CheckoutInput = { addressId?: string | null; method: 'delivery' | 'pickup'; couponCode?: string | null; instructions?: string | null; idempotencyKey: string; slots?: Record<string, string>; tipCents?: number; giftMessage?: string | null; useCredit?: boolean };
 
 async function view(orderId: string) {
   const o = (await pool.query('SELECT * FROM orders WHERE id = $1', [orderId])).rows[0];
   const p = (await pool.query('SELECT provider, provider_payment_id, client_secret, status FROM payments WHERE order_id = $1 ORDER BY created_at DESC LIMIT 1', [orderId])).rows[0];
-  return { order: { id: o.id, order_number: o.order_number, status: o.status, payment_status: o.payment_status, total_cents: o.total_cents }, payment: p ? { provider: p.provider, client_secret: p.client_secret, status: p.status } : null };
+  return { order: { id: o.id, order_number: o.order_number, status: o.status, payment_status: o.payment_status, total_cents: o.total_cents, pay_cents: o.total_cents - o.credit_cents }, payment: p ? { provider: p.provider, client_secret: p.client_secret, status: p.status } : null };
 }
 
 /**
@@ -32,7 +33,8 @@ export async function placeOrder(user: { id: string; email: string; full_name: s
 
       // Serialise bookings of the same slot so two checkouts cannot both take the last place.
       for (const [slug, start] of Object.entries(input.slots ?? {}).sort()) await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`${slug}|${start}`]);
-      const q: Quote = await buildQuote(c, user.id, { addressId: input.addressId, method: input.method, couponCode: input.couponCode, slots: input.slots, tipCents: input.tipCents });
+      if (input.useCredit) await c.query('SELECT id FROM users WHERE id = $1 FOR UPDATE', [user.id]);   // one checkout at a time spends a customer's credit
+      const q: Quote = await buildQuote(c, user.id, { addressId: input.addressId, method: input.method, couponCode: input.couponCode, slots: input.slots, tipCents: input.tipCents, useCredit: input.useCredit });
       if (!q.ok) throw new HttpError(409, 'checkout_blocked', 'Some things in your basket need attention before you can pay.', { issues: q.issues, coupon_error: q.coupon_error });
 
       const address = input.method === 'delivery' ? (await c.query('SELECT * FROM addresses WHERE id = $1 AND user_id = $2', [input.addressId, user.id])).rows[0] : null;
@@ -40,11 +42,12 @@ export async function placeOrder(user: { id: string; email: string; full_name: s
       const num = orderNumber();
       const o = (await c.query(
         `INSERT INTO orders(order_number, user_id, fulfilment_method, address, customer_name, customer_phone, customer_email, delivery_instructions,
-                            subtotal_cents, discount_cents, delivery_cents, tax_cents, total_cents, coupon_id, idempotency_key, tip_cents, is_gift, gift_message)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING id`,
+                            subtotal_cents, discount_cents, delivery_cents, tax_cents, total_cents, coupon_id, idempotency_key, tip_cents, is_gift, gift_message, credit_cents)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id`,
         [num, user.id, input.method, address ? { line1: address.line1, line2: address.line2, city: address.city, province: address.province, postal_code: address.postal_code } : null,
          address?.recipient_name ?? user.full_name, phone, user.email, input.instructions ?? address?.instructions ?? null,
-         q.subtotal_cents, q.discount_cents, q.delivery_cents, q.tax_cents, q.total_cents, q.coupon?.id ?? null, input.idempotencyKey, q.tip_cents, !!input.giftMessage?.trim(), input.giftMessage?.trim() || null])).rows[0];
+         q.subtotal_cents, q.discount_cents, q.delivery_cents, q.tax_cents, q.total_cents, q.coupon?.id ?? null, input.idempotencyKey, q.tip_cents, !!input.giftMessage?.trim(), input.giftMessage?.trim() || null, q.credit_applied_cents])).rows[0];
+      await redeemForOrder(c, user.id, o.id, q.credit_applied_cents);
       await history(c, o.id, null, null, 'pending_payment', user.id);
 
       const holdMinutes = await getSetting<number>('checkout.reservation_minutes', c);
@@ -63,7 +66,7 @@ export async function placeOrder(user: { id: string; email: string; full_name: s
           await c.query('UPDATE store_offers SET stock_reserved = stock_reserved + $2 WHERE id = $1', [l.offer_id, l.quantity]);
         }
       }
-      return { orderId: o.id as string, paymentAmount: q.total_cents, number: num };
+      return { orderId: o.id as string, paymentAmount: q.pay_cents, number: num };
     }));
   } catch (e: any) {
     // Two taps with the same key racing each other: the loser sees the unique violation and returns the winner's order.
@@ -88,6 +91,7 @@ export async function placeOrder(user: { id: string; email: string; full_name: s
         await c.query(`UPDATE inventory_reservations SET status='released', resolved_at=now() WHERE id=$1`, [r.id]);
       }
       await c.query(`UPDATE orders SET status='payment_failed', payment_status='failed' WHERE id=$1`, [orderId]);
+      await releaseOrderCredit(c, orderId);
       await c.query(`UPDATE suborders SET status='cancelled' WHERE order_id=$1`, [orderId]);
     });
     console.error('payment provider error', e);

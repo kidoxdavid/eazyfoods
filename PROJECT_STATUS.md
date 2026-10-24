@@ -103,3 +103,13 @@ Buy it again and Recently viewed shelves; unit prices (per 100 g / 100 ml, weigh
 - **Review photos**: customers with a delivered order can attach one photo to a product review (staff can hide any review).
 - **Order tracking**: progress stepper, driver's first name and estimated arrival while out for delivery.
 - Not built (needs outside accounts): live driver map location, Apple/Google Pay and saved cards (Stripe), address autocomplete.
+
+## Customer batch 3 (added)
+- **Store credit wallet** (`/credit`): append-only credit ledger per customer; "Use my store credit" at checkout (never covers the last $0.50, which must go on a card); credit is reserved while an order awaits payment and returned if payment fails or expires; refunds go back to the card first and any part that was paid with credit returns as credit. Double-entry accounts `store_credit_liability` and `credit_expense` keep the books balanced (tested). Credit has no cash value and cannot be withdrawn.
+- **Marketing → Rewards & credit**: cashback % on delivered orders (net of refunds), invite-a-friend reward (both people, after the friend's verified email and a qualifying first order, capped per person), gift codes (`EAZY-XXXX-XXXX`, single use, rate-limited redemption), goodwill credit for one customer (audited, not to yourself). **Every programme starts OFF (0).** The page shows what is owed to customers.
+- **Gift cards customers can BUY are not built** (needs a non-order payment flow; do with Stripe). Codes are made by staff.
+- **Restock reminders** on shopping lists (weekly to every 2 months, email with a one-tap link; nothing is ordered or charged automatically — true subscribe-and-save auto-charging needs saved cards).
+- **Abandoned-basket email**: a new automation (OFF), only to opted-in, verified customers, at most once a week each.
+- **Help centre** (`/help`, editable page + contact form that opens a support ticket) and **store comparison** by postal area on `/stores` (fee, speed, minimum, rating, items in stock).
+- Needs outside accounts, not built: SMS (Twilio), web push, Apple/Google Pay and saved cards.
+- Before real launch ask an accountant: store-credit liability and expiry rules, gift-code treatment, GST on cashback.
