@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool } from '../db/pool.js';
-import { COOKIE, createSession } from '../lib/auth.js';
+import { areaOf, COOKIES, createSession } from '../lib/auth.js';
 import { rl } from '../lib/ratelimit.js';
 import { hashPassword, hashToken, newToken, verifyPassword } from '../lib/password.js';
 import { config } from '../config.js';
@@ -34,7 +34,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       const u = await pool.query('INSERT INTO users(email,password_hash,full_name) VALUES ($1,$2,$3) RETURNING id', [body.email, hash, body.full_name]);
       await pool.query(`INSERT INTO user_roles(user_id, role) VALUES ($1,'customer')`, [u.rows[0].id]);
       if (body.ref) await pool.query(`INSERT INTO referrals(referred_user, referrer_user) SELECT $1, id FROM users WHERE referral_code = $2 ON CONFLICT DO NOTHING`, [u.rows[0].id, body.ref.toUpperCase()]);
-      await createSession(u.rows[0].id, reply);
+      await createSession(u.rows[0].id, reply, areaOf(req));
       await sendVerification(u.rows[0].id, body.email).catch(() => {});
       return reply.code(201).send({ id: u.rows[0].id, email: body.email, full_name: body.full_name });
     } catch (e: any) {
@@ -48,14 +48,23 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     const { rows } = await pool.query('SELECT id, password_hash FROM users WHERE email = $1 AND disabled_at IS NULL', [body.email]);
     const ok = await verifyPassword(body.password, rows[0]?.password_hash ?? DUMMY);
     if (!rows[0] || !ok) return reply.code(401).send({ error: 'invalid_credentials', message: 'Email or password is incorrect.' });
-    await createSession(rows[0].id, reply);
+    await createSession(rows[0].id, reply, areaOf(req));
+    return { ok: true };
+  });
+
+  // "Continue as <you>" from the shop into the staff areas: opens a staff session for the person already signed in to the shop (same account only).
+  app.post('/staff-session', limit, async (req, reply) => {
+    if (areaOf(req) === 'staff') return reply.code(400).send({ error: 'bad_request', message: 'Call this from the shop.' });
+    if (!req.user) return reply.code(401).send({ error: 'unauthenticated' });
+    await createSession(req.user.id, reply, 'staff');
     return { ok: true };
   });
 
   app.post('/logout', async (req, reply) => {
-    const t = req.cookies[COOKIE];
+    const area = areaOf(req);
+    const t = req.cookies[COOKIES[area]];
     if (t) await pool.query('DELETE FROM sessions WHERE token_hash = $1', [hashToken(t)]);
-    reply.clearCookie(COOKIE, { path: '/' });
+    reply.clearCookie(COOKIES[area], { path: '/' });
     return { ok: true };
   });
 

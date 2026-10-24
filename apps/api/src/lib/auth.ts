@@ -3,7 +3,15 @@ import { pool } from '../db/pool.js';
 import { config, isProd } from '../config.js';
 import { hashToken, newToken } from './password.js';
 
-export const COOKIE = 'ez_session';
+/**
+ * Two independent sign-ins in one browser: the shop and the staff areas (admin, marketing, vendor, driver). The staff session is used for the
+ * staff API paths and for any request the staff pages mark with `x-area: staff`; everything else uses the shop session.
+ */
+export const COOKIES = { shop: 'ez_session', staff: 'ez_staff' } as const;
+export type Area = keyof typeof COOKIES;
+const STAFF_API = /^\/api\/(admin|marketing|vendor|driver)(\/|\?|$)/;
+export const areaOf = (req: FastifyRequest): Area => (req.headers['x-area'] === 'staff' || STAFF_API.test(req.url) ? 'staff' : 'shop');
+export const COOKIE = COOKIES.shop;
 
 export type Role = { role: string; vendor_id: string | null };
 export type AuthUser = { id: string; email: string; full_name: string; roles: Role[] };
@@ -12,16 +20,16 @@ declare module 'fastify' {
   interface FastifyRequest { user: AuthUser | null }
 }
 
-export async function createSession(userId: string, reply: FastifyReply) {
+export async function createSession(userId: string, reply: FastifyReply, area: Area = 'shop') {
   const token = newToken();
   const expires = new Date(Date.now() + config.SESSION_DAYS * 86400_000);
   await pool.query('INSERT INTO sessions(user_id, token_hash, expires_at) VALUES ($1,$2,$3)', [userId, hashToken(token), expires]);
-  reply.setCookie(COOKIE, token, { httpOnly: true, sameSite: 'lax', secure: isProd || config.WEB_ORIGIN.startsWith('https'), path: '/', expires });
+  reply.setCookie(COOKIES[area], token, { httpOnly: true, sameSite: 'lax', secure: isProd || config.WEB_ORIGIN.startsWith('https'), path: '/', expires });
 }
 
 export async function loadUser(req: FastifyRequest) {
   req.user = null;
-  const token = req.cookies[COOKIE];
+  const token = req.cookies[COOKIES[areaOf(req)]];
   if (!token) return;
   const { rows } = await pool.query(
     `SELECT u.id, u.email, u.full_name,

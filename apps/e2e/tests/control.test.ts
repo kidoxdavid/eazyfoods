@@ -76,3 +76,33 @@ describe('control centre (browser)', () => {
     await c2.query(`UPDATE app_settings SET value = jsonb_set(value, '{ads}', 'true') WHERE key = 'vendor.default_capabilities'`); await c2.end();
   });
 });
+
+describe('separate staff and shop sign-ins (browser)', () => {
+  it('an admin and a customer are signed in side by side in one browser, and signing out of one keeps the other', async () => {
+    const ctx = await browser.newContext({ viewport: DESKTOP });
+    const page = await ctx.newPage();
+    await signIn(page, 'customer@example.test');                       // shop (and its own staff session, which has no staff rights)
+    await ctx.clearCookies({ name: 'ez_staff' });
+    await page.goto(`${base()}/admin`);
+    await page.waitForURL(/\/signin\?next=%2Fadmin/);                   // a shop sign-in does not open the admin
+    await seeText(page.locator('main'), 'Staff sign in');
+    await seeText(page.locator('main'), 'Continue as');                 // offered, since you are signed in to the shop
+    await page.fill('input[name=email]', 'admin@example.test');
+    await page.fill('input[name=password]', 'dev-password-123');
+    await page.click('.auth button[type=submit]');
+    await page.waitForURL('**/admin');
+    await seeText(page.locator('.bo-top'), 'Admin');
+    await page.goto(`${base()}/account`);
+    await seeText(page.locator('main'), 'customer@example.test');       // the shop still knows the customer
+    await page.goto(`${base()}/admin`);
+    await seeText(page.locator('.bo-top'), 'Switch area');
+    await page.locator('.bo-user summary').click();
+    await page.getByRole('button', { name: 'Sign out' }).click();
+    await page.waitForURL(base() + '/');
+    await page.goto(`${base()}/account`);
+    await seeText(page.locator('main'), 'customer@example.test');       // still a customer
+    await page.goto(`${base()}/admin`);
+    await page.waitForURL(/\/signin/);                                  // but the admin is gone
+    await ctx.close();
+  });
+});

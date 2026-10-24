@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { post } from '../api';
+import { areaForNext } from '../area';
 import { useAuth } from '../auth';
 import { useAction } from '../hooks';
 import { Button, ErrorBox, Field, Input, Loading, Notice } from '../ui';
@@ -9,12 +10,18 @@ const safeNext = (n: string | null) => (n && n.startsWith('/') && !n.startsWith(
 const values = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); return Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>; };
 
 export function SignIn() {
-  const [sp] = useSearchParams(); const nav = useNavigate(); const { reload } = useAuth();
+  const [sp] = useSearchParams(); const nav = useNavigate(); const { reload, reloadStaff, shopMe } = useAuth();
   const next = safeNext(sp.get('next'));
-  const go = useAction(async (e: FormEvent<HTMLFormElement>) => { await post('/auth/login', values(e)); await reload(); nav(next); });
+  const staff = areaForNext(next) === 'staff';
+  const hdr = staff ? { 'x-area': 'staff' } : undefined;
+  // Staff areas have their own sign-in, so the admin and a shopper can be signed in side by side in one browser.
+  const go = useAction(async (e: FormEvent<HTMLFormElement>) => { await post('/auth/login', values(e), hdr); await (staff ? reloadStaff() : reload()); nav(next); });
+  const cont = useAction(async () => { await post('/auth/staff-session'); await reloadStaff(); nav(next); });
   return (
     <form className="auth" onSubmit={go.run}>
-      <h1>Sign in</h1>
+      <h1>{staff ? 'Staff sign in' : 'Sign in'}</h1>
+      {staff && <Notice>This is the sign-in for the staff areas (admin, marketing, vendor, driver). It is separate from your shopping account, so you can be signed in to both at once, even as different people.</Notice>}
+      {staff && shopMe && <div className="panel"><p style={{ margin: '0 0 8px' }}>You are signed in to the shop as <strong>{shopMe.full_name}</strong> ({shopMe.email}).</p><Button type="button" variant="secondary" busy={cont.busy} onClick={() => cont.run()}>Continue as {shopMe.full_name.split(' ')[0]}</Button>{cont.error && <ErrorBox message={cont.error} />}<p className="small muted" style={{ margin: '8px 0 0' }}>Or sign in as someone else:</p></div>}
       {go.error && <ErrorBox message={go.error} />}
       <Field label="Email"><Input name="email" type="email" required autoComplete="email" /></Field>
       <Field label="Password"><Input name="password" type="password" required autoComplete="current-password" /></Field>
@@ -26,14 +33,16 @@ export function SignIn() {
 }
 
 export function Register() {
-  const [sp] = useSearchParams(); const nav = useNavigate(); const { reload } = useAuth();
+  const [sp] = useSearchParams(); const nav = useNavigate(); const { reload, reloadStaff } = useAuth();
   useEffect(() => { const r = sp.get('ref'); if (r) try { sessionStorage.setItem('ez_ref', r); } catch { /* private mode */ } }, [sp]);
   const go = useAction(async (e: FormEvent<HTMLFormElement>) => {
     const f = values(e);
     const ref = sp.get('ref') ?? (() => { try { return sessionStorage.getItem('ez_ref') ?? undefined; } catch { return undefined; } })();
     await post('/auth/register', { email: f.email, password: f.password, full_name: f.full_name, ref: ref || undefined });
     if (f.marketing) await fetch('/api/account/profile', { method: 'PUT', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ full_name: f.full_name, phone: null, notify_email: true, marketing_opt_in: true }) });
-    await reload(); nav(safeNext(sp.get('next')));
+    const nx = safeNext(sp.get('next'));
+    if (areaForNext(nx) === 'staff') { await post('/auth/staff-session'); await reloadStaff(); }   // new vendors and cooks go straight on to their area
+    await reload(); nav(nx);
   });
   return (
     <form className="auth" onSubmit={go.run}>

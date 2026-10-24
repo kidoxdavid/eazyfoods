@@ -5,6 +5,15 @@ import { MockProvider } from '../src/payments/mock.js';
 
 export const app = await buildApp();
 
+// Tests sign in once and use the same token everywhere: let a plain shop cookie also count as the staff sign-in, unless a test asks for the real thing.
+const realInject = app.inject.bind(app) as any;
+(app as any).inject = (opts: any) => {
+  const h = opts?.headers;
+  if (h?.cookie && !h['x-test-raw'] && String(h.cookie).startsWith('ez_session=') && !String(h.cookie).includes('ez_staff='))
+    return realInject({ ...opts, headers: { ...h, cookie: `${h.cookie}; ez_staff=${String(h.cookie).slice('ez_session='.length).split(';')[0]}` } });
+  return realInject(opts);
+};
+
 export async function login(email: string, password = 'dev-password-123') {
   const r = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { email, password } });
   return { status: r.statusCode, cookie: String(r.headers['set-cookie']).split(';')[0] };

@@ -28,6 +28,8 @@ export async function signIn(page: Page, email: string, password = 'dev-password
   await page.fill('input[name=password]', password);
   await page.click('.auth button[type=submit]');
   await page.waitForURL((u) => !u.pathname.startsWith('/signin'));
+  // Staff areas have their own sign-in: this is the "Continue as <you>" step, so one helper covers shop and staff pages.
+  await page.evaluate(() => fetch('/api/auth/staff-session', { method: 'POST', credentials: 'include' }).then(() => {}));
 }
 
 export async function db() { const c = new pg.Client({ connectionString: process.env.E2E_DB }); await c.connect(); return c; }
@@ -55,3 +57,12 @@ export async function noText(loc: Locator, text: string | RegExp) { expect(await
 export async function visible(loc: Locator, timeout = 12_000) { await loc.first().waitFor({ state: 'visible', timeout }); }
 export async function gone(loc: Locator) { expect(await loc.count()).toBe(0); }
 export async function enabled(loc: Locator, want: boolean) { await expect.poll(async () => await loc.isEnabled(), { timeout: 10_000 }).toBe(want); }
+
+/** Sign in to the staff areas only (what a person does at the staff sign-in page), leaving the shop sign-in alone. */
+export async function signInStaff(page: Page, email: string, password = 'dev-password-123', next = '/admin') {
+  await page.goto(`${base()}/signin?next=${encodeURIComponent(next)}`);
+  await page.fill('input[name=email]', email);
+  await page.fill('input[name=password]', password);
+  await page.click('.auth button[type=submit]');
+  await page.waitForURL((u) => u.pathname.startsWith(next));
+}

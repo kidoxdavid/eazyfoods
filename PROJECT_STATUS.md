@@ -138,3 +138,6 @@ Buy it again and Recently viewed shelves; unit prices (per 100 g / 100 ml, weigh
 
 ## Getting admin access on a real account (added)
 Set `OWNER_EMAILS` (comma-separated) in the host's environment, e.g. in Render → eazyfoods → Environment, then restart. Anyone listed who has already created an account is made an **owner** at start-up (in production their email must also be verified). Demo staff logins (`admin@example.test` etc.) still work on the demo.
+
+## Separate staff and shop sign-ins (added)
+The shop and the staff areas (admin, marketing, vendor, driver) now have **independent sign-ins in one browser** (cookies `ez_session` for the shop, `ez_staff` for staff). An admin and a shopper (even different people) can be signed in at once; signing out of one leaves the other. Opening a staff page without a staff sign-in shows "Staff sign in", with a one-tap "Continue as <name>" if you are signed in to the shop. Staff API paths use the staff sign-in automatically; staff pages mark other requests with `x-area: staff`. One-time effect: people who were signed in to a staff area before this release must sign in to it again.
