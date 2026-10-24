@@ -6,18 +6,18 @@ import { findSlot } from './slots.js';
 export type Issue = { type: string; message: string; offer_id?: string; store_slug?: string; available?: number };
 export type QuoteLine = {
   offer_id: string; product_id: string; product_slug: string; name: string; brand: string | null; pack_label: string | null; sold_by: string;
-  unit_price_cents: number; added_price_cents: number; quantity: number;
+  unit_price_cents: number; added_price_cents: number; quantity: number; sub_pref: 'closest' | 'ask' | 'refund';
   line_total_cents: number; discount_cents: number; tax_rate_bps: number; tax_cents: number; commission_cents: number;
 };
 export type QuoteSub = {
   store_id: string; store_slug: string; store_name: string; vendor_id: string; lines: QuoteLine[];
-  subtotal_cents: number; discount_cents: number; delivery_cents: number; delivery_tax_cents: number; tax_cents: number; total_cents: number;
+  subtotal_cents: number; discount_cents: number; delivery_cents: number; delivery_tax_cents: number; tax_cents: number; tip_cents: number; total_cents: number;
   commission_bps: number; commission_cents: number; eta_minutes: number | null; fulfilment_method: 'delivery' | 'pickup';
   scheduled_for: string | null; scheduled_until: string | null; preorders_enabled: boolean;
 };
 export type Quote = {
   ok: boolean; issues: Issue[]; warnings: Issue[]; suborders: QuoteSub[];
-  subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; total_cents: number;
+  subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; tip_cents: number; total_cents: number;
   coupon: { id: string; code: string; discount_cents: number } | null; coupon_error?: string;
   separate_deliveries: boolean;
 };
@@ -25,7 +25,7 @@ export type Quote = {
 export const normalisePostal = (s: string) => s.replace(/\s+/g, '').toUpperCase();
 export const isCanadianPostal = (s: string) => /^[A-Z][0-9][A-Z][0-9][A-Z][0-9]$/.test(normalisePostal(s));
 
-type Opts = { addressId?: string | null; method: 'delivery' | 'pickup'; couponCode?: string | null; slots?: Record<string, string> };
+type Opts = { addressId?: string | null; method: 'delivery' | 'pickup'; couponCode?: string | null; slots?: Record<string, string>; tipCents?: number };
 
 export async function buildQuote(c: Queryable, userId: string, opts: Opts): Promise<Quote> {
   const issues: Issue[] = [];
@@ -36,13 +36,14 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
   const requireOpen = await getSetting<boolean>('ordering.require_open', c);
 
   const items = (await c.query(
-    `SELECT ci.offer_id, ci.quantity, ci.added_price_cents,
-            o.price_cents, o.is_active, o.stock_on_hand - o.stock_reserved AS available, o.store_id,
+    `SELECT ci.offer_id, ci.quantity, ci.added_price_cents, ci.sub_pref,
+            o.price_cents AS base_price_cents, LEAST(o.price_cents, COALESCE(t.unit_price_cents, o.price_cents)) AS price_cents, o.is_active, o.stock_on_hand - o.stock_reserved AS available, o.store_id,
             p.id AS product_id, p.slug AS product_slug, p.name, p.status AS pstatus, p.tax_class, p.sold_by, p.pack_size, p.pack_unit, b.name AS brand,
             s.slug AS store_slug, s.name AS store_name, s.orderable, s.is_open, s.ordering_paused, s.min_order_cents, s.offers_delivery, s.offers_pickup, s.vendor_id, s.preorders_enabled,
             v.commission_bps
        FROM cart_items ci JOIN carts ct ON ct.id = ci.cart_id
        JOIN offers_live o ON o.id = ci.offer_id
+       LEFT JOIN LATERAL (SELECT unit_price_cents FROM offer_tiers WHERE offer_id = ci.offer_id AND min_qty <= ci.quantity ORDER BY min_qty DESC LIMIT 1) t ON true
        JOIN products p ON p.id = o.product_id
        JOIN storefronts s ON s.id = o.store_id
        JOIN vendors v ON v.id = s.vendor_id
@@ -76,8 +77,8 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
     else if (it.available < it.quantity)
       issues.push({ type: it.available <= 0 ? 'unavailable' : 'insufficient_stock', message: it.available <= 0 ? `${it.name} is out of stock at ${it.store_name}.` : `Only ${it.available} of ${it.name} left at ${it.store_name}.`,
         offer_id: it.offer_id, store_slug: it.store_slug, available: Math.max(0, it.available) });
-    if (it.added_price_cents !== it.price_cents)
-      warnings.push({ type: 'price_changed', message: `${it.name} at ${it.store_name} changed from ${(it.added_price_cents / 100).toFixed(2)} to ${(it.price_cents / 100).toFixed(2)}.`, offer_id: it.offer_id });
+    if (it.added_price_cents !== it.base_price_cents)
+      warnings.push({ type: 'price_changed', message: `${it.name} at ${it.store_name} changed from ${(it.added_price_cents / 100).toFixed(2)} to ${(it.base_price_cents / 100).toFixed(2)}.`, offer_id: it.offer_id });
     (groups.get(it.store_id) ?? groups.set(it.store_id, []).get(it.store_id)!).push(it);
   }
 
@@ -107,7 +108,7 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
       return {
         offer_id: r.offer_id, product_id: r.product_id, product_slug: r.product_slug, name: r.name, brand: r.brand,
         pack_label: r.pack_size ? `${Number(r.pack_size)} ${r.pack_unit ?? ''}`.trim() : r.pack_unit ? `per ${r.pack_unit}` : null, sold_by: r.sold_by,
-        unit_price_cents: r.price_cents, added_price_cents: r.added_price_cents, quantity: r.quantity,
+        unit_price_cents: r.price_cents, added_price_cents: r.added_price_cents, quantity: r.quantity, sub_pref: r.sub_pref,
         line_total_cents: total, discount_cents: 0, tax_rate_bps: rate, tax_cents: 0, commission_cents: 0,
       };
     });
@@ -117,7 +118,7 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
     const cbps = f.commission_bps ?? defaultBps;
     subs.push({
       store_id: storeId, store_slug: f.store_slug, store_name: f.store_name, vendor_id: f.vendor_id, lines, subtotal_cents: subtotal, discount_cents: 0,
-      delivery_cents: 0, delivery_tax_cents: 0, tax_cents: 0, total_cents: 0, commission_bps: cbps, commission_cents: 0,
+      delivery_cents: 0, delivery_tax_cents: 0, tax_cents: 0, tip_cents: 0, total_cents: 0, commission_bps: cbps, commission_cents: 0,
       eta_minutes: opts.method === 'delivery' && !slot ? zone?.eta_minutes ?? null : null, fulfilment_method: opts.method,
       scheduled_for: slot?.start ?? null, scheduled_until: slot?.end ?? null, preorders_enabled: !!f.preorders_enabled,
     });
@@ -154,11 +155,16 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
     s.total_cents = s.subtotal_cents - s.discount_cents + s.delivery_cents + s.delivery_tax_cents + s.tax_cents;
   }
 
+  // Tip goes to whoever delivers: split across the delivery suborders, never taxed, never touches the store.
+  const tipSubs = opts.method === 'delivery' ? subs.filter((s) => s.fulfilment_method === 'delivery') : [];
+  const tip = tipSubs.length ? Math.max(0, Math.min(10000, Math.round(opts.tipCents ?? 0))) : 0;
+  if (tip) allocate(tip, tipSubs.map(() => 1)).forEach((t, i) => (tipSubs[i].tip_cents = t));
+
   const sum = (f: (s: QuoteSub) => number) => subs.reduce((a, s) => a + f(s), 0);
   return {
     ok: issues.length === 0 && !couponError, issues, warnings, suborders: subs,
     subtotal_cents: merch, discount_cents: sum((s) => s.discount_cents), delivery_cents: sum((s) => s.delivery_cents + s.delivery_tax_cents),
-    tax_cents: sum((s) => s.tax_cents), total_cents: sum((s) => s.total_cents), coupon, coupon_error: couponError, separate_deliveries: subs.length > 1,
+    tax_cents: sum((s) => s.tax_cents), tip_cents: tip, total_cents: sum((s) => s.total_cents) + tip, coupon, coupon_error: couponError, separate_deliveries: subs.length > 1,
   };
 }
 

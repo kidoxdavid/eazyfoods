@@ -12,13 +12,13 @@ import { AddToBasket, BasketBar, Price, Shelf, type Card } from '../cards';
 import { IconShield, IconTruck } from '../icons';
 import { DishRedirect } from './Kitchens';
 
-type Offer = { store_slug: string; store_name: string; is_open: boolean; is_test_data: boolean; offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; in_stock: boolean; available: number };
+type Offer = { store_slug: string; store_name: string; is_open: boolean; is_test_data: boolean; offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; in_stock: boolean; available: number; tiers: { min_qty: number; unit_price_cents: number }[] };
 type P = {
   dietary?: Record<string, boolean>;
   name: string; brand: string | null; category: string | null; category_slug: string | null; description: string | null; pack_size: string | null; pack_unit: string | null; sold_by: string; ingredients: string | null; allergens: string[] | null;
   storage_info: string | null; manufacturer: string | null; countries: { name: string; kind: string }[]; aliases: string[]; images: { url: string; alt: string }[]; offers: Offer[];
 };
-type Reviews = { count: number; average: number | null; reviews: { rating: number; body: string | null; created_at: string; first_name: string }[] };
+type Reviews = { count: number; average: number | null; reviews: { rating: number; photo_url?: string | null; body: string | null; created_at: string; first_name: string }[] };
 
 function Heart({ slug }: { slug: string }) {
   const { me } = useAuth();
@@ -39,11 +39,34 @@ function AlertButton({ slug, inStock }: { slug: string; inStock: boolean }) {
   return <><Button variant="ghost" size="sm" busy={go.busy} onClick={() => go.run()}>🔔 {inStock ? 'Tell me if the price drops' : 'Tell me when it is back'}</Button>{go.error && <span className="small warnc">{go.error}</span>}</>;
 }
 
+type QA = { id: string; question: string; answer: string; first_name: string; answered_by_store: string | null; answered_at: string };
+/** Questions shared with every shopper once a store (or our team) has answered them. */
+function Questions({ slug }: { slug: string }) {
+  const { me } = useAuth(); const toast = useToast();
+  const qa = useApi<QA[]>(`/products/${slug}/questions`);
+  const [text, setText] = useState('');
+  const ask = useAction(async () => { const r = await post<{ message: string }>(`/products/${slug}/questions`, { question: text }); setText(''); toast(r.message); });
+  return (
+    <section className="block" aria-label="Questions and answers"><h2>Questions about this product</h2>
+      {qa.data?.map((q) => <div key={q.id} className="panel qa"><p><strong>Q:</strong> {q.question} <span className="muted small">· {q.first_name}</span></p><p><strong>A:</strong> {q.answer} <span className="muted small">· {q.answered_by_store ?? 'EAZyfoods team'}</span></p></div>)}
+      {qa.data && !qa.data.length && <p className="muted">No questions answered yet.</p>}
+      {me ? (
+        <form className="row top" onSubmit={(e) => { e.preventDefault(); ask.run(); }}>
+          <label className="grow"><span className="small muted">Ask a question</span><input className="input" value={text} onChange={(e) => setText(e.target.value)} minLength={5} maxLength={400} required placeholder="e.g. Is it fine or coarse ground?" /></label>
+          <Button type="submit" variant="secondary" busy={ask.busy}>Ask</Button>
+        </form>
+      ) : <p className="small"><Link to={`/signin?next=/p/${slug}`}>Sign in</Link> to ask a question.</p>}
+      {ask.error && <p className="error-text">{ask.error}</p>}
+    </section>
+  );
+}
+
 export function ProductPage() {
   const { slug } = useParams();
   const { data: p, loading, error, reload } = useApi<P>(`/products/${slug}`);
   const reviews = useApi<Reviews>(`/products/${slug}/reviews`);
   const related = useApi<Card[]>(`/products/${slug}/related`);
+  const together = useApi<Card[]>(`/products/${slug}/together`);
   const { place, setOpen } = usePlace();
   const [sel, setSel] = useState<string | null>(null);
   useEffect(() => { setSel(null); window.scrollTo({ top: 0 }); }, [slug]);
@@ -103,6 +126,7 @@ export function ProductPage() {
               </select></label>
             <div className="ship"><IconTruck width={18} height={18} style={{ verticalAlign: -4 }} /> {place?.serviceable ? <>Delivers to <b>{place.fsa}</b> in about {place.eta_minutes} min · {money(place.fee_cents)} per store</> : place ? <>Not delivering to {place.fsa} yet</> : <button className="link" onClick={() => setOpen(true)}>Enter postal code to see delivery</button>}</div>
             {!cur.is_open && <Notice tone="warn">{cur.store_name} is closed now. You can add it, but you can only check out while it is open.</Notice>}
+            {cur.tiers.length > 0 && <ul className="tiers" aria-label="Multi-buy prices">{cur.tiers.map((t) => <li key={t.min_qty}>Buy {t.min_qty}+ <strong>{money(t.unit_price_cents)}</strong> each <span className="muted">· save {Math.round((1 - t.unit_price_cents / cur.price_cents) * 100)}%</span></li>)}</ul>}
             {unitText(unitPrice(cur.price_cents, p.pack_size, p.pack_unit)) && <div className="unit">{unitText(unitPrice(cur.price_cents, p.pack_size, p.pack_unit))}</div>}
             <AddToBasket cta size="lg" offer={mk(cur)} />
             <AlertButton slug={slug!} inStock={p.offers.some((o) => o.in_stock)} />
@@ -127,8 +151,10 @@ export function ProductPage() {
 
       {reviews.data && reviews.data.average !== null && (
         <section className="block"><h2>Customer reviews</h2><p><Stars value={reviews.data.average} /> <strong>{reviews.data.average}</strong> out of 5 · {reviews.data.count} verified purchases</p>
-          {reviews.data.reviews.filter((r) => r.body).map((r, i) => <div key={i} className="panel"><Stars value={r.rating} /> <span className="muted small">{r.first_name} · verified purchase</span><p style={{ margin: '4px 0 0' }}>{r.body}</p></div>)}</section>
+          {reviews.data.reviews.filter((r) => r.body).map((r, i) => <div key={i} className="panel"><Stars value={r.rating} /> <span className="muted small">{r.first_name} · verified purchase</span><p style={{ margin: '4px 0 0' }}>{r.body}</p>{r.photo_url && <img className="review-photo" src={r.photo_url} alt={`Photo from ${r.first_name}'s review`} loading="lazy" />}</div>)}</section>
       )}
+      {(together.data?.length ?? 0) > 0 && <Shelf title="Frequently bought together" items={together.data ?? []} />}
+      <Questions slug={slug!} />
       <Shelf title="You might also like" items={related.data ?? []} />
       <BasketBar />
     </article>

@@ -14,6 +14,7 @@ export const CARD_SELECT = `
   p.id, p.slug, p.name, p.pack_size, p.pack_unit, b.name AS brand, c.name AS category, c.slug AS category_slug, p.created_at,
   (SELECT url FROM product_images WHERE product_id = p.id ORDER BY sort_order LIMIT 1) AS image_url,
   ${UNIT_BASIS()} AS unit_basis, round(off.min_price / NULLIF(${UNIT_QTY()}, 0))::int AS unit_price_cents,
+  (SELECT jsonb_build_object('min_qty', t.min_qty, 'unit_price_cents', t.unit_price_cents) FROM offer_tiers t WHERE t.offer_id = off.offer_id ORDER BY t.min_qty LIMIT 1) AS multibuy,
   off.min_price, off.was_price, off.in_stock, off.on_sale, off.store_count, off.offer_id, off.store_name, off.store_slug, off.available,
   (SELECT CASE WHEN count(*) >= 3 THEN round(avg(r.rating)::numeric, 1)::float END FROM reviews r WHERE r.product_id = p.id AND NOT r.is_hidden) AS rating_avg,
   (SELECT count(*)::int FROM reviews r WHERE r.product_id = p.id AND NOT r.is_hidden) AS rating_count`;

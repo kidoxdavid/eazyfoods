@@ -1,3 +1,4 @@
+import { isOurImageUrl } from '../lib/storage.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool } from '../db/pool.js';
@@ -12,7 +13,7 @@ export const engagementRoutes: FastifyPluginAsync = async (app) => {
   // ---- Reviews: only the buyer of a delivered/collected order may review it, once per store/product per order ----
   app.post<{ Params: { id: string } }>('/orders/:id/reviews', { preHandler: requireLogin }, async (req, reply) => {
     const id = z.string().uuid().parse(req.params.id);
-    const b = z.object({ suborder_id: z.string().uuid(), product_id: z.string().uuid().optional(), rating: z.number().int().min(1).max(5), body: z.string().max(1000).optional() }).parse(req.body);
+    const b = z.object({ suborder_id: z.string().uuid(), product_id: z.string().uuid().optional(), rating: z.number().int().min(1).max(5), body: z.string().max(1000).optional(), photo_url: z.string().refine(isOurImageUrl, 'Use a photo uploaded here.').optional() }).parse(req.body);
     const s = (await pool.query(
       `SELECT s.id, s.store_id FROM suborders s JOIN orders o ON o.id = s.order_id WHERE s.id = $1 AND o.id = $2 AND o.user_id = $3 AND s.status IN ('delivered','collected')`, [b.suborder_id, id, req.user!.id])).rows[0];
     if (!s) throw notFound('You can review an order after it has been delivered.');
@@ -21,7 +22,7 @@ export const engagementRoutes: FastifyPluginAsync = async (app) => {
       if (!has) throw notFound('That product was not part of this delivered order.');
     }
     try {
-      const r = await pool.query('INSERT INTO reviews(user_id, suborder_id, store_id, product_id, rating, body) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id', [req.user!.id, b.suborder_id, s.store_id, b.product_id ?? null, b.rating, b.body ?? null]);
+      const r = await pool.query('INSERT INTO reviews(user_id, suborder_id, store_id, product_id, rating, body, photo_url) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id', [req.user!.id, b.suborder_id, s.store_id, b.product_id ?? null, b.rating, b.body ?? null, b.photo_url ?? null]);
       return reply.code(201).send({ id: r.rows[0].id });
     } catch (e: any) {
       if (e.code === '23505') throw conflict('already_reviewed', 'You have already reviewed this.');
@@ -71,7 +72,7 @@ async function reviewList(kind: 'store' | 'product', slug: string) {
   const agg = (await pool.query(`SELECT count(*)::int AS count, round(avg(r.rating)::numeric, 1)::float AS average FROM reviews r WHERE ${col} AND NOT r.is_hidden`, [slug])).rows[0];
   const show = agg.count >= MIN_REVIEWS_TO_SHOW;
   const reviews = (await pool.query(
-    `SELECT r.rating, r.body, r.created_at, split_part(u.full_name, ' ', 1) AS first_name FROM reviews r JOIN users u ON u.id = r.user_id WHERE ${col} AND NOT r.is_hidden ORDER BY r.created_at DESC LIMIT 20`, [slug])).rows;
+    `SELECT r.rating, r.body, r.photo_url, r.created_at, split_part(u.full_name, ' ', 1) AS first_name FROM reviews r JOIN users u ON u.id = r.user_id WHERE ${col} AND NOT r.is_hidden ORDER BY r.created_at DESC LIMIT 20`, [slug])).rows;
   // Below the threshold we show neither an average nor individual scores, so one rating cannot mislead.
   return { count: agg.count, average: show ? agg.average : null, reviews: show ? reviews.map((r) => ({ ...r, verified_purchase: true })) : [] };
 }

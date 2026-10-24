@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 
 export type Entry = {
-  account: 'cash_provider' | 'vendor_payable' | 'commission_revenue' | 'delivery_revenue' | 'tax_payable' | 'discount_expense' | 'driver_payable' | 'delivery_cost' | 'refund_loss';
+  account: 'cash_provider' | 'vendor_payable' | 'commission_revenue' | 'delivery_revenue' | 'tax_payable' | 'discount_expense' | 'driver_payable' | 'delivery_cost' | 'refund_loss' | 'tips_payable';
   amount: number; // debit +, credit -
   vendorId?: string | null; driverId?: string | null; orderId?: string | null; suborderId?: string | null;
 };
@@ -19,7 +19,7 @@ export async function post(c: PoolClient, kind: string, ref: { type: string; id:
       [txn, e.account, e.vendorId ?? null, e.driverId ?? null, e.orderId ?? null, e.suborderId ?? null, e.amount, kind, ref.type, ref.id]);
 }
 
-type SubRow = { id: string; vendor_id: string; subtotal_cents: number; delivery_cents: number; delivery_tax_cents: number; tax_cents: number; commission_cents: number };
+type SubRow = { id: string; vendor_id: string; subtotal_cents: number; delivery_cents: number; delivery_tax_cents: number; tax_cents: number; commission_cents: number; tip_cents?: number };
 
 /** Customer payment confirmed: money held at provider is owed to vendors, minus our commission, delivery fee and tax. */
 export async function postPaymentCaptured(c: PoolClient, order: { id: string; total_cents: number; discount_cents: number }, subs: SubRow[], paymentId: string) {
@@ -33,12 +33,13 @@ export async function postPaymentCaptured(c: PoolClient, order: { id: string; to
       { account: 'vendor_payable', amount: -(s.subtotal_cents - s.commission_cents), ...ctx },
       { account: 'commission_revenue', amount: -s.commission_cents, ...ctx },
       { account: 'delivery_revenue', amount: -s.delivery_cents, ...ctx },
-      { account: 'tax_payable', amount: -(s.tax_cents + s.delivery_tax_cents), ...ctx });
+      { account: 'tax_payable', amount: -(s.tax_cents + s.delivery_tax_cents), ...ctx },
+      { account: 'tips_payable', amount: -(s.tip_cents ?? 0), ...ctx });
   }
   await post(c, 'payment_captured', { type: 'payment', id: paymentId }, entries);
 }
 
-export type RefundAmounts = { merchandise: number; discount: number; tax: number; delivery: number; commission: number; amount: number };
+export type RefundAmounts = { merchandise: number; discount: number; tax: number; delivery: number; commission: number; amount: number; tip?: number };
 
 /**
  * Refund reversal. vendor_funded: the vendor gives back its share (merchandise minus commission) and we return the commission.
@@ -51,16 +52,19 @@ export async function postRefund(c: PoolClient, r: { id: string; order_id: strin
     { account: 'delivery_revenue', amount: r.delivery, ...ctx },
     { account: 'tax_payable', amount: r.tax, ...ctx },
     { account: 'discount_expense', amount: -r.discount, ...ctx },
+    { account: 'tips_payable', amount: r.tip ?? 0, ...ctx },
   ];
   if (r.vendor_funded) entries.push({ account: 'vendor_payable', amount: r.merchandise - r.commission, ...ctx }, { account: 'commission_revenue', amount: r.commission, ...ctx });
   else entries.push({ account: 'refund_loss', amount: r.merchandise, ...ctx });
   await post(c, 'refund', { type: 'refund', id: r.id }, entries);
 }
 
-export async function postDriverEarning(c: PoolClient, d: { driver_id: string; delivery_id: string; amount: number; order_id: string; suborder_id: string }) {
+export async function postDriverEarning(c: PoolClient, d: { driver_id: string; delivery_id: string; amount: number; tip?: number; order_id: string; suborder_id: string }) {
+  const tip = d.tip ?? 0;
   await post(c, 'driver_earning', { type: 'delivery', id: d.delivery_id }, [
     { account: 'delivery_cost', amount: d.amount, driverId: d.driver_id, orderId: d.order_id, suborderId: d.suborder_id },
-    { account: 'driver_payable', amount: -d.amount, driverId: d.driver_id, orderId: d.order_id, suborderId: d.suborder_id }]);
+    { account: 'tips_payable', amount: tip, driverId: d.driver_id, orderId: d.order_id, suborderId: d.suborder_id },
+    { account: 'driver_payable', amount: -(d.amount + tip), driverId: d.driver_id, orderId: d.order_id, suborderId: d.suborder_id }]);
 }
 
 /** Paying a payee out of provider balance clears the payable. */

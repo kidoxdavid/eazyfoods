@@ -16,6 +16,7 @@ const checkoutBody = z.object({
   address_id: z.string().uuid().nullish(), method: z.enum(['delivery', 'pickup']).default('delivery'),
   coupon_code: z.string().max(40).nullish(), instructions: z.string().max(300).nullish(),
   slots: z.record(z.string().max(80), z.string().datetime()).optional(),
+  tip_cents: z.number().int().min(0).max(10000).default(0), gift_message: z.string().max(300).nullish(),
 });
 
 export async function loadOrder(orderId: string, userId: string | null) {
@@ -23,8 +24,8 @@ export async function loadOrder(orderId: string, userId: string | null) {
   if (!o) throw notFound('Order not found');
   const subs = (await pool.query(
     `SELECT s.*, st.name AS store_name, st.slug AS store_slug, st.phone AS store_phone, st.address_line AS store_address, st.city AS store_city,
-            d.status AS delivery_status, d.handover_code, d.driver_id
-       FROM suborders s JOIN stores st ON st.id = s.store_id LEFT JOIN deliveries d ON d.suborder_id = s.id WHERE s.order_id = $1 ORDER BY st.name`, [orderId])).rows;
+            d.status AS delivery_status, d.handover_code, d.driver_id, d.picked_up_at, split_part(du.full_name, ' ', 1) AS driver_first_name
+       FROM suborders s JOIN stores st ON st.id = s.store_id LEFT JOIN deliveries d ON d.suborder_id = s.id LEFT JOIN drivers dr ON dr.id = d.driver_id LEFT JOIN users du ON du.id = dr.user_id WHERE s.order_id = $1 ORDER BY st.name`, [orderId])).rows;
   const lines = (await pool.query(
     `SELECT l.* , p.slug AS product_slug FROM order_lines l JOIN products p ON p.id = l.product_id WHERE l.suborder_id = ANY($1::uuid[]) ORDER BY l.product_name`, [subs.map((s) => s.id)])).rows;
   const hist = (await pool.query('SELECT suborder_id, from_status, to_status, note, created_at FROM order_status_history WHERE order_id = $1 ORDER BY id', [orderId])).rows;
@@ -33,18 +34,18 @@ export async function loadOrder(orderId: string, userId: string | null) {
   return {
     id: o.id, order_number: o.order_number, status: o.status, payment_status: o.payment_status, fulfilment_method: o.fulfilment_method, address: o.address,
     customer_name: o.customer_name, delivery_instructions: o.delivery_instructions,
-    subtotal_cents: o.subtotal_cents, discount_cents: o.discount_cents, delivery_cents: o.delivery_cents, tax_cents: o.tax_cents, total_cents: o.total_cents,
+    subtotal_cents: o.subtotal_cents, discount_cents: o.discount_cents, delivery_cents: o.delivery_cents, tax_cents: o.tax_cents, total_cents: o.total_cents, tip_cents: o.tip_cents, is_gift: o.is_gift, gift_message: o.gift_message,
     placed_at: o.placed_at, created_at: o.created_at,
     suborders: subs.map((s) => ({
       id: s.id, store_name: s.store_name, store_slug: s.store_slug, store_phone: s.store_phone, status: s.status, fulfilment_method: s.fulfilment_method,
       subtotal_cents: s.subtotal_cents, discount_cents: s.discount_cents, delivery_cents: s.delivery_cents + s.delivery_tax_cents, tax_cents: s.tax_cents, total_cents: s.total_cents,
-      promised_at: s.promised_at, scheduled_for: s.scheduled_for, scheduled_until: s.scheduled_until, reject_reason: s.reject_reason, delivery_status: s.delivery_status,
+      promised_at: s.promised_at, eta_minutes: s.eta_minutes, driver_first_name: s.driver_first_name ?? undefined, picked_up_at: s.picked_up_at ?? undefined, tip_cents: s.tip_cents, scheduled_for: s.scheduled_for, scheduled_until: s.scheduled_until, reject_reason: s.reject_reason, delivery_status: s.delivery_status,
       // The handover code is shown to the customer only while a delivery is on its way.
       handover_code: ['ready', 'out_for_delivery'].includes(s.status) && s.fulfilment_method === 'delivery' ? s.handover_code : undefined,
       pickup_address: s.fulfilment_method === 'pickup' ? `${s.store_address ?? ''}, ${s.store_city}` : undefined,
       lines: lines.filter((l) => l.suborder_id === s.id).map((l) => ({
         id: l.id, product_slug: l.product_slug, product_id: l.product_id, name: l.product_name, brand: l.brand, pack_label: l.pack_label, quantity: l.quantity, unit_price_cents: l.unit_price_cents,
-        line_total_cents: l.line_total_cents, refunded_quantity: l.refunded_quantity, substitution_status: l.substitution_status, substitute_name: l.substitute_name,
+        line_total_cents: l.line_total_cents, refunded_quantity: l.refunded_quantity, substitution_status: l.substitution_status, substitute_name: l.substitute_name, sub_pref: l.sub_pref,
         reviewed: reviewed.some((r) => r.suborder_id === s.id && r.product_id === l.product_id),
       })),
       reviewed_store: reviewed.some((r) => r.suborder_id === s.id && !r.product_id),
@@ -60,7 +61,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
 
   app.post('/checkout/quote', async (req) => {
     const b = checkoutBody.parse(req.body);
-    const q = await buildQuote(pool, req.user!.id, { addressId: b.address_id, method: b.method, couponCode: b.coupon_code, slots: b.slots });
+    const q = await buildQuote(pool, req.user!.id, { addressId: b.address_id, method: b.method, couponCode: b.coupon_code, slots: b.slots, tipCents: b.tip_cents });
     await pool.query(`INSERT INTO analytics_events(type, user_id) VALUES ('checkout_started', $1)`, [req.user!.id]).catch(() => {});
     return q;
   });
@@ -69,7 +70,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
     const key = String(req.headers['idempotency-key'] ?? '');
     if (key.length < 8 || key.length > 100) throw bad('idempotency_key_required', 'Missing Idempotency-Key header.');
     const b = checkoutBody.parse(req.body);
-    const r = await placeOrder(req.user!, { addressId: b.address_id, method: b.method, couponCode: b.coupon_code, instructions: b.instructions, idempotencyKey: key, slots: b.slots });
+    const r = await placeOrder(req.user!, { addressId: b.address_id, method: b.method, couponCode: b.coupon_code, instructions: b.instructions, idempotencyKey: key, slots: b.slots, tipCents: b.tip_cents, giftMessage: b.gift_message });
     return reply.code(201).send(r);
   });
 

@@ -7,7 +7,7 @@ import { Badge, Button, Card, DataTable, Empty, ErrorBox, Field, ImageUpload, In
 import { ScanButton } from './Scanner';
 import { StoreSelect, useVendor } from './Shared';
 
-type Offer = { product_id: string; name: string; slug: string; price_cents: number; compare_at_cents: number | null; is_active: boolean; stock_on_hand: number; stock_reserved: number; available: number; low_stock: boolean };
+type Offer = { product_id: string; name: string; slug: string; price_cents: number; compare_at_cents: number | null; is_active: boolean; stock_on_hand: number; stock_reserved: number; available: number; low_stock: boolean; tiers: { min_qty: number; unit_price_cents: number }[] };
 
 export default function Inventory() {
   const { storeId } = useVendor();
@@ -25,7 +25,7 @@ export default function Inventory() {
 function List() {
   const { storeId } = useVendor(); const toast = useToast();
   const { data, loading, error, reload } = useApi<Offer[]>(`/vendor/stores/${storeId}/offers`);
-  const [edit, setEdit] = useState<Offer | null>(null); const [stock, setStock] = useState<Offer | null>(null); const [hist, setHist] = useState<Offer | null>(null);
+  const [tiers, setTiers] = useState<Offer | null>(null); const [edit, setEdit] = useState<Offer | null>(null); const [stock, setStock] = useState<Offer | null>(null); const [hist, setHist] = useState<Offer | null>(null);
   const [q, setQ] = useState('');
   const toggle = async (o: Offer) => { try { await put(`/vendor/stores/${storeId}/offers/${o.product_id}`, { price_cents: o.price_cents, compare_at_cents: o.compare_at_cents, is_active: !o.is_active }); reload(); } catch (e: any) { toast(e.message, 'error'); } };
   if (loading && !data) return <Loading />;
@@ -39,9 +39,10 @@ function List() {
       { key: 'stock', header: 'On hand / reserved', render: (o) => `${o.stock_on_hand} / ${o.stock_reserved}` },
       { key: 'avail', header: 'Available', render: (o) => <>{o.available} {o.available <= 0 ? <Badge tone="danger">Out of stock</Badge> : o.low_stock ? <Badge tone="warn">Low</Badge> : null}</> },
       { key: 'active', header: 'Shown to customers', render: (o) => <label className="check"><input type="checkbox" checked={o.is_active} onChange={() => toggle(o)} aria-label={`Show ${o.name} to customers`} />{o.is_active ? 'Yes' : 'Hidden'}</label> },
-      { key: 'act', header: '', render: (o) => <div className="row wrap"><Button size="sm" variant="secondary" onClick={() => setEdit(o)}>Price</Button><Button size="sm" variant="secondary" onClick={() => setStock(o)}>Stock</Button><Button size="sm" variant="ghost" onClick={() => setHist(o)}>History</Button></div> },
+      { key: 'act', header: '', render: (o) => <div className="row wrap"><Button size="sm" variant="secondary" onClick={() => setEdit(o)}>Price</Button><Button size="sm" variant="secondary" onClick={() => setTiers(o)}>Multi-buy{o.tiers.length ? ` (${o.tiers.length})` : ''}</Button><Button size="sm" variant="secondary" onClick={() => setStock(o)}>Stock</Button><Button size="sm" variant="ghost" onClick={() => setHist(o)}>History</Button></div> },
     ]} />
     {edit && <PriceModal o={edit} onClose={() => setEdit(null)} onDone={() => { setEdit(null); reload(); }} />}
+    {tiers && <TiersModal o={tiers} onClose={() => setTiers(null)} onDone={() => { setTiers(null); reload(); }} />}
     {stock && <StockModal o={stock} onClose={() => setStock(null)} onDone={() => { setStock(null); reload(); }} />}
     {hist && <HistoryModal o={hist} onClose={() => setHist(null)} />}
   </>);
@@ -58,6 +59,22 @@ function PriceModal({ o, onClose, onDone }: { o: Offer; onClose: () => void; onD
       <Field label="Price (CAD)"><Input name="price" type="number" step="0.01" min="0.01" required defaultValue={centsToDollars(o.price_cents)} inputMode="decimal" /></Field>
       <Field label="Compare-at price (optional)" hint="A higher “was” price shown crossed out. Must be above the price."><Input name="compare" type="number" step="0.01" min="0.01" defaultValue={o.compare_at_cents ? centsToDollars(o.compare_at_cents) : ''} inputMode="decimal" /></Field>
       <div className="row end"><Button type="button" variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" busy={a.busy}>Save price</Button></div></form></Modal>);
+}
+
+function TiersModal({ o, onClose, onDone }: { o: Offer; onClose: () => void; onDone: () => void }) {
+  const { storeId } = useVendor(); const toast = useToast();
+  const rows = [0, 1, 2].map((i) => o.tiers[i]);
+  const a = useAction(async (v: Record<string, string>) => {
+    const tiers = [0, 1, 2].filter((i) => v[`q${i}`] && v[`p${i}`]).map((i) => ({ min_qty: Number(v[`q${i}`]), unit_price_cents: dollarsToCents(v[`p${i}`]) }));
+    await put(`/vendor/stores/${storeId}/offers/${o.product_id}/tiers`, { tiers }); toast(tiers.length ? 'Multi-buy prices saved.' : 'Multi-buy prices removed.'); onDone();
+  });
+  return (<Modal open onClose={onClose} title={`Multi-buy: ${o.name}`}>
+    <p className="muted">Your price is {money(o.price_cents)}. Offer a lower price each when a customer buys more. Each step needs a bigger quantity and a lower price than the one before. Leave blank for none.</p>
+    <form onSubmit={(e) => a.run(formValues(e))}>{a.error && <Notice tone="error">{a.error}</Notice>}
+      {rows.map((t, i) => (<div key={i} className="form-grid">
+        <Field label={`Buy at least (step ${i + 1})`}><Input name={`q${i}`} type="number" min="2" max="99" step="1" defaultValue={t?.min_qty ?? ''} inputMode="numeric" /></Field>
+        <Field label="Price each (CAD)"><Input name={`p${i}`} type="number" min="0.01" step="0.01" defaultValue={t ? centsToDollars(t.unit_price_cents) : ''} inputMode="decimal" /></Field></div>))}
+      <div className="row end"><Button type="button" variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" busy={a.busy}>Save</Button></div></form></Modal>);
 }
 
 function StockModal({ o, onClose, onDone }: { o: Offer; onClose: () => void; onDone: () => void }) {

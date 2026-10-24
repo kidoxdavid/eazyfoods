@@ -1,6 +1,6 @@
 import { usePlace } from '../place';
 import { Link } from 'react-router-dom';
-import { money, packLabel, post } from '../api';
+import { money, packLabel, post, put } from '../api';
 import { useCart } from '../cart';
 import { useAuth } from '../auth';
 import { useToast } from '../toast';
@@ -11,6 +11,7 @@ export function CartPage() {
   const { me } = useAuth();
   const { cart, guest, loading, setQty, replace, count } = useCart();
   const toast = useToast();
+  const { place } = usePlace();
 
   if (!me) {
     if (!guest.length) return <Empty title="Your basket is empty"><p>Find something you love.</p><Link to="/search" className="btn primary">Browse products</Link></Empty>;
@@ -36,7 +37,6 @@ export function CartPage() {
   if (loading && !cart) return <Loading />;
   if (!cart || !cart.stores.length) return <Empty title="Your basket is empty"><p>Find something you love.</p><Link to="/search" className="btn primary">Browse products</Link></Empty>;
 
-  const { place } = usePlace();
   const priceChanged = cart.stores.some((s) => s.items.some((i) => i.price_changed));
   const blockers = cart.stores.flatMap((s) => s.items.filter((i) => i.unavailable || i.short));
   return (
@@ -58,6 +58,18 @@ export function CartPage() {
               <div>
                 <Link to={`/p/${i.slug}`} style={{ color: 'inherit', textDecoration: 'none' }}><strong>{i.name}</strong></Link>
                 <div className="muted small">{packLabel(i)} · {money(i.unit_price_cents)}{i.price_changed && <> <Badge tone="warn">was {money(i.previous_price_cents)}</Badge></>}</div>
+                {(() => {
+                  const next = i.tiers.find((t) => t.min_qty > i.quantity);
+                  const got = i.unit_price_cents < i.base_price_cents;
+                  return got ? <div className="small okc">Multi-buy price applied: save {money((i.base_price_cents - i.unit_price_cents) * i.quantity)}</div>
+                    : next ? <div className="small okc">Buy {next.min_qty} or more: {money(next.unit_price_cents)} each</div> : null;
+                })()}
+                {!i.unavailable && (
+                  <label className="small sub-pref">If unavailable:{' '}
+                    <select value={i.sub_pref} aria-label={`If ${i.name} is unavailable`} onChange={async (e) => replace(await put('/cart/items/' + i.offer_id + '/preference', { sub_pref: e.target.value }))}>
+                      <option value="ask">Ask me first</option><option value="closest">Swap for the closest match</option><option value="refund">Just refund it</option>
+                    </select>
+                  </label>)}
                 {i.unavailable && <div className="small warnc">Not available from this store. <button className="link" onClick={() => setQty({ offer_id: i.offer_id, slug: i.slug, name: i.name, unit_price_cents: i.unit_price_cents, store_name: s.name, store_slug: s.slug, pack: '' }, 0)}>Remove</button></div>}
                 {i.short && <div className="small warnc">Only {i.available} left. <button className="link" onClick={() => setQty({ offer_id: i.offer_id, slug: i.slug, name: i.name, unit_price_cents: i.unit_price_cents, store_name: s.name, store_slug: s.slug, pack: '' }, i.available)}>Reduce to {i.available}</button></div>}
               </div>

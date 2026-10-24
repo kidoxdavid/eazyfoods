@@ -21,10 +21,10 @@ export const vendorOrderRoutes: FastifyPluginAsync = async (app) => {
     const acceptTimeout = await getSetting<number>('vendor.accept_timeout_minutes');
     const { rows } = await pool.query(
       `SELECT s.id, s.status, s.fulfilment_method, s.subtotal_cents, s.discount_cents, s.total_cents, s.commission_cents, s.created_at, s.promised_at, s.scheduled_for, s.scheduled_until, st.name AS store_name, st.id AS store_id,
-              o.order_number, split_part(o.customer_name,' ',1) AS customer_first_name, o.delivery_instructions, o.placed_at,
+              o.order_number, split_part(o.customer_name,' ',1) AS customer_first_name, o.is_gift, o.gift_message, o.delivery_instructions, o.placed_at,
               (s.status = 'placed' AND o.placed_at < now() - make_interval(mins => $3)) AS needs_attention,
               (SELECT json_agg(json_build_object('id', l.id, 'name', l.product_name, 'brand', l.brand, 'pack_label', l.pack_label, 'quantity', l.quantity, 'unit_price_cents', l.unit_price_cents,
-                 'status', l.status, 'substitution_status', l.substitution_status, 'substitute_name', l.substitute_name, 'sold_by', l.sold_by, 'refunded_quantity', l.refunded_quantity) ORDER BY l.product_name)
+                 'status', l.status, 'substitution_status', l.substitution_status, 'substitute_name', l.substitute_name, 'sub_pref', l.sub_pref, 'sold_by', l.sold_by, 'refunded_quantity', l.refunded_quantity) ORDER BY l.product_name)
                  FROM order_lines l WHERE l.suborder_id = s.id) AS lines
          FROM suborders s JOIN orders o ON o.id = s.order_id JOIN stores st ON st.id = s.store_id
         WHERE s.vendor_id = ANY($1::uuid[]) AND s.status <> 'awaiting_payment' AND s.status <> 'expired'
@@ -75,6 +75,17 @@ export const vendorOrderRoutes: FastifyPluginAsync = async (app) => {
                                    WHERE o.id = $1 AND o.store_id = $2 AND o.is_active AND p.status = 'published'`, [offer_id, s.store_id])).rows[0];
       if (!sub || sub.available < l.quantity) throw bad('invalid_substitute', 'That replacement is not available in enough quantity.');
       if (offer_id === l.offer_id) throw bad('invalid_substitute', 'Pick a different product.');
+      if (l.sub_pref === 'refund') throw conflict('customer_prefers_refund', 'The customer asked for a refund instead of a replacement for this item.');
+      if (l.sub_pref === 'closest') {
+        // The customer pre-approved a swap for this item: apply it now, at no extra charge.
+        const u = await c.query('UPDATE store_offers SET stock_on_hand = stock_on_hand - $2, updated_at = now() WHERE id = $1 AND stock_on_hand - stock_reserved >= $2 RETURNING stock_on_hand', [offer_id, l.quantity]);
+        if (!u.rowCount) throw conflict('substitute_unavailable', 'That replacement is no longer available.');
+        await c.query(`INSERT INTO inventory_adjustments(offer_id, delta, reason, note, resulting_on_hand) VALUES ($1,$2,'sale','substitution',$3)`, [offer_id, -l.quantity, u.rows[0].stock_on_hand]);
+        await c.query(`UPDATE order_lines SET substitution_status='approved', substitute_offer_id=$2, substitute_name=$3, substitute_unit_price_cents=$4 WHERE id=$1`, [lineId, offer_id, sub.name, sub.price_cents]);
+        await history(c, s.order_id, sid, null, 'substitution_approved', req.user!.id, `${l.product_name} replaced with ${sub.name} at no extra charge (customer's choice)`);
+        after.push(() => notify(pool, { userId: s.user_id, email: s.customer_email, template: 'order_status', vars: { order_number: s.order_number, status: 'updated', note: `${l.product_name} was swapped for ${sub.name} at no extra charge, as you asked.` } }));
+        return { ok: true, auto_approved: true };
+      }
       await c.query(`UPDATE order_lines SET substitution_status='proposed', substitute_offer_id=$2, substitute_name=$3, substitute_unit_price_cents=$4 WHERE id=$1`, [lineId, offer_id, sub.name, sub.price_cents]);
       await history(c, s.order_id, sid, null, 'substitution_proposed', req.user!.id, `${l.product_name} -> ${sub.name}`);
       after.push(() => notify(pool, { userId: s.user_id, email: s.customer_email, template: 'substitution_proposed', vars: { order_number: s.order_number } }));

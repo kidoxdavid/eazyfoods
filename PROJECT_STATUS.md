@@ -91,3 +91,15 @@ See `docs/DECISIONS.md`: commission 12%, delivery $5.99/store, driver pay $4.50,
 
 ## Customer batch 1 (added)
 Buy it again and Recently viewed shelves; unit prices (per 100 g / 100 ml, weight and volume packs only) with a unit-price sort; dietary filters (vegan, vegetarian, gluten-free, dairy-free) from labels set by the catalogue team in the product editor; per-store free-delivery progress in the basket; shopping lists (save from a product or quick view, share read-only by link, stop sharing, copy a shared list, add all to basket); back-in-stock and price-drop alerts (email once, then off; manage at /alerts). Demo dietary flags are invented.
+
+## Customer batch 2 (added)
+- **Driver tip** (delivery only, never pre-selected, $0 to $100): added to the total at checkout, split across delivery stores, held in a new `tips_payable` ledger account, paid to the driver (their earnings show "incl. tip") only when the delivery is completed, and refunded with the rest if the store rejects or the order is cancelled before delivery. The ledger stays zero-sum (tested).
+- **If an item is unavailable** (per item, in the basket): ask me first (default), swap for the closest match (the store's pick is applied at once, no extra charge), or just refund it (the store cannot propose a swap). Shown to the store on the order.
+- **Multi-buy prices**: stores set up to 3 price breaks per product (Inventory → Multi-buy); basket, order and product page apply the best break for the quantity; cards say "Buy 3+: $x each". Order lines keep unit price x quantity = line total so refunds stay exact.
+- **Weekly flyer** (`/flyer`, print-friendly): all live sales and multi-buys by store.
+- **Frequently bought together** on product pages, only when at least 3 different paid orders back the pairing.
+- **Gift note** on an order, shown to the store (and on the packing slip).
+- **Product questions**: signed-in customers ask; a store that sells the product (or catalogue staff) answers in Vendor → Questions; only answered questions are public.
+- **Review photos**: customers with a delivered order can attach one photo to a product review (staff can hide any review).
+- **Order tracking**: progress stepper, driver's first name and estimated arrival while out for delivery.
+- Not built (needs outside accounts): live driver map location, Apple/Google Pay and saved cards (Stripe), address autocomplete.

@@ -14,6 +14,7 @@ import { ProductPage } from './pages/Product';
 import { StorePage, StoresPage } from './pages/Store';
 import { KitchenPage, KitchensPage } from './pages/Kitchens';
 import { CollectionPage, FeedPage } from './pages/Collection';
+import { FlyerPage } from './pages/Flyer';
 import { CartPage } from './pages/Cart';
 import { CheckoutPage } from './pages/Checkout';
 import { OrdersPage, OrderPage } from './pages/Orders';
@@ -58,6 +59,7 @@ export function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/search" element={<SearchPage />} />
                     <Route path="/deals" element={<FeedPage title="Weekly deals" sub="Live promotions from stores. Prices shown are what you pay." path="/deals" empty="No promotions are running right now." />} />
+                    <Route path="/flyer" element={<FlyerPage />} />
                     <Route path="/new" element={<FeedPage title="New arrivals" sub="Recently added to the catalogue." path="/new-arrivals" empty="Nothing new yet." />} />
                     <Route path="/stores" element={<StoresPage />} />
                     <Route path="/s/:slug" element={<StorePage />} />

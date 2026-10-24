@@ -228,7 +228,7 @@ function History() {
 }
 
 function Earnings() {
-  const { data, error, loading, reload } = useApi<{ earnings: { amount_cents: number; created_at: string; order_number: string; paid_out: boolean; payout_status: string | null }[]; unpaid_cents: number; paid_cents: number }>('/driver/earnings');
+  const { data, error, loading, reload } = useApi<{ earnings: { amount_cents: number; tip_cents: number; created_at: string; order_number: string; paid_out: boolean; payout_status: string | null }[]; unpaid_cents: number; paid_cents: number }>('/driver/earnings');
   return (
     <>
       <PageHeader title="Earnings" />
@@ -239,7 +239,7 @@ function Earnings() {
         <h2>Deliveries</h2>
         <DataTable rows={data.earnings} rowKey={(e) => e.order_number + e.created_at} empty="No earnings yet." columns={[
           { key: 'o', header: 'Order', render: (e) => `#${e.order_number}` }, { key: 'd', header: 'Date', render: (e) => fmtDate(e.created_at) },
-          { key: 'a', header: 'Amount', render: (e) => money(e.amount_cents) },
+          { key: 'a', header: 'Amount', render: (e) => <>{money(e.amount_cents)}{e.tip_cents > 0 && <span className="muted small"> (incl. {money(e.tip_cents)} tip)</span>}</> },
           { key: 'p', header: 'Payout', render: (e) => (e.paid_out ? <Badge tone={e.payout_status === 'paid' ? 'ok' : 'warn'}>{e.payout_status === 'paid' ? 'Paid' : 'Pending'}</Badge> : <Badge>Not yet</Badge>) },
         ]} />
       </>}

@@ -21,7 +21,8 @@ export const vendorRoutes: FastifyPluginAsync = async (app) => {
     if (!(await canManageStore(req.user!, storeId))) return reply.code(403).send({ error: 'forbidden' });
     const { rows } = await pool.query(
       `SELECT o.id AS offer_id, o.product_id, p.name, p.slug, o.price_cents, o.compare_at_cents, o.is_active, o.stock_on_hand, o.stock_reserved,
-              (o.stock_on_hand - o.stock_reserved) AS available, (o.stock_on_hand - o.stock_reserved) <= o.low_stock_threshold AS low_stock
+              (o.stock_on_hand - o.stock_reserved) AS available, (o.stock_on_hand - o.stock_reserved) <= o.low_stock_threshold AS low_stock,
+              (SELECT COALESCE(jsonb_agg(jsonb_build_object('min_qty', t.min_qty, 'unit_price_cents', t.unit_price_cents) ORDER BY t.min_qty), '[]') FROM offer_tiers t WHERE t.offer_id = o.id) AS tiers
          FROM store_offers o JOIN products p ON p.id = o.product_id WHERE o.store_id = $1 ORDER BY p.name`, [storeId]);
     return rows;
   });
@@ -43,6 +44,28 @@ export const vendorRoutes: FastifyPluginAsync = async (app) => {
       [storeId, productId, b.price_cents, b.compare_at_cents ?? null, b.is_active]);
     await audit(req.user!.id, 'offer.upsert', 'store_offer', rows[0].id, b);
     return rows[0];
+  });
+
+  // Multi-buy price breaks ("buy 3, pay less each"). Each break needs a bigger quantity and a lower unit price than the one before.
+  app.put('/stores/:storeId/offers/:productId/tiers', async (req, reply) => {
+    const { storeId, productId } = ids.parse(req.params);
+    if (!(await canManageStore(req.user!, storeId))) return reply.code(403).send({ error: 'forbidden' });
+    const { tiers } = z.object({ tiers: z.array(z.object({ min_qty: z.number().int().min(2).max(99), unit_price_cents: z.number().int().positive() })).max(3) }).parse(req.body);
+    const offer = (await pool.query('SELECT id, price_cents FROM store_offers WHERE store_id = $1 AND product_id = $2', [storeId, productId])).rows[0];
+    if (!offer) return reply.code(404).send({ error: 'not_found' });
+    const sorted = [...tiers].sort((a, b) => a.min_qty - b.min_qty);
+    let prevQty = 1, prevPrice = offer.price_cents;
+    for (const t of sorted) {
+      if (t.min_qty <= prevQty) return reply.code(400).send({ error: 'invalid_tiers', message: 'Each price break needs a larger quantity than the one before.' });
+      if (t.unit_price_cents >= prevPrice) return reply.code(400).send({ error: 'invalid_tiers', message: 'Each price break must be cheaper per item than the one before (and below your normal price).' });
+      prevQty = t.min_qty; prevPrice = t.unit_price_cents;
+    }
+    await tx(async (c) => {
+      await c.query('DELETE FROM offer_tiers WHERE offer_id = $1', [offer.id]);
+      for (const t of sorted) await c.query('INSERT INTO offer_tiers(offer_id, min_qty, unit_price_cents) VALUES ($1,$2,$3)', [offer.id, t.min_qty, t.unit_price_cents]);
+      await audit(req.user!.id, 'offer.tiers', 'store_offer', offer.id, { tiers: sorted }, c);
+    });
+    return { tiers: sorted };
   });
 
   app.post('/stores/:storeId/offers/:productId/stock', async (req, reply) => {

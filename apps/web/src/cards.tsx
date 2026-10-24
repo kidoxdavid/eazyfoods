@@ -11,7 +11,7 @@ import { useApi } from './hooks';
 export type Card = {
   slug: string; name: string; brand: string | null; pack_size: string | null; pack_unit: string | null; category?: string | null; category_slug?: string | null; image_url?: string | null;
   min_price: number; was_price?: number | null; in_stock: boolean; on_sale?: boolean; store_count?: number; matched_alias?: string | null;
-  unit_price_cents?: number | null; unit_basis?: '100g' | '100ml' | null; dietary?: Record<string, boolean> | null;
+  unit_price_cents?: number | null; unit_basis?: '100g' | '100ml' | null; multibuy?: { min_qty: number; unit_price_cents: number } | null; dietary?: Record<string, boolean> | null;
   offer_id?: string | null; store_name?: string | null; store_slug?: string | null; available?: number | null; rating_avg?: number | null; rating_count?: number; sponsored_campaign_id?: string | null;
 };
 
@@ -64,6 +64,7 @@ export function ProductCard({ p }: { p: Card }) {
           {was && <s className="was">{money(was)}</s>}
         </div>
         {p.unit_price_cents != null && p.unit_basis && <span className="unit">{unitText({ cents: p.unit_price_cents, basis: p.unit_basis })}</span>}
+        {p.multibuy && <span className="multibuy">Buy {p.multibuy.min_qty}+: {money(p.multibuy.unit_price_cents)} each</span>}
         {(p.store_count ?? 1) > 1 && <span className="from">lowest of {p.store_count} stores</span>}
         <Link to={`/p/${p.slug}`} className="pname" onClick={click}>{p.name}</Link>
         <span className="pmeta">{[p.brand, packLabel(p)].filter(Boolean).join(' · ')}</span>

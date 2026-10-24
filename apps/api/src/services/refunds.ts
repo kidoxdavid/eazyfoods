@@ -10,10 +10,10 @@ import { postRefund, type RefundAmounts } from './ledger.js';
 export type RefundLine = { line_id: string; quantity: number };
 
 /** Work out what a refund of these lines (and optionally the delivery fee) is worth, from the current state of the suborder. */
-export async function computeRefund(c: PoolClient, suborderId: string, lines: RefundLine[], includeDelivery: boolean): Promise<RefundAmounts> {
+export async function computeRefund(c: PoolClient, suborderId: string, lines: RefundLine[], includeDelivery: boolean, includeTip = false): Promise<RefundAmounts> {
   const sub = (await c.query('SELECT * FROM suborders WHERE id = $1', [suborderId])).rows[0];
   if (!sub) throw notFound('Suborder not found');
-  const a: RefundAmounts = { merchandise: 0, discount: 0, tax: 0, delivery: 0, commission: 0, amount: 0 };
+  const a: RefundAmounts = { merchandise: 0, discount: 0, tax: 0, delivery: 0, commission: 0, amount: 0, tip: 0 };
   for (const rl of lines) {
     const l = (await c.query('SELECT * FROM order_lines WHERE id = $1 AND suborder_id = $2', [rl.line_id, suborderId])).rows[0];
     if (!l) throw bad('line_not_found', 'That item is not part of this order.');
@@ -30,35 +30,41 @@ export async function computeRefund(c: PoolClient, suborderId: string, lines: Re
     a.delivery = sub.delivery_cents;
     a.tax += sub.delivery_tax_cents;
   }
-  a.amount = a.merchandise - a.discount + a.tax + a.delivery;
+  if (includeTip) {
+    if (sub.tip_refunded) throw conflict('tip_already_refunded', 'The tip was already refunded.');
+    a.tip = sub.tip_cents;
+  }
+  a.amount = a.merchandise - a.discount + a.tax + a.delivery + (a.tip ?? 0);
   if (a.amount <= 0) throw bad('nothing_to_refund', 'Nothing to refund.');
   return a;
 }
 
-type CreateArgs = { suborderId: string; lines: RefundLine[]; includeDelivery: boolean; reason: string; vendorFunded: boolean; requestedBy: string | null; ticketId?: string | null };
+type CreateArgs = { suborderId: string; lines: RefundLine[]; includeDelivery: boolean; includeTip?: boolean; reason: string; vendorFunded: boolean; requestedBy: string | null; ticketId?: string | null };
 
 export async function createRefund(c: PoolClient, a: CreateArgs) {
   const sub = (await c.query('SELECT s.order_id, s.status FROM suborders s WHERE s.id = $1 FOR UPDATE', [a.suborderId])).rows[0];
   if (!sub) throw notFound('Suborder not found');
   const pay = (await c.query(`SELECT id FROM payments WHERE order_id = $1 AND status = 'succeeded'`, [sub.order_id])).rows[0];
   if (!pay) throw conflict('not_paid', 'This order has not been paid, so there is nothing to refund.');
-  const amt = await computeRefund(c, a.suborderId, a.lines, a.includeDelivery);
+  const amt = await computeRefund(c, a.suborderId, a.lines, a.includeDelivery, !!a.includeTip);
   const r = await c.query(
     `INSERT INTO refunds(order_id, suborder_id, payment_id, reason, lines, include_delivery, merchandise_cents, discount_cents, tax_cents, delivery_cents, commission_cents, amount_cents,
-                         vendor_funded, requested_by, ticket_id, idempotency_key)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15, gen_random_uuid()::text) RETURNING *`,
+                         vendor_funded, requested_by, ticket_id, include_tip, tip_cents, idempotency_key)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17, gen_random_uuid()::text) RETURNING *`,
     [sub.order_id, a.suborderId, pay.id, a.reason, JSON.stringify(a.lines), a.includeDelivery, amt.merchandise, amt.discount, amt.tax, amt.delivery, amt.commission, amt.amount,
-     a.vendorFunded, a.requestedBy, a.ticketId ?? null]);
+     a.vendorFunded, a.requestedBy, a.ticketId ?? null, !!a.includeTip, amt.tip ?? 0]);
   return r.rows[0];
 }
 
 /** Convenience: refund everything left on a suborder (rejections, cancellations, expiries). Processed after commit. */
 export async function refundWholeSuborder(c: PoolClient, after: After, suborderId: string, reason: string, actor: string | null) {
   const lines = (await c.query(`SELECT id, quantity - refunded_quantity AS remaining FROM order_lines WHERE id IN (SELECT id FROM order_lines WHERE suborder_id = $1) AND quantity > refunded_quantity`, [suborderId])).rows;
-  const sub = (await c.query('SELECT delivery_cents, delivery_refunded FROM suborders WHERE id = $1', [suborderId])).rows[0];
+  const sub = (await c.query('SELECT s.delivery_cents, s.delivery_refunded, s.tip_cents, s.tip_refunded, EXISTS (SELECT 1 FROM driver_earnings e JOIN deliveries d ON d.id = e.delivery_id WHERE d.suborder_id = s.id) AS tip_paid FROM suborders s WHERE s.id = $1', [suborderId])).rows[0];
   const includeDelivery = sub.delivery_cents > 0 && !sub.delivery_refunded;
-  if (!lines.length && !includeDelivery) return null;
-  const r = await createRefund(c, { suborderId, lines: lines.map((l) => ({ line_id: l.id, quantity: l.remaining })), includeDelivery, reason, vendorFunded: true, requestedBy: actor });
+  // A tip is only kept by the driver once the delivery happened.
+  const includeTip = sub.tip_cents > 0 && !sub.tip_refunded && !sub.tip_paid;
+  if (!lines.length && !includeDelivery && !includeTip) return null;
+  const r = await createRefund(c, { suborderId, lines: lines.map((l) => ({ line_id: l.id, quantity: l.remaining })), includeDelivery, includeTip, reason, vendorFunded: true, requestedBy: actor });
   after.push(() => processRefund(r.id, actor));
   return r;
 }
@@ -82,10 +88,14 @@ export async function processRefund(refundId: string, decidedBy: string | null) 
       const u = await c.query('UPDATE suborders SET delivery_refunded = true WHERE id = $1 AND NOT delivery_refunded', [r.suborder_id]);
       if (!u.rowCount) throw conflict('delivery_already_refunded', 'The delivery fee was already refunded.');
     }
+    if (r.include_tip) {
+      const u = await c.query('UPDATE suborders SET tip_refunded = true WHERE id = $1 AND NOT tip_refunded', [r.suborder_id]);
+      if (!u.rowCount) throw conflict('tip_already_refunded', 'The tip was already refunded.');
+    }
     // Recompute amounts as they were before our claim so they reflect refunds that landed since the request.
     const prevCounts = new Map<string, number>();
     for (const l of lines) prevCounts.set(l.line_id, (await c.query('SELECT refunded_quantity FROM order_lines WHERE id = $1', [l.line_id])).rows[0].refunded_quantity - l.quantity);
-    const a: RefundAmounts = { merchandise: 0, discount: 0, tax: 0, delivery: 0, commission: 0, amount: 0 };
+    const a: RefundAmounts = { merchandise: 0, discount: 0, tax: 0, delivery: 0, commission: 0, amount: 0, tip: 0 };
     for (const l of lines) {
       const ol = (await c.query('SELECT * FROM order_lines WHERE id = $1', [l.line_id])).rows[0];
       const prev = prevCounts.get(l.line_id)!, next = prev + l.quantity;
@@ -96,7 +106,8 @@ export async function processRefund(refundId: string, decidedBy: string | null) 
     }
     const sub = (await c.query('SELECT * FROM suborders WHERE id = $1', [r.suborder_id])).rows[0];
     if (r.include_delivery) { a.delivery = sub.delivery_cents; a.tax += sub.delivery_tax_cents; }
-    a.amount = a.merchandise - a.discount + a.tax + a.delivery;
+    if (r.include_tip) a.tip = sub.tip_cents;
+    a.amount = a.merchandise - a.discount + a.tax + a.delivery + (a.tip ?? 0);
     await c.query(`UPDATE refunds SET status='approved', decided_by=$2, decided_at=now(), merchandise_cents=$3, discount_cents=$4, tax_cents=$5, delivery_cents=$6, commission_cents=$7, amount_cents=$8 WHERE id=$1`,
       [refundId, decidedBy, a.merchandise, a.discount, a.tax, a.delivery, a.commission, a.amount]);
     const pay = (await c.query('SELECT provider_payment_id FROM payments WHERE id = $1', [r.payment_id])).rows[0];
@@ -114,6 +125,7 @@ export async function processRefund(refundId: string, decidedBy: string | null) 
     if (failure) {
       for (const l of claimed.lines) await c.query('UPDATE order_lines SET refunded_quantity = refunded_quantity - $2 WHERE id = $1', [l.line_id, l.quantity]);
       if (r.include_delivery) await c.query('UPDATE suborders SET delivery_refunded = false WHERE id = $1', [r.suborder_id]);
+      if (r.include_tip) await c.query('UPDATE suborders SET tip_refunded = false WHERE id = $1', [r.suborder_id]);
       await c.query(`UPDATE refunds SET status='failed', decision_note=$2 WHERE id=$1`, [r.id, failure]);
       await audit(decidedBy, 'refund.failed', 'refund', r.id, { failure }, c);
       return { id: r.id, status: 'failed' as const, error: failure };

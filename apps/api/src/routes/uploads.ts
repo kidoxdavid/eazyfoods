@@ -26,6 +26,15 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
     return save(buf, t.ext, 'public');
   });
 
+  // A photo for a review: only customers with a delivered order, a few per hour. Staff can hide any review that misuses it.
+  app.post('/uploads/review-photo', rl(10, '1 hour'), async (req) => {
+    const ok = (await pool.query(`SELECT 1 FROM suborders s JOIN orders o ON o.id = s.order_id WHERE o.user_id = $1 AND s.status IN ('delivered','collected') LIMIT 1`, [req.user!.id])).rowCount;
+    if (!ok) throw forbidden('You can add photos once you have received an order.');
+    const buf = await readFile(req);
+    const t = sniff(buf, ['jpg', 'png', 'webp']);
+    return save(buf, t.ext, 'public');
+  });
+
   // Short banner videos (MP4 or WebM, 25 MB at most). Staff who manage the homepage only: videos are heavy and are shown to every visitor.
   app.post('/uploads/video', rl(6, '1 minute'), async (req) => {
     if (!can(req.user, 'content.manage')) throw forbidden();

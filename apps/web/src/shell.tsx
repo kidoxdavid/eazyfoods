@@ -51,7 +51,7 @@ function Mega({ onClose, closing }: { onClose: () => void; closing: boolean }) {
             <li key={r.slug}><Link to={`/search?region=${r.slug}`}>{r.name}</Link>
               <span className="mega-sub">{r.countries.slice(0, 5).map((c) => <Link key={c.slug} to={`/search?region=${r.slug}&country=${c.slug}`}>{c.name}</Link>)}</span></li>))}</ul></div>
           <div><h3>By department</h3><ul role="list">{cats.data?.map((c) => <li key={c.slug}><Link to={`/search?category=${c.slug}`}>{c.name}</Link></li>)}</ul></div>
-          <div><h3>Discover</h3><ul role="list"><li><Link to="/deals">Weekly deals</Link></li><li><Link to="/new">New arrivals</Link></li><li><Link to="/recipes">Recipes</Link></li><li><Link to="/kitchens">Home chefs</Link></li><li><Link to="/stores">All stores</Link></li></ul>
+          <div><h3>Discover</h3><ul role="list"><li><Link to="/deals">Weekly deals</Link></li><li><Link to="/flyer">Weekly flyer</Link></li><li><Link to="/new">New arrivals</Link></li><li><Link to="/recipes">Recipes</Link></li><li><Link to="/kitchens">Home chefs</Link></li><li><Link to="/stores">All stores</Link></li></ul>
             <h3 style={{ marginTop: 18 }}>Partner with us</h3><ul role="list"><li><Link to="/vendor">Sell on EAZyfoods</Link></li><li><Link to="/vendor?kind=chef">Cook with us</Link></li><li><Link to="/driver">Drive with us</Link></li></ul></div>
         </div>
       </div>

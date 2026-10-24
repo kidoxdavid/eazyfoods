@@ -5,7 +5,7 @@ import { fmtDate, money, packLabel, post } from '../api';
 import { useAction, useApi } from '../hooks';
 import { useCart } from '../cart';
 import { useToast } from '../toast';
-import { Badge, Button, Confirm, Empty, ErrorBox, Field, Loading, Modal, Notice, Select, StatusBadge, Textarea } from '../ui';
+import { Badge, Button, Confirm, Empty, ErrorBox, Field, ImageUpload, Loading, Modal, Notice, Select, StatusBadge, Textarea } from '../ui';
 import { PaymentStep } from './Checkout';
 
 export function OrdersPage() {
@@ -33,11 +33,11 @@ const LABEL: Record<string, string> = { placed: 'Order placed', accepted: 'Store
 
 type Sub = {
   id: string; store_name: string; store_slug: string; store_phone: string | null; status: string; fulfilment_method: string; subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; total_cents: number;
-  promised_at: string | null; scheduled_for?: string | null; scheduled_until?: string | null; reject_reason: string | null; handover_code?: string; pickup_address?: string; reviewed_store: boolean;
-  lines: { id: string; product_id: string; product_slug: string; name: string; brand: string | null; pack_label: string | null; quantity: number; unit_price_cents: number; line_total_cents: number; refunded_quantity: number; substitution_status: string; substitute_name: string | null; reviewed: boolean }[];
+  promised_at: string | null; eta_minutes?: number | null; driver_first_name?: string; picked_up_at?: string; tip_cents?: number; scheduled_for?: string | null; scheduled_until?: string | null; reject_reason: string | null; handover_code?: string; pickup_address?: string; reviewed_store: boolean;
+  lines: { id: string; product_id: string; product_slug: string; name: string; brand: string | null; pack_label: string | null; quantity: number; unit_price_cents: number; line_total_cents: number; refunded_quantity: number; substitution_status: string; substitute_name: string | null; sub_pref?: string; reviewed: boolean }[];
   timeline: { status: string; note: string | null; at: string }[]; refunds: { status: string; amount_cents: number; reason: string }[];
 };
-type Order = { id: string; order_number: string; status: string; payment_status: string; fulfilment_method: string; address: any; subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; total_cents: number; placed_at: string | null; created_at: string; suborders: Sub[] };
+type Order = { id: string; order_number: string; status: string; payment_status: string; fulfilment_method: string; address: any; subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; total_cents: number; tip_cents?: number; is_gift?: boolean; gift_message?: string | null; placed_at: string | null; created_at: string; suborders: Sub[] };
 
 export function OrderPage() {
   const { id } = useParams();
@@ -65,6 +65,7 @@ export function OrderPage() {
   return (
     <>
       <div className="row between wrap"><h1 style={{ marginBottom: 0 }}>Order {o.order_number}</h1><StatusBadge status={o.status} /></div>
+      {o.is_gift && o.gift_message && <p className="small"><Badge tone="info">Gift</Badge> “{o.gift_message}”</p>}
       <p className="muted">Placed {fmtDate(o.placed_at ?? o.created_at)} · {o.fulfilment_method === 'pickup' ? 'Pickup' : `Delivery to ${o.address?.line1 ?? ''}, ${o.address?.postal_code ?? ''}`}</p>
 
       {paidWaiting && (
@@ -93,6 +94,13 @@ export function OrderPage() {
             {s.pickup_address && !failed && <p>Collect from: <strong>{s.pickup_address}</strong>{s.store_phone ? ` · ${s.store_phone}` : ''}</p>}
 
             {!failed && s.status !== 'awaiting_payment' && (
+              <ol className="track" aria-label={`Order progress: ${LABEL[s.status] ?? s.status}`}>
+                {steps.map((st) => { const idx = steps.indexOf(st), cur = steps.indexOf(s.status); return <li key={st} className={idx < cur || (done && idx <= cur) ? 'done' : idx === cur ? 'now' : ''} aria-current={idx === cur ? 'step' : undefined}>{LABEL[st]}</li>; })}
+              </ol>
+            )}
+            {s.status === 'out_for_delivery' && <p className="small"><strong>{s.driver_first_name ? `${s.driver_first_name} is on the way` : 'Your driver is on the way'}.</strong> {s.promised_at ? `Estimated arrival around ${fmtDate(s.promised_at, { timeStyle: 'short' })}.` : ''}</p>}
+            {s.status === 'ready' && s.fulfilment_method === 'delivery' && <p className="small">{s.driver_first_name ? `${s.driver_first_name} is picking this up.` : 'Waiting for a driver to pick this up.'}</p>}
+            {!failed && s.status !== 'awaiting_payment' && (
               <ol className="timeline" aria-label="Progress">
                 {steps.map((st) => <li key={st} className={reached.has(st) ? '' : 'pending'}><strong>{LABEL[st]}</strong>{reached.has(st) && <span className="muted small"> · {fmtDate(s.timeline.find((t) => t.status === st)?.at, { timeStyle: 'short', dateStyle: undefined })}</span>}</li>)}
               </ol>
@@ -110,6 +118,7 @@ export function OrderPage() {
             {s.lines.map((l) => (
               <div key={l.id} className="summary-row">
                 <span>{l.quantity} × {l.name} <span className="muted small">{l.pack_label}</span>
+                  {l.sub_pref && l.sub_pref !== 'ask' && !['approved', 'declined'].includes(l.substitution_status) && !done && <span className="muted small"> (if unavailable: {l.sub_pref === 'closest' ? 'swap for closest match' : 'refund'})</span>}
                   {l.substitution_status === 'approved' && <Badge tone="info">Replaced with {l.substitute_name}</Badge>}
                   {l.refunded_quantity > 0 && <Badge tone="warn">{l.refunded_quantity === l.quantity ? 'Refunded' : `${l.refunded_quantity} refunded`}</Badge>}
                   {done && !l.reviewed && l.refunded_quantity < l.quantity && <button className="link" onClick={() => setReview({ sub: s, product: l })}>Review</button>}</span>
@@ -134,6 +143,7 @@ export function OrderPage() {
         {o.discount_cents > 0 && <div className="summary-row okc"><span>Discount</span><span>−{money(o.discount_cents)}</span></div>}
         {o.delivery_cents > 0 && <div className="summary-row"><span>Delivery (incl. tax)</span><span>{money(o.delivery_cents)}</span></div>}
         <div className="summary-row"><span>GST on items</span><span>{money(o.tax_cents)}</span></div>
+        {(o.tip_cents ?? 0) > 0 && <div className="summary-row"><span>Driver tip</span><span>{money(o.tip_cents!)}</span></div>}
         <div className="summary-row total"><span>Total</span><span>{money(o.total_cents)}</span></div>
         <p className="small muted">Payment: <StatusBadge status={o.payment_status} /></p>
         {!paidWaiting && <Button variant="secondary" busy={reorder.busy} onClick={() => reorder.run()}>Order these again</Button>}
@@ -173,10 +183,11 @@ function ReportModal({ order, sub, onClose }: { order: Order; sub: Sub; onClose:
 function ReviewModal({ orderId, sub, line, onClose }: { orderId: string; sub: Sub; line?: Sub['lines'][0]; onClose: () => void }) {
   const toast = useToast();
   const [rating, setRating] = useState(5);
+  const [photo, setPhoto] = useState<string | null>(null);
   const send = useAction(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
-    await post(`/orders/${orderId}/reviews`, { suborder_id: sub.id, product_id: line?.product_id, rating, body: f.body || undefined });
+    await post(`/orders/${orderId}/reviews`, { suborder_id: sub.id, product_id: line?.product_id, rating, body: f.body || undefined, photo_url: photo || undefined });
     toast('Thanks for your review'); onClose();
   });
   return (
@@ -187,6 +198,7 @@ function ReviewModal({ orderId, sub, line, onClose }: { orderId: string; sub: Su
           {[1, 2, 3, 4, 5].map((n) => <button type="button" key={n} role="radio" aria-checked={rating === n} aria-label={`${n} star${n > 1 ? 's' : ''}`} className="icon-btn" style={{ fontSize: 30, color: n <= rating ? 'var(--ochre)' : 'var(--line-2)' }} onClick={() => setRating(n)}>★</button>)}
         </div>
         <Field label="Comment (optional)"><Textarea name="body" rows={3} maxLength={1000} /></Field>
+        {line && <ImageUpload value={photo} onChange={setPhoto} label="photo" endpoint="/uploads/review-photo" />}
         <p className="small muted">Your review is marked as a verified purchase.</p>
         <div className="row end"><Button type="button" variant="ghost" onClick={onClose}>Cancel</Button><Button type="submit" busy={send.busy}>Submit</Button></div>
       </form>

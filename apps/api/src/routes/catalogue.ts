@@ -69,7 +69,8 @@ export const catalogueRoutes: FastifyPluginAsync = async (app) => {
       pool.query(`SELECT url, alt FROM product_images WHERE product_id = $1 ORDER BY sort_order`, [p.id]),
       pool.query(
         `SELECT s.slug AS store_slug, s.name AS store_name, s.is_open, s.is_test_data, o.id AS offer_id, o.price_cents, o.compare_at_cents, o.on_promotion,
-                (o.stock_on_hand - o.stock_reserved) > 0 AS in_stock, GREATEST(o.stock_on_hand - o.stock_reserved, 0) AS available
+                (o.stock_on_hand - o.stock_reserved) > 0 AS in_stock, GREATEST(o.stock_on_hand - o.stock_reserved, 0) AS available,
+                (SELECT COALESCE(jsonb_agg(jsonb_build_object('min_qty', t.min_qty, 'unit_price_cents', t.unit_price_cents) ORDER BY t.min_qty), '[]') FROM offer_tiers t WHERE t.offer_id = o.id) AS tiers
            FROM offers_live o JOIN storefronts s ON s.id = o.store_id AND s.orderable
           WHERE o.product_id = $1 AND o.is_active ORDER BY o.price_cents`, [p.id]),
     ]);

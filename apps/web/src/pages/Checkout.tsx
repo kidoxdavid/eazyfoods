@@ -10,7 +10,7 @@ import { Badge, Button, ErrorBox, Field, Input, Loading, Notice, Select, Textare
 type Address = { id: string; label: string | null; recipient_name: string; phone: string; line1: string; line2: string | null; city: string; province: string; postal_code: string; instructions: string | null; is_default: boolean; serviceable: boolean; zone: string | null };
 type Line = { name: string; quantity: number; unit_price_cents: number; line_total_cents: number };
 type Sub = { store_slug: string; store_name: string; lines: Line[]; subtotal_cents: number; discount_cents: number; delivery_cents: number; delivery_tax_cents: number; tax_cents: number; total_cents: number; eta_minutes: number | null; preorders_enabled?: boolean; scheduled_for?: string | null; scheduled_until?: string | null };
-type Quote = { ok: boolean; issues: { type: string; message: string; store_slug?: string }[]; warnings: { message: string }[]; suborders: Sub[]; subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; total_cents: number; coupon: { code: string; discount_cents: number } | null; coupon_error?: string; separate_deliveries: boolean };
+type Quote = { ok: boolean; issues: { type: string; message: string; store_slug?: string }[]; warnings: { message: string }[]; suborders: Sub[]; subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; tip_cents: number; total_cents: number; coupon: { code: string; discount_cents: number } | null; coupon_error?: string; separate_deliveries: boolean };
 type Cfg = { payment_provider: 'mock' | 'stripe'; stripe_publishable_key: string | null; test_mode: boolean };
 
 export function AddressForm({ onSaved, onCancel, name }: { onSaved: (a: Address) => void; onCancel?: () => void; name?: string }) {
@@ -47,6 +47,10 @@ export function CheckoutPage() {
   const [coupon, setCoupon] = useState('');
   const [couponInput, setCouponInput] = useState('');
   const [instructions, setInstructions] = useState('');
+  const [tip, setTip] = useState(0);   // never pre-filled: a tip is the customer's choice
+  const [customTip, setCustomTip] = useState('');
+  const [gift, setGift] = useState(false);
+  const [giftMessage, setGiftMessage] = useState('');
   const [adding, setAdding] = useState(false);
   const [slots, setSlots] = useState<Record<string, string>>({});
   const [later, setLater] = useState<Record<string, boolean>>({});
@@ -59,23 +63,23 @@ export function CheckoutPage() {
   useEffect(() => { refresh(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-price on the server whenever anything that affects the price changes. A new key marks a new attempt.
-  const sig = useMemo(() => JSON.stringify([addressId, method, coupon, slots, cart?.stores.map((s) => s.items.map((i) => [i.offer_id, i.quantity]))]), [addressId, method, coupon, slots, cart]);
+  const sig = useMemo(() => JSON.stringify([addressId, method, coupon, slots, tip, cart?.stores.map((s) => s.items.map((i) => [i.offer_id, i.quantity]))]), [addressId, method, coupon, slots, tip, cart]);
   useEffect(() => {
     if (order) return;
     keyRef.current = crypto.randomUUID();
     if (!cart?.item_count) return;
     let live = true;
-    post<Quote>('/checkout/quote', { address_id: method === 'delivery' ? addressId : null, method, coupon_code: coupon || null, slots }).then((q) => live && (setQuote(q), setQuoteErr(undefined)), (e) => live && setQuoteErr(e.message));
+    post<Quote>('/checkout/quote', { address_id: method === 'delivery' ? addressId : null, method, coupon_code: coupon || null, slots, tip_cents: method === 'delivery' ? tip : 0 }).then((q) => live && (setQuote(q), setQuoteErr(undefined)), (e) => live && setQuoteErr(e.message));
     return () => { live = false; };
   }, [sig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const place = useAction(async () => {
     try {
       const r = await post<{ order: { id: string; order_number: string; total_cents: number }; payment: { client_secret: string | null } | null }>(
-        '/checkout', { address_id: method === 'delivery' ? addressId : null, method, coupon_code: coupon || null, instructions: instructions || null, slots }, { 'idempotency-key': keyRef.current });
+        '/checkout', { address_id: method === 'delivery' ? addressId : null, method, coupon_code: coupon || null, instructions: instructions || null, slots, tip_cents: method === 'delivery' ? tip : 0, gift_message: gift && giftMessage.trim() ? giftMessage.trim() : null }, { 'idempotency-key': keyRef.current });
       setOrder({ ...r.order, client_secret: r.payment?.client_secret ?? null });
     } catch (e) {
-      if (e instanceof ApiError && e.code === 'checkout_blocked') { await refresh(); const q = await post<Quote>('/checkout/quote', { address_id: addressId, method, coupon_code: coupon || null, slots }); setQuote(q); }
+      if (e instanceof ApiError && e.code === 'checkout_blocked') { await refresh(); const q = await post<Quote>('/checkout/quote', { address_id: addressId, method, coupon_code: coupon || null, slots, tip_cents: method === 'delivery' ? tip : 0 }); setQuote(q); }
       throw e;
     }
   });
@@ -138,7 +142,25 @@ export function CheckoutPage() {
             </section>
           )}
           <section className="panel">
-            <h2>{(method === 'delivery' ? 3 : 2) + (quote?.suborders.some((s) => s.preorders_enabled) ? 1 : 0)}. Notes and discount code</h2>
+            <h2>{(method === 'delivery' ? 3 : 2) + (quote?.suborders.some((s) => s.preorders_enabled) ? 1 : 0)}. Extras</h2>
+            {method === 'delivery' && (
+              <fieldset className="tip-box">
+                <legend>Tip your driver</legend>
+                <p className="muted small" style={{ margin: '0 0 8px' }}>100% goes to the driver who delivers your order. If the delivery doesn’t happen, it’s refunded.</p>
+                <div className="tip-opts">
+                  {[0, 200, 300, 500].map((c) => (
+                    <button type="button" key={c} className={`chip ${tip === c && !customTip ? 'on' : ''}`} aria-pressed={tip === c && !customTip} onClick={() => { setTip(c); setCustomTip(''); }}>{c ? money(c) : 'No tip'}</button>
+                  ))}
+                  <label className="tip-custom">Other $<input type="number" min="0" max="100" step="0.5" inputMode="decimal" value={customTip} placeholder="0.00" aria-label="Custom tip in dollars"
+                    onChange={(e) => { setCustomTip(e.target.value); const v = Math.round(Number(e.target.value) * 100); setTip(Number.isFinite(v) ? Math.max(0, Math.min(10000, v)) : 0); }} /></label>
+                </div>
+              </fieldset>
+            )}
+            <label className="check" style={{ marginTop: 10 }}><input type="checkbox" checked={gift} onChange={(e) => setGift(e.target.checked)} /> This is a gift (add a note for the store)</label>
+            {gift && <Field label="Gift note" hint="The store will see this with your order. No prices are shared with the recipient."><Textarea rows={2} maxLength={300} value={giftMessage} onChange={(e) => setGiftMessage(e.target.value)} placeholder="Happy birthday, Mum!" /></Field>}
+          </section>
+          <section className="panel">
+            <h2>{(method === 'delivery' ? 4 : 3) + (quote?.suborders.some((s) => s.preorders_enabled) ? 1 : 0)}. Notes and discount code</h2>
             <Field label="Notes for the stores (optional)"><Textarea rows={2} value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="Allergies, ripeness, anything the store should know…" /></Field>
             <form className="row top" onSubmit={(e) => { e.preventDefault(); setCoupon(couponInput.trim()); }}>
               <div className="grow"><Field label="Discount code"><Input value={couponInput} onChange={(e) => setCouponInput(e.target.value)} placeholder="Enter code" autoCapitalize="characters" /></Field></div>
@@ -169,6 +191,7 @@ export function CheckoutPage() {
                 {quote.discount_cents > 0 && <div className="summary-row okc"><span>Discount</span><span>−{money(quote.discount_cents)}</span></div>}
                 {method === 'delivery' && <div className="summary-row"><span>Delivery (incl. tax)</span><span>{money(quote.delivery_cents)}</span></div>}
                 <div className="summary-row"><span>GST on taxable items</span><span>{money(quote.tax_cents)}</span></div>
+                {quote.tip_cents > 0 && <div className="summary-row"><span>Driver tip</span><span>{money(quote.tip_cents)}</span></div>}
                 <div className="summary-row total"><span>Total</span><span>{money(quote.total_cents)}</span></div>
                 {quote.warnings.map((w, i) => <Notice key={i} tone="warn">{w.message}</Notice>)}
                 {issues.length > 0 && <Notice tone="error"><strong>Before you can pay:</strong><ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>{issues.map((i, k) => <li key={k}>{i.message}</li>)}</ul><p style={{ margin: '8px 0 0' }}><Link to="/cart">Edit basket</Link></p></Notice>}

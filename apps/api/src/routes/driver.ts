@@ -84,10 +84,12 @@ export const driverRoutes: FastifyPluginAsync = async (app) => {
       await moveSuborder(c, after, j.suborder_id, 'delivered', { userId: req.user!.id, kind: 'driver' }, null);
       await c.query(`UPDATE deliveries SET status='delivered', delivered_at=now(), code_bypassed=$2, completion_note=$3 WHERE id=$1`, [j.id, bypass, b.bypass_reason ?? null]);
       await c.query(`INSERT INTO delivery_events(delivery_id, type, actor_user_id, note) VALUES ($1,'delivered',$2,$3)`, [j.id, req.user!.id, bypass ? `CODE BYPASSED: ${b.bypass_reason}` : null]);
-      await c.query('INSERT INTO driver_earnings(driver_id, delivery_id, amount_cents) VALUES ($1,$2,$3)', [d.id, j.id, j.earning_cents]);
-      await postDriverEarning(c, { driver_id: d.id, delivery_id: j.id, amount: j.earning_cents, order_id: j.order_id, suborder_id: j.suborder_id });
+      // The customer's tip is released to the driver now that the order is delivered (unless it was refunded earlier).
+      const tip = (await c.query('SELECT CASE WHEN tip_refunded THEN 0 ELSE tip_cents END AS t FROM suborders WHERE id = $1 FOR UPDATE', [j.suborder_id])).rows[0].t as number;
+      await c.query('INSERT INTO driver_earnings(driver_id, delivery_id, amount_cents, tip_cents) VALUES ($1,$2,$3,$4)', [d.id, j.id, j.earning_cents + tip, tip]);
+      await postDriverEarning(c, { driver_id: d.id, delivery_id: j.id, amount: j.earning_cents, tip, order_id: j.order_id, suborder_id: j.suborder_id });
       if (bypass) await c.query(`INSERT INTO support_tickets(kind, category, subject, suborder_id) VALUES ('driver','other',$1,$2)`, [`Delivery completed without handover code: ${b.bypass_reason}`, j.suborder_id]);
-      return { ok: true, status: 'delivered', earning_cents: j.earning_cents };
+      return { ok: true, status: 'delivered', earning_cents: j.earning_cents + tip, tip_cents: tip };
     });
   });
 
@@ -112,7 +114,7 @@ export const driverRoutes: FastifyPluginAsync = async (app) => {
   app.get('/driver/earnings', async (req) => {
     const d = await approvedDriver(req);
     const rows = (await pool.query(
-      `SELECT e.amount_cents, e.created_at, o.order_number, (e.payout_id IS NOT NULL) AS paid_out, p.status AS payout_status
+      `SELECT e.amount_cents, e.tip_cents, e.created_at, o.order_number, (e.payout_id IS NOT NULL) AS paid_out, p.status AS payout_status
          FROM driver_earnings e JOIN deliveries dl ON dl.id = e.delivery_id JOIN suborders s ON s.id = dl.suborder_id JOIN orders o ON o.id = s.order_id LEFT JOIN payouts p ON p.id = e.payout_id
         WHERE e.driver_id = $1 ORDER BY e.created_at DESC LIMIT 200`, [d.id])).rows;
     return { earnings: rows, unpaid_cents: rows.filter((r) => !r.paid_out).reduce((a, r) => a + r.amount_cents, 0), paid_cents: rows.filter((r) => r.paid_out && r.payout_status === 'paid').reduce((a, r) => a + r.amount_cents, 0) };

@@ -199,3 +199,21 @@ main { padding-top: 14px; }
 .savelist { display: grid; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
 
 .qv-actions { justify-content: space-between; gap: 6px 12px; }
+
+/* Batch 2: tips, multi-buy, substitution preference, questions, flyer, tracking */
+.tip-box { border: 0; padding: 0; margin: 0 0 6px; } .tip-box legend { font-weight: 700; padding: 0; margin-bottom: 2px; }
+.tip-opts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tip-opts .chip { background: var(--tint); border: 1.5px solid var(--line); color: var(--ink); border-radius: 999px; padding: 8px 14px; font: 700 .9rem var(--body); cursor: pointer; min-height: 40px; }
+.tip-opts .chip.on { background: var(--green-bg); border-color: var(--green-2); color: var(--green-2); }
+.tip-custom { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; } .tip-custom input { width: 84px; padding: 8px; border: 1.5px solid var(--line); border-radius: 10px; font: inherit; min-height: 40px; }
+.multibuy { font-size: .76rem; font-weight: 700; color: var(--green-2); }
+.tiers { list-style: none; margin: 6px 0; padding: 8px 10px; background: var(--green-bg); border-radius: 10px; font-size: .86rem; display: grid; gap: 2px; }
+.sub-pref { display: block; margin-top: 4px; color: var(--ink-2); } .sub-pref select { font: inherit; padding: 3px 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--card, #fff); max-width: 100%; }
+.qa p { margin: 2px 0; } .review-photo { display: block; margin-top: 8px; max-width: 220px; width: 100%; border-radius: 10px; }
+.track { display: flex; gap: 0; margin: 10px 0 4px; padding: 0; list-style: none; } .track li { flex: 1; text-align: center; font-size: .78rem; color: var(--ink-2); position: relative; padding-top: 22px; }
+.track li::before { content: ''; position: absolute; top: 4px; left: 50%; width: 14px; height: 14px; border-radius: 50%; background: var(--line); transform: translateX(-50%); z-index: 1; }
+.track li::after { content: ''; position: absolute; top: 10px; left: -50%; width: 100%; height: 3px; background: var(--line); }
+.track li:first-child::after { display: none; } .track li.done::before, .track li.done::after { background: var(--green-2); } .track li.now { color: var(--ink); font-weight: 800; } .track li.now::before { box-shadow: 0 0 0 4px var(--green-bg); }
+.flyer-store { margin-bottom: 26px; } .flyer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.flyer-item { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--card, #fff); display: grid; gap: 4px; align-content: start; } .flyer-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
+@media print { header, footer, .no-print, .basketbar { display: none !important; } .flyer-item { break-inside: avoid; } .flyer-store { break-before: auto; } body { background: #fff; } }

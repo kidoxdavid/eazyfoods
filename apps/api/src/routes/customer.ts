@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { bad, notFound } from '../lib/errors.js';
 import { productCards } from '../lib/listing.js';
-import { requireLogin } from '../lib/permissions.js';
+import { can, requireLogin } from '../lib/permissions.js';
+import { vendorIdsOf } from './vendorOrders.js';
 import { rl } from '../lib/ratelimit.js';
 
 const uuid = z.string().uuid();
@@ -18,6 +19,48 @@ export const cardRoutes: FastifyPluginAsync = async (app) => {
     if (!list.length) return [];
     const cards = await productCards('p.slug = ANY($1::text[])', [list], 'p.name', 16);
     return list.map((s) => cards.find((c) => c.slug === s)).filter(Boolean);
+  });
+
+  // Frequently bought together: products that share paid orders with this one. Only shown when at least 3 different orders back it.
+  app.get<{ Params: { slug: string } }>('/products/:slug/together', async (req) => {
+    const rows = (await pool.query(
+      `WITH me AS (SELECT id FROM products WHERE slug = $1),
+            mine AS (SELECT DISTINCT s.order_id FROM order_lines l JOIN suborders s ON s.id = l.suborder_id JOIN orders o ON o.id = s.order_id
+                      WHERE l.product_id = (SELECT id FROM me) AND o.payment_status IN ('paid','partially_refunded')),
+            co AS (SELECT l.product_id, count(DISTINCT s.order_id)::int AS n FROM order_lines l JOIN suborders s ON s.id = l.suborder_id
+                    WHERE s.order_id IN (SELECT order_id FROM mine) AND l.product_id <> (SELECT id FROM me) GROUP BY l.product_id HAVING count(DISTINCT s.order_id) >= 3)
+       SELECT p.slug FROM co JOIN products p ON p.id = co.product_id ORDER BY co.n DESC LIMIT 4`, [req.params.slug])).rows.map((r) => r.slug as string);
+    if (!rows.length) return [];
+    const cards = await productCards('p.slug = ANY($1::text[])', [rows], 'p.name', 4);
+    return rows.map((s) => cards.find((c) => c.slug === s)).filter(Boolean);
+  });
+
+  // Weekly flyer: everything on sale or on a multi-buy price right now, grouped by store.
+  app.get('/flyer', async () => {
+    const rows = (await pool.query(
+      `SELECT s.slug AS store_slug, s.name AS store_name, p.slug, p.name, b.name AS brand, p.pack_size, p.pack_unit,
+              (SELECT url FROM product_images WHERE product_id = p.id ORDER BY sort_order LIMIT 1) AS image_url,
+              o.id AS offer_id, o.price_cents, o.compare_at_cents, o.on_promotion, o.stock_on_hand - o.stock_reserved AS available,
+              (SELECT jsonb_build_object('min_qty', t.min_qty, 'unit_price_cents', t.unit_price_cents) FROM offer_tiers t WHERE t.offer_id = o.id ORDER BY t.min_qty LIMIT 1) AS multibuy
+         FROM offers_live o JOIN storefronts s ON s.id = o.store_id AND s.orderable AND s.kind = 'grocery'
+         JOIN products p ON p.id = o.product_id AND p.status = 'published' LEFT JOIN brands b ON b.id = p.brand_id
+        WHERE o.is_active AND o.stock_on_hand - o.stock_reserved > 0
+          AND (o.on_promotion OR o.compare_at_cents > o.price_cents OR EXISTS (SELECT 1 FROM offer_tiers t WHERE t.offer_id = o.id))
+        ORDER BY s.name, (o.compare_at_cents - o.price_cents)::float / NULLIF(o.compare_at_cents, 0) DESC NULLS LAST, p.name LIMIT 300`)).rows;
+    const stores = new Map<string, { slug: string; name: string; items: any[] }>();
+    for (const { store_slug, store_name, ...it } of rows) (stores.get(store_slug) ?? stores.set(store_slug, { slug: store_slug, name: store_name, items: [] }).get(store_slug)!).items.push(it);
+    return { stores: [...stores.values()] };
+  });
+
+  // Questions about a product. Answered by a store that sells it (or staff); hidden ones never show.
+  app.get<{ Params: { slug: string } }>('/products/:slug/questions', async (req) => {
+    const rows = (await pool.query(
+      `SELECT q.id, q.question, q.answer, q.answered_at, q.created_at, split_part(u.full_name, ' ', 1) AS first_name,
+              (SELECT st.name FROM stores st WHERE st.vendor_id = au.vendor_id ORDER BY st.name LIMIT 1) AS answered_by_store
+         FROM product_questions q JOIN products p ON p.id = q.product_id JOIN users u ON u.id = q.user_id
+         LEFT JOIN LATERAL (SELECT vendor_id FROM user_roles WHERE user_id = q.answered_by AND vendor_id IS NOT NULL LIMIT 1) au ON true
+        WHERE p.slug = $1 AND NOT q.is_hidden AND q.answer IS NOT NULL ORDER BY q.answered_at DESC LIMIT 20`, [req.params.slug])).rows;
+    return rows;
   });
 
   app.get<{ Params: { token: string } }>('/lists/shared/:token', rl(60, '1 minute'), async (req) => {
@@ -38,6 +81,37 @@ async function listItems(listId: string) {
 /** Signed-in customer features: buy again, shopping lists, alerts. */
 export const customerRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', requireLogin);
+
+  app.post<{ Params: { slug: string } }>('/products/:slug/questions', rl(5, '1 hour'), async (req, reply) => {
+    const { question } = z.object({ question: z.string().trim().min(5).max(400) }).parse(req.body);
+    const p = (await pool.query(`SELECT id FROM products WHERE slug = $1 AND status IN ('published','dish_live')`, [req.params.slug])).rows[0];
+    if (!p) throw notFound('Product not found');
+    await pool.query('INSERT INTO product_questions(product_id, user_id, question) VALUES ($1,$2,$3)', [p.id, req.user!.id, question]);
+    return reply.code(201).send({ ok: true, message: 'Thanks. Your question is shown once a store or our team answers it.' });
+  });
+
+  // Questions waiting for an answer: from products this vendor sells (staff with catalogue rights see all).
+  app.get('/questions/open', async (req) => {
+    const staff = can(req.user, 'catalog.manage'); const vids = vendorIdsOf(req.user!);
+    if (!staff && !vids.length) return [];
+    return (await pool.query(
+      `SELECT q.id, q.question, q.created_at, p.name AS product_name, p.slug AS product_slug FROM product_questions q JOIN products p ON p.id = q.product_id
+        WHERE q.answer IS NULL AND NOT q.is_hidden AND ($1 OR EXISTS (SELECT 1 FROM store_offers o JOIN stores s ON s.id = o.store_id WHERE o.is_active AND o.product_id = q.product_id AND s.vendor_id = ANY($2::uuid[])))
+        ORDER BY q.created_at LIMIT 100`, [staff, vids])).rows;
+  });
+  app.post<{ Params: { id: string } }>('/questions/:id/answer', async (req) => {
+    const id = uuid.parse(req.params.id);
+    const { answer, hide } = z.object({ answer: z.string().trim().min(2).max(1000).optional(), hide: z.boolean().optional() }).parse(req.body);
+    const staff = can(req.user, 'catalog.manage'); const vids = vendorIdsOf(req.user!);
+    const q = (await pool.query('SELECT product_id FROM product_questions WHERE id = $1', [id])).rows[0];
+    if (!q) throw notFound('Question not found');
+    const sells = vids.length > 0 && (await pool.query('SELECT 1 FROM store_offers o JOIN stores s ON s.id = o.store_id WHERE o.is_active AND o.product_id = $1 AND s.vendor_id = ANY($2::uuid[]) LIMIT 1', [q.product_id, vids])).rowCount;
+    if (!staff && !sells) throw notFound('Question not found');   // 404, not 403: do not reveal questions on products you do not sell
+    if (hide) await pool.query('UPDATE product_questions SET is_hidden = true WHERE id = $1', [id]);
+    else if (answer) await pool.query('UPDATE product_questions SET answer = $2, answered_by = $3, answered_at = now() WHERE id = $1', [id, answer, req.user!.id]);
+    else throw bad('nothing_to_do', 'Write an answer or hide the question.');
+    return { ok: true };
+  });
 
   // ---------- Buy again: what you have actually received before, most-bought first ----------
   app.get('/me/buy-again', async (req) => {

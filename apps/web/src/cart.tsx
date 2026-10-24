@@ -5,7 +5,7 @@ import { useToast } from './toast';
 
 export type CartItem = {
   offer_id: string; slug: string; name: string; brand: string | null; pack_size: string | null; pack_unit: string | null; sold_by: string;
-  quantity: number; unit_price_cents: number; compare_at_cents: number | null; available: number; unavailable: boolean; short: boolean; price_changed: boolean; previous_price_cents: number;
+  quantity: number; unit_price_cents: number; compare_at_cents: number | null; available: number; unavailable: boolean; short: boolean; price_changed: boolean; previous_price_cents: number; sub_pref: 'closest' | 'ask' | 'refund'; tiers: { min_qty: number; unit_price_cents: number }[]; base_price_cents: number;
 };
 export type CartStore = { slug: string; name: string; is_open: boolean; is_test_data: boolean; min_order_cents: number | null; orderable: boolean; subtotal_cents: number; items: CartItem[] };
 export type Cart = { stores: CartStore[]; item_count: number; subtotal_cents: number; separate_deliveries: boolean };
