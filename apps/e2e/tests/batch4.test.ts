@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Browser } from 'playwright-core';
-import { base, launch, MOBILE, DESKTOP, newPage, seeText } from './helpers.js';
+import { base, launch, MOBILE, DESKTOP, newPage, seeText, setOffer } from './helpers.js';
 
 let browser: Browser;
 beforeAll(async () => { browser = await launch(); });
@@ -69,5 +69,30 @@ describe('trust and help pages', () => {
     await page.goto(base()); await page.waitForLoadState('networkidle');
     await page.locator('footer').getByRole('link', { name: 'Our shopping promises' }).click();
     await seeText(page.locator('main'), 'Never charged for a swap');
+  });
+});
+
+describe('phone fit', () => {
+  it('no page is wider than the screen, the basket included, and the header steps aside while scrolling down', async () => {
+    await setOffer('demo-calgary-west-african-market', 'garri-white', 2000, 30);
+    const { page } = await newPage(browser, MOBILE);
+    await page.goto(`${base()}/register`);
+    await page.fill('input[name=full_name]', 'Fit Buyer'); await page.fill('input[name=email]', `fit+${Date.now()}@example.test`); await page.fill('input[name=password]', 'a-long-password');
+    await page.click('.auth button[type=submit]');
+    await page.waitForURL(base() + '/');
+    await page.goto(`${base()}/s/demo-calgary-west-african-market`);
+    const card = page.locator('.pgrid .pcard', { hasText: 'Garri (White)' });
+    await card.getByRole('button', { name: /^Add /, exact: false }).first().click();
+    const wide = async () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    for (const path of ['/', '/search', '/p/garri-white', '/cart', '/checkout', '/orders', '/account', '/stores', '/flyer', '/help', '/credit', '/lists']) {
+      await page.goto(base() + path); await page.waitForLoadState('networkidle'); await page.waitForTimeout(300);
+      expect(await wide(), `${path} is wider than the screen`).toBeLessThanOrEqual(1);
+    }
+    await page.goto(`${base()}/search`); await page.waitForLoadState('networkidle');
+    const hdr = page.locator('header.hdr');
+    await page.evaluate(() => window.scrollTo(0, 600)); await page.waitForTimeout(100); await page.evaluate(() => window.scrollTo(0, 1000)); await page.waitForTimeout(500);
+    expect(await hdr.evaluate((e) => e.classList.contains('away'))).toBe(true);
+    await page.evaluate(() => window.scrollTo(0, 700)); await page.waitForTimeout(500);
+    expect(await hdr.evaluate((e) => e.classList.contains('away'))).toBe(false);   // comes back on scrolling up
   });
 });

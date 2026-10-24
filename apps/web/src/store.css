@@ -234,3 +234,68 @@ main { padding-top: 14px; }
 
 .lang { display: inline-flex; gap: 2px; margin-left: 10px; } .lang button { background: transparent; border: 1px solid rgba(255,255,255,.35); color: inherit; font: 700 .72rem var(--body); padding: 2px 7px; border-radius: 6px; cursor: pointer; } .lang button.on { background: rgba(255,255,255,.22); }
 .install { margin-top: 4px; }
+
+/* Mobile fit: grid children may shrink, long labels wrap, nothing pushes the page wider than the screen */
+.cart2 { grid-template-columns: minmax(0, 1fr); } .line > * { min-width: 0; } .sub-pref select { width: 100%; text-overflow: ellipsis; }
+.cart2 .row.between { flex-wrap: wrap; gap: 6px 10px; }
+
+/* ===== Compact phone layout (≤599px): denser type and spacing, smaller pictures, header that gets out of the way ===== */
+.hdr { transition: transform .22s ease; } .hdr.away { transform: translateY(-100%); } .hdr.away.keep-nav { transform: translateY(-100%); }
+@media (prefers-reduced-motion: reduce) { .hdr { transition: none; } }
+@media (max-width: 599px) {
+  html { font-size: 15px; }
+  input, select, textarea { font-size: 16px; }                           /* 16px stops iPhones zooming into a field */
+  .wrap:not(.row) { padding: 0 12px; }
+  h1 { font-size: 1.45rem; margin: .5rem 0; } h2 { font-size: 1.1rem; margin-top: 1.1rem; } h3 { font-size: 1rem; }
+  .panel { padding: 12px; margin-bottom: 10px; } .notice { padding: 9px 12px; margin: 8px 0; font-size: .9rem; }
+  .btn { min-height: 42px; } .btn.sm { min-height: 34px; } .btn.lg { min-height: 46px; }
+  /* header: smaller rows, region strip lower and tighter */
+  .hdr-row { gap: 6px 8px; padding-top: 6px; padding-bottom: 6px; } .hsearch { height: 40px; } .hsearch button { width: 46px; } .hdr .logo { font-size: 1.2rem; }
+  .hdr-nav a { padding: 6px 10px; min-height: 38px; font-size: .88rem; }
+  .announce { padding: 6px 12px; font-size: .82rem; }
+  html.hdr-gone .catchips { top: 0; }
+  /* home */
+  .hero-car { margin: 2px 0 12px; border-radius: 14px; }
+  .hero-slide { min-height: 190px; grid-template-columns: 1.3fr 1fr; } .hero-art { min-height: 170px; }
+  .hero-copy { padding: 14px 4px 28px 14px; } .hero-eyebrow { font-size: .66rem; letter-spacing: .07em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .hero-copy h2 { font-size: 1.15rem; margin: 4px 0 6px; } .hero-copy p { font-size: .8rem; margin: 0 0 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; } .hero-copy .btn { min-height: 38px; padding: 0 16px; font-size: .9rem; }
+  .hero-skel { min-height: 190px; }
+  /* cards and shelves */
+  .pgrid { gap: 8px; margin: 8px 0; } .pbody { padding: 8px 9px 10px; gap: 2px; } .pr > span { font-size: 1.35rem; } .pname { font-size: .86rem; min-height: 2.5em; } .pmeta, .psold, .from, .unit, .multibuy { font-size: .72rem; }
+  .pcard .btn.wide, .pcard .stepper { min-height: 36px; }
+  .shelf, .block { margin: 16px 0; } .shelf-row { margin: 0 -12px; padding: 4px 12px 8px; }
+  .filters { padding: 8px 12px; } .filters summary { min-height: 28px; }
+  /* product page */
+  .crumbs { font-size: .78rem; margin: 0 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pdp { gap: 12px; } .pdp-gallery .pdp-main { aspect-ratio: 4 / 3; border-radius: 12px; } .pdp-note { margin: 4px 0 0; }
+  .pdp h1 { font-size: 1.3rem; } .buybox { padding: 12px; } .pr.big > span { font-size: 1.9rem; }
+  .facts dt { font-size: .8rem; } .facts dd { margin-bottom: 6px; }
+  /* basket and checkout */
+  .line { grid-template-columns: 56px minmax(0, 1fr) auto; gap: 8px; padding: 8px 0; } .line .pimg-s { width: 56px; border-radius: 8px; }
+  .summary-row { padding: 3px 0; } .choice { padding: 10px 12px; margin-bottom: 8px; }
+  .tip-opts .chip { padding: 6px 12px; min-height: 36px; } .field { margin-bottom: 10px; }
+  .checkout { gap: 10px; } .checkout .panel h2 { font-size: 1.05rem; margin-bottom: 8px; }
+  /* tabs and tables in the staff areas are already dense; only keep tap targets comfortable */
+  .tabbar { padding-bottom: env(safe-area-inset-bottom); } .tabbar a { padding: 6px 0 4px; font-size: .68rem; }
+}
+@media (max-width: 599px) {
+  /* product page: picture, name and price/Add box first, details after */
+  .pdp > *, .pdp-info > * { order: 3; } .pdp-info { display: contents; } .pdp > .pdp-gallery { order: 0; } .pdp-info > .pdp-head { order: 1; } .pdp > .buybox { order: 2; }
+  .pdp-head h1 { margin: 2px 0; } .pdp-head .row { margin-bottom: 0; }
+  .filters { padding: 6px 12px; } .filters summary { min-height: 30px; }
+  .pimg { aspect-ratio: 4 / 3; } .sortbar select, .sort select { min-height: 38px; padding: 0 10px; }
+  .pcard .btn, .pcard .stepper { min-height: 34px; height: 34px; font-size: .88rem; }
+}
+.bb-actions { display: flex; flex-wrap: wrap; gap: 4px 10px; justify-content: center; }
+@media (max-width: 599px) {
+  .buybox { gap: 6px; } .buybox .stock { margin: 0; } .buybox .ship { font-size: .82rem; } .buybox .ship + .unit, .buybox .unit { margin: 0; }
+  .bb-actions .btn, .bb-actions button { min-height: 32px; font-size: .82rem; padding: 0 8px; }
+  .buybox label.small .input, .buybox select.input { min-height: 38px; padding: 0 10px; }
+}
+.store-page .psold { display: none; }   /* the store's own page does not need "at <this store>" on every card */
+@media (max-width: 599px) {
+  .portal-main { padding: 10px 10px 16px; } .portal[data-portal] .page-header { margin: 2px 0 8px; } .portal[data-portal] .page-header p { font-size: .82rem; margin: 2px 0 0; }
+  ul.order-lines li { flex-wrap: nowrap; align-items: baseline; padding: 6px 0; } ul.order-lines li > div:first-child { flex: 1 1 auto; min-width: 0; } ul.order-lines li > .row { flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; gap: 4px 6px; max-width: 46%; }
+  .order-card { padding: 10px 12px; } .order-card .summary-row { padding: 2px 0; }
+}
+@media (max-width: 599px) { .depts { margin: 0 -12px; padding-left: 12px; padding-right: 12px; gap: 10px; } .dept { flex-basis: 80px; } }

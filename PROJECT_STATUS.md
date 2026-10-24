@@ -122,3 +122,7 @@ Buy it again and Recently viewed shelves; unit prices (per 100 g / 100 ml, weigh
 - **French** (EN/FR switch in the top bar; remembered; defaults to French for French browsers): menu, header, footer, product buy box, basket, checkout. Product/store names and staff-written pages stay as written. **The French is a working translation: have a native Canadian-French speaker review it.** Other languages need a speaker and the same dictionary file (`apps/web/src/i18n.tsx`).
 - **Trust**: "Our shopping promises" page (footer) listing only things the product does; ratings stay hidden until 3 verified reviews. Marked as needing legal review.
 - Not built: push notifications (needs VAPID keys and a push service), a CDN/image resizing (needs hosting choice), translating the vendor/admin/driver areas.
+
+## Phone fit pass (added)
+- Fixed the basket page being wider than the screen (the "If unavailable" choice pushed it out); a test now checks 12 customer pages for sideways scrolling at phone width.
+- Compact phone layout: smaller base type and spacing, denser cards and basket, shorter hero banner, smaller pictures, product page now shows picture, name and the price/Add box before the details, header slides away when scrolling down and returns on scrolling up, vendor order lines keep price beside the item.

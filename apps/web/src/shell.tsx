@@ -103,6 +103,22 @@ export function Header() {
   const ann = content.data?.announcement;
   const subtotal = cart ? cart.subtotal_cents : guest.reduce((a, g) => a + g.unit_price_cents * g.quantity, 0);
   const submit = (e: FormEvent) => { e.preventDefault(); const p = new URLSearchParams(); if (q.trim()) p.set('q', q.trim()); if (dept) p.set('category', dept); nav(`/search?${p}`); };
+  // On phones the header slides away while reading down the page and returns as soon as you scroll up, so the screen is for content.
+  const [away, setAway] = useState(false);
+  useEffect(() => {
+    let last = window.scrollY, ticking = false;
+    const on = () => {
+      if (ticking) return; ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY, narrow = window.innerWidth < 600;
+        const hide = narrow && y > 140 && y > last + 4 ? true : y < last - 4 || y <= 140 || !narrow ? false : undefined;
+        if (hide !== undefined) { setAway(hide); document.documentElement.classList.toggle('hdr-gone', hide); }
+        last = y; ticking = false;
+      });
+    };
+    window.addEventListener('scroll', on, { passive: true });
+    return () => { window.removeEventListener('scroll', on); document.documentElement.classList.remove('hdr-gone'); };
+  }, []);
   const [leaving, setLeaving] = useState(false);
   // The menu fades out before it is removed, so closing is as smooth as opening.
   const closeMenu = useRef(() => { setMenu(false); setLeaving(true); setTimeout(() => setLeaving(false), 200); }).current;
@@ -111,7 +127,7 @@ export function Header() {
     <>
       {ann?.active && ann.text ? <div className="announce" role="note">{ann.text}</div>
         : theme?.banner_text ? <div className="announce festive" role="note"><span aria-hidden="true">{theme.emoji} </span>{theme.banner_text}{theme.preview && ' (preview)'}</div> : null}
-      <header className="hdr">
+      <header className={`hdr${away && !menu ? ' away' : ''}`}>
         <div className="hdr-util"><div className="wrap">
           <span>{t('Calgary, Alberta · African groceries from local stores')}</span>
           <span className="util-links"><Link to="/vendor">{t('Sell on EAZyfoods')}</Link><Link to="/vendor?kind=chef">{t('Cook with us')}</Link><Link to="/driver">{t('Drive with us')}</Link><Link to="/pages/how-it-works">{t('How it works')}</Link><Link to="/help">{t('Help')}</Link><LangSwitch /></span>

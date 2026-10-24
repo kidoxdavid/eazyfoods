@@ -100,10 +100,12 @@ export function ProductPage() {
           {!p.images[0] && <p className="pdp-note">Illustration of the pack. Stores add real photos.</p>}
         </div>
 
-        <div>
+        <div className="pdp-info">
+          <div className="pdp-head">
           {p.brand && <Link to={`/search?q=${encodeURIComponent(p.brand)}`} className="brandlink">{p.brand}</Link>}
           <h1>{p.name}</h1>
           <div className="row wrap"><Stars value={reviews.data?.average} count={reviews.data?.count} />{reviews.data && reviews.data.average == null && reviews.data.count > 0 && <span className="muted small">Ratings show after 3 verified reviews</span>}<Heart slug={slug!} /></div>
+</div>
           <hr style={{ margin: '10px 0' }} />
           <p className="muted small" style={{ margin: '2px 0 10px' }}>{pack}{p.sold_by === 'weight' ? ' · sold by weight; the store weighs your item and any difference is refunded' : ''}. Prices exclude GST where it applies.</p>
           {p.description && <p>{p.description}</p>}
@@ -132,8 +134,7 @@ export function ProductPage() {
             {cur.tiers.length > 0 && <ul className="tiers" aria-label="Multi-buy prices">{cur.tiers.map((t) => <li key={t.min_qty}>Buy {t.min_qty}+ <strong>{money(t.unit_price_cents)}</strong> each <span className="muted">· save {Math.round((1 - t.unit_price_cents / cur.price_cents) * 100)}%</span></li>)}</ul>}
             {unitText(unitPrice(cur.price_cents, p.pack_size, p.pack_unit)) && <div className="unit">{unitText(unitPrice(cur.price_cents, p.pack_size, p.pack_unit))}</div>}
             <AddToBasket cta size="lg" offer={mk(cur)} />
-            <AlertButton slug={slug!} inStock={p.offers.some((o) => o.in_stock)} />
-            <SaveToList slug={slug!} />
+            <div className="bb-actions"><AlertButton slug={slug!} inStock={p.offers.some((o) => o.in_stock)} /><SaveToList slug={slug!} /></div>
             <div className="small muted"><IconShield width={16} height={16} style={{ verticalAlign: -3 }} /> Pay securely. We never see your card number. <Link to="/pages/refund-policy">{t('Refund policy')}</Link></div>
             {cur.is_test_data && <Badge tone="demo">Demo store</Badge>}
           </> : <Notice tone="warn">No store is currently selling this.</Notice>}
