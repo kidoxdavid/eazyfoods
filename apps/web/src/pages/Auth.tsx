@@ -13,14 +13,17 @@ export function SignIn() {
   const [sp] = useSearchParams(); const nav = useNavigate(); const { reload, reloadStaff, shopMe } = useAuth();
   const next = safeNext(sp.get('next'));
   const staff = areaForNext(next) === 'staff';
+  const seller = /^\/vendor(\/|\?|$)/.test(next); const driver = /^\/driver(\/|\?|$)/.test(next);
   const hdr = staff ? { 'x-area': 'staff' } : undefined;
   // Staff areas have their own sign-in, so the admin and a shopper can be signed in side by side in one browser.
   const go = useAction(async (e: FormEvent<HTMLFormElement>) => { await post('/auth/login', values(e), hdr); await (staff ? reloadStaff() : reload()); nav(next); });
   const cont = useAction(async () => { await post('/auth/staff-session'); await reloadStaff(); nav(next); });
   return (
     <form className="auth" onSubmit={go.run}>
-      <h1>{staff ? 'Staff sign in' : 'Sign in'}</h1>
-      {staff && <Notice>This is the sign-in for the staff areas (admin, marketing, vendor, driver). It is separate from your shopping account, so you can be signed in to both at once, even as different people.</Notice>}
+      <h1>{!staff ? 'Sign in' : seller ? 'Sign in to sell or cook' : driver ? 'Sign in to drive' : 'Staff sign in'}</h1>
+      {seller && <Notice>Sign in to open your store or kitchen, or <Link to={`/register?next=${encodeURIComponent(next)}`}><strong>create an account</strong></Link> to apply to sell groceries or cook meals.</Notice>}
+      {driver && <Notice>Sign in to see your deliveries, or <Link to={`/register?next=${encodeURIComponent(next)}`}><strong>create an account</strong></Link> to apply to drive.</Notice>}
+      {staff && !seller && !driver && <Notice>This is the sign-in for the staff areas (admin, marketing). It is separate from your shopping account, so you can be signed in to both at once, even as different people.</Notice>}
       {staff && shopMe && <div className="panel"><p style={{ margin: '0 0 8px' }}>You are signed in to the shop as <strong>{shopMe.full_name}</strong> ({shopMe.email}).</p><Button type="button" variant="secondary" busy={cont.busy} onClick={() => cont.run()}>Continue as {shopMe.full_name.split(' ')[0]}</Button>{cont.error && <ErrorBox message={cont.error} />}<p className="small muted" style={{ margin: '8px 0 0' }}>Or sign in as someone else:</p></div>}
       {go.error && <ErrorBox message={go.error} />}
       <Field label="Email"><Input name="email" type="email" required autoComplete="email" /></Field>

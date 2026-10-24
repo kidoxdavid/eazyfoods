@@ -106,3 +106,21 @@ describe('separate staff and shop sign-ins (browser)', () => {
     await ctx.close();
   });
 });
+
+describe('selling and cooking entry (browser)', () => {
+  it('a signed-out visitor to /vendor gets sign in or sign up first, and a new account lands on the application', async () => {
+    const { page } = await newPage(browser, MOBILE);
+    await page.goto(`${base()}/vendor`);
+    await page.waitForURL(/\/signin\?next=%2Fvendor/);
+    await seeText(page.locator('main'), 'Sign in to sell or cook');
+    await page.locator('.notice').getByRole('link', { name: 'create an account' }).click();
+    await page.waitForURL(/\/register\?next=%2Fvendor/);
+    await page.fill('input[name=full_name]', 'New Seller'); await page.fill('input[name=email]', `seller+${Date.now()}@example.test`); await page.fill('input[name=password]', 'a-long-password');
+    await page.click('.auth button[type=submit]');
+    await page.waitForURL('**/vendor');
+    await seeText(page.locator('body'), 'Applying as New Seller');
+    await seeText(page.locator('body'), 'Tell us about your business');
+    await page.getByRole('button', { name: 'Use a different account' }).click();
+    await page.waitForURL(/\/signin\?next=%2Fvendor/);
+  });
+});

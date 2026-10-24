@@ -8,7 +8,7 @@ import { useToast } from '../../toast';
 import type { Region } from '../../api';
 
 export default function Apply() {
-  const toast = useToast(); const { reload } = useAuth();
+  const toast = useToast(); const { reload, me, logout } = useAuth();
   const regions = useApi<Region[]>('/regions');
   const [sp] = useSearchParams();
   const [kind, setKind] = useState<'store' | 'chef'>(sp.get('kind') === 'chef' ? 'chef' : 'store');
@@ -20,6 +20,7 @@ export default function Apply() {
   });
   return (
     <div className="wrap stack lg" style={{ maxWidth: 720, margin: '24px auto' }}>
+      {me && <p className="small muted">Applying as <strong>{me.full_name}</strong> ({me.email}). Not you? <button type="button" className="link" onClick={async () => { await logout(); }}>Use a different account</button></p>}
       <div className="seg" role="group" aria-label="What would you like to do?"><button type="button" className={!chef ? 'on' : ''} aria-pressed={!chef} onClick={() => setKind('store')}>Sell groceries</button><button type="button" className={chef ? 'on' : ''} aria-pressed={chef} onClick={() => setKind('chef')}>Cook and sell meals</button></div>
       {chef && <div><h1>Cook with EAZyfoods</h1><p className="muted">Sell home-cooked meals made to order. You set your menu, your daily portions and your hours; customers order from the same basket as groceries. We need your food-premises permit and food-handler certificate, which our team verifies before you can go live. Your street address is never shown publicly.</p>
         <Notice tone="warn">Selling prepared food is regulated. Check what permit your kitchen needs with Alberta Health Services before applying. EAZyfoods does not give legal advice.</Notice></div>}
