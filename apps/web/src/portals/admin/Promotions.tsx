@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { fmtDate } from '../../api';
 import { useAction } from '../../hooks';
 import { useToast } from '../../toast';
-import { Badge, Button, Field, Input, Modal, Notice, PageHeader, Select } from '../../ui';
+import { Badge, Button, Field, Input, Modal, Notice, PageHeader, Select, Switch } from '../../ui';
 import { DataTable, Fetch, Need, cents, patch, post, useForm } from './common';
 
 export function Promotions() {
@@ -48,7 +48,7 @@ export function Promotions() {
               <Field label="Ends (optional)"><Input type="datetime-local" value={f.v.ends} onChange={f.set('ends')} /></Field>
             </div>
             <Field label="Description (internal)"><Input value={f.v.description} onChange={f.set('description')} /></Field>
-            <label className="check"><input type="checkbox" checked={f.v.first} onChange={f.set('first')} />First orders only</label>
+            <Switch checked={f.v.first} label="First orders only" onChange={f.set('first')} />
             <div className="row end"><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button busy={create.busy} disabled={f.v.code.length < 3} onClick={() => create.run(reload)}>Create coupon</Button></div>
           </Modal>
         </>

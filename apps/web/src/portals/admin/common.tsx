@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth';
 import { useApi } from '../../hooks';
-import { DataTable as BaseTable, ErrorBox, Loading, Notice, type Column } from '../../ui';
+import { Button, DataTable as BaseTable, ErrorBox, Field, Input, Loading, Modal, Notice, type Column } from '../../ui';
 import { canDo } from './perms';
 
 export const useCan = () => {
@@ -76,4 +76,25 @@ export const del = <T = any>(p: string) => call<T>('DELETE', p);
 export function DataTable<T>(props: { columns: Column<T>[]; rows: T[]; rowKey: (r: T) => string; empty?: ReactNode; onRowClick?: (r: T) => void }) {
   const columns = props.columns.map((c) => ({ ...c, render: (r: T) => <div className="cell">{c.render ? c.render(r) : String((r as any)[c.key] ?? '')}</div> }));
   return <BaseTable {...props} columns={columns} />;
+}
+
+/**
+ * Delete with a typed confirmation. The server removes the record if nothing depends on it, or closes it and scrubs personal details when it has
+ * order or money history; the answer says which, so the admin always knows what happened.
+ */
+export function DeleteButton({ what, name, path, onDone, size = 'sm', children = 'Delete' }: { what: string; name: string; path: string; onDone: (r: { deleted: boolean; closed: boolean; note: string }) => void; size?: 'sm' | 'lg'; children?: ReactNode }) {
+  const [open, setOpen] = useState(false); const [typed, setTyped] = useState(''); const [busy, setBusy] = useState(false); const [err, setErr] = useState<string>();
+  const ok = typed.trim().toLowerCase() === name.trim().toLowerCase();
+  return (
+    <>
+      <Button variant="danger" size={size} onClick={() => { setTyped(''); setErr(undefined); setOpen(true); }}>{children}</Button>
+      <Modal open={open} onClose={() => setOpen(false)} title={`Delete ${what}`}>
+        <p>This removes <strong>{name}</strong> for good if nothing depends on it. If it has orders or payments, it is <strong>closed</strong> instead (sign-in off, personal details removed) so the books stay correct.</p>
+        <Field label={`Type ${name} to confirm`}><Input value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" /></Field>
+        {err && <Notice tone="error">{err}</Notice>}
+        <div className="row end"><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="danger" busy={busy} disabled={!ok} onClick={async () => { setBusy(true); setErr(undefined); try { const r = await del(path); setOpen(false); onDone(r); } catch (e: any) { setErr(e.message); } finally { setBusy(false); } }}>Delete</Button></div>
+      </Modal>
+    </>
+  );
 }

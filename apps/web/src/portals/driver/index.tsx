@@ -5,7 +5,7 @@ import { useAuth } from '../../auth';
 import { api, fmtDate, money, post, put } from '../../api';
 import { useApi } from '../../hooks';
 import { useToast } from '../../toast';
-import { Badge, Button, Card, DataTable, Empty, ErrorBox, Field, Input, Loading, Modal, Notice, PageHeader, Stat, Textarea, formValues } from '../../ui';
+import { Badge, Button, Card, DataTable, Empty, ErrorBox, Field, Input, Loading, Modal, Notice, PageHeader, Stat, Textarea, formValues, Switch } from '../../ui';
 import './driver.css';
 
 type Addr = { line1?: string; line2?: string; city?: string; postal_code?: string; first_name?: string; phone?: string };
@@ -452,7 +452,7 @@ function Profile({ me, reload }: { me: Me; reload: () => void }) {
           <Field label="Navigation app" hint="Your Navigate buttons open this app.">
             <select className="input" value={nav} onChange={(e) => setNav(e.target.value as NavApp)}><option value="google">Google Maps</option><option value="apple">Apple Maps</option><option value="waze">Waze</option></select>
           </Field>
-          <label className="row"><input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} /> <span>Share my live location with the customer while I’m delivering their order</span></label>
+          <Switch checked={share} onChange={setShare} label="Share my live location" hint="With the customer, only while I’m delivering their order." />
           <p className="muted small">Optional. Only the latest point is kept, only while a delivery is active, and it is deleted when the delivery ends. Your browser will ask for permission.</p>
           <p className="muted small">Licence verified: {me.licence_verified ? 'yes' : 'pending'} · Background check: {me.background_check_verified ? 'yes' : 'pending'}</p>
           {save.error && <Notice tone="error">{save.error}</Notice>}

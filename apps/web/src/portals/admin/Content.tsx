@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api, fmtDate } from '../../api';
 import { useAction, useApi } from '../../hooks';
 import { useToast } from '../../toast';
-import { Badge, Button, Card, Field, Input, Loading, Modal, Notice, PageHeader, Select, StatusBadge, Tabs, Textarea } from '../../ui';
+import { Badge, Button, Card, Field, Input, Loading, Modal, Notice, PageHeader, Select, StatusBadge, Tabs, Textarea, Switch } from '../../ui';
 import { DataTable, Fetch, Need, lines, post, put, useForm } from './common';
 
 export function Content() {
@@ -36,7 +36,7 @@ function HomeForm({ c, toast, reload }: { c: any; toast: (s: string, k?: 'ok' | 
       <Card><h3>Announcement bar</h3>{sa.error && <Notice tone="error">{sa.error}</Notice>}
         <p className="small muted">Shown at the very top of the shop. Only make claims you can stand behind.</p>
         <Field label="Text"><Input maxLength={200} value={a.v.text} onChange={a.set('text')} /></Field>
-        <label className="check"><input type="checkbox" checked={a.v.active} onChange={a.set('active')} />Show it</label>
+        <Switch checked={a.v.active} label="Show it" onChange={a.set('active')} />
         <Button busy={sa.busy} onClick={() => sa.run()}>Save</Button></Card>
     </>
   );
@@ -66,7 +66,7 @@ function Pages() {
           <Field label="Title"><Input value={f.v.title} onChange={f.set('title')} /></Field>
           <Field label="Body" hint="Use ## for headings; blank line between paragraphs."><Textarea style={{ minHeight: 240 }} value={f.v.body} onChange={f.set('body')} /></Field>
           <div className="form-grid"><Field label="Status"><Select value={f.v.status} onChange={f.set('status')}><option value="published">Published</option><option value="draft">Draft</option></Select></Field></div>
-          <label className="check"><input type="checkbox" checked={f.v.needs_legal_review} onChange={f.set('needs_legal_review')} />Needs legal review before launch</label>
+          <Switch checked={f.v.needs_legal_review} label="Needs legal review before launch" onChange={f.set('needs_legal_review')} />
           <div className="row end"><Button variant="ghost" onClick={() => setEdit(null)}>Cancel</Button><Button busy={save.busy} disabled={!/^[a-z0-9-]+$/.test(f.v.slug) || f.v.title.length < 2 || !f.v.body} onClick={() => save.run(reload)}>Save page</Button></div>
         </Modal>
       </>
@@ -159,12 +159,12 @@ function Recipes() {
               <div className="form-grid"><Field label="Ingredient"><Input value={i.label} onChange={(e) => setIng(n, 'label', e.target.value)} /></Field><Field label="Quantity"><Input value={i.quantity_text} onChange={(e) => setIng(n, 'quantity_text', e.target.value)} /></Field>
                 <Field label="Linked product slug" hint="Leave empty for pantry items"><Input value={i.product_slug} onChange={(e) => setIng(n, 'product_slug', e.target.value)} /></Field>
                 <Field label="Curated alternatives (slugs)"><Input value={i.alternative_slugs} onChange={(e) => setIng(n, 'alternative_slugs', e.target.value)} /></Field></div>
-              <div className="row between"><label className="check"><input type="checkbox" checked={i.optional} onChange={(e) => setIng(n, 'optional', e.target.checked)} />Optional</label><Button size="sm" variant="ghost" onClick={() => setIngs((s) => s.filter((_, j) => j !== n))}>Remove</Button></div>
+              <div className="row between"><Switch checked={i.optional} label="Optional" onChange={(v) => setIng(n, 'optional', v)} /><Button size="sm" variant="ghost" onClick={() => setIngs((s) => s.filter((_, j) => j !== n))}>Remove</Button></div>
             </div>))}
           <Button variant="secondary" size="sm" onClick={() => setIngs((s) => [...s, blankIng()])}>Add ingredient</Button>
           <div className="form-grid" style={{ marginTop: 12 }}>
             <Field label="Status"><Select value={f.v.status} onChange={f.set('status')}><option value="draft">Draft (hidden)</option><option value="published">Published</option></Select></Field></div>
-          <label className="check"><input type="checkbox" checked={f.v.reviewed} onChange={f.set('reviewed')} />A person has reviewed this recipe (food safety, allergens)</label>
+          <Switch checked={f.v.reviewed} label="A person has reviewed this recipe (food safety, allergens)" onChange={f.set('reviewed')} />
           <div className="row end"><Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button busy={save.busy} disabled={f.v.title.length < 2 || !f.v.steps.trim() || !ings.some((i) => i.label.trim())} onClick={() => save.run(reload)}>Save recipe</Button></div>
         </Modal>
       </>

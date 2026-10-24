@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { fmtDate } from '../../api';
 import { useAction } from '../../hooks';
 import { useToast } from '../../toast';
-import { Badge, Button, Card, Confirm, Field, Input, Modal, Notice, PageHeader, Stat, StatusBadge, Tabs } from '../../ui';
+import { Badge, Button, Card, Confirm, Field, Input, Modal, Notice, PageHeader, Stat, StatusBadge, Tabs, Switch } from '../../ui';
 import { DataTable, Fetch, Need, cents, post, put, useCan } from './common';
 
 const ACCOUNT_LABELS: Record<string, string> = {
@@ -79,7 +79,7 @@ function AutoCard({ auto, reload }: { auto: { enabled: boolean; min_cents: numbe
       {(save.error || run.error) && <Notice tone="error">{save.error || run.error}</Notice>}
       <p className="small muted">When on, every hour each vendor with a connected, enabled account is paid whatever is payable once it reaches the minimum. Failed transfers are retried up to 5 times. Always test with the payment provider’s test mode first.</p>
       <div className="row wrap top">
-        <label className="check"><input type="checkbox" checked={auto.enabled} onChange={(e) => save.run(() => put('/admin/settings/payout.auto_enabled', { value: e.target.checked }))} />Pay connected vendors automatically</label>
+        <Switch checked={auto.enabled} label="Pay connected vendors automatically" onChange={(v) => save.run(() => put('/admin/settings/payout.auto_enabled', { value: v }))} />
         <Field label="Minimum payout (CAD)"><Input type="number" min="1" step="0.01" value={min} onChange={(e) => setMin(e.target.value)} inputMode="decimal" style={{ maxWidth: 140 }} /></Field>
         <Button size="sm" variant="secondary" style={{ marginTop: 24 }} busy={save.busy} onClick={() => save.run(() => put('/admin/settings/payout.auto_min_cents', { value: Math.round(Number(min) * 100) }))}>Save minimum</Button>
         <Button size="sm" variant="secondary" style={{ marginTop: 24 }} busy={run.busy} onClick={() => run.run()}>Run now</Button>

@@ -5,7 +5,7 @@ import { useAuth } from '../../auth';
 import { useAction } from '../../hooks';
 import { useToast } from '../../toast';
 import { Badge, Button, Card, Confirm, Field, Input, Modal, Notice, PageHeader, Select, StatusBadge, Textarea } from '../../ui';
-import { DataTable, Fetch, Need, patch, useCan } from './common';
+import { DataTable, DeleteButton, Fetch, Need, patch, useCan } from './common';
 
 export function Vendors() {
   const [status, setStatus] = useState('');
@@ -72,6 +72,10 @@ export function VendorDetail() {
                 columns={[{ key: 'name', header: 'Store', render: (s: any) => <strong>{s.name}</strong> }, { key: 'status', header: 'Status', render: (s: any) => <StatusBadge status={s.status} /> },
                   { key: 'addr', header: 'Address', render: (s: any) => `${s.address_line ?? ''} ${s.city ?? ''} ${s.postal_code ?? ''}` }, { key: 'phone', header: 'Phone' }]} />
               <p className="small muted">Publish stores from <Link to="/admin/stores">Stores</Link> once the vendor is approved.</p>
+            </Card>
+            <Card><h3>Danger zone</h3>
+              <p className="muted small">Remove this {v.kind === 'chef' ? 'cook or restaurant' : 'vendor'} from the marketplace. Their people keep their own accounts; delete those under Settings → Users.</p>
+              <DeleteButton what={v.kind === 'chef' ? 'cook or restaurant' : 'vendor'} name={v.name} path={`/admin/vendors/${id}`} size="lg" onDone={(r) => { toast(r.note); nav('/admin/vendors'); }}>Delete this {v.kind === 'chef' ? 'kitchen' : 'vendor'}</DeleteButton>
             </Card>
             <Card><h3>Business documents</h3>
               <p className="small muted">Documents are private. Open each, check it matches the business, then verify or reject with a note.</p>

@@ -7,7 +7,9 @@ import {
 import { useAuth } from '../auth';
 import { useApi } from '../hooks';
 import { canDo } from './admin/perms';
-import type { NavItem } from '../ui';
+import { Button, Field, Input, Modal, Notice, type NavItem } from '../ui';
+import { post } from '../api';
+import { useAction } from '../hooks';
 import './backoffice.css';
 
 type Tone = 'admin' | 'vendor' | 'driver' | 'chef' | 'marketing';
@@ -47,13 +49,10 @@ export function PortalLayout({ title, subtitle, nav, tone, children }: { title: 
 
   const current = useMemo(() => [...items].sort((a, b) => b.to.length - a.to.length).find((i) => (i.end ? loc.pathname === i.to : loc.pathname === i.to || loc.pathname.startsWith(i.to + '/'))), [items, loc.pathname]);
   const roles = me?.roles ?? [];
-  const areas = [
-    { to: '/', label: 'Shop' },
-    ...(isStaff && canDo(roles, 'orders.view', 'catalog.manage', 'vendors.manage', 'support.manage', 'dispatch.manage', 'ledger.view', 'control.manage') ? [{ to: '/admin', label: 'Admin' }] : []),
-    ...(canDo(roles, 'marketing.manage') ? [{ to: '/marketing', label: 'Marketing' }] : []),
-    ...(isVendor ? [{ to: '/vendor', label: 'Store / kitchen' }] : []),
-    ...(has('driver') ? [{ to: '/driver', label: 'Driver' }] : []),
-  ].filter((a) => !a.to.startsWith(`/${tone === 'chef' ? 'vendor' : tone}`));
+  // Each area is its own world with its own sign-in; the only way out is the shop.
+  const areas = [{ to: '/', label: 'Shop' }];
+  const windowOf = tone === 'chef' ? 'vendor' : tone;
+  const [pw, setPw] = useState(false);
   const brand = `eazyfoods ${title.replace(/ portal$/i, '')}`;
   const name = me?.full_name ?? '';
 
@@ -82,11 +81,13 @@ export function PortalLayout({ title, subtitle, nav, tone, children }: { title: 
           </div>
           <div className="bo-user-actions">
             {areas.map((a) => <Link key={a.to} to={a.to}>{a.label}</Link>)}
-            <button type="button" onClick={async () => { await logout(); go('/'); }}><LogOut size={15} /> Sign out</button>
+            <button type="button" onClick={() => setPw(true)}>Change password</button>
+            <button type="button" onClick={async () => { await logout(); go(`/${windowOf}/signin`); }}><LogOut size={15} /> Sign out</button>
           </div>
         </div>
       </aside>
 
+      <PasswordModal open={pw} onClose={() => setPw(false)} />
       <div className="bo-page">
         <header className="bo-top">
           <button className="bo-burger" aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} onClick={() => setOpen((o) => !o)}><Menu size={22} /></button>
@@ -106,5 +107,27 @@ export function PortalLayout({ title, subtitle, nav, tone, children }: { title: 
         </main>
       </div>
     </div>
+  );
+}
+
+function PasswordModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [done, setDone] = useState(false);
+  const save = useAction(async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
+    await post('/account/password', { current_password: f.current_password, new_password: f.new_password });
+    setDone(true);
+  });
+  return (
+    <Modal open={open} onClose={() => { setDone(false); onClose(); }} title="Change password">
+      {done ? <Notice tone="ok">Password changed.</Notice> : (
+        <form onSubmit={save.run}>
+          {save.error && <Notice tone="error">{save.error}</Notice>}
+          <Field label="Current password"><Input name="current_password" type="password" required autoComplete="current-password" /></Field>
+          <Field label="New password" hint="At least 10 characters."><Input name="new_password" type="password" required minLength={10} autoComplete="new-password" /></Field>
+          <Button type="submit" busy={save.busy}>Change password</Button>
+        </form>
+      )}
+    </Modal>
   );
 }

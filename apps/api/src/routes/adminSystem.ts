@@ -5,6 +5,8 @@ import { audit } from '../lib/auth.js';
 import { requirePerm, ROLE_PERMS } from '../lib/permissions.js';
 import { bad, conflict, notFound } from '../lib/errors.js';
 import { config } from '../config.js';
+import { hashPassword } from '../lib/password.js';
+import { eraseUser } from '../services/erase.js';
 import { getProvider } from '../payments/provider.js';
 
 const uuid = z.string().uuid();
@@ -57,6 +59,25 @@ export const adminSystemRoutes: FastifyPluginAsync = async (app) => {
          FROM users u LEFT JOIN user_roles r ON r.user_id = u.id WHERE $1::text IS NULL OR u.email ILIKE '%'||$1||'%' OR u.full_name ILIKE '%'||$1||'%' GROUP BY u.id ORDER BY u.created_at DESC LIMIT 100`, [q ?? null])).rows;
   });
 
+  // An admin creates sign-ins for staff (admin, marketing, support...). These accounts have no shopping role and are not created by any sign-up window.
+  app.post('/users', { preHandler: requirePerm('settings.manage') }, async (req, reply) => {
+    const b = z.object({ email: z.string().email().max(254), full_name: z.string().trim().min(1).max(120), password: z.string().min(10).max(200),
+      role: z.enum(['admin', 'support', 'finance', 'dispatcher', 'catalog', 'marketing']) }).parse(req.body);
+    const hash = await hashPassword(b.password);
+    try {
+      const id = await tx(async (c) => {
+        const u = (await c.query('INSERT INTO users(email, password_hash, full_name, email_verified_at) VALUES ($1,$2,$3, now()) RETURNING id', [b.email.toLowerCase(), hash, b.full_name])).rows[0].id;
+        await c.query('INSERT INTO user_roles(user_id, role) VALUES ($1,$2)', [u, b.role]);
+        await audit(req.user!.id, 'user.created', 'user', u, { role: b.role }, c);
+        return u as string;
+      });
+      return reply.code(201).send({ id });
+    } catch (e: any) {
+      if (e.code === '23505') throw conflict('email_taken', 'An account with this email already exists. Open it in the list and add the role instead.');
+      throw e;
+    }
+  });
+
   app.post<{ Params: { id: string } }>('/users/:id/roles', { preHandler: requirePerm('settings.manage') }, async (req) => {
     const id = uuid.parse(req.params.id);
     const { role } = z.object({ role: z.enum(['admin', 'support', 'finance', 'dispatcher', 'catalog', 'marketing']) }).parse(req.body);
@@ -75,6 +96,8 @@ export const adminSystemRoutes: FastifyPluginAsync = async (app) => {
     await audit(req.user!.id, 'role.revoked', 'user', id, { role });
     return { ok: true };
   });
+  // Delete = remove completely when nothing refers to it, otherwise close it and scrub personal details (see services/erase.ts). The answer says which.
+  app.delete<{ Params: { id: string } }>('/users/:id', { preHandler: requirePerm('settings.manage') }, async (req) => eraseUser(req.user!.id, uuid.parse(req.params.id)));
   app.get('/roles', { preHandler: requirePerm('users.view') }, async () => ROLE_PERMS);
   app.patch<{ Params: { id: string } }>('/users/:id/disabled', { preHandler: requirePerm('settings.manage') }, async (req) => {
     const id = uuid.parse(req.params.id);

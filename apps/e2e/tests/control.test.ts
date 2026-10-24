@@ -85,7 +85,7 @@ describe('separate staff and shop sign-ins (browser)', () => {
     await page.fill('input[name=email]', 'customer@example.test'); await page.fill('input[name=password]', 'dev-password-123');
     await page.click('.auth button[type=submit]'); await page.waitForURL((u) => !u.pathname.startsWith('/signin'));
     await page.goto(`${base()}/admin`);
-    await page.waitForURL(/\/signin\?next=%2Fadmin/);                   // a shopper does not get into the admin
+    await page.waitForURL(/\/admin\/signin/);                            // a shopper does not get into the admin
     await seeText(page.locator('main'), 'Admin sign in');
     await noText(page.locator('main'), 'Continue as');
     await page.fill('input[name=email]', 'customer@example.test');     // not even by trying the customer's own email
@@ -101,11 +101,11 @@ describe('separate staff and shop sign-ins (browser)', () => {
     await seeText(page.locator('main'), 'customer@example.test');       // the shop still knows the customer
     await page.goto(`${base()}/admin`);
     await page.getByRole('button', { name: 'Sign out' }).click();
-    await page.waitForURL(base() + '/');
+    await page.waitForURL(/\/admin\/signin/);
     await page.goto(`${base()}/account`);
     await seeText(page.locator('main'), 'customer@example.test');       // still a customer
     await page.goto(`${base()}/admin`);
-    await page.waitForURL(/\/signin/);                                  // but the admin is gone
+    await page.waitForURL(/\/admin\/signin/);                           // but the admin is gone
     await ctx.close();
   });
 
@@ -114,10 +114,12 @@ describe('separate staff and shop sign-ins (browser)', () => {
     await signInStaff(page, 'marketing@example.test', 'dev-password-123', '/marketing');
     await seeText(page.locator('.bo-brandbar'), 'Marketing');
     await page.goto(`${base()}/driver`);
-    await page.waitForURL(/\/signin\?next=%2Fdriver&wrong=1/);
-    await seeText(page.locator('main'), 'cannot open the driver area');
+    await seeText(page.locator('body'), 'cannot open the driver area');          // the driver area does not take a marketing account
+    await page.getByRole('button', { name: /Sign out and use a driver account/ }).click();
+    await page.waitForURL(/\/driver\/signin/);
+    await seeText(page.locator('main'), 'Driver sign in');
     await page.goto(`${base()}/marketing`);
-    await page.waitForURL(/\/signin\?next=%2Fmarketing/);                // the wrong account was signed out of the staff area
+    await page.waitForURL(/\/marketing\/signin/);                       // signed out of the staff area
     await seeText(page.locator('main'), 'Marketing sign in');
   });
 });
@@ -126,12 +128,30 @@ describe('selling and cooking entry (browser)', () => {
   it('/vendor asks for the store or kitchen account; a vendor email gets in, and the portal shows its menu', async () => {
     const { page } = await newPage(browser, MOBILE);
     await page.goto(`${base()}/vendor`);
-    await page.waitForURL(/\/signin\?next=%2Fvendor/);
-    await seeText(page.locator('main'), 'Vendor and chef sign in');
+    await page.waitForURL(/\/vendor\/signin/);
+    await seeText(page.locator('main'), 'Vendor, chef and restaurant sign in');
+    await seeText(page.locator('main'), 'Create a vendor account');
     await page.fill('input[name=email]', 'owner1@example.test'); await page.fill('input[name=password]', 'dev-password-123');
     await page.click('.auth button[type=submit]');
     await page.waitForURL('**/vendor');
     await page.waitForSelector('.bo-top');
+  });
+});
+
+describe('own sign-up window (browser)', () => {
+  it('a new vendor signs up in the vendor window, lands on the application, and can come back with the same login', async () => {
+    const { page } = await newPage(browser, MOBILE);
+    const email = `new${Date.now()}@signup.test`;
+    await page.goto(`${base()}/vendor/signup`);
+    await page.fill('input[name=full_name]', 'New Seller'); await page.fill('input[name=email]', email); await page.fill('input[name=password]', 'a-long-password');
+    await page.click('.bo-auth button[type=submit]');
+    await page.waitForURL('**/vendor');
+    await seeText(page.locator('body'), 'Tell us about your business');
+    await page.getByRole('button', { name: 'Cook and sell meals' }).click();
+    await page.getByRole('button', { name: 'Restaurant', exact: true }).click();
+    await seeText(page.locator('body'), 'List your restaurant');
+    await page.goto(`${base()}/admin`);                                        // it is not an admin, and has no shopping account either
+    await seeText(page.locator('body'), 'cannot open the admin area');
   });
 });
 
@@ -149,6 +169,6 @@ describe('admin has absolute control (browser)', () => {
     await page.getByRole('button', { name: 'Exit and go back to admin' }).click();
     await page.waitForURL('**/admin/vendors');
     await page.goto(`${base()}/vendor`);
-    await seeText(page.locator('body'), 'Admin → Vendors');                // an admin on their own is pointed to the right place
+    await seeText(page.locator('body'), 'cannot open the vendor area');      // the admin account opens the admin area only
   });
 });

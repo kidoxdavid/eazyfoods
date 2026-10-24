@@ -13,6 +13,6 @@ export default async function setup() {
   const { seed } = await import('../src/db/seed.js');
   const { pool } = await import('../src/db/pool.js');
   await migrate(() => {});
-  await seed(() => {});
+  await seed(() => {}, { demo: true });
   await pool.end();
 }

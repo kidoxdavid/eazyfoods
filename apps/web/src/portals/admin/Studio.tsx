@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApi, useAction } from '../../hooks';
 import { useToast } from '../../toast';
-import { Badge, Button, Card, Field, ImageUpload, Input, Modal, Notice, PageHeader, Select, Tabs, Textarea, VideoUpload } from '../../ui';
+import { Badge, Button, Card, Field, ImageUpload, Input, Modal, Notice, PageHeader, Select, Tabs, Textarea, VideoUpload, Switch } from '../../ui';
 import { Fetch, Need, del, post, put, useForm } from './common';
 
 type Palette = { primary: string; deep: string; tint: string; glow: string; hero_from: string; hero_to: string };
@@ -93,7 +93,7 @@ function ThemeEditor({ theme, onClose, onSaved }: { theme: Theme | null; onClose
         <Field label="Priority (0–100)" hint="If two themes overlap, the higher number shows."><Input type="number" min={0} max={100} value={f.v.priority} onChange={(e) => f.setV((s) => ({ ...s, priority: Number(e.target.value) }))} /></Field>
         <Field label="Mode"><Select value={f.v.status} onChange={f.set('status')}><option value="auto">Auto (by dates)</option><option value="on">Force on now</option><option value="off">Off</option></Select></Field>
       </div>
-      <label className="check"><input type="checkbox" checked={f.v.repeats_yearly} onChange={f.set('repeats_yearly')} />Repeats every year on the same dates</label>
+      <Switch checked={f.v.repeats_yearly} label="Repeats every year on the same dates" onChange={f.set('repeats_yearly')} />
       <h4>Colours</h4>
       <p className="small muted">The shop’s green becomes your main colour while this theme is live. Pick colours that read clearly: dark enough for white text, and a light version for dark mode.</p>
       <div className="color-row">{L.map(([k, l]) => <label key={k}>{l}<input type="color" value={p[k]} onChange={setP(k)} aria-label={l} /></label>)}</div>
@@ -197,7 +197,7 @@ function LayoutForm({ initial }: { initial: { id: string; enabled: boolean }[] }
       <div style={{ marginTop: 10 }}>
         {rows.map((r, i) => (
           <div key={r.id} className={`layout-row ${r.enabled ? '' : 'off'}`}>
-            <label className="check" style={{ margin: 0 }}><input type="checkbox" checked={r.enabled} onChange={(e) => setRows((x) => x.map((y) => (y.id === r.id ? { ...y, enabled: e.target.checked } : y)))} /><span className="sr-only">Show {LABELS[r.id]}</span></label>
+            <Switch checked={r.enabled} label={`Show ${LABELS[r.id]}`} onChange={(v) => setRows((x) => x.map((y) => (y.id === r.id ? { ...y, enabled: v } : y)))} />
             <span className="grow">{LABELS[r.id]}</span>
             <Button size="sm" variant="ghost" aria-label={`Move ${LABELS[r.id]} up`} disabled={i === 0} onClick={() => move(i, i - 1)}>↑</Button>
             <Button size="sm" variant="ghost" aria-label={`Move ${LABELS[r.id]} down`} disabled={i === rows.length - 1} onClick={() => move(i, i + 1)}>↓</Button>

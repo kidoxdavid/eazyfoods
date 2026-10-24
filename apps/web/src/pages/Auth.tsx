@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { post } from '../api';
 import { areaForNext } from '../area';
 import { useAuth } from '../auth';
@@ -17,8 +17,10 @@ export function SignIn() {
   const staff = areaForNext(next) === 'staff';
   const name = AREA_NAME(next);
   const hdr = staff ? { 'x-area': 'staff' } : undefined;
+  const win = /^\/(admin|marketing|vendor|driver)/.exec(next)?.[1];
   // The staff areas only accept their own accounts, and have their own sign-in, so an admin and a shopper can be signed in at once.
   const go = useAction(async (e: FormEvent<HTMLFormElement>) => { await post('/auth/login', values(e), hdr); await (staff ? reloadStaff() : reload()); nav(next); });
+  if (staff && win) return <Navigate to={`/${win}/signin?next=${encodeURIComponent(next)}${sp.get('wrong') ? '&wrong=1' : ''}`} replace />;
   return (
     <form className="auth" onSubmit={go.run}>
       <h1>{staff ? `${name} sign in` : 'Sign in'}</h1>

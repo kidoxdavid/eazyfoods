@@ -150,11 +150,3 @@ describe('admin opens a vendor portal', () => {
     expect(log).toEqual(['act_as.stop', 'act_as.start']);
   });
 });
-
-describe('start from scratch', () => {
-  it('needs an admin and the exact phrase (the purge itself is verified against a scratch database)', async () => {
-    const admin = (await login('admin@example.test')).cookie, cust = await newCustomer();
-    expect([401, 403]).toContain((await call(cust.cookie, 'POST', '/api/admin/control/purge-demo', { confirm: 'DELETE DEMO DATA' })).status);
-    expect((await call(admin, 'POST', '/api/admin/control/purge-demo', { confirm: 'yes' })).status).toBe(400);
-  });
-});

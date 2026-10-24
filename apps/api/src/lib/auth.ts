@@ -10,15 +10,18 @@ import { hashToken, newToken } from './password.js';
 export const COOKIES = { shop: 'ez_session', staff: 'ez_staff' } as const;
 export type Area = keyof typeof COOKIES;
 const STAFF_API = /^\/api\/(admin|marketing|vendor|driver)(\/|\?|$)/;
-// Applying to become a vendor or driver is something a shopper does, so those two calls stay on the shop sign-in.
+// Applying to become a vendor or driver: a shopper does it with the shop sign-in; someone who signed up in the vendor or driver window does it with the staff sign-in (the page says so with x-area).
 const SHOP_API = /^\/api\/(vendor|driver)\/apply(\/|\?|$)/;
-export const areaOf = (req: FastifyRequest): Area => (SHOP_API.test(req.url) ? 'shop' : req.headers['x-area'] === 'staff' || STAFF_API.test(req.url) ? 'staff' : 'shop');
+export const areaOf = (req: FastifyRequest): Area => (req.headers['x-area'] === 'staff' ? 'staff' : SHOP_API.test(req.url) ? 'shop' : STAFF_API.test(req.url) ? 'staff' : 'shop');
+/** Which roles open which staff sign-in window. Admin opens only the admin window; it cannot sign in to the others. */
+export const AREA_LOGIN_ROLES = { admin: ['admin', 'support', 'finance', 'dispatcher', 'catalog', 'marketing'], marketing: ['marketing'], vendor: ['vendor_owner', 'vendor_staff'], driver: ['driver'] } as const;   // marketing reaches only the shared studio and coupons in the admin window
+export type StaffWindow = keyof typeof AREA_LOGIN_ROLES;
 /** Only accounts that hold one of these roles may use a staff sign-in. Customers cannot, wherever they come from. */
 export const STAFF_AREA_ROLES = ['admin', 'support', 'finance', 'dispatcher', 'catalog', 'marketing', 'vendor_owner', 'vendor_staff', 'driver'];
 export const COOKIE = COOKIES.shop;
 
 export type Role = { role: string; vendor_id: string | null };
-export type AuthUser = { id: string; email: string; full_name: string; roles: Role[]; acting_vendor?: { id: string; name: string } | null };
+export type AuthUser = { id: string; email: string; full_name: string; staff_signup?: 'vendor' | 'driver' | null; roles: Role[]; acting_vendor?: { id: string; name: string } | null };
 
 declare module 'fastify' {
   interface FastifyRequest { user: AuthUser | null }
@@ -36,7 +39,7 @@ export async function loadUser(req: FastifyRequest) {
   const token = req.cookies[COOKIES[areaOf(req)]];
   if (!token) return;
   const { rows } = await pool.query(
-    `SELECT u.id, u.email, u.full_name, s.acting_vendor_id, (SELECT name FROM vendors WHERE id = s.acting_vendor_id) AS acting_vendor_name,
+    `SELECT u.id, u.email, u.full_name, u.staff_signup, s.acting_vendor_id, (SELECT name FROM vendors WHERE id = s.acting_vendor_id) AS acting_vendor_name,
             COALESCE(json_agg(json_build_object('role', r.role, 'vendor_id', r.vendor_id)) FILTER (WHERE r.id IS NOT NULL), '[]') AS roles
        FROM sessions s JOIN users u ON u.id = s.user_id AND u.disabled_at IS NULL
        LEFT JOIN user_roles r ON r.user_id = u.id
@@ -45,7 +48,7 @@ export async function loadUser(req: FastifyRequest) {
     [hashToken(token)],
   );
   if (!rows[0]) return;
-  if (areaOf(req) === 'staff' && !rows[0].roles.some((r: Role) => STAFF_AREA_ROLES.includes(r.role))) return;   // a customer's session is never a staff session
+  if (areaOf(req) === 'staff' && !rows[0].staff_signup && !rows[0].roles.some((r: Role) => STAFF_AREA_ROLES.includes(r.role))) return;   // a customer's session is never a staff session
   const { acting_vendor_id, acting_vendor_name, ...u } = rows[0];
   req.user = u;
   // An admin who chose "open their portal" acts as that vendor's owner until they exit. Only admins can ever have this set (checked again here).

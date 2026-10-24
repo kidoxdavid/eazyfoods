@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { put } from '../../api';
 import { useAction, useApi } from '../../hooks';
 import { useToast } from '../../toast';
-import { Button, Card, Field, Input, Loading, Notice, Select } from '../../ui';
+import { Button, Card, Field, Input, Loading, Notice, Select, Switch } from '../../ui';
 import { useVendor } from './Shared';
 
 type S = { preorders_enabled: boolean; preorder_lead_minutes: number; preorder_max_days: number; slot_minutes: number; slot_capacity: number; closures: { on_date: string; reason: string | null }[] };
@@ -25,7 +25,7 @@ export default function Schedule() {
       <p className="muted small">Let customers book a time slot for later. Slots follow your opening hours. A slot fills up after the number of orders you allow.</p>
       {save.error && <Notice tone="error">{save.error}</Notice>}
       <form onSubmit={(e) => { e.preventDefault(); save.run(); }}>
-        <label className="check"><input type="checkbox" checked={f.preorders_enabled} onChange={(e) => set('preorders_enabled', e.target.checked)} /><span><strong>Accept pre-orders</strong><br /><span className="muted small">Portions you set are shared between pre-orders and orders for now, so only list what you can make.</span></span></label>
+        <Switch checked={f.preorders_enabled} onChange={(v) => set('preorders_enabled', v)} label="Accept pre-orders" hint="Portions you set are shared between pre-orders and orders for now, so only list what you can make." />
         {f.preorders_enabled && <div className="form-grid">
           <Field label="Slot length"><Select value={f.slot_minutes} onChange={(e) => set('slot_minutes', Number(e.target.value))}>{[30, 60, 90, 120].map((m) => <option key={m} value={m}>{m} minutes</option>)}</Select></Field>
           <Field label="Orders per slot"><Input type="number" min={1} max={50} value={f.slot_capacity} onChange={(e) => set('slot_capacity', Number(e.target.value))} inputMode="numeric" /></Field>

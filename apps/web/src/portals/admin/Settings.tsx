@@ -3,8 +3,8 @@ import { fmtDate } from '../../api';
 import { useAction } from '../../hooks';
 import { useAuth } from '../../auth';
 import { useToast } from '../../toast';
-import { Badge, Button, Card, Field, Input, Modal, Notice, PageHeader, Select, Tabs } from '../../ui';
-import { DataTable, Fetch, Need, del, patch, post, put, useCan } from './common';
+import { Badge, Button, Card, Field, Input, Modal, Notice, PageHeader, Select, Switch, Tabs } from '../../ui';
+import { DataTable, DeleteButton, Fetch, Need, del, patch, post, put, useCan } from './common';
 
 type Meta = { label: string; kind: 'percent_bps' | 'dollars' | 'int' | 'bool' | 'text' | 'tax' | 'fixed'; unit?: string; help: string; range?: [number, number] };
 const META: Record<string, Meta> = {
@@ -77,7 +77,7 @@ function Commercial() {
   );
 }
 
-const ROLES = ['admin', 'support', 'finance', 'dispatcher', 'catalog'];
+const ROLES = ['admin', 'support', 'finance', 'dispatcher', 'catalog', 'marketing'];
 function Users() {
   const { me } = useAuth();
   const can = useCan();
@@ -85,12 +85,14 @@ function Users() {
   const [q, setQ] = useState('');
   const [applied, setApplied] = useState('');
   const [grant, setGrant] = useState<Record<string, string>>({});
+  const [bump, setBump] = useState(0);
   const act = useAction(async (fn: () => Promise<any>, ok: string, reload: () => void) => { await fn(); toast(ok); reload(); });
   return (
     <Need perm={['users.view']} what="viewing users">
+      {can('settings.manage') && <NewStaff onDone={() => setBump((b) => b + 1)} />}
       <form className="filters-row" onSubmit={(e) => { e.preventDefault(); setApplied(q.trim()); }}><Field label="Name or email"><Input value={q} onChange={(e) => setQ(e.target.value)} /></Field><Button type="submit">Search</Button></form>
       {act.error && <Notice tone="error">{act.error}</Notice>}
-      <Fetch path={`/admin/users${applied ? `?q=${encodeURIComponent(applied)}` : ''}`}>{(rows: any[], reload) => (
+      <Fetch path={`/admin/users?_=${bump}${applied ? `&q=${encodeURIComponent(applied)}` : ''}`}>{(rows: any[], reload) => (
         <DataTable rows={rows} rowKey={(u) => u.id} empty="No users match."
           columns={[
             { key: 'n', header: 'Person', render: (u) => <><strong>{u.full_name}</strong>{u.disabled && <> <Badge tone="danger">Disabled</Badge></>}<div className="small muted">{u.email}</div></> },
@@ -99,10 +101,37 @@ function Users() {
             { key: 'g', header: 'Staff access', render: (u) => (can('settings.manage') ? (
               <div className="row wrap"><Select aria-label="Role to grant" style={{ minWidth: 120 }} value={grant[u.id] ?? ''} onChange={(e) => setGrant((s) => ({ ...s, [u.id]: e.target.value }))}><option value="">Add role…</option>{ROLES.filter((r) => !u.roles.includes(r)).map((r) => <option key={r} value={r}>{r}</option>)}</Select>
                 <Button size="sm" disabled={!grant[u.id]} onClick={() => act.run(() => post(`/admin/users/${u.id}/roles`, { role: grant[u.id] }), 'Role granted', reload)}>Grant</Button></div>) : null) },
-            { key: 'd', header: '', render: (u) => (can('settings.manage') && u.id !== me?.id ? <Button size="sm" variant={u.disabled ? 'secondary' : 'danger'} onClick={() => act.run(() => patch(`/admin/users/${u.id}/disabled`, { disabled: !u.disabled }), u.disabled ? 'User enabled' : 'User disabled and signed out', reload)}>{u.disabled ? 'Enable' : 'Disable'}</Button> : null) },
+            { key: 'd', header: '', render: (u) => (can('settings.manage') && u.id !== me?.id ? <div className="row wrap"><Switch checked={!u.disabled} label="Can sign in" onChange={(v) => act.run(() => patch(`/admin/users/${u.id}/disabled`, { disabled: !v }), v ? 'Account enabled' : 'Account disabled', reload)} /><DeleteButton what="account" name={u.email} path={`/admin/users/${u.id}`} onDone={(x) => { toast(x.note); reload(); }} /></div> : null) },
           ]} />
       )}</Fetch>
     </Need>
+  );
+}
+
+function NewStaff({ onDone }: { onDone: () => void }) {
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  const create = useAction(async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
+    await post('/admin/users', { email: f.email, full_name: f.full_name, password: f.password, role: f.role });
+    toast('Login created. Share the email and password with them privately; they can change it after signing in.'); setOpen(false); onDone();
+  });
+  return (
+    <>
+      <div className="row end" style={{ margin: '0 0 10px' }}><Button onClick={() => setOpen(true)}>Create a staff login</Button></div>
+      <Modal open={open} onClose={() => setOpen(false)} title="Create a staff login">
+        <form onSubmit={create.run}>
+          <p className="muted small">For admin, marketing, support, finance, dispatch or catalogue staff. Vendors and drivers sign themselves up in their own windows.</p>
+          {create.error && <Notice tone="error">{create.error}</Notice>}
+          <Field label="Full name"><Input name="full_name" required /></Field>
+          <Field label="Email"><Input name="email" type="email" required autoComplete="off" /></Field>
+          <Field label="Temporary password" hint="At least 10 characters."><Input name="password" type="text" required minLength={10} autoComplete="off" /></Field>
+          <Field label="Role"><Select name="role" defaultValue="marketing">{ROLES.map((r) => <option key={r} value={r}>{r}</option>)}</Select></Field>
+          <Button type="submit" busy={create.busy}>Create login</Button>
+        </form>
+      </Modal>
+    </>
   );
 }
 

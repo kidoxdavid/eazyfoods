@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool } from '../db/pool.js';
-import { areaOf, COOKIES, createSession, STAFF_AREA_ROLES } from '../lib/auth.js';
+import { AREA_LOGIN_ROLES, areaOf, COOKIES, createSession, STAFF_AREA_ROLES } from '../lib/auth.js';
 import { rl } from '../lib/ratelimit.js';
 import { hashPassword, hashToken, newToken, verifyPassword } from '../lib/password.js';
 import { config } from '../config.js';
@@ -44,16 +44,33 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post('/login', limit, async (req, reply) => {
-    const body = creds.parse(req.body);
-    const { rows } = await pool.query('SELECT id, password_hash FROM users WHERE email = $1 AND disabled_at IS NULL', [body.email]);
+    const body = creds.extend({ area: z.enum(['admin', 'marketing', 'vendor', 'driver']).optional() }).parse(req.body);
+    const { rows } = await pool.query('SELECT id, password_hash, staff_signup FROM users WHERE email = $1 AND disabled_at IS NULL', [body.email]);
     const ok = await verifyPassword(body.password, rows[0]?.password_hash ?? DUMMY);
     if (!rows[0] || !ok) return reply.code(401).send({ error: 'invalid_credentials', message: 'Email or password is incorrect.' });
     if (areaOf(req) === 'staff') {
       const held = (await pool.query('SELECT role FROM user_roles WHERE user_id = $1', [rows[0].id])).rows.map((r) => r.role);
-      if (!held.some((r) => STAFF_AREA_ROLES.includes(r))) return reply.code(403).send({ error: 'not_staff', message: 'This sign-in is only for the admin, marketing, vendor and driver accounts. Use the email for that area.' });
+      // Each staff window only takes its own accounts: the admin cannot sign in to the vendor, driver or marketing windows, and so on.
+      const okHere = body.area ? held.some((r) => (AREA_LOGIN_ROLES[body.area!] as readonly string[]).includes(r)) || rows[0].staff_signup === body.area : held.some((r) => STAFF_AREA_ROLES.includes(r)) || !!rows[0].staff_signup;
+      if (!okHere) return reply.code(403).send({ error: 'not_staff', message: 'This sign-in is only for the admin, marketing, vendor and driver accounts. Use the email for that area.' });
     }
     await createSession(rows[0].id, reply, areaOf(req));
     return { ok: true };
+  });
+
+  // Sign-up windows for the two areas that take outside people. Admin and marketing accounts are created by an admin, never by sign-up.
+  app.post('/register-staff', limit, async (req, reply) => {
+    const body = creds.extend({ full_name: z.string().min(1).max(120), area: z.enum(['vendor', 'driver']) }).parse(req.body);
+    const hash = await hashPassword(body.password);
+    try {
+      const u = await pool.query('INSERT INTO users(email,password_hash,full_name,staff_signup) VALUES ($1,$2,$3,$4) RETURNING id', [body.email, hash, body.full_name, body.area]);
+      await createSession(u.rows[0].id, reply, 'staff');
+      await sendVerification(u.rows[0].id, body.email).catch(() => {});
+      return reply.code(201).send({ id: u.rows[0].id, email: body.email, full_name: body.full_name });
+    } catch (e: any) {
+      if (e.code === '23505') return reply.code(409).send({ error: 'email_taken', message: 'An account with this email already exists. Sign in instead, or use a different email.' });
+      throw e;
+    }
   });
 
   app.post('/logout', async (req, reply) => {

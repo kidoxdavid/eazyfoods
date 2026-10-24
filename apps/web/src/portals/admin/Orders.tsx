@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { fmtDate } from '../../api';
 import { useAction } from '../../hooks';
 import { useToast } from '../../toast';
-import { Badge, Button, Card, Field, Input, Modal, Notice, PageHeader, StatusBadge, Textarea } from '../../ui';
+import { Badge, Button, Card, Field, Input, Modal, Notice, PageHeader, StatusBadge, Textarea, Switch } from '../../ui';
 import { DataTable, Fetch, Need, cents, post, useCan } from './common';
 
 export function Orders() {
@@ -102,8 +102,8 @@ export function OrderDetail() {
             {refundSub?.lines.map((l: any) => { const max = l.quantity - l.refunded_quantity; return (
               <div key={l.id} className="row between" style={{ marginBottom: 8 }}><span>{l.name} <span className="small muted">({max} refundable)</span></span>
                 <Input style={{ width: 80 }} type="number" min={0} max={max} disabled={max <= 0} value={qtys[l.id] ?? 0} onChange={(e) => setQtys((s) => ({ ...s, [l.id]: Math.max(0, Math.min(max, Number(e.target.value))) }))} aria-label={`Quantity of ${l.name} to refund`} /></div>); })}
-            {refundSub?.delivery_cents > 0 && <label className="check"><input type="checkbox" checked={withDelivery} onChange={(e) => setWithDelivery(e.target.checked)} />Also refund the delivery fee</label>}
-            <label className="check"><input type="checkbox" checked={vendorFunded} onChange={(e) => setVendorFunded(e.target.checked)} />The store pays for this (untick if our fault, e.g. late delivery: the store keeps its earnings)</label>
+            {refundSub?.delivery_cents > 0 && <Switch checked={withDelivery} label="Also refund the delivery fee" onChange={(v) => setWithDelivery(v)} />}
+            <Switch checked={vendorFunded} label="The store pays for this (untick if our fault, e.g. late delivery: the store keeps its earnings)" onChange={(v) => setVendorFunded(v)} />
             <Field label="Reason"><Textarea value={rReason} onChange={(e) => setRReason(e.target.value)} /></Field>
             <div className="row end"><Button variant="ghost" onClick={() => setRefundSub(null)}>Close</Button>
               <Button busy={refund.busy} disabled={rReason.length < 3 || (!withDelivery && !Object.values(qtys).some((q) => q > 0))} onClick={() => refund.run(reload)}>Request refund</Button></div>

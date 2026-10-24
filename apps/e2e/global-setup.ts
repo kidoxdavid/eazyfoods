@@ -23,7 +23,7 @@ export default async function setup() {
   await c.query('CREATE DATABASE eazyfoods_e2e');
   await c.end();
 
-  const env = { ...process.env, DATABASE_URL: dbUrl, NODE_ENV: 'development' };
+  const env = { ...process.env, DATABASE_URL: dbUrl, NODE_ENV: 'development', SEED_DEMO: '1' };
   const run = (script: string) => execFileSync('npx', ['tsx', script], { cwd: join(root, 'apps/api'), env, stdio: 'inherit' });
   run('src/db/migrate.ts'); run('src/db/seed.ts');
   // Stores are open around the clock so the journeys do not depend on the time of day.

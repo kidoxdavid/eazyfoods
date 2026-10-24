@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import { fmtDate } from '../../api';
 import { useAction } from '../../hooks';
 import { useToast } from '../../toast';
-import { Badge, Button, Card, Confirm, Notice, PageHeader, Select, StatusBadge } from '../../ui';
-import { DataTable, Fetch, Need, cents, patch, post } from './common';
+import { Badge, Button, Card, Confirm, Notice, PageHeader, Select, StatusBadge, Switch } from '../../ui';
+import { DataTable, DeleteButton, Fetch, Need, cents, patch, post } from './common';
 
 export function Dispatch() {
   const toast = useToast();
@@ -55,13 +55,14 @@ export function Drivers() {
           columns={[
             { key: 'n', header: 'Driver', render: (r) => <><strong>{r.full_name}</strong><div className="small muted">{r.email} · {r.phone}{r.vehicle ? ` · ${r.vehicle}` : ''}</div></> },
             { key: 's', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
-            { key: 'l', header: 'Licence verified', render: (r) => <label className="check"><input type="checkbox" checked={r.licence_verified} onChange={(e) => act.run(() => patch(`/admin/drivers/${r.id}`, { licence_verified: e.target.checked }), 'Updated', reload)} />{r.licence_verified ? 'Yes' : 'No'}</label> },
-            { key: 'b', header: 'Background check', render: (r) => <label className="check"><input type="checkbox" checked={r.background_check_verified} onChange={(e) => act.run(() => patch(`/admin/drivers/${r.id}`, { background_check_verified: e.target.checked }), 'Updated', reload)} />{r.background_check_verified ? 'Yes' : 'No'}</label> },
+            { key: 'l', header: 'Licence verified', render: (r) => <Switch checked={r.licence_verified} label="Licence verified" onChange={(v) => act.run(() => patch(`/admin/drivers/${r.id}`, { licence_verified: v }), 'Updated', reload)} /> },
+            { key: 'b', header: 'Background check', render: (r) => <Switch checked={r.background_check_verified} label="Background check" onChange={(v) => act.run(() => patch(`/admin/drivers/${r.id}`, { background_check_verified: v }), 'Updated', reload)} /> },
             { key: 'j', header: 'Active jobs', render: (r) => r.active_jobs },
             { key: 'a', header: '', render: (r) => (
               <div className="row wrap">
                 {r.status !== 'approved' && <Button size="sm" disabled={!(r.licence_verified && r.background_check_verified)} title={!(r.licence_verified && r.background_check_verified) ? 'Verify licence and background check first' : ''} onClick={() => act.run(() => patch(`/admin/drivers/${r.id}`, { status: 'approved' }), 'Driver approved', reload)}>Approve</Button>}
                 {r.status === 'approved' && <Confirm size="sm" message={`Suspend ${r.full_name}? They lose access to driver jobs immediately.`} onConfirm={() => act.run(() => patch(`/admin/drivers/${r.id}`, { status: 'suspended' }), 'Driver suspended', reload) as any}>Suspend</Confirm>}
+                <DeleteButton what="driver" name={r.full_name} path={`/admin/drivers/${r.id}`} onDone={(x) => { toast(x.note); reload(); }} />
                 {r.status === 'applied' && <Button size="sm" variant="ghost" onClick={() => act.run(() => patch(`/admin/drivers/${r.id}`, { status: 'rejected' }), 'Application rejected', reload)}>Reject</Button>}
               </div>) },
           ]} />

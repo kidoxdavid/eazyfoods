@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { del, money, post, put } from '../../api';
 import { useAction, useApi } from '../../hooks';
 import { useToast } from '../../toast';
-import { Badge, Button, Card, DataTable, ErrorBox, Field, ImageUpload, Input, Loading, Modal, Notice, PageHeader, Select, Textarea, VideoUpload } from '../../ui';
+import { Badge, Button, Card, DataTable, ErrorBox, Field, ImageUpload, Input, Loading, Modal, Notice, PageHeader, Select, Textarea, VideoUpload, Switch } from '../../ui';
 import { StoreSelect, useVendor } from './Shared';
 
 type Dish = { product_id: string; offer_id: string; name: string; description: string | null; cuisine: string | null; spice_level: number | null; serves: string | null; prep_minutes: number | null; allergens: string[] | null;
@@ -82,7 +82,7 @@ function DishEditor({ list, dish, onClose, onDone }: { list: List; dish: Dish | 
         <fieldset style={{ border: 0, padding: 0, margin: '10px 0' }}><legend className="label" style={{ fontWeight: 700 }}>Dietary labels (optional)</legend><p className="muted small" style={{ margin: '0 0 4px' }}>Only tick what is true for this exact recipe. Customers see these as declared by you.</p>
           <div className="pill-list">{list.tags.map((t) => <label key={t} className="check"><input type="checkbox" checked={f.tags.includes(t)} onChange={() => flip('tags', t)} />{nice(t)}</label>)}</div></fieldset>
         <div><span className="label" style={{ fontWeight: 600, fontSize: '.9rem' }}>Photo (optional)</span><ImageUpload value={f.image} onChange={(u) => set('image', u)} label="Dish photo" /></div>
-        <label className="check"><input type="checkbox" checked={f.active} onChange={(e) => set('active', e.target.checked)} />Show on my menu</label>
+        <Switch checked={f.active} label="Show on my menu" onChange={(v) => set('active', v)} />
         <label className="check legal-check"><input type="checkbox" checked={f.confirmed} onChange={(e) => set('confirmed', e.target.checked)} /><span><strong>I confirm the allergen list is complete and correct for this dish.</strong> If none are ticked, I confirm it contains none of these allergens, including from shared equipment I know about.</span></label>
         <div className="row end">
           {dish && <Button type="button" variant="danger" busy={remove.busy} onClick={() => remove.run()}>Remove dish</Button>}

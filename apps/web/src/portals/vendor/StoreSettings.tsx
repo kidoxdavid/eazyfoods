@@ -3,7 +3,7 @@ import { centsToDollars, dollarsToCents, put } from '../../api';
 import type { Region } from '../../api';
 import { useAction, useApi } from '../../hooks';
 import { useToast } from '../../toast';
-import { Button, Card, ErrorBox, Field, ImageUpload, Input, Loading, Notice, PageHeader, Select, Textarea, VideoUpload } from '../../ui';
+import { Button, Card, ErrorBox, Field, ImageUpload, Input, Loading, Notice, PageHeader, Select, Textarea, VideoUpload, Switch } from '../../ui';
 import { StoreSelect, useVendor } from './Shared';
 import Schedule from './Schedule';
 
@@ -34,7 +34,7 @@ function ProfileForm() {
     <Card><h2>{f.name}</h2>
       <form onSubmit={(e) => { e.preventDefault(); save.run(); }}>
         {save.error && <Notice tone="error">{save.error}</Notice>}
-        <div className="switch-row"><label className="check"><input type="checkbox" checked={f.ordering_paused} onChange={(e) => set('ordering_paused', e.target.checked)} /><span><strong>Pause new orders</strong><br /><span className="muted small">Customers can browse but not check out. Use this when you are too busy or closing early.</span></span></label></div>
+        <div className="switch-row"><Switch checked={f.ordering_paused} onChange={(v) => set('ordering_paused', v)} label="Pause new orders" hint="Customers can browse but not check out. Use this when you are too busy or closing early." /></div>
         <hr />
         <div className="row wrap top"><div><span className="label" style={{ fontWeight: 600, fontSize: '.9rem' }}>Logo</span><ImageUpload value={f.logo_url} onChange={(u) => set('logo_url', u)} label="Logo" /></div><div><span className="label" style={{ fontWeight: 600, fontSize: '.9rem' }}>Cover image</span><ImageUpload value={f.cover_url} onChange={(u) => set('cover_url', u)} label="Cover" /></div></div>
         <Field label="About your store"><Textarea value={f.description ?? ''} onChange={(e) => set('description', e.target.value)} maxLength={1500} /></Field>
@@ -44,7 +44,7 @@ function ProfileForm() {
           <Field label="Postal code"><Input value={f.postal_code ?? ''} onChange={(e) => set('postal_code', e.target.value)} required /></Field>
           <Field label="Phone"><Input type="tel" value={f.phone ?? ''} onChange={(e) => set('phone', e.target.value)} required /></Field>
           <Field label="Minimum order (CAD, optional)"><Input type="number" step="0.01" min="0" value={min} onChange={(e) => setMin(e.target.value)} inputMode="decimal" /></Field></div>
-        <div className="row wrap"><label className="check"><input type="checkbox" checked={f.offers_delivery} onChange={(e) => set('offers_delivery', e.target.checked)} />We offer delivery</label><label className="check"><input type="checkbox" checked={f.offers_pickup} onChange={(e) => set('offers_pickup', e.target.checked)} />We offer pickup</label></div>
+        <div className="row wrap"><Switch checked={f.offers_delivery} label="We offer delivery" onChange={(v) => set('offers_delivery', v)} /><Switch checked={f.offers_pickup} label="We offer pickup" onChange={(v) => set('offers_pickup', v)} /></div>
         {f.kind === 'kitchen' && <Field label="Business type" hint="A restaurant's address and phone are shown publicly and it needs a business licence. A home cook's address is never shown. This is fixed once you are approved."><Select value={f.kitchen_type ?? 'home'} onChange={(e) => set('kitchen_type', e.target.value as 'home' | 'restaurant')}><option value="home">Home chef</option><option value="restaurant">Restaurant</option></Select></Field>}
         <div><span className="label" style={{ fontWeight: 600, fontSize: '.9rem' }}>Video (optional)</span><VideoUpload value={f.video_url} onChange={(u) => set('video_url', u)} label="Video" /></div>
         {f.kind === 'kitchen' && <Field label="Cuisines you cook" hint="Separate with commas, e.g. Nigerian, West African"><Input value={(f.cuisines ?? []).join(', ')} onChange={(e) => set('cuisines', e.target.value.split(',').map((c) => c.trim()).filter(Boolean).slice(0, 8))} /></Field>}
@@ -73,7 +73,7 @@ function HoursForm() {
     {multi && <Notice tone="warn">Some days have more than one opening window. Saving here keeps only the first window of each day.</Notice>}
     {save.error && <Notice tone="error">{save.error}</Notice>}
     {h.loading && !h.data ? <Loading /> : <form onSubmit={(e) => { e.preventDefault(); save.run(); }}>
-      {days.map((d, i) => (<div key={i} className="week-row"><label className="check"><input type="checkbox" checked={d.on} onChange={(e) => up(i, { on: e.target.checked })} aria-label={`Open on ${DAYS[i]}`} />{DAYS[i]}</label>
+      {days.map((d, i) => (<div key={i} className="week-row"><Switch checked={d.on} onChange={(v) => up(i, { on: v })} label={`Open ${DAYS[i]}`} />
         <Input type="time" value={d.opens} disabled={!d.on} onChange={(e) => up(i, { opens: e.target.value })} aria-label={`${DAYS[i]} opens`} /><Input type="time" value={d.closes} disabled={!d.on} onChange={(e) => up(i, { closes: e.target.value })} aria-label={`${DAYS[i]} closes`} />
         <span className="muted small">{d.on ? '' : 'Closed'}</span></div>))}
       <Button type="submit" busy={save.busy}>Save hours</Button></form>}</Card>);

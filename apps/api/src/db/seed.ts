@@ -1,3 +1,4 @@
+import { cleanStart } from '../services/cleanstart.js';
 import { fileURLToPath } from 'node:url';
 import { pool, tx } from './pool.js';
 import { norm, slugify } from '../lib/norm.js';
@@ -86,10 +87,9 @@ const STORES = [
   { slug: 'demo-southern-pantry', name: 'Demo Southern Pantry', vendor: 'Demo Southern Pantry Ltd.', regions: ['southern-africa', 'west-africa'], postal: 'T2Y 0A0', address: '3 Test Rd SE' },
 ];
 
-export async function seed(log = console.log) {
+async function seedAll(log: (m: string) => void) {
   if (process.env.NODE_ENV === 'production') throw new Error('Refusing to seed test data in production');
-  if ((await pool.query(`SELECT 1 FROM app_settings WHERE key = 'demo.purged'`)).rowCount) { log('demo data was removed on purpose; not re-seeding it'); return; }
-  await tx(async (c) => {
+    await tx(async (c) => {
     const regionId: Record<string, string> = {};
     const countryId: Record<string, string> = {};
     let order = 0;
@@ -289,6 +289,21 @@ export async function seed(log = console.log) {
     }
   });
   log('seeded (test data only)');
+}
+
+/**
+ * `demo: true` (tests, SEED_DEMO=1) loads the invented stores, products and test sign-ins.
+ * Otherwise a deploy starts clean: reference data (regions, categories, delivery zones) is created if the database is brand new,
+ * the demo content and every test sign-in are removed, and the single default admin exists.
+ */
+export async function seed(log = console.log, opts: { demo?: boolean } = {}) {
+  if (opts.demo ?? process.env.SEED_DEMO === '1') {
+    if ((await pool.query(`SELECT 1 FROM app_settings WHERE key = 'demo.purged'`)).rowCount) { log('demo data was removed on purpose; not re-seeding it'); return; }
+    return seedAll(log);
+  }
+  if (!(await pool.query('SELECT 1 FROM regions LIMIT 1')).rowCount && process.env.NODE_ENV !== 'production') await seedAll(log);
+  await cleanStart(log);
+  log('clean start ready');
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

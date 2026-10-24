@@ -46,7 +46,6 @@ const ITEMS: Item[] = [
   { to: '/admin/zones', label: 'Delivery zones', group: 'Marketplace', need: ['stores.manage'] },
   { to: '/admin/promotions', label: 'Promotions', group: 'Growth', need: ['promotions.manage'] },
   { to: '/admin/ads', label: 'Advertising', group: 'Growth', need: ['ads.manage'] },
-  { to: '/marketing', label: 'Marketing →', group: 'Growth', need: ['marketing.manage'] },
   { to: '/admin/studio', label: 'Storefront studio', group: 'Growth', need: ['content.manage'] },
   { to: '/admin/content', label: 'Content', group: 'Growth', need: ['content.manage'] },
   { to: '/admin/crm', label: 'Vendor pipeline', group: 'Growth', need: ['crm.manage'] },

@@ -1,3 +1,4 @@
+import { eraseVendor } from '../services/erase.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
@@ -64,6 +65,8 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
       return r.rows[0];
     });
   });
+
+  app.delete<{ Params: { id: string } }>('/vendors/:id', { preHandler: requirePerm('vendors.manage') }, async (req) => eraseVendor(req.user!.id, uuid.parse(req.params.id)));
 
   app.patch<{ Params: { id: string } }>('/vendor-documents/:id', { preHandler: requirePerm('vendors.manage') }, async (req) => {
     const id = uuid.parse(req.params.id);

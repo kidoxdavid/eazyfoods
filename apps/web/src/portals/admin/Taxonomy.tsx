@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useAction } from '../../hooks';
 import { useToast } from '../../toast';
-import { Badge, Button, Card, Field, Input, Modal, Notice, PageHeader, Select, Tabs, Textarea } from '../../ui';
+import { Badge, Button, Card, Field, Input, Modal, Notice, PageHeader, Select, Tabs, Textarea, Switch } from '../../ui';
 import { CheckList, DataTable, Fetch, Need, lines, patch, post, put, useForm } from './common';
 
 export function Taxonomy() {
@@ -40,7 +40,7 @@ function Regions({ t, reload }: { t: any; reload: () => void }) {
         <Field label="Name"><Input value={f.v.name} onChange={f.set('name')} /></Field>
         <Field label="Description"><Textarea value={f.v.description} onChange={f.set('description')} /></Field>
         <Field label="Display order"><Input inputMode="numeric" value={f.v.sort_order} onChange={f.set('sort_order')} /></Field>
-        {edit?.id && <label className="check"><input type="checkbox" checked={f.v.is_active} onChange={f.set('is_active')} />Shown to shoppers</label>}
+        {edit?.id && <Switch checked={f.v.is_active} label="Shown to shoppers" onChange={f.set('is_active')} />}
         <p className="small muted">A country may belong to several regions (for example Cameroon in both West and Central Africa).</p>
         <CheckList options={t.countries.map((c: any) => ({ value: c.slug, label: c.name }))} value={countries} onChange={setCountries} />
         <div className="row end"><Button variant="ghost" onClick={() => setEdit(null)}>Cancel</Button><Button busy={save.busy} disabled={f.v.name.length < 2} onClick={() => save.run()}>Save</Button></div>
@@ -107,7 +107,7 @@ function Collections({ t, reload }: { t: any; reload: () => void }) {
           <Field label="Category rule"><Select value={f.v.category_slug} onChange={f.set('category_slug')}><option value="">None</option>{t.categories.map((r: any) => <option key={r.slug} value={r.slug}>{r.name}</option>)}</Select></Field>
           <Field label="Display order"><Input inputMode="numeric" value={f.v.sort_order} onChange={f.set('sort_order')} /></Field>
         </div>
-        <label className="check"><input type="checkbox" checked={f.v.is_active} onChange={f.set('is_active')} />Shown to shoppers</label>
+        <Switch checked={f.v.is_active} label="Shown to shoppers" onChange={f.set('is_active')} />
         <div className="row end"><Button variant="ghost" onClick={() => setEdit(null)}>Cancel</Button><Button busy={save.busy} disabled={f.v.title.length < 2} onClick={() => save.run()}>Save</Button></div>
       </Modal>
     </>

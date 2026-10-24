@@ -60,9 +60,9 @@ export async function enabled(loc: Locator, want: boolean) { await expect.poll(a
 
 /** Sign in to the staff areas only (what a person does at the staff sign-in page), leaving the shop sign-in alone. */
 export async function signInStaff(page: Page, email: string, password = 'dev-password-123', next = '/admin') {
-  await page.goto(`${base()}/signin?next=${encodeURIComponent(next)}`);
+  await page.goto(`${base()}/${next.split('/')[1]}/signin?next=${encodeURIComponent(next)}`);   // every staff area has its own sign-in window
   await page.fill('input[name=email]', email);
   await page.fill('input[name=password]', password);
   await page.click('.auth button[type=submit]');
-  await page.waitForURL((u) => u.pathname.startsWith(next));
+  await page.waitForURL((u) => u.pathname.startsWith(next) && !/signin/.test(u.pathname));
 }

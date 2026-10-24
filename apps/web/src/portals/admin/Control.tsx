@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { post, put } from '../../api';
+import { put } from '../../api';
 import { useAction, useApi } from '../../hooks';
 import { useToast } from '../../toast';
 import { Button, ErrorBox, Loading, Notice, PageHeader, Select, Switch, Tabs, Textarea } from '../../ui';
@@ -117,25 +117,7 @@ function PlatformSwitches() {
       {data!.map((s) => <div key={s.key} className="cc-row"><Switch checked={s.enabled} label={s.label} hint={s.description} onChange={async (v) => { try { await put(`/admin/control/platform/${s.key}`, { enabled: v }); await reload(); toast('Saved.'); } catch (e: any) { toast(e.message, 'error'); } }} /></div>)}
       <div className="cc-row muted small">Money rules (commission, tax, fees, hold days) stay in <b>Settings &amp; access</b>.</div>
     </section>
-    <PurgeDemo />
     </>
   );
 }
 
-function PurgeDemo() {
-  const toast = useToast();
-  const [phrase, setPhrase] = useState('');
-  const run = useAction(async () => { await post('/admin/control/purge-demo', { confirm: phrase }); setPhrase(''); toast('Demo data removed. You are starting from scratch.'); });
-  return (
-    <section className="cc-card"><header>Start from scratch</header>
-      <div className="cc-row"><div>
-        <p>Removes all demo stores, kitchens, products, recipes, collections, coupons, orders, payments and ledger entries. <strong>This cannot be undone.</strong></p>
-        <p className="muted small">Kept: every sign-in account and role, regions, categories, delivery zones and fees, settings and switches. The vendor and chef test accounts each get an empty store ready to fill in. Demo data is not brought back on later deploys.</p>
-        <label className="small" htmlFor="purge-phrase">Type <b>DELETE DEMO DATA</b> to confirm</label>
-        <input id="purge-phrase" className="input" value={phrase} onChange={(e) => setPhrase(e.target.value)} autoComplete="off" />
-        {run.error && <Notice tone="error">{run.error}</Notice>}
-        <Button variant="danger" busy={run.busy} disabled={phrase !== 'DELETE DEMO DATA'} onClick={() => run.run()}>Remove all demo data</Button>
-      </div></div>
-    </section>
-  );
-}

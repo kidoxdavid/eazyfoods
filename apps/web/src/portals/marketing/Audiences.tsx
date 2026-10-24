@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api';
 import { useAction, useApi } from '../../hooks';
 import { useToast } from '../../toast';
-import { Button, Card, DataTable, Field, Input, Modal, Notice, PageHeader, Select, del, post, put } from './kit';
+import { Button, Card, DataTable, Field, Input, Modal, Notice, PageHeader, Select, Switch, del, post, put } from './kit';
 
 type Rules = Record<string, number | string | boolean | undefined>;
 const FIELDS: [keyof Rules & string, string, string][] = [
@@ -34,7 +34,7 @@ export default function Audiences() {
           {FIELDS.map(([k, label, kind]) => <Field key={k} label={label}><Input type="number" min={0} value={kind === 'money' ? (edit.rules[k] == null ? '' : Number(edit.rules[k]) / 100) : (edit.rules[k] ?? '')} onChange={(e) => setRule(k, e.target.value === '' ? undefined : kind === 'money' ? Math.round(Number(e.target.value) * 100) : Number(e.target.value))} /></Field>)}
           <Field label="Has bought from region"><Select value={String(edit.rules.region ?? '')} onChange={(e) => setRule('region', e.target.value || undefined)}><option value="">Any</option>{regions.data?.map((r) => <option key={r.slug} value={r.slug}>{r.name}</option>)}</Select></Field>
         </div>
-        <label className="check"><input type="checkbox" checked={!!edit.rules.kitchen_buyers} onChange={(e) => setRule('kitchen_buyers', e.target.checked || undefined)} />Has ordered from a home chef</label>
+        <Switch checked={!!edit.rules.kitchen_buyers} label="Has ordered from a home chef" onChange={(v) => setRule('kitchen_buyers', v || undefined)} />
         <Card><strong>{count ? `${count.count} ${count.count === 1 ? 'person' : 'people'} match` : 'Counting…'}</strong>
           {count?.sample.length ? <p className="small muted">For example: {count.sample.map((s) => `${s.first_name} (${s.email})`).join(', ')}</p> : null}</Card>
         <div className="row end"><Button variant="ghost" onClick={() => setEdit(null)}>Cancel</Button><Button busy={save.busy} disabled={edit.name.trim().length < 2} onClick={() => save.run()}>Save audience</Button></div>

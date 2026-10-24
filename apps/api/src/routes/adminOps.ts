@@ -1,3 +1,4 @@
+import { eraseDriver } from '../services/erase.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
@@ -19,6 +20,7 @@ export const adminOpsRoutes: FastifyPluginAsync = async (app) => {
         (SELECT count(*)::int FROM deliveries x WHERE x.driver_id = d.id AND x.status IN ('assigned','picked_up')) AS active_jobs
         FROM drivers d JOIN users u ON u.id = d.user_id ORDER BY (d.status = 'applied') DESC, d.created_at DESC`)).rows);
 
+  app.delete<{ Params: { id: string } }>('/drivers/:id', { preHandler: requirePerm('drivers.manage') }, async (req) => eraseDriver(req.user!.id, z.string().uuid().parse(req.params.id)));
   app.patch<{ Params: { id: string } }>('/drivers/:id', { preHandler: requirePerm('drivers.manage') }, async (req) => {
     const id = uuid.parse(req.params.id);
     const b = z.object({ status: z.enum(['approved', 'suspended', 'rejected']).optional(), licence_verified: z.boolean().optional(), background_check_verified: z.boolean().optional() }).parse(req.body);

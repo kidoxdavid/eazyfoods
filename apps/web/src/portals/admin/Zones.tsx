@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useAction, useApi } from '../../hooks';
 import { useToast } from '../../toast';
-import { Badge, Button, Field, Input, Modal, Notice, PageHeader } from '../../ui';
+import { Badge, Button, Field, Input, Modal, Notice, PageHeader, Switch } from '../../ui';
 import { CheckList, DataTable, Fetch, Need, cents, lines, post, put, useForm } from './common';
 
 export function Zones() {
@@ -40,7 +40,7 @@ export function Zones() {
             <p className="small muted">{lines(f.v.fsas.replace(/\s+/g, ',')).length} areas</p>
             <strong>Stores that deliver here</strong>
             <CheckList options={(stores.data ?? []).map((s: any) => ({ value: s.id, label: s.name }))} value={storeIds} onChange={setStoreIds} />
-            <label className="check"><input type="checkbox" checked={f.v.is_active} onChange={f.set('is_active')} />Zone is active</label>
+            <Switch checked={f.v.is_active} label="Zone is active" onChange={f.set('is_active')} />
             <div className="row end"><Button variant="ghost" onClick={() => setEdit(null)}>Cancel</Button><Button busy={save.busy} disabled={f.v.name.length < 2} onClick={() => save.run(reload)}>Save</Button></div>
           </Modal>
         </>

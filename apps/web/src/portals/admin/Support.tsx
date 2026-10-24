@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { fmtDate } from '../../api';
 import { useAction } from '../../hooks';
 import { useToast } from '../../toast';
-import { Badge, Button, Card, Field, Notice, PageHeader, Select, StatusBadge, Textarea } from '../../ui';
+import { Badge, Button, Card, Field, Notice, PageHeader, Select, StatusBadge, Textarea, Switch } from '../../ui';
 import { DataTable, Fetch, Need, patch, post, useCan } from './common';
 
 export function Support() {
@@ -48,7 +48,7 @@ export function TicketDetail() {
             </Card>
             <Card><h3>Reply</h3>
               <Field label={internal ? 'Internal note (the customer never sees this)' : 'Message to the customer'}><Textarea value={body} onChange={(e) => setBody(e.target.value)} /></Field>
-              <label className="check"><input type="checkbox" checked={internal} onChange={(e) => setInternal(e.target.checked)} />Internal note only</label>
+              <Switch checked={internal} label="Internal note only" onChange={(v) => setInternal(v)} />
               <Button disabled={!body.trim()} onClick={async () => { await act.run(() => post(`/admin/tickets/${id}/messages`, { body, internal }), internal ? 'Note saved' : 'Reply sent', reload); setBody(''); }}>{internal ? 'Save note' : 'Send reply'}</Button>
             </Card>
           </div>

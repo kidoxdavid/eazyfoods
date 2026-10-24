@@ -9,6 +9,7 @@ import { ThemeProvider } from './theme';
 import { Footer, Header, TabBar } from './shell';
 import { Empty, Loading } from './ui';
 import { RequireArea, RequireAuth } from './guard';
+import { StaffSignIn, StaffSignUp } from './pages/StaffAuth';
 import { Home } from './pages/Home';
 import { SearchPage } from './pages/Search';
 import { ProductPage } from './pages/Product';
@@ -53,6 +54,10 @@ export function App() {
           <ThemeProvider>
           <Suspense fallback={<SkelPage />}>
             <Routes>
+              <Route path="/admin/signin" element={<StaffSignIn area="admin" />} />
+              <Route path="/marketing/signin" element={<StaffSignIn area="marketing" />} />
+              <Route path="/vendor/signin" element={<StaffSignIn area="vendor" />} /><Route path="/vendor/signup" element={<StaffSignUp area="vendor" />} />
+              <Route path="/driver/signin" element={<StaffSignIn area="driver" />} /><Route path="/driver/signup" element={<StaffSignUp area="driver" />} />
               <Route path="/vendor/*" element={<RequireArea area="vendor"><Vendor /></RequireArea>} />
               <Route path="/admin/*" element={<RequireArea area="admin"><Admin /></RequireArea>} />
               <Route path="/driver/*" element={<RequireArea area="driver"><Driver /></RequireArea>} />

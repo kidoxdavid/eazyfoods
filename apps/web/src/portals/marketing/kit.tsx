@@ -1,5 +1,5 @@
 /** Small shared pieces for the marketing screens. */
-export { Badge, Button, Card, Confirm, DataTable as UiTable, ErrorBox, Field, ImageUpload, Input, Loading, Modal, Notice, PageHeader, Select, Stat, Tabs, Textarea } from '../../ui';
+export { Badge, Button, Card, Confirm, DataTable as UiTable, ErrorBox, Field, ImageUpload, Input, Loading, Modal, Notice, PageHeader, Select, Stat, Switch, Tabs, Textarea } from '../../ui';
 export { DataTable, Fetch, del, post, put, useForm } from '../admin/common';
 import { DataTable } from '../admin/common';
 export { DataTable as DT };

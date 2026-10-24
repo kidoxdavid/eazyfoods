@@ -3,7 +3,7 @@ import { api, centsToDollars, dollarsToCents, money, patch, post, put, fmtDate }
 import type { Region } from '../../api';
 import { useAction, useApi, useDebounced } from '../../hooks';
 import { useToast } from '../../toast';
-import { Badge, Button, Card, DataTable, Empty, ErrorBox, Field, ImageUpload, Input, Loading, Modal, Notice, PageHeader, Select, Tabs, Textarea, formValues } from '../../ui';
+import { Badge, Button, Card, DataTable, Empty, ErrorBox, Field, ImageUpload, Input, Loading, Modal, Notice, PageHeader, Select, Tabs, Textarea, formValues, Switch } from '../../ui';
 import { ScanButton } from './Scanner';
 import { StoreSelect, useVendor } from './Shared';
 
@@ -40,7 +40,7 @@ function List() {
       { key: 'price', header: 'Price', render: (o) => <>{money(o.price_cents)}{o.compare_at_cents ? <s className="muted small"> {money(o.compare_at_cents)}</s> : null}</> },
       { key: 'stock', header: 'On hand / reserved', render: (o) => `${o.stock_on_hand} / ${o.stock_reserved}` },
       { key: 'avail', header: 'Available', render: (o) => <>{o.available} {o.available <= 0 ? <Badge tone="danger">Out of stock</Badge> : o.low_stock ? <Badge tone="warn">Low</Badge> : null}</> },
-      { key: 'active', header: 'Shown to customers', render: (o) => <label className="check"><input type="checkbox" checked={o.is_active} onChange={() => toggle(o)} aria-label={`Show ${o.name} to customers`} />{o.is_active ? 'Yes' : 'Hidden'}</label> },
+      { key: 'active', header: 'Shown to customers', render: (o) => <Switch checked={o.is_active} onChange={() => toggle(o)} label={`Show ${o.name}`} /> },
       { key: 'act', header: '', render: (o) => <div className="row wrap"><Button size="sm" variant="secondary" onClick={() => setEdit(o)}>Price</Button>{caps.data?.multibuy !== false && <Button size="sm" variant="secondary" onClick={() => setTiers(o)}>Multi-buy{o.tiers.length ? ` (${o.tiers.length})` : ''}</Button>}<Button size="sm" variant="secondary" onClick={() => setStock(o)}>Stock</Button><Button size="sm" variant="ghost" onClick={() => setHist(o)}>History</Button></div> },
     ]} />
     {edit && <PriceModal o={edit} onClose={() => setEdit(null)} onDone={() => { setEdit(null); reload(); }} />}
