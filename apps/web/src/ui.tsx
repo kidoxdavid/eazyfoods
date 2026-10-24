@@ -113,7 +113,7 @@ export function Modal({ open, onClose, title, children, className = '' }: { open
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className={`modal-backdrop ${className ? `${className}-wrap` : ''}`} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className={`modal ${className}`} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={ref}>
         <div className="row between"><h2>{title}</h2><button className="icon-btn" onClick={onClose} aria-label="Close"><IconClose /></button></div>
         {children}

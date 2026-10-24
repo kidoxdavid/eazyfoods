@@ -332,7 +332,13 @@ describe('mobile quick view and menu motion', () => {
     await page.waitForTimeout(300);
     const h = (await dlg.boundingBox())!.height;
     expect(h).toBeLessThan(MOBILE.height * 0.7);                                   // never fills the screen
+    const b = (await dlg.boundingBox())!;                                          // a card in the middle, clear of every edge
+    for (const gap of [b.x, b.y, MOBILE.width - (b.x + b.width), MOBILE.height - (b.y + b.height)]) expect(gap).toBeGreaterThanOrEqual(14);
+    expect(Math.abs((b.y + b.height / 2) - MOBILE.height / 2)).toBeLessThan(40);   // vertically centred
+    expect(await page.locator('.modal-backdrop').evaluate((e) => getComputedStyle(e).backdropFilter)).toContain('blur');   // the rest of the page is blurred
     await dlg.getByRole('button', { name: /Add to basket/ }).waitFor();
+    await page.mouse.click(6, MOBILE.height - 6);                                  // tap the blurred edge
+    await dlg.waitFor({ state: 'hidden' });
   });
 
   it('the hamburger menu fades in and fades out', async () => {

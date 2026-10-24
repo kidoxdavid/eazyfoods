@@ -160,12 +160,14 @@ main { padding-top: 14px; }
 .pcard:hover .qv, .pcard:focus-within .qv, .pcard .qv:focus-visible { opacity: 1; pointer-events: auto; }
 /* Touch screens: just a small eye in the corner, so it hides as little of the product as possible. */
 @media (hover: none), (max-width: 699px) { .pcard .qv { opacity: 1; pointer-events: auto; left: auto; right: 6px; top: 6px; transform: none; width: 30px; height: 30px; min-height: 30px; padding: 0; justify-content: center; background: rgba(255,255,255,.82); box-shadow: 0 1px 4px rgba(0,0,0,.2); } .pcard .qv .qv-txt { display: none; } }
-/* The window is a compact sheet, never a full screen. */
-.modal.qv-modal { max-height: 64vh; padding: 12px 14px calc(14px + env(safe-area-inset-bottom)); } .qv-modal h2 { font-size: 1.05rem; padding-right: 8px; }
-.qv-body { display: grid; gap: 12px; grid-template-columns: 96px 1fr; align-items: start; } @media (min-width: 700px) { .modal.qv-modal { max-height: 86vh; padding: 18px; } .qv-modal h2 { font-size: 1.3rem; } .qv-body { grid-template-columns: 220px 1fr; gap: 16px; } }
+/* Phones: a card in the middle of the screen, clear of every edge, with the rest of the page blurred behind it. Tap the blur to close. */
+.modal-backdrop.qv-modal-wrap { align-items: center; justify-content: center; padding: 20px 16px; background: rgba(10, 20, 14, .38); -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px); }
+.modal.qv-modal { width: 100%; max-width: 420px; max-height: calc(100dvh - 56px); border-radius: 18px; padding: 14px 14px 16px; box-shadow: 0 18px 50px rgba(0,0,0,.35); } .qv-modal h2 { font-size: 1.05rem; padding-right: 8px; }
+.qv-body { display: grid; gap: 12px; grid-template-columns: 92px 1fr; align-items: start; }
+@media (min-width: 700px) { .modal-backdrop.qv-modal-wrap { padding: 16px; } .modal.qv-modal { max-width: 560px; max-height: 86vh; padding: 18px; border-radius: var(--r); } .qv-modal h2 { font-size: 1.3rem; } .qv-body { grid-template-columns: 220px 1fr; gap: 16px; } }
 .qv-art { background: var(--tint); border-radius: 12px; overflow: hidden; aspect-ratio: 1; } .qv-art img, .qv-art svg { width: 100%; height: 100%; object-fit: cover; display: block; }
 .qv-info { display: grid; gap: 6px; align-content: start; min-width: 0; } .qv-info p { margin: 0; }
-@media (max-width: 699px) { .qv-desc { display: none; } .qv-info .btn { min-height: 44px; } }
+@media (max-width: 699px) { .qv-desc { display: none; } .qv-info .btn { min-height: 44px; } .qv-info .stock { font-size: .85rem; } }
 
 /* ---------- Motion: things fade in (and the menu fades out) instead of popping ---------- */
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } } @keyframes fade-out { from { opacity: 1; } to { opacity: 0; } } @keyframes skel-pulse { from { opacity: .55; } to { opacity: 1; } }
