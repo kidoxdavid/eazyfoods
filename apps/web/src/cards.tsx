@@ -91,13 +91,12 @@ export function QuickView({ slug, onClose }: { slug: string; onClose: () => void
         <div className="qv-body">
           <div className="qv-art">{p.images[0] ? <img src={p.images[0].url} alt={p.images[0].alt} /> : <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />}</div>
           <div className="qv-info">
-            {p.brand && <span className="muted small">{p.brand}</span>}
-            <span className="muted small">{packLabel(p)}</span>
+            <span className="muted small">{[p.brand, packLabel(p)].filter(Boolean).join(' · ')}</span>
             {cur ? (<>
-              <div className="row"><Price cents={cur.price_cents} className={`big ${cur.on_promotion ? 'sale' : ''}`} />{cur.compare_at_cents && cur.compare_at_cents > cur.price_cents && <s className="was">{money(cur.compare_at_cents)}</s>}</div>
-              <div className={`stock ${cur.in_stock ? '' : 'out'}`}>{cur.in_stock ? (cur.available <= 5 ? `Only ${cur.available} left` : 'In stock') : 'Out of stock'}</div>
+              <div className="row wrap" style={{ justifyContent: 'space-between' }}><span className="row"><Price cents={cur.price_cents} className={`big ${cur.on_promotion ? 'sale' : ''}`} />{cur.compare_at_cents && cur.compare_at_cents > cur.price_cents && <s className="was">{money(cur.compare_at_cents)}</s>}</span>
+                <span className={`stock ${cur.in_stock ? '' : 'out'}`}>{cur.in_stock ? (cur.available <= 5 ? `Only ${cur.available} left` : 'In stock') : 'Out of stock'}</span></div>
               {p.offers.length > 1 && <label className="small"><span className="muted">Sold by</span>
-                <select className="input" value={cur.offer_id} onChange={(e) => setSel(e.target.value)}>{p.offers.map((o) => <option key={o.offer_id} value={o.offer_id}>{o.store_name} — {money(o.price_cents)}{o.in_stock ? '' : ' (out of stock)'}</option>)}</select></label>}
+                <select className="input" aria-label="Sold by" value={cur.offer_id} onChange={(e) => setSel(e.target.value)}>{p.offers.map((o) => <option key={o.offer_id} value={o.offer_id}>{o.store_name} — {money(o.price_cents)}{o.in_stock ? '' : ' (out of stock)'}</option>)}</select></label>}
               {p.offers.length === 1 && <span className="small">Sold by <strong>{cur.store_name}</strong></span>}
               {!cur.is_open && <span className="small muted">This store is closed now. You can add it but only check out while it is open.</span>}
               <AddToBasket cta offer={{ offer_id: cur.offer_id, slug, name: p.name, unit_price_cents: cur.price_cents, store_name: cur.store_name, store_slug: cur.store_slug, pack: packLabel(p), available: cur.available, in_stock: cur.in_stock }} />

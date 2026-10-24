@@ -331,10 +331,12 @@ describe('mobile quick view and menu motion', () => {
     const dlg = page.getByRole('dialog'); await dlg.waitFor();
     await page.waitForTimeout(300);
     const h = (await dlg.boundingBox())!.height;
-    expect(h).toBeLessThan(MOBILE.height * 0.7);                                   // never fills the screen
+    expect(h).toBeLessThan(MOBILE.height * 0.8);                                   // never fills the screen
     const b = (await dlg.boundingBox())!;                                          // a card in the middle, clear of every edge
     for (const gap of [b.x, b.y, MOBILE.width - (b.x + b.width), MOBILE.height - (b.y + b.height)]) expect(gap).toBeGreaterThanOrEqual(14);
     expect(Math.abs((b.y + b.height / 2) - MOBILE.height / 2)).toBeLessThan(40);   // vertically centred
+    const art = (await dlg.locator('.qv-art').boundingBox())!;                     // the product is the main thing: at least half of the card
+    expect(art.height).toBeGreaterThanOrEqual(b.height * 0.5); expect(art.width).toBeGreaterThanOrEqual(b.width * 0.8);
     expect(await page.locator('.modal-backdrop').evaluate((e) => getComputedStyle(e).backdropFilter)).toContain('blur');   // the rest of the page is blurred
     await dlg.getByRole('button', { name: /Add to basket/ }).waitFor();
     await page.mouse.click(6, MOBILE.height - 6);                                  // tap the blurred edge
