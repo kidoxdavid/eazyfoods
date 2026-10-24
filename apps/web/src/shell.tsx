@@ -89,7 +89,7 @@ export function Header() {
         </div></div>
         <div className="hdr-main"><div className="wrap hdr-row">
           <button className="icon-btn menu-btn" aria-label="Open all departments" aria-expanded={menu} onClick={openMenu}><IconMenu /></button>
-          <Link to="/" className="logo" aria-label="EAZyfoods home">EAZy<span>foods</span></Link>
+          <Link to="/" className="logo" aria-label="EAZyfoods home"><img className="logo-mark" src="/logo-192.png" alt="" width={36} height={36} />EAZy<span>foods</span></Link>
           <button className="deliver" onClick={() => setOpen(true)}>
             <IconPin width={22} height={22} /><span><small>Deliver to</small><b>{place ? `${place.fsa} ${place.serviceable ? '' : '(not yet)'}` : 'Choose location'}</b></span>
           </button>
@@ -147,7 +147,7 @@ export function Footer() {
         <div><h3>Work with us</h3><ul role="list"><li><Link to="/vendor">Sell on EAZyfoods</Link></li><li><Link to="/vendor?kind=chef">Cook with us</Link></li><li><Link to="/driver">Drive with us</Link></li></ul></div>
         <div><h3>Legal</h3><ul role="list">{pages.data?.filter((p) => ['privacy', 'terms'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}</ul></div>
       </div>
-      <div className="ftr-base"><div className="wrap"><strong className="logo">EAZy<span>foods</span></strong><span>African groceries from local stores, starting in Calgary, Alberta. Prices and availability are set by each store.</span></div></div>
+      <div className="ftr-base"><div className="wrap"><strong className="logo"><img className="logo-mark" src="/logo-192.png" alt="" width={28} height={28} />EAZy<span>foods</span></strong><span>African groceries from local stores, starting in Calgary, Alberta. Prices and availability are set by each store.</span></div></div>
     </footer>
   );
 }

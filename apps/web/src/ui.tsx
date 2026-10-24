@@ -186,7 +186,7 @@ export function PortalLayout({ title, subtitle, nav, tone, children }: { title: 
   return (
     <div className="portal" data-portal={tone}>
       <aside className="portal-nav" aria-label={`${title} navigation`}>
-        <div className="portal-title"><Link to="/" aria-label="Back to the shop">← Shop</Link><strong>{title}</strong>{subtitle && <span className="muted small">{subtitle}</span>}</div>
+        <div className="portal-title"><Link to="/" aria-label="Back to the shop">← Shop</Link><strong className="portal-brand"><img src="/logo-64.png" alt="" width={22} height={22} style={{ marginRight: 8, verticalAlign: -5 }} />{title}</strong>{subtitle && <span className="muted small">{subtitle}</span>}</div>
         <nav>{nav.map((n) => <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => (isActive ? 'active' : '')}>{n.label}{n.badge ? <span className="count">{n.badge}</span> : null}</NavLink>)}</nav>
       </aside>
       <div className="portal-main">{children}</div>

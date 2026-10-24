@@ -10,7 +10,7 @@ main { padding-top: 14px; }
 .hdr { position: sticky; top: 0; z-index: 40; background: var(--hdr); color: #fff; padding-top: env(safe-area-inset-top); }
 .hdr a { color: inherit; text-decoration: none; }
 .hdr-util { display: none; background: var(--hdr-3); font-size: .8rem; } .hdr-util .wrap { display: flex; justify-content: space-between; padding-top: 5px; padding-bottom: 5px; opacity: .92; } .util-links { display: flex; gap: 16px; } .util-links a:hover { text-decoration: underline; }
-.hdr-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: 'menu logo deliver cart' 'search search search search'; gap: 8px 10px; align-items: center; padding-top: 8px; padding-bottom: 8px; }
+.hdr-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; grid-template-areas: 'menu logo deliver cart' 'search search search search'; gap: 8px 10px; align-items: center; padding-top: 8px; padding-bottom: 8px; }
 .menu-btn { grid-area: menu; color: #fff; margin-left: -10px; } .menu-btn:hover { background: rgba(255,255,255,.12); }
 .hdr .logo { grid-area: logo; font-size: 1.35rem; color: #fff; justify-self: start; } .hdr .logo span { color: var(--sun); }
 .deliver { grid-area: deliver; display: flex; align-items: center; gap: 4px; background: none; border: 0; color: #fff; cursor: pointer; font: inherit; padding: 4px 6px; border-radius: 8px; min-height: 44px; } .deliver:hover { background: rgba(255,255,255,.12); }
@@ -182,3 +182,11 @@ main { padding-top: 14px; }
 .hero-slide.has-video { grid-template-columns: 1fr; } .hero-slide.has-video .hero-art { display: none; } .hero-slide.has-video .hero-copy { max-width: 640px; }
 .hero-vctl { position: absolute; right: 12px; bottom: 12px; z-index: 4; width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,.7); background: rgba(0,0,0,.55); color: #fff; display: grid; place-items: center; cursor: pointer; }
 .hero-vctl:hover { background: rgba(0,0,0,.75); }
+
+/* Brand mark (the shopping-cart "e") next to the wordmark */
+.logo { display: inline-flex; align-items: center; gap: 8px; } .logo .logo-mark { width: 1.9em; height: 1.9em; flex: none; object-fit: contain; } .hdr .logo .logo-mark { width: 34px; height: 34px; } .ftr .logo .logo-mark { width: 28px; height: 28px; }
+
+@media (max-width: 480px) { .hdr .logo { font-size: 1.05rem; gap: 6px; white-space: nowrap; } .hdr .logo .logo-mark { width: 30px; height: 30px; } .hdr .deliver { justify-self: end; min-width: 0; } }
+
+/* Very narrow phones: the delivery place is just the pin (its text stays for screen readers) so the logo has room. */
+@media (max-width: 420px) { .hdr .deliver > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } .hdr .deliver { justify-self: end; padding: 0 6px; } }
