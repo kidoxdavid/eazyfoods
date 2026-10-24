@@ -44,6 +44,7 @@ const ITEMS: Item[] = [
   { to: '/admin/zones', label: 'Delivery zones', need: ['stores.manage'] },
   { to: '/admin/promotions', label: 'Promotions', need: ['promotions.manage'] },
   { to: '/admin/ads', label: 'Advertising', need: ['ads.manage'] },
+  { to: '/marketing', label: 'Marketing →', need: ['marketing.manage'] },
   { to: '/admin/studio', label: 'Storefront studio', need: ['content.manage'] },
   { to: '/admin/content', label: 'Content', need: ['content.manage'] },
   { to: '/admin/crm', label: 'Vendor pipeline', need: ['crm.manage'] },
@@ -55,7 +56,7 @@ const ITEMS: Item[] = [
 ];
 
 /** Each role lands on the screen most useful to it. */
-const LANDING: [string, string][] = [['owner', '/admin'], ['admin', '/admin'], ['support', '/admin/support'], ['finance', '/admin/finance'], ['dispatcher', '/admin/dispatch'], ['catalog', '/admin/catalogue']];
+const LANDING: [string, string][] = [['owner', '/admin'], ['admin', '/admin'], ['support', '/admin/support'], ['finance', '/admin/finance'], ['dispatcher', '/admin/dispatch'], ['catalog', '/admin/catalogue'], ['marketing', '/marketing']];
 
 export default function Admin() {
   const { me } = useAuth();

@@ -7,9 +7,10 @@ export const ROLE_PERMS: Record<string, string[]> = {
   finance: ['orders.view', 'refunds.approve', 'payouts.manage', 'reports.view', 'ledger.view', 'settings.view', 'audit.view'],
   dispatcher: ['dispatch.manage', 'orders.view', 'orders.manage', 'drivers.manage'],
   catalog: ['catalog.manage'],
+  marketing: ['marketing.manage', 'content.manage', 'promotions.manage'],
 };
 
-export const STAFF_ROLES = ['owner', 'admin', 'support', 'finance', 'dispatcher', 'catalog'];
+export const STAFF_ROLES = ['owner', 'admin', 'support', 'finance', 'dispatcher', 'catalog', 'marketing'];
 
 export function permsOf(roles: { role: string }[]) {
   return roles.flatMap((r) => ROLE_PERMS[r.role] ?? []);

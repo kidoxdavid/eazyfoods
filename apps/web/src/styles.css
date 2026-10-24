@@ -159,11 +159,13 @@ main { padding-top: 18px; padding-bottom: calc(var(--tab-h) + 28px + env(safe-ar
 .portal[data-portal="admin"] { --green: #33409a; --green-2: #242e72; --green-bg: #e1e5f8; --band: #242e72; --band-2: #33409a; }
 .portal[data-portal="vendor"] { --green: #0f6670; --green-2: #0a4850; --green-bg: #d9eff1; --band: #0a4850; --band-2: #0f6670; }
 .portal[data-portal="chef"] { --green: #7a2e5d; --green-2: #57203f; --green-bg: #f5e1ee; --band: #57203f; --band-2: #7a2e5d; }
+.portal[data-portal="marketing"] { --green: #8a5a00; --green-2: #613f00; --green-bg: #faeccb; --band: #613f00; --band-2: #8a5a00; }
 .portal[data-portal="driver"] { --green: #a3470f; --green-2: #76320a; --green-bg: #fbe3d3; --band: #76320a; --band-2: #a3470f; }
 @media (prefers-color-scheme: dark) {
   .portal[data-portal="admin"] { --green: #a3b0f5; --green-2: #a3b0f5; --green-bg: #1b2145; }
   .portal[data-portal="vendor"] { --green: #7fd3dc; --green-2: #7fd3dc; --green-bg: #0f2d31; }
   .portal[data-portal="chef"] { --green: #e3a0cc; --green-2: #e3a0cc; --green-bg: #36162a; }
+  .portal[data-portal="marketing"] { --green: #ecc063; --green-2: #ecc063; --green-bg: #33280d; }
   .portal[data-portal="driver"] { --green: #f0a273; --green-2: #f0a273; --green-bg: #3a2113; }
 }
 .portal[data-portal] .portal-title { background: linear-gradient(135deg, var(--band), var(--band-2)); color: #fff; border-radius: 0 0 12px 12px; }
@@ -192,3 +194,48 @@ main { padding-top: 18px; padding-bottom: calc(var(--tab-h) + 28px + env(safe-ar
 
 /* shared segmented control */
 .seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 999px; overflow: hidden; } .seg button { border: 0; background: var(--card); color: var(--ink); padding: 6px 12px; min-height: 34px; font-weight: 600; cursor: pointer; } .seg button.on { background: var(--green); color: #fff; } @media (prefers-color-scheme: dark) { .seg button.on { color: #101812; } }
+
+/* =====================================================================================================================
+   Staff areas (admin, vendor, chef, driver, marketing) deliberately look like back-office software: plain system font,
+   flat boxes, dense tables, small controls. Only the shop is "designed". Each area keeps its own colour.
+   ===================================================================================================================== */
+.portal[data-portal] {
+  --display: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; --body: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --r: 3px; --r-sm: 2px; --shadow: none; --paper: #eef0f3; --card: #ffffff; --line: #d3d8de; --line-2: #b9c0c8;
+  font-family: var(--body); font-size: 14px; background: var(--paper); min-height: 100vh;
+}
+@media (prefers-color-scheme: dark) { .portal[data-portal] { --paper: #14171a; --card: #1d2125; --line: #333a41; --line-2: #4a525b; } }
+.portal[data-portal] h1, .portal[data-portal] h2, .portal[data-portal] h3, .portal[data-portal] .stat-value { font-family: var(--display); letter-spacing: 0; }
+.portal[data-portal] h1 { font-size: 1.3rem; margin-bottom: .3rem; } .portal[data-portal] h2 { font-size: 1.05rem; margin: 1.1rem 0 .5rem; } .portal[data-portal] h3 { font-size: .95rem; margin-bottom: .4rem; }
+.portal[data-portal] .stat-value { font-size: 1.35rem; font-weight: 700; }
+.portal[data-portal] p { margin: .25rem 0 .7rem; }
+.portal[data-portal] .portal-main { padding: 14px 16px; } @media (min-width: 900px) { .portal[data-portal] .portal-main { padding: 16px 22px; } }
+.portal[data-portal] .portal-nav { background: var(--card); } .portal[data-portal] .portal-title { background: var(--band); border-radius: 0; margin: 0; padding: 12px 14px; }
+.portal[data-portal] .portal-title strong { font-size: 1rem; } @media (min-width: 900px) { .portal[data-portal] .portal-title { margin: 0; border-radius: 0; padding: 14px 16px 12px; } }
+.portal[data-portal] .portal-nav nav a { font-size: 13.5px; font-weight: 500; padding: 9px 12px; min-height: 36px; border-radius: 0; }
+@media (min-width: 900px) { .portal[data-portal] .portal-nav nav a { border-left: 3px solid transparent; padding: 7px 14px; min-height: 32px; } .portal[data-portal] .portal-nav nav a.active { background: var(--green-bg); border-left-color: var(--green); color: var(--green-2); font-weight: 700; } .portal[data-portal] .portal-nav nav { padding: 6px 0 20px; } }
+.portal[data-portal] .panel, .portal[data-portal] .stat, .portal[data-portal] .card, .portal[data-portal] .notice, .portal[data-portal] .table, .portal[data-portal] .thread, .portal[data-portal] .layout-row, .portal[data-portal] .theme-card, .portal[data-portal] .store-story { box-shadow: none; border-radius: 3px; }
+.portal[data-portal] .panel { padding: 12px 14px; margin-bottom: 12px; } .portal[data-portal] .stat { padding: 10px 12px; }
+.portal[data-portal] .stat-label { font-size: .75rem; text-transform: uppercase; letter-spacing: .03em; }
+.portal[data-portal] .btn { min-height: 32px; padding: 0 12px; font-size: 13.5px; font-weight: 600; border-radius: 3px; } .portal[data-portal] .btn.sm { min-height: 28px; padding: 0 9px; font-size: 12.5px; } .portal[data-portal] .btn.lg { min-height: 36px; font-size: 14px; padding: 0 16px; }
+.portal[data-portal] .btn.secondary { background: var(--card); }
+.portal[data-portal] input:not([type=checkbox]):not([type=radio]):not([type=color]), .portal[data-portal] select, .portal[data-portal] textarea { min-height: 32px; font-size: 14px; border-radius: 3px; padding: 4px 8px; }
+.portal[data-portal] textarea { min-height: 70px; }
+.portal[data-portal] .field label, .portal[data-portal] .label { font-size: 13px; }
+.portal[data-portal] .badge { border-radius: 2px; font-size: .72rem; padding: 2px 7px; text-transform: none; letter-spacing: 0; }
+.portal[data-portal] .tabs button { padding: 8px 12px; font-size: 13.5px; }
+.portal[data-portal] .table th { font-size: .72rem; padding: 6px 10px; background: color-mix(in srgb, var(--line) 35%, var(--card)); } .portal[data-portal] .table td { padding: 6px 10px; } .portal[data-portal] .table tbody tr:hover { background: color-mix(in srgb, var(--line) 25%, transparent); }
+.portal[data-portal] .notice { padding: 8px 12px; margin: 8px 0; }
+.portal[data-portal] .grid { gap: 10px; }
+.portal[data-portal] .modal { border-radius: 4px; }
+.portal[data-portal] .page-header { margin-bottom: 10px; }
+.portal[data-portal] .seg { border-radius: 3px; } .portal[data-portal] .seg button { min-height: 30px; padding: 4px 10px; font-size: 13px; }
+.portal[data-portal] .trend-svg, .portal[data-portal] .preview-hero, .portal[data-portal] .bubble { border-radius: 3px; }
+@media (max-width: 899px) {  /* keep comfortable touch targets on phones */
+  .portal[data-portal] .btn { min-height: 40px; } .portal[data-portal] .btn.sm { min-height: 36px; }
+  .portal[data-portal] input:not([type=checkbox]):not([type=radio]):not([type=color]), .portal[data-portal] select, .portal[data-portal] textarea { min-height: 40px; font-size: 16px; }
+}
+
+.asset-grid { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); } .asset { background: var(--card); border: 1px solid var(--line); padding: 8px; display: grid; gap: 4px; align-content: start; } .asset img { width: 100%; aspect-ratio: 4/3; object-fit: cover; background: var(--paper); }
+
+.portal[data-portal] a.stat { text-decoration: none; color: inherit; } .portal[data-portal] a.stat:hover { border-color: var(--green); } .portal[data-portal] a.stat .stat-value { color: var(--green-2); }

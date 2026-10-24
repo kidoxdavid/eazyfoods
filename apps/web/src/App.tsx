@@ -21,10 +21,12 @@ import { AccountPage } from './pages/Account';
 import { SignIn, Register, Forgot, Reset, Verify } from './pages/Auth';
 import { RecipesPage, RecipePage } from './pages/Recipes';
 import { ContentPage } from './pages/ContentPage';
+import { Unsubscribe } from './pages/Unsubscribe';
 
 const Vendor = lazy(() => import('./portals/vendor'));
 const Admin = lazy(() => import('./portals/admin'));
 const Driver = lazy(() => import('./portals/driver'));
+const Marketing = lazy(() => import('./portals/marketing'));
 
 const Site = ({ children }: { children: ReactNode }) => (
   <>
@@ -48,6 +50,7 @@ export function App() {
               <Route path="/vendor/*" element={<RequireAuth><Vendor /></RequireAuth>} />
               <Route path="/admin/*" element={<RequireAuth><Admin /></RequireAuth>} />
               <Route path="/driver/*" element={<RequireAuth><Driver /></RequireAuth>} />
+              <Route path="/marketing/*" element={<RequireAuth><Marketing /></RequireAuth>} />
               <Route path="*" element={
                 <Site>
                   <Routes>
@@ -74,6 +77,7 @@ export function App() {
                     <Route path="/reset" element={<Reset />} />
                     <Route path="/verify" element={<Verify />} />
                     <Route path="/pages/:slug" element={<ContentPage />} />
+                    <Route path="/unsubscribe/:token" element={<Unsubscribe />} />
                     <Route path="*" element={<Empty title="Page not found"><Link to="/">Back to the shop</Link></Empty>} />
                   </Routes>
                 </Site>

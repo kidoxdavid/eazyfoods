@@ -4,6 +4,7 @@ import { moveSuborder } from './services/orders.js';
 import { releaseExpiredReservations } from './services/payments.js';
 import { processOutbox } from './services/notify.js';
 import { runAutoPayouts } from './services/payouts.js';
+import { runAutomations, runScheduledCampaigns } from './services/marketing.js';
 
 /** Stores that never respond get the order rejected (and the customer fully refunded) after the configured time. */
 export async function autoRejectStaleOrders() {
@@ -26,12 +27,15 @@ export async function runJobsOnce() {
 
 let running = false;
 let lastAutoPayout = 0;
+let lastAutomations = 0;
 export function startJobs() {
   const tick = async () => {
     if (running) return;
     running = true;
     try {
       await runJobsOnce();
+      await runScheduledCampaigns();
+      if (Date.now() - lastAutomations > 600_000) { lastAutomations = Date.now(); await runAutomations(); }
       if (Date.now() - lastAutoPayout > 3_600_000) { lastAutoPayout = Date.now(); await runAutoPayouts(); }   // hourly; does nothing unless finance turned automatic payouts on
     } catch (e) { console.error('background job failed', e); } finally { running = false; }
   };

@@ -11,7 +11,7 @@ type Ctx = { theme: SiteTheme | null; loading: boolean };
 const C = createContext<Ctx>({ theme: null, loading: false });
 export const useSiteTheme = () => useContext(C);
 
-const PORTALS = /^\/(admin|vendor|driver)(\/|$)/;
+const PORTALS = /^\/(admin|vendor|driver|marketing)(\/|$)/;
 
 /** CSS that re-colours the shop (never the staff portals, which keep their own colours). Palettes are validated server-side as #rrggbb. */
 export const paletteCss = (p: Pick<Palette, 'primary' | 'deep' | 'tint' | 'glow'>, scope = ':root') =>

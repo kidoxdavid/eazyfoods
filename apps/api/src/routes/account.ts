@@ -61,6 +61,8 @@ export const accountRoutes: FastifyPluginAsync = async (app) => {
   app.put('/account/profile', async (req) => {
     const b = z.object({ full_name: z.string().min(1).max(120), phone: z.string().max(25).nullable().optional(), notify_email: z.boolean(), marketing_opt_in: z.boolean() }).parse(req.body);
     // Consent is recorded with a timestamp when granted, and cleared when withdrawn.
+    const was = !!(await pool.query('SELECT marketing_opt_in_at FROM users WHERE id = $1', [req.user!.id])).rows[0]?.marketing_opt_in_at;
+    if (was !== b.marketing_opt_in) await pool.query(`INSERT INTO marketing_consent_log(user_id, action, source) VALUES ($1,$2,'account settings')`, [req.user!.id, b.marketing_opt_in ? 'opt_in' : 'opt_out']);
     await pool.query(
       `UPDATE users SET full_name=$2, phone=$3, notify_email=$4, marketing_opt_in_at = CASE WHEN $5 THEN COALESCE(marketing_opt_in_at, now()) ELSE NULL END WHERE id=$1`,
       [req.user!.id, b.full_name, b.phone ?? null, b.notify_email, b.marketing_opt_in]);

@@ -12,6 +12,7 @@ export const ROLE_PERMS: Record<string, string[]> = {
   finance: ['orders.view', 'refunds.approve', 'payouts.manage', 'reports.view', 'ledger.view', 'settings.view', 'audit.view'],
   dispatcher: ['dispatch.manage', 'orders.view', 'orders.manage', 'drivers.manage'],
   catalog: ['catalog.manage'],
+  marketing: ['marketing.manage', 'content.manage', 'promotions.manage'],
 };
 
 export const can = (u: AuthUser | null, perm: string) =>

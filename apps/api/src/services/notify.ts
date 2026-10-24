@@ -35,10 +35,11 @@ async function send(to: string, subject: string, body: string) {
 /** Deliver pending notifications. Respects the user's opt-out for non-transactional mail; retries up to 5 times. */
 export async function processOutbox(limit = 50) {
   const { rows } = await pool.query(
-    `SELECT n.*, u.notify_email FROM notifications n LEFT JOIN users u ON u.id = n.user_id WHERE n.status = 'pending' ORDER BY n.id LIMIT $1 FOR UPDATE OF n SKIP LOCKED`, [limit]);
+    `SELECT n.*, u.notify_email, u.marketing_opt_in_at FROM notifications n LEFT JOIN users u ON u.id = n.user_id WHERE n.status = 'pending' ORDER BY n.id LIMIT $1 FOR UPDATE OF n SKIP LOCKED`, [limit]);
   let sent = 0;
   for (const n of rows) {
-    if (!n.transactional && n.notify_email === false) { await pool.query(`UPDATE notifications SET status='skipped' WHERE id=$1`, [n.id]); continue; }
+    // Marketing mail is re-checked at the moment of sending: no consent now means no email, whatever was queued earlier.
+    if (!n.transactional && (n.notify_email === false || !n.marketing_opt_in_at)) { await pool.query(`UPDATE notifications SET status='skipped' WHERE id=$1`, [n.id]); continue; }
     try {
       await send(n.to_email, n.subject, n.body);
       await pool.query(`UPDATE notifications SET status='sent', sent_at=now(), attempts=attempts+1 WHERE id=$1`, [n.id]);

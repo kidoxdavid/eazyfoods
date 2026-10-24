@@ -10,7 +10,7 @@ afterAll(async () => { await browser?.close(); });
 const PUBLIC = ['/', '/search?q=garri', '/search?region=east-africa', '/stores', '/kitchens', '/k/demo-mama-ngozi-kitchen', '/k/demo-habesha-table', '/s/demo-calgary-west-african-market', '/p/garri-white', '/recipes', '/recipes/jollof-rice-nigerian-style', '/cart', '/signin', '/register', '/pages/refund-policy'];
 const SIGNED_IN = ['/account', '/orders', '/checkout'];
 const PORTALS: [string, string][] = [['owner1@example.test', '/vendor'], ['owner1@example.test', '/vendor/orders'], ['owner1@example.test', '/vendor/inventory'], ['owner1@example.test', '/vendor/store'],
-  ['owner@example.test', '/admin'], ['owner@example.test', '/admin/catalogue'], ['owner@example.test', '/admin/settings'], ['owner@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/storefront'], ['owner1@example.test', '/vendor/messages'], ['chef1@example.test', '/vendor'], ['chef1@example.test', '/vendor/menu'], ['chef1@example.test', '/vendor/store'], ['chef1@example.test', '/vendor/orders'], ['chef1@example.test', '/vendor/payouts'], ['owner1@example.test', '/vendor/payouts'], ['finance@example.test', '/admin/finance'], ['owner@example.test', '/admin/dishes'], ['owner1@example.test', '/vendor/insights'], ['owner@example.test', '/admin/insights'], ['owner@example.test', '/admin/messages'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
+  ['owner@example.test', '/admin'], ['owner@example.test', '/admin/catalogue'], ['owner@example.test', '/admin/settings'], ['owner@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/storefront'], ['owner1@example.test', '/vendor/messages'], ['chef1@example.test', '/vendor'], ['chef1@example.test', '/vendor/menu'], ['chef1@example.test', '/vendor/store'], ['chef1@example.test', '/vendor/orders'], ['chef1@example.test', '/vendor/payouts'], ['owner1@example.test', '/vendor/payouts'], ['finance@example.test', '/admin/finance'], ['marketing@example.test', '/marketing'], ['marketing@example.test', '/marketing/emails'], ['marketing@example.test', '/marketing/audiences'], ['marketing@example.test', '/marketing/campaigns'], ['marketing@example.test', '/marketing/automations'], ['marketing@example.test', '/marketing/calendar'], ['marketing@example.test', '/marketing/social'], ['marketing@example.test', '/marketing/budget'], ['marketing@example.test', '/marketing/library'], ['marketing@example.test', '/marketing/analytics'], ['marketing@example.test', '/marketing/settings'], ['owner@example.test', '/admin/dishes'], ['owner1@example.test', '/vendor/insights'], ['owner@example.test', '/admin/insights'], ['owner@example.test', '/admin/messages'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
 const WIDTHS = [360, 390, 768, 1280];
 
 describe('responsive: no horizontal scrolling at common widths', () => {
@@ -257,5 +257,35 @@ describe('payouts (browser)', () => {
     await page.getByText('Connected', { exact: true }).waitFor();
     await page.getByText('Payable now').waitFor();
     await page.getByText('TEST MODE').waitFor();
+  });
+});
+
+describe('marketing (browser)', () => {
+  it('marketing writes and sends an email to an opted-in customer, who can unsubscribe with one click', async () => {
+    const c = await db();
+    await c.query(`UPDATE users SET marketing_opt_in_at = now(), email_verified_at = now(), notify_email = true WHERE email = 'customer@example.test'`);
+    const { page } = await newPage(browser, DESKTOP); await signIn(page, 'marketing@example.test');
+    await page.goto(base() + '/marketing/settings');
+    await page.getByLabel('Postal address (shown in every marketing email)').fill('100 Test Street NE, Calgary, AB T2A 0A0');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByText('Saved').first().waitFor();
+    await page.goto(base() + '/marketing/emails');
+    await page.getByRole('button', { name: 'New email' }).click();
+    await page.getByRole('heading', { name: 'Untitled email' }).waitFor();
+    await page.getByLabel('Internal name').fill('E2E blast');
+    await page.getByLabel('Subject', { exact: true }).fill('Fresh deals, {{first_name}}');
+    await page.getByRole('button', { name: 'Preview' }).click();
+    await page.getByText('Unsubscribe any time').waitFor();
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Send now…' }).click();
+    await page.getByRole('button', { name: 'Yes, continue' }).click();
+    await page.getByText(/Queued for \d+ people/).waitFor();
+    const token = (await c.query(`SELECT s.token FROM email_sends s JOIN users u ON u.id = s.user_id JOIN email_campaigns e ON e.id = s.email_campaign_id WHERE u.email = 'customer@example.test' AND e.name = 'E2E blast'`)).rows[0].token;
+    const pub = await newPage(browser, MOBILE);
+    await pub.page.goto(base() + `/unsubscribe/${token}`);
+    await pub.page.getByRole('button', { name: 'Unsubscribe me' }).click();
+    await pub.page.getByText(/is unsubscribed from marketing email/).waitFor();
+    expect((await c.query(`SELECT marketing_opt_in_at FROM users WHERE email = 'customer@example.test'`)).rows[0].marketing_opt_in_at).toBeNull();
+    await c.end();
   });
 });

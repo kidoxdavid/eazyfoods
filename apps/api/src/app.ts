@@ -17,6 +17,7 @@ import { vendorOrderRoutes } from './routes/vendorOrders.js';
 import { driverRoutes } from './routes/driver.js';
 import { vendorMessageRoutes } from './routes/messages.js';
 import { dishRoutes, kitchenRoutes } from './routes/kitchens.js';
+import { marketingPublicRoutes, marketingRoutes } from './routes/marketing.js';
 import { vendorPortalRoutes } from './routes/vendorPortal.js';
 import { supportRoutes } from './routes/support.js';
 import { engagementRoutes } from './routes/engagement.js';
@@ -88,6 +89,8 @@ export async function buildApp() {
   await app.register(vendorMessageRoutes, { prefix: '/api/vendor' });
   await app.register(dishRoutes, { prefix: '/api/vendor' });
   await app.register(kitchenRoutes, { prefix: '/api' });
+  await app.register(marketingRoutes, { prefix: '/api/marketing' });
+  await app.register(marketingPublicRoutes, { prefix: '/api' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(cartRoutes, { prefix: '/api' });
   await app.register(accountRoutes, { prefix: '/api' });
