@@ -14,6 +14,7 @@ const Profile = () => {
     phone: '',
     description: '',
     store_profile_image_url: '',
+    store_cover_image_url: '',
     street_address: '',
     city: '',
     state: '',
@@ -53,6 +54,7 @@ const Profile = () => {
         phone: data.phone || '',
         description: data.description || '',
         store_profile_image_url: data.store_profile_image_url || '',
+        store_cover_image_url: data.store_cover_image_url || '',
         street_address: data.street_address || '',
         city: data.city || '',
         state: data.state || '',
@@ -90,7 +92,7 @@ const Profile = () => {
     }))
   }
 
-  const handleProfileImageUpload = async (e) => {
+  const handleProfileImageUpload = async (e, field = 'store_profile_image_url') => {
     const file = e.target.files?.[0]
     if (!file) return
     if (!file.type.startsWith('image/')) {
@@ -104,7 +106,7 @@ const Profile = () => {
       const res = await api.post('/uploads/vendor-profile', fd)
       const url = res.data?.url
       if (url) {
-        setFormData(prev => ({ ...prev, store_profile_image_url: url }))
+        setFormData(prev => ({ ...prev, [field]: url }))
       }
     } catch (err) {
       console.error('Upload failed:', err)
@@ -273,6 +275,51 @@ const Profile = () => {
                     onChange={handleChange}
                     className="input text-sm max-w-xs"
                     placeholder="Or paste image URL"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Cover Photo (wide banner shown at the top of your store page)
+              </label>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div className="relative">
+                  {formData.store_cover_image_url ? (
+                    <img
+                      src={formData.store_cover_image_url}
+                      alt="Cover preview"
+                      className="h-24 w-44 object-cover rounded-lg border border-gray-300"
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                      }}
+                    />
+                  ) : (
+                    <div className="h-24 w-44 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+                      <ImageIcon className="h-10 w-10 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 text-sm font-medium">
+                    <Upload className="h-4 w-4" />
+                    {uploadingImage ? 'Uploading...' : 'Upload Image'}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                      onChange={(e) => handleProfileImageUpload(e, 'store_cover_image_url')}
+                      disabled={uploadingImage}
+                      className="sr-only"
+                    />
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="url"
+                    name="store_cover_image_url"
+                    value={formData.store_cover_image_url}
+                    onChange={handleChange}
+                    className="input text-sm max-w-xs"
+                    placeholder="Or paste cover image URL"
                   />
                 </div>
               </div>

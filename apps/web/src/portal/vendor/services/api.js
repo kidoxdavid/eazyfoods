@@ -122,7 +122,7 @@ const routes = [
     const operating_hours = {}
     for (const h of hours) { const d = DAYS[h.dow]; if (d && !operating_hours[d]) operating_hours[d] = { open: h.opens, close: h.closes } }
     return { id: me?.id, email: me?.email, first_name: first, last_name: rest.join(' '), business_name: vp.name || stores[0]?.name || 'Vendor', business_number: vp.business_number || '', legal_name: vp.legal_name || '', phone: vp.phone || sp.phone || '', status: sp.ordering_paused ? 'inactive' : 'active',
-      description: sp.description || '', store_profile_image_url: sp.logo_url || '', street_address: sp.address_line || '', city: sp.city || '', state: 'Alberta', postal_code: sp.postal_code || '', country: 'Canada',
+      description: sp.description || '', store_profile_image_url: sp.logo_url || '', store_cover_image_url: sp.cover_url || '', street_address: sp.address_line || '', city: sp.city || '', state: 'Alberta', postal_code: sp.postal_code || '', country: 'Canada',
       pickup_available: !!sp.offers_pickup, delivery_available: !!sp.offers_delivery, delivery_radius_km: 5, region: (sp.regions || []).map((r) => REGION_NAME[r]).filter(Boolean).join(','), operating_hours, stores, approval_status: vp.status, kind: sp.kind }
   }],
   ['PUT', /^\/vendors\/me$/, async (m, { data: d }) => {
@@ -136,6 +136,7 @@ const routes = [
     if (d.postal_code) sp.postal_code = d.postal_code
     if (d.phone) sp.phone = d.phone
     if (d.store_profile_image_url !== undefined) sp.logo_url = d.store_profile_image_url || null
+    if (d.store_cover_image_url !== undefined) sp.cover_url = d.store_cover_image_url || null
     if (d.pickup_available !== undefined) sp.offers_pickup = !!d.pickup_available
     if (d.delivery_available !== undefined) sp.offers_delivery = !!d.delivery_available
     if (d.region !== undefined) sp.regions = String(d.region).split(',').map((r) => r.trim()).map((r) => Object.keys(REGION_NAME).find((k) => REGION_NAME[k] === r)).filter(Boolean)
