@@ -70,6 +70,14 @@ export default function App() {
                   <Route path="/ads/new" element={<AdDesigner />} />
                   <Route path="/ads/:id/edit" element={<AdDesigner />} />
                   <Route path="/stores" element={<Stores />} />
+                  {/* Links in older emails and bookmarks */}
+                  <Route path="/messages" element={<Navigate to="/chat" replace />} />
+                  <Route path="/store" element={<Navigate to="/profile" replace />} />
+                  <Route path="/storefront" element={<Navigate to="/profile" replace />} />
+                  <Route path="/menu" element={<Navigate to="/products" replace />} />
+                  <Route path="/insights" element={<Navigate to="/analytics" replace />} />
+                  <Route path="/questions" element={<Navigate to="/support" replace />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Layout>
             </Guard>

@@ -8,6 +8,7 @@ import { ZodError } from 'zod';
 import { config } from './config.js';
 import { pool } from './db/pool.js';
 import { loadUser } from './lib/auth.js';
+import { hashToken } from './lib/password.js';
 import { authRoutes } from './routes/auth.js';
 import { catalogueRoutes } from './routes/catalogue.js';
 import { searchRoutes } from './routes/search.js';
@@ -164,9 +165,20 @@ export async function buildApp() {
     // Staff areas that have been rebuilt as their own app (portal.html: Tailwind, no customer styles). The list grows as each area is rebuilt.
     const PORTAL_AREAS = ['vendor'];
     const portalHtml = existsSync(join(dist, 'portal.html')) ? readFileSync(join(dist, 'portal.html'), 'utf8') : null;
+    // Kitchens (home chefs and restaurants) manage dishes, slots and cuisines, which the grocery portal has no pages for, so a signed-in kitchen keeps the original console until its own portal is rebuilt.
+    const keepsOwnApp = async (req: any, area: string) => {
+      if (area !== 'vendor' || /^\/vendor\/(signin|signup)/.test(req.url)) return false;
+      const token = req.cookies?.ez_vendor; if (!token) return false;
+      try {
+        const { rows } = await pool.query(
+          `SELECT 1 FROM sessions se LEFT JOIN user_roles r ON r.user_id = se.user_id JOIN stores s ON s.vendor_id = COALESCE(se.acting_vendor_id, r.vendor_id)
+            WHERE se.token_hash = $1 AND se.expires_at > now() AND s.kind = 'kitchen' LIMIT 1`, [hashToken(token)]);
+        return rows.length > 0;
+      } catch { return false; }
+    };
     app.setNotFoundHandler(async (req, reply) => {
       const area = /^\/([a-z]+)(\/|\?|$)/.exec(req.url)?.[1];
-      if (req.method === 'GET' && portalHtml && area && PORTAL_AREAS.includes(area)) return reply.header('cache-control', 'no-cache').type('text/html').send(portalHtml);
+      if (req.method === 'GET' && portalHtml && area && PORTAL_AREAS.includes(area) && !(await keepsOwnApp(req, area))) return reply.header('cache-control', 'no-cache').type('text/html').send(portalHtml);
       if (req.method === 'GET' && !req.url.startsWith('/api') && !req.url.startsWith('/uploads')) {
         const entries = await Promise.all(BOOT.map(async (p) => { try { const r = await app.inject({ url: `/api${p}` }); return r.statusCode === 200 ? [p, r.json()] : null; } catch { return null; } }));
         const json = JSON.stringify(Object.fromEntries(entries.filter(Boolean) as [string, unknown][])).replace(/</g, '\\u003c');

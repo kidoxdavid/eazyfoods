@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { makeHttp } from '../../http'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
 import {
@@ -23,12 +24,17 @@ import {
   FileText,
 } from 'lucide-react'
 
+const { raw } = makeHttp('vendor')
+
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const { user, loading: authLoading, logout } = useAuth()
   const { notifications } = useNotifications()
-  
+  // Admins can hide menu items and post a notice for this area (Control centre).
+  const [cfg, setCfg] = useState(null)
+  useEffect(() => { raw('GET', '/portal-config/vendor').then(setCfg).catch(() => {}) }, [])
+
   // Show loading while auth is being checked
   if (authLoading) {
     return (
@@ -95,7 +101,7 @@ const Layout = ({ children }) => {
 
           {/* Navigation */}
           <nav className="flex-1 px-2 sm:px-4 py-4 sm:py-6 space-y-1 overflow-y-auto">
-            {navigation.map((item) => {
+            {navigation.filter((item) => !(cfg?.hidden_nav || []).includes('/vendor' + (item.href === '/' ? '' : item.href.split('?')[0]))).map((item) => {
               const Icon = item.icon
               return (
                 <Link
@@ -162,10 +168,13 @@ const Layout = ({ children }) => {
           </div>
         </header>
 
+        {cfg?.notice && (
+          <div role="note" className={`px-4 py-2 text-xs sm:text-sm border-b ${cfg.notice_tone === 'warn' ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-primary-50 border-primary-100 text-primary-800'}`}>{cfg.notice}</div>
+        )}
         {user?.acting_vendor && (
           <div className="bg-amber-100 border-b border-amber-300 px-4 py-2 text-xs sm:text-sm text-amber-900 flex items-center justify-between gap-3">
             <span>Admin mode: you are viewing this portal as {user.business_name || 'a vendor'}.</span>
-            <button className="font-semibold underline" onClick={async () => { await fetch('/api/admin/control/act-as', { method: 'DELETE', credentials: 'include', headers: { 'x-area': 'vendor' } }).catch(() => {}); window.location.href = '/admin/vendors' }}>Exit</button>
+            <button className="font-semibold underline" onClick={async () => { await fetch('/api/admin/control/act-as', { method: 'DELETE', credentials: 'include', headers: { 'x-area': 'vendor' } }).catch(() => {}); window.location.href = '/admin/vendors' }}>Exit and go back to admin</button>
           </div>
         )}
         {/* Page content */}

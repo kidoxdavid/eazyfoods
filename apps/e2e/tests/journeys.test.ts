@@ -85,12 +85,12 @@ describe('customer -> store -> dispatch -> driver -> review, on a phone', () => 
     const { page, errors } = await newPage(browser, DESKTOP);
     await signIn(page, 'owner1@example.test');
     await page.goto(`${base()}/vendor/orders`);
-    await page.waitForSelector('text=E2E');                                                                   // customer first name on the card
-    await page.getByRole('button', { name: 'Accept' }).first().click();
-    await page.getByRole('tab', { name: /In progress/ }).click();                                                // accepted orders move to this tab
-    await page.getByRole('button', { name: 'Start preparing' }).first().click();
-    await page.getByRole('button', { name: 'Mark ready' }).first().click();
-    await page.waitForTimeout(500);
+    await page.waitForSelector('text=E2E');                                                                   // customer first name in the list
+    await page.getByText('E2E').first().click();                                                              // opens the order
+    for (const step of ['Accept Order', 'Start Picking', 'Mark Ready']) {
+      await page.getByRole('button', { name: step }).click();
+      await page.waitForTimeout(700);
+    }
     const c = await db(); const r = await c.query(`SELECT s.status FROM suborders s JOIN orders o ON o.id=s.order_id WHERE o.customer_email=$1 AND o.payment_status <> 'failed'`, [email]); await c.end();
     expect(r.rows[0].status).toBe('ready');
     expect(errors.filter((e) => !/40[0-9]|409/.test(e))).toEqual([]);
@@ -173,12 +173,13 @@ describe('inventory, stale baskets and access control', () => {
   it('a vendor edits a price in the portal and the storefront shows it', async () => {
     const { page } = await newPage(browser, DESKTOP);
     await signIn(page, 'owner1@example.test');
-    await page.goto(`${base()}/vendor/inventory`);
-    const row = page.locator('tr, .panel').filter({ hasText: 'Garri (White)' }).first();
-    await row.getByRole('button', { name: /price/i }).first().click();
+    await page.goto(`${base()}/vendor/products`);
+    await page.fill('input[placeholder="Search products..."]', 'Garri (White)');
+    await page.waitForTimeout(1200);
+    await page.locator('tbody tr', { hasText: 'Garri (White)' }).first().locator('a[href*="/edit"]').click();
     await page.fill('input[name=price]', '21.50');
-    await page.getByRole('button', { name: 'Save price' }).click();
-    await page.waitForTimeout(600);
+    await page.getByRole('button', { name: /Update Product|Save/ }).click();
+    await page.waitForTimeout(1200);
     const sf = await newPage(browser, MOBILE);
     await sf.page.goto(`${base()}/p/garri-white`);
     await seeText(sf.page.locator('.compare tr', { hasText: 'Demo West African Market' }), '$21.50');
@@ -214,7 +215,7 @@ describe('inventory, stale baskets and access control', () => {
     await seeText(cust.page.locator('body'), 'Admin sign in');                          // a shopper is asked for the admin account, not shown the console
     await cust.page.goto(`${base()}/vendor`);
     await cust.page.waitForURL(/\/vendor\/signin/);
-    await seeText(cust.page.locator('body'), 'Vendor, chef and restaurant sign in');
+    await seeText(cust.page.locator('body'), 'Vendor Portal');
     expect([401, 403]).toContain((await cust.page.request.get(`${base()}/api/admin/ledger`)).status());
 
     const owner2 = await newPage(browser, DESKTOP);

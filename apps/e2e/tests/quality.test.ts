@@ -9,8 +9,8 @@ afterAll(async () => { await browser?.close(); });
 
 const PUBLIC = ['/', '/search?q=garri', '/search?region=east-africa', '/stores', '/kitchens', '/k/demo-mama-ngozi-kitchen', '/k/demo-habesha-table', '/s/demo-calgary-west-african-market', '/p/garri-white', '/recipes', '/recipes/jollof-rice-nigerian-style', '/cart', '/signin', '/register', '/pages/refund-policy'];
 const SIGNED_IN = ['/account', '/orders', '/checkout'];
-const PORTALS: [string, string][] = [['owner1@example.test', '/vendor'], ['owner1@example.test', '/vendor/orders'], ['owner1@example.test', '/vendor/inventory'], ['owner1@example.test', '/vendor/store'],
-  ['admin@example.test', '/admin'], ['admin@example.test', '/admin/catalogue'], ['admin@example.test', '/admin/settings'], ['admin@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/storefront'], ['owner1@example.test', '/vendor/messages'], ['chef1@example.test', '/vendor'], ['chef1@example.test', '/vendor/menu'], ['chef1@example.test', '/vendor/store'], ['chef1@example.test', '/vendor/orders'], ['chef1@example.test', '/vendor/payouts'], ['owner1@example.test', '/vendor/payouts'], ['finance@example.test', '/admin/finance'], ['marketing@example.test', '/marketing'], ['marketing@example.test', '/marketing/emails'], ['marketing@example.test', '/marketing/audiences'], ['marketing@example.test', '/marketing/campaigns'], ['marketing@example.test', '/marketing/automations'], ['marketing@example.test', '/marketing/calendar'], ['marketing@example.test', '/marketing/social'], ['marketing@example.test', '/marketing/budget'], ['marketing@example.test', '/marketing/library'], ['marketing@example.test', '/marketing/analytics'], ['marketing@example.test', '/marketing/settings'], ['admin@example.test', '/admin/dishes'], ['owner1@example.test', '/vendor/insights'], ['admin@example.test', '/admin/insights'], ['admin@example.test', '/admin/messages'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
+const PORTALS: [string, string][] = [['owner1@example.test', '/vendor'], ['owner1@example.test', '/vendor/orders'], ['owner1@example.test', '/vendor/inventory'], ['owner1@example.test', '/vendor/stores'], ['owner1@example.test', '/vendor/products'],
+  ['admin@example.test', '/admin'], ['admin@example.test', '/admin/catalogue'], ['admin@example.test', '/admin/settings'], ['admin@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/chat'], ['chef1@example.test', '/vendor'], ['chef1@example.test', '/vendor/menu'], ['chef1@example.test', '/vendor/store'], ['chef1@example.test', '/vendor/orders'], ['chef1@example.test', '/vendor/payouts'], ['owner1@example.test', '/vendor/payouts'], ['finance@example.test', '/admin/finance'], ['marketing@example.test', '/marketing'], ['marketing@example.test', '/marketing/emails'], ['marketing@example.test', '/marketing/audiences'], ['marketing@example.test', '/marketing/campaigns'], ['marketing@example.test', '/marketing/automations'], ['marketing@example.test', '/marketing/calendar'], ['marketing@example.test', '/marketing/social'], ['marketing@example.test', '/marketing/budget'], ['marketing@example.test', '/marketing/library'], ['marketing@example.test', '/marketing/analytics'], ['marketing@example.test', '/marketing/settings'], ['admin@example.test', '/admin/dishes'], ['admin@example.test', '/admin/insights'], ['admin@example.test', '/admin/messages'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
 const WIDTHS = [360, 390, 768, 1280];
 
 describe('responsive: no horizontal scrolling at common widths', () => {
@@ -164,20 +164,21 @@ describe('festival and season themes', () => {
 
 describe('vendor messages (browser)', () => {
   it('a vendor starts a conversation and staff reply appears for them', async () => {
-    const subject = `Hello ${Date.now()}`;
+    const text = `Can you help me list a new product? ${Date.now()}`;
     const v = await newPage(browser, DESKTOP); await signIn(v.page, 'owner1@example.test');
-    await v.page.goto(base() + '/vendor/messages');
-    await v.page.getByRole('button', { name: 'New conversation' }).click();
-    await v.page.getByLabel('Subject').fill(subject); await v.page.getByLabel('Message').fill('Can you help me list a new product?');
-    await v.page.getByRole('button', { name: 'Send', exact: true }).click();
-    await v.page.getByRole('heading', { name: subject }).waitFor();
+    await v.page.goto(base() + '/vendor/chat');
+    await v.page.getByRole('button', { name: /EAZyfoods|Support|Admin/i }).first().click().catch(() => {});   // the one conversation with our team
+    await v.page.getByPlaceholder('Type your message...').fill(text);
+    await v.page.getByRole('button', { name: 'Send message' }).click();
+    await v.page.getByText(text).first().waitFor();
+    const c = await db(); const subject = (await c.query(`SELECT t.subject FROM vendor_messages m JOIN vendor_threads t ON t.id = m.thread_id WHERE m.body = $1`, [text])).rows[0].subject; await c.end();
     const a = await newPage(browser, DESKTOP); await signIn(a.page, 'admin@example.test');
     await a.page.goto(base() + '/admin/messages');
-    await a.page.getByRole('button', { name: new RegExp(subject) }).click();
+    await a.page.getByRole('button', { name: new RegExp(subject) }).first().click();
     await a.page.getByLabel('Reply', { exact: true }).fill('Yes: use Add from catalogue.');
     await a.page.getByRole('button', { name: 'Send', exact: true }).click();
     await a.page.getByText('Yes: use Add from catalogue.').first().waitFor();
-    await v.page.reload(); await v.page.getByRole('button', { name: new RegExp(subject) }).click();
+    await v.page.reload(); await v.page.getByRole('button', { name: /EAZyfoods|Support|Admin/i }).first().click().catch(() => {});
     await v.page.getByText('Yes: use Add from catalogue.').first().waitFor();
   });
 });
@@ -223,8 +224,8 @@ describe('home chefs (browser)', () => {
     await page.goto(base() + '/vendor?kind=chef');
     await page.waitForURL(/\/signin/);
     await page.fill('input[name=email]', 'chef1@example.test'); await page.fill('input[name=password]', 'dev-password-123');
-    await page.click('.auth button[type=submit]');
-    await page.waitForURL('**/vendor**');
+    await page.click('button[type=submit]');
+    await page.waitForURL(/\/vendor\/?$/);
     await page.waitForSelector('.bo-brandbar', { state: 'attached' });
     expect(await page.locator('.bo-brandbar').innerText()).toContain('Chef');
   });

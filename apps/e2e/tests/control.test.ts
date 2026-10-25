@@ -46,15 +46,15 @@ describe('control centre (browser)', () => {
     const { page } = await newPage(browser, DESKTOP);
     await signIn(page, 'owner1@example.test');
     await page.goto(`${base()}/vendor/orders`);
-    await seeText(page.locator('.bo-main'), 'Payouts pause Dec 24 to 26');
-    expect(await page.locator('.bo-side').getByRole('link', { name: 'Ads', exact: true }).count()).toBe(0);
-    await seeText(page.locator('.bo-side'), 'Inventory');
+    await seeText(page.locator('[role=note]'), 'Payouts pause Dec 24 to 26');
+    expect(await page.locator('aside').getByRole('link', { name: 'Ads', exact: true }).count()).toBe(0);
+    await seeText(page.locator('aside'), 'Inventory');
 
     const m = await newPage(browser, MOBILE);
     await signIn(m.page, 'owner1@example.test');
     await m.page.goto(`${base()}/vendor/orders`);
-    const side = m.page.locator('.bo-side');
-    await m.page.waitForSelector('.bo-top');
+    const side = m.page.locator('aside');
+    await m.page.getByRole('button', { name: 'Open menu' }).waitFor();
     expect((await side.boundingBox())!.x).toBeLessThan(0);          // tucked away
     await m.page.getByRole('button', { name: 'Open menu' }).click();
     await m.page.waitForTimeout(350);
@@ -126,12 +126,12 @@ describe('selling and cooking entry (browser)', () => {
     const { page } = await newPage(browser, MOBILE);
     await page.goto(`${base()}/vendor`);
     await page.waitForURL(/\/vendor\/signin/);
-    await seeText(page.locator('main'), 'Vendor, chef and restaurant sign in');
-    await seeText(page.locator('main'), 'Create a vendor account');
+    await seeText(page.locator('body'), 'Vendor Portal');
+    await seeText(page.locator('body'), 'Register your business');
     await page.fill('input[name=email]', 'owner1@example.test'); await page.fill('input[name=password]', 'dev-password-123');
-    await page.click('.auth button[type=submit]');
-    await page.waitForURL('**/vendor');
-    await page.waitForSelector('.bo-top');
+    await page.click('button[type=submit]');
+    await page.waitForURL(/\/vendor\/?$/);
+    await page.locator('aside').first().waitFor({ state: 'attached' });
   });
 });
 
@@ -142,12 +142,12 @@ describe('every area keeps its own sign-in (browser)', () => {
     await signInStaff(page, 'owner1@example.test', 'dev-password-123', '/vendor');
     await signInStaff(page, 'driver@example.test', 'dev-password-123', '/driver');
     await page.goto(`${base()}/admin`); await seeText(page.locator('.bo-brandbar'), 'Admin');          // still signed in as admin
-    await page.goto(`${base()}/vendor`); await seeText(page.locator('.bo-brandbar'), 'Vendor');        // and as the vendor
+    await page.goto(`${base()}/vendor`); await seeText(page.locator('aside'), 'Vendor');             // and as the vendor
     await page.goto(`${base()}/driver`); await seeText(page.locator('.bo-brandbar'), 'Driver');
     await page.getByRole('button', { name: 'Sign out' }).click();
     await page.waitForURL(/\/driver\/signin/);
     await page.goto(`${base()}/admin`); await seeText(page.locator('.bo-brandbar'), 'Admin');          // the others are untouched
-    await page.goto(`${base()}/vendor`); await seeText(page.locator('.bo-brandbar'), 'Vendor');
+    await page.goto(`${base()}/vendor`); await seeText(page.locator('aside'), 'Vendor');
   });
 });
 
@@ -156,13 +156,14 @@ describe('own sign-up window (browser)', () => {
     const { page } = await newPage(browser, MOBILE);
     const email = `new${Date.now()}@signup.test`;
     await page.goto(`${base()}/vendor/signup`);
-    await page.fill('input[name=full_name]', 'New Seller'); await page.fill('input[name=email]', email); await page.fill('input[name=password]', 'a-long-password');
-    await page.click('.bo-auth button[type=submit]');
-    await page.waitForURL('**/vendor');
-    await seeText(page.locator('body'), 'Tell us about your business');
-    await page.getByRole('button', { name: 'Cook and sell meals' }).click();
-    await page.getByRole('button', { name: 'Restaurant', exact: true }).click();
-    await seeText(page.locator('body'), 'List your restaurant');
+    await page.fill('input[name=business_name]', 'New Seller Foods'); await page.fill('input[name=email]', email); await page.fill('input[name=phone]', '403-555-0199');
+    await page.fill('input[name=first_name]', 'New'); await page.fill('input[name=last_name]', 'Seller'); await page.fill('input[name=password]', 'a-long-password');
+    await page.fill('input[name=street_address]', '12 Test Street SW'); await page.selectOption('select[name=state]', { label: 'Alberta' }); await page.selectOption('select[name=city]', 'Calgary');
+    await page.fill('input[name=postal_code]', 'T2P 1J9'); await page.getByLabel('West African').check();
+    for (const f of await page.locator('input[type=file]').all()) await f.setInputFiles({ name: 'doc.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 test') });
+    await page.click('button[type=submit]');
+    await page.waitForURL(/\/vendor\/?$/);
+    await page.locator('aside').first().waitFor({ state: 'attached' });          // signed in to the vendor window straight away
     await page.goto(`${base()}/admin`);                                        // it is not an admin, and has no shopping account either
     await page.waitForURL(/\/admin\/signin/);                            // not an admin; the vendor sign-in does not open admin
   });
@@ -175,10 +176,10 @@ describe('admin has absolute control (browser)', () => {
     await signInStaff(page, 'admin@example.test');
     await page.goto(`${base()}/admin/vendors/${vid}`);
     await page.getByRole('button', { name: 'Open their portal' }).click();
-    await page.waitForURL('**/vendor');
+    await page.waitForURL(/\/vendor\/?$/);
     await seeText(page.locator('body'), 'Admin mode');
     await page.goto(`${base()}/vendor/orders`);
-    await seeText(page.locator('.bo-main'), 'Orders');
+    await seeText(page.locator('main'), 'Orders');
     await page.getByRole('button', { name: 'Exit and go back to admin' }).click();
     await page.waitForURL('**/admin/vendors');
     await page.goto(`${base()}/vendor`);
