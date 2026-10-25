@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { LayoutDashboard, ShoppingCart, Truck, UserCheck, LifeBuoy, RotateCcw, Store, MessageSquare, MapPin, Package, Utensils, Layers, Map, Tag, Megaphone, Palette, FileText, Handshake, DollarSign, BarChart3, FileSpreadsheet, SlidersHorizontal, Settings as SettingsIcon, Activity } from 'lucide-react'
+import { LayoutDashboard, ShoppingCart, Truck, UserCheck, LifeBuoy, RotateCcw, Store, MessageSquare, MapPin, Package, Utensils, Layers, Map, Tag, Megaphone, Palette, FileText, Handshake, DollarSign, BarChart3, Users, Star, Gift, FileSpreadsheet, SlidersHorizontal, Settings as SettingsIcon, Activity } from 'lucide-react'
 import { setArea } from '../shared/client'
 import StaffShell, { useUser } from '../shared/StaffShell'
 import StaffLogin from '../shared/StaffLogin'
@@ -15,6 +15,7 @@ import { Ads, Content, Crm, ProspectDetail } from './pages/Growth'
 import { Finance, Reports, System } from './pages/Insight'
 import { Settings, ControlCentre } from './pages/Platform'
 import { Messages, Insights } from './pages/Talk'
+import { Customers, CustomerDetail, ReviewsAdmin, GiftCards } from './pages/People'
 
 setArea('admin')
 
@@ -25,6 +26,8 @@ const NAV = [
   { name: 'Dispatch', href: '/dispatch', icon: Truck, badge: '/admin/dispatch', need: ['dispatch.manage'] },
   { name: 'Drivers', href: '/drivers', icon: UserCheck, badge: '/admin/drivers', need: ['drivers.manage'] },
   { name: 'Support', href: '/support', icon: LifeBuoy, badge: '/admin/support', need: ['support.manage'] },
+  { name: 'Customers', href: '/customers', icon: Users, need: ['users.view'] },
+  { name: 'Reviews', href: '/reviews', icon: Star, need: ['support.manage'] },
   { name: 'Refunds', href: '/refunds', icon: RotateCcw, badge: '/admin/refunds', need: ['refunds.approve', 'refunds.request'] },
   { name: 'Vendors', href: '/vendors', icon: Store, group: 'Marketplace', badge: '/admin/vendors', need: ['vendors.manage'] },
   { name: 'Vendor messages', href: '/messages', icon: MessageSquare, badge: '/admin/messages', need: ['vendors.manage'] },
@@ -39,6 +42,7 @@ const NAV = [
   { name: 'Content', href: '/content', icon: FileText, need: ['content.manage'] },
   { name: 'Vendor pipeline', href: '/crm', icon: Handshake, need: ['crm.manage'] },
   { name: 'Finance', href: '/finance', icon: DollarSign, group: 'Finance & insight', need: ['ledger.view', 'payouts.manage'] },
+  { name: 'Gift cards', href: '/gift-cards', icon: Gift, need: ['ledger.view'] },
   { name: 'Insights', href: '/insights', icon: BarChart3, need: ['reports.view'] },
   { name: 'Reports', href: '/reports', icon: FileSpreadsheet, need: ['reports.view'] },
   { name: 'Control centre', href: '/control', icon: SlidersHorizontal, group: 'Platform', need: ['control.manage'] },
@@ -72,7 +76,7 @@ export default function App() {
               <Route path="/orders" element={<Orders />} /><Route path="/orders/:id" element={<OrderDetail />} />
               <Route path="/dispatch" element={<Dispatch />} /><Route path="/drivers" element={<Drivers />} />
               <Route path="/support" element={<Support />} /><Route path="/support/:id" element={<TicketDetail />} />
-              <Route path="/refunds" element={<Refunds />} />
+              <Route path="/refunds" element={<Refunds />} /><Route path="/customers" element={<Customers />} /><Route path="/customers/:id" element={<CustomerDetail />} /><Route path="/reviews" element={<ReviewsAdmin />} /><Route path="/gift-cards" element={<GiftCards />} />
               <Route path="/vendors" element={<Vendors />} /><Route path="/vendors/:id" element={<VendorDetail />} />
               <Route path="/messages" element={<Messages />} /><Route path="/stores" element={<StoresAdmin />} />
               <Route path="/catalogue" element={<Catalogue />} /><Route path="/catalogue/:id" element={<ProductEditor />} />

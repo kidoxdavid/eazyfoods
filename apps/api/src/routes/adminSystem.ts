@@ -7,6 +7,7 @@ import { bad, conflict, notFound } from '../lib/errors.js';
 import { config } from '../config.js';
 import { hashPassword } from '../lib/password.js';
 import { eraseUser } from '../services/erase.js';
+import { creditBalance } from '../services/credit.js';
 import { getProvider } from '../payments/provider.js';
 
 const uuid = z.string().uuid();
@@ -206,4 +207,45 @@ export const adminSystemRoutes: FastifyPluginAsync = async (app) => {
     });
     return reply.code(201).send({ ok: true });
   });
+  // ---- Customer reviews: moderation (vendors can report a review; this is where it lands) ----
+  app.get<{ Querystring: { filter?: string } }>('/reviews', { preHandler: requirePerm('support.manage') }, async (req) => {
+    const f = z.enum(['reported', 'hidden', 'all']).catch('reported').parse(req.query.filter);
+    const where = f === 'reported' ? 'r.vendor_reported_at IS NOT NULL AND NOT r.is_hidden' : f === 'hidden' ? 'r.is_hidden' : 'true';
+    return (await pool.query(`SELECT r.id, r.rating, r.body, r.is_hidden, r.created_at, r.vendor_response, r.vendor_report_reason, r.vendor_reported_at, s.name AS store_name, p.name AS product_name, u.full_name AS customer
+        FROM reviews r JOIN stores s ON s.id = r.store_id JOIN users u ON u.id = r.user_id LEFT JOIN products p ON p.id = r.product_id WHERE ${where} ORDER BY COALESCE(r.vendor_reported_at, r.created_at) DESC LIMIT 200`)).rows;
+  });
+  app.patch<{ Params: { id: string } }>('/reviews/:id', { preHandler: requirePerm('support.manage') }, async (req) => {
+    const id = uuid.parse(req.params.id);
+    const b = z.object({ is_hidden: z.boolean().optional(), dismiss_report: z.boolean().optional() }).parse(req.body);
+    const r = await pool.query(`UPDATE reviews SET is_hidden = COALESCE($2, is_hidden), vendor_reported_at = CASE WHEN $3 THEN NULL ELSE vendor_reported_at END, vendor_report_reason = CASE WHEN $3 THEN NULL ELSE vendor_report_reason END WHERE id = $1 RETURNING id, is_hidden`, [id, b.is_hidden ?? null, !!b.dismiss_report]);
+    if (!r.rowCount) throw notFound('Review not found');
+    await audit(req.user!.id, 'review.moderated', 'review', id, b);
+    return r.rows[0];
+  });
+
+  // ---- Customers: a support view of one shopper (no card data exists here) ----
+  app.get<{ Querystring: { q?: string } }>('/customers', { preHandler: requirePerm('users.view') }, async (req) => {
+    const q = (req.query.q ?? '').trim();
+    return (await pool.query(`SELECT u.id, u.full_name, u.email, u.created_at, (u.disabled_at IS NOT NULL) AS disabled,
+        (SELECT count(*)::int FROM orders o WHERE o.user_id = u.id AND o.payment_status IN ('paid','partially_refunded','refunded')) AS orders,
+        (SELECT COALESCE(sum(o.total_cents),0)::int FROM orders o WHERE o.user_id = u.id AND o.payment_status IN ('paid','partially_refunded')) AS spent_cents
+        FROM users u WHERE NOT EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role IN ('admin','support','finance','dispatcher','catalog','marketing','vendor_owner','vendor_staff','driver'))
+        AND ($1 = '' OR u.email ILIKE '%' || $1 || '%' OR u.full_name ILIKE '%' || $1 || '%') ORDER BY u.created_at DESC LIMIT 100`, [q])).rows;
+  });
+  app.get<{ Params: { id: string } }>('/customers/:id', { preHandler: requirePerm('users.view') }, async (req) => {
+    const id = uuid.parse(req.params.id);
+    const u = (await pool.query('SELECT id, full_name, email, created_at, (disabled_at IS NOT NULL) AS disabled FROM users WHERE id = $1', [id])).rows[0];
+    if (!u) throw notFound('Customer not found');
+    const [orders, tickets, reviews] = await Promise.all([
+      pool.query(`SELECT id, order_number, status, payment_status, total_cents, created_at AS placed_at FROM orders WHERE user_id = $1 AND status <> 'pending_payment' ORDER BY created_at DESC LIMIT 20`, [id]),
+      pool.query(`SELECT id, subject, status, created_at FROM support_tickets WHERE user_id = $1 ORDER BY created_at DESC LIMIT 10`, [id]),
+      pool.query('SELECT count(*)::int AS n, round(avg(rating),1)::float AS avg FROM reviews WHERE user_id = $1', [id]),
+    ]);
+    return { ...u, credit_cents: await creditBalance(pool, id), orders: orders.rows, tickets: tickets.rows, reviews: reviews.rows[0] };
+  });
+
+  // ---- Gift cards sold ----
+  app.get('/gift-cards', { preHandler: requirePerm('ledger.view') }, async () =>
+    (await pool.query(`SELECT g.id, g.amount_cents, g.status, g.recipient_name, g.recipient_email, g.created_at, g.paid_at, u.full_name AS buyer, u.email AS buyer_email
+        FROM gift_purchases g JOIN users u ON u.id = g.buyer_id ORDER BY g.created_at DESC LIMIT 200`)).rows);
 };
