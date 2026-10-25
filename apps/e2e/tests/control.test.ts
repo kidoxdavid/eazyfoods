@@ -143,7 +143,7 @@ describe('every area keeps its own sign-in (browser)', () => {
     await signInStaff(page, 'driver@example.test', 'dev-password-123', '/driver');
     await page.goto(`${base()}/admin`); await seeText(page.locator('.bo-brandbar'), 'Admin');          // still signed in as admin
     await page.goto(`${base()}/vendor`); await seeText(page.locator('aside'), 'Vendor');             // and as the vendor
-    await page.goto(`${base()}/driver`); await seeText(page.locator('.bo-brandbar'), 'Driver');
+    await page.goto(`${base()}/driver`); await seeText(page.locator('aside'), 'Driver');
     await page.getByRole('button', { name: 'Sign out' }).click();
     await page.waitForURL(/\/driver\/signin/);
     await page.goto(`${base()}/admin`); await seeText(page.locator('.bo-brandbar'), 'Admin');          // the others are untouched
@@ -164,6 +164,7 @@ describe('own sign-up window (browser)', () => {
     await page.click('button[type=submit]');
     await page.waitForURL(/\/vendor\/?$/);
     await page.locator('aside').first().waitFor({ state: 'attached' });          // signed in to the vendor window straight away
+    await seeText(page.locator('[aria-label="Application status"]'), 'Finish setting up');   // and shown what is left before the application can be sent
     await page.goto(`${base()}/admin`);                                        // it is not an admin, and has no shopping account either
     await page.waitForURL(/\/admin\/signin/);                            // not an admin; the vendor sign-in does not open admin
   });

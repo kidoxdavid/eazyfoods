@@ -10,6 +10,7 @@ const Profile = () => {
   const [vendor, setVendor] = useState(null)
   const [formData, setFormData] = useState({
     business_name: '',
+    business_number: '',
     phone: '',
     description: '',
     store_profile_image_url: '',
@@ -48,6 +49,7 @@ const Profile = () => {
       // Initialize form data with vendor data
       setFormData({
         business_name: data.business_name || '',
+        business_number: data.business_number || '',
         phone: data.phone || '',
         description: data.description || '',
         store_profile_image_url: data.store_profile_image_url || '',
@@ -193,6 +195,13 @@ const Profile = () => {
                 required
                 className="input"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">
+                Business / GST number
+              </label>
+              <input type="text" name="business_number" value={formData.business_number} onChange={handleChange} className="input" placeholder="Needed before we can review your application" />
             </div>
 
             <div>

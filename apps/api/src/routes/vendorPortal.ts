@@ -120,6 +120,19 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
     return { ok: true };
   });
 
+  app.put<{ Params: { storeId: string } }>('/stores/:storeId/gallery', async (req) => {
+    const id = await store(req);
+    const { images } = z.object({ images: z.array(z.string().refine(isOurImageUrl, 'Upload the image through EAZyfoods first.')).max(12) }).parse(req.body);
+    await pool.query('UPDATE stores SET gallery = $2 WHERE id = $1', [id, images]);
+    return { ok: true };
+  });
+  // The signed-in person's own name (shown in the portal and on orders they handle).
+  app.put('/me/name', async (req) => {
+    const { full_name } = z.object({ full_name: z.string().trim().min(1).max(120) }).parse(req.body);
+    await pool.query('UPDATE users SET full_name = $2 WHERE id = $1', [req.user!.id, full_name]);
+    return { ok: true };
+  });
+
   app.put<{ Params: { storeId: string } }>('/stores/:storeId/hours', async (req) => {
     const id = await store(req);
     const { hours } = z.object({ hours: z.array(z.object({ dow: z.number().int().min(0).max(6), opens: z.string().regex(/^\d\d:\d\d$/), closes: z.string().regex(/^\d\d:\d\d$/) })).max(30) }).parse(req.body);
@@ -129,7 +142,7 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
   });
   app.get<{ Params: { storeId: string } }>('/stores/:storeId/hours', async (req) => (await pool.query('SELECT dow, to_char(opens,\'HH24:MI\') AS opens, to_char(closes,\'HH24:MI\') AS closes FROM store_hours WHERE store_id = $1 ORDER BY dow, opens', [await store(req)])).rows);
   app.get<{ Params: { storeId: string } }>('/stores/:storeId/profile', async (req) => {
-    const s = (await pool.query('SELECT id, slug, name, description, address_line, city, postal_code, phone, policies, offers_delivery, offers_pickup, ordering_paused, min_order_cents, logo_url, cover_url, status, kind, cuisines, kitchen_type, video_url FROM stores WHERE id = $1', [await store(req)])).rows[0];
+    const s = (await pool.query('SELECT id, slug, name, description, address_line, city, postal_code, phone, policies, offers_delivery, offers_pickup, ordering_paused, min_order_cents, logo_url, cover_url, status, kind, cuisines, kitchen_type, video_url, gallery FROM stores WHERE id = $1', [await store(req)])).rows[0];
     const regions = (await pool.query('SELECT r.slug FROM store_regions sr JOIN regions r ON r.id = sr.region_id WHERE sr.store_id = $1', [s.id])).rows.map((r) => r.slug);
     return { ...s, regions };
   });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
+import OnboardingCard from '../../shared/OnboardingCard'
 import {
   ShoppingCart,
   DollarSign,
@@ -107,28 +108,6 @@ const Dashboard = () => {
     average_rating: null,
     total_reviews: 0
   }
-
-  const onboardingSteps = [
-    {
-      id: 'profile',
-      label: 'Complete your profile',
-      link: '/profile',
-      done: !!(vendorInfo?.business_name && (vendorInfo?.street_address || vendorInfo?.city)),
-    },
-    {
-      id: 'product',
-      label: 'Add your first product',
-      link: '/products/new',
-      done: (safeStats.expiring_products_count ?? 0) > 0 || (safeStats.today_orders ?? 0) > 0 || (safeStats.pending_orders ?? 0) > 0,
-    },
-    {
-      id: 'hours',
-      label: 'Set store hours',
-      link: '/profile',
-      done: !!(vendorInfo?.operating_hours && typeof vendorInfo.operating_hours === 'object' && Object.values(vendorInfo.operating_hours).some((d) => d && (d.open || d.close))),
-    },
-  ]
-  const onboardingComplete = onboardingSteps.every((s) => s.done)
 
   const statCards = [
     {
@@ -303,29 +282,7 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Onboarding checklist - hide when all done */}
-      {vendorInfo && !onboardingComplete && (
-        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-5 lg:p-6 border border-gray-200 border-l-4 border-l-primary-500">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Getting started</h2>
-          <ul className="space-y-2">
-            {onboardingSteps.map((step) => (
-              <li key={step.id}>
-                <Link
-                  to={step.link}
-                  className="flex items-center gap-2 text-sm text-gray-700 hover:text-primary-600"
-                >
-                  {step.done ? (
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                  ) : (
-                    <Circle className="h-5 w-5 text-gray-300 flex-shrink-0" />
-                  )}
-                  <span className={step.done ? 'text-gray-500 line-through' : ''}>{step.label}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <OnboardingCard variant="vendor" />
 
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow-sm p-4 sm:p-5 lg:p-6 border border-gray-200">

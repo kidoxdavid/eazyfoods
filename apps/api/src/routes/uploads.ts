@@ -64,6 +64,46 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
     return reply.code(201).send(r.rows[0]);
   });
 
+  // Driver documents and proof-of-delivery photos are private too. Anyone applying to drive, or driving, may add them; the team views them in the console.
+  const isDriverish = async (req: any) => req.user!.staff_signup === 'driver' || !!(await pool.query('SELECT 1 FROM drivers WHERE user_id = $1', [req.user!.id])).rowCount;
+  app.post('/driver/files', rl(20, '1 minute'), async (req) => {
+    if (!(await isDriverish(req))) throw forbidden();
+    const buf = await readFile(req);
+    const t = sniff(buf, ['jpg', 'png', 'webp', 'pdf']);
+    return await save(buf, t.ext, 'private');
+  });
+  app.get<{ Params: { kind: string } }>('/driver/documents/:kind/file', async (req, reply) => {
+    const d = (await pool.query('SELECT documents FROM drivers WHERE user_id = $1', [req.user!.id])).rows[0];
+    const url: string | undefined = d?.documents?.[req.params.kind]?.url;
+    if (!url?.startsWith('private:')) return reply.code(404).send({ error: 'not_found' });
+    const key = url.slice(8);
+    const stream = await openPrivate(key);
+    if (!stream) return reply.code(404).send({ error: 'not_found' });
+    reply.header('content-type', key.endsWith('.pdf') ? 'application/pdf' : `image/${key.endsWith('.jpg') ? 'jpeg' : key.split('.')[1]}`);
+    return reply.send(stream);
+  });
+  app.get<{ Params: { id: string; kind: string } }>('/admin/drivers/:id/file/:kind', async (req, reply) => {
+    if (!can(req.user, 'drivers.manage')) throw forbidden();
+    const d = (await pool.query('SELECT documents FROM drivers WHERE id = $1', [z.string().uuid().parse(req.params.id)])).rows[0];
+    const url: string | undefined = req.params.kind === 'proof' ? undefined : d?.documents?.[req.params.kind]?.url;
+    if (!url?.startsWith('private:')) return reply.code(404).send({ error: 'not_found' });
+    const key = url.slice(8);
+    const stream = await openPrivate(key);
+    if (!stream) return reply.code(404).send({ error: 'not_found' });
+    reply.header('content-type', key.endsWith('.pdf') ? 'application/pdf' : `image/${key.endsWith('.jpg') ? 'jpeg' : key.split('.')[1]}`).header('content-disposition', 'attachment');
+    return reply.send(stream);
+  });
+  app.get<{ Params: { id: string } }>('/admin/deliveries/:id/proof', async (req, reply) => {
+    if (!can(req.user, 'dispatch.manage')) throw forbidden();
+    const d = (await pool.query('SELECT photo_url FROM deliveries WHERE id = $1', [z.string().uuid().parse(req.params.id)])).rows[0];
+    if (!d?.photo_url?.startsWith('private:')) return reply.code(404).send({ error: 'not_found' });
+    const key = d.photo_url.slice(8);
+    const stream = await openPrivate(key);
+    if (!stream) return reply.code(404).send({ error: 'not_found' });
+    reply.header('content-type', key.endsWith('.pdf') ? 'application/pdf' : `image/${key.endsWith('.jpg') ? 'jpeg' : key.split('.')[1]}`);
+    return reply.send(stream);
+  });
+
   app.get('/vendor/documents', async (req) =>
     (await pool.query(`SELECT id, kind, status, review_note, created_at FROM vendor_documents WHERE vendor_id = ANY($1::uuid[]) ORDER BY created_at`, [vendorIdsOf(req.user!)])).rows);
 

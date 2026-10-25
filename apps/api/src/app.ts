@@ -145,9 +145,8 @@ export async function buildApp() {
   await app.register(uploadRoutes, { prefix: '/api' });
   await app.register(badgeRoutes, { prefix: '/api' });
 
-  // Kitchens (home chefs and restaurants) manage dishes, slots and cuisines, which the grocery portal has no pages for, so a signed-in kitchen keeps the original console until its own portal is rebuilt.
-  const keepsOwnApp = async (req: any, area: string) => {
-    if (area !== 'vendor' || /^\/vendor\/(signin|signup)/.test(req.url)) return false;
+  // Kitchens (home chefs and restaurants) get the chef portal inside the same vendor window; the page asks which one to open.
+  const isKitchen = async (req: any) => {
     const token = req.cookies?.ez_vendor; if (!token) return false;
     try {
       const { rows } = await pool.query(
@@ -156,7 +155,7 @@ export async function buildApp() {
       return rows.length > 0;
     } catch { return false; }
   };
-  app.get('/api/vendor/app-kind', async (req) => ({ kitchen: await keepsOwnApp(req, 'vendor') }));   // the dev server asks this to pick the right console
+  app.get('/api/vendor/app-kind', async (req) => ({ kitchen: await isKitchen(req) }));
 
   // Single-host deployment: serve the built web app (and its client-side routes) from the API when it has been built.
   const dist = resolve(dirname(fileURLToPath(import.meta.url)), '../../web/dist');
@@ -176,11 +175,11 @@ export async function buildApp() {
       return reply.type('application/xml').header('cache-control', 'public, max-age=3600').send(await sitemapXml(siteOrigin(req.headers.host)));
     });
     // Staff areas that have been rebuilt as their own app (portal.html: Tailwind, no customer styles). The list grows as each area is rebuilt.
-    const PORTAL_AREAS = ['vendor'];
+    const PORTAL_AREAS = ['vendor', 'driver'];
     const portalHtml = existsSync(join(dist, 'portal.html')) ? readFileSync(join(dist, 'portal.html'), 'utf8') : null;
     app.setNotFoundHandler(async (req, reply) => {
       const area = /^\/([a-z]+)(\/|\?|$)/.exec(req.url)?.[1];
-      if (req.method === 'GET' && portalHtml && area && PORTAL_AREAS.includes(area) && !(await keepsOwnApp(req, area))) return reply.header('cache-control', 'no-cache').type('text/html').send(portalHtml);
+      if (req.method === 'GET' && portalHtml && area && PORTAL_AREAS.includes(area)) return reply.header('cache-control', 'no-cache').type('text/html').send(portalHtml);
       if (req.method === 'GET' && !req.url.startsWith('/api') && !req.url.startsWith('/uploads')) {
         const entries = await Promise.all(BOOT.map(async (p) => { try { const r = await app.inject({ url: `/api${p}` }); return r.statusCode === 200 ? [p, r.json()] : null; } catch { return null; } }));
         const json = JSON.stringify(Object.fromEntries(entries.filter(Boolean) as [string, unknown][])).replace(/</g, '\\u003c');

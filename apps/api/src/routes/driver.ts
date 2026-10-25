@@ -27,17 +27,58 @@ const JOB_SQL = `
 export const driverRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', requireLogin);
 
+  const detail = z.object({
+    street_address: z.string().trim().max(200).optional(), city: z.string().trim().max(100).optional(), state: z.string().trim().max(60).optional(), postal_code: z.string().trim().max(12).optional(),
+    vehicle_type: z.string().trim().max(40).optional(), vehicle_make: z.string().trim().max(60).optional(), vehicle_model: z.string().trim().max(60).optional(), vehicle_year: z.union([z.string(), z.number()]).optional(),
+    vehicle_color: z.string().trim().max(40).optional(), license_plate: z.string().trim().max(20).optional(), driver_license_number: z.string().trim().max(40).optional(),
+    preferred_delivery_zones: z.array(z.string().max(80)).max(10).optional(), delivery_radius_km: z.number().min(0).max(200).nullish(), payout_email: z.string().email().max(254).nullish(),
+  });
+  const docs = z.object({ driver_license: z.object({ url: z.string().max(400), validity: z.string().max(30).nullish() }).optional(), vehicle_registration: z.object({ url: z.string().max(400), validity: z.string().max(30).nullish() }).optional(), insurance: z.object({ url: z.string().max(400), validity: z.string().max(30).nullish() }).optional() });
+  const COLS = ['street_address', 'city', 'state', 'postal_code', 'vehicle_type', 'vehicle_make', 'vehicle_model', 'vehicle_year', 'vehicle_color', 'license_plate', 'driver_license_number', 'preferred_delivery_zones', 'delivery_radius_km', 'payout_email'] as const;
+  const detailSets = (b: Record<string, any>, from = 2) => {
+    const keys = COLS.filter((k) => b[k] !== undefined);
+    return { sql: keys.map((k, i) => `${k} = $${from + i}`).join(', '), args: keys.map((k) => (k === 'vehicle_year' ? String(b[k]) : b[k])) };
+  };
+
   app.post('/driver/apply', async (req, reply) => {
-    const b = z.object({ phone: z.string().min(7).max(25), vehicle: z.string().max(80).optional() }).parse(req.body);
-    const r = await pool.query(`INSERT INTO drivers(user_id, phone, vehicle) VALUES ($1,$2,$3) ON CONFLICT (user_id) DO NOTHING RETURNING id`, [req.user!.id, b.phone, b.vehicle ?? null]);
+    const b = detail.extend({ phone: z.string().min(7).max(25), vehicle: z.string().max(80).optional(), first_name: z.string().trim().max(60).optional(), last_name: z.string().trim().max(60).optional(), documents: docs.optional() }).parse(req.body);
+    const vehicle = b.vehicle ?? ([b.vehicle_year, b.vehicle_make, b.vehicle_model].filter(Boolean).join(' ') || null);
+    const r = await pool.query(`INSERT INTO drivers(user_id, phone, vehicle, documents) VALUES ($1,$2,$3,$4) ON CONFLICT (user_id) DO NOTHING RETURNING id`, [req.user!.id, b.phone, vehicle, JSON.stringify(b.documents ?? {})]);
     if (!r.rowCount) throw conflict('already_applied', 'You have already applied.');
+    const set = detailSets(b, 2);
+    if (set.sql) await pool.query(`UPDATE drivers SET ${set.sql} WHERE id = $1`, [r.rows[0].id, ...set.args]);
+    if (b.first_name) await pool.query('UPDATE users SET full_name = $2 WHERE id = $1', [req.user!.id, `${b.first_name} ${b.last_name ?? ''}`.trim()]);
     return reply.code(201).send({ ok: true, status: 'applied' });
   });
+
+  const expiry = (documents: any) => {
+    const names: Record<string, string> = { driver_license: 'Driver licence', vehicle_registration: 'Vehicle registration', insurance: 'Insurance' };
+    const now = Date.now(); const soon = now + 14 * 86400000; const expired: string[] = [], expiring: string[] = [];
+    for (const [k, label] of Object.entries(names)) {
+      const v = documents?.[k]?.validity ? Date.parse(documents[k].validity) : NaN;
+      if (Number.isNaN(v)) continue;
+      if (v <= now) expired.push(label); else if (v <= soon) expiring.push(label);
+    }
+    return { document_expired: expired.length > 0, document_expiring_soon: expiring.length > 0, expiring_document_names: [...expired, ...expiring] };
+  };
+  // The shape the driver portal reads. Our own fields are kept alongside the portal's names.
+  const profileOf = async (d: any, userId: string) => {
+    const u = (await pool.query('SELECT email, full_name FROM users WHERE id = $1', [userId])).rows[0];
+    const [first, ...rest] = (u.full_name ?? '').split(' ');
+    return {
+      id: d.id, status: d.status, email: u.email, first_name: first, last_name: rest.join(' '), phone: d.phone, vehicle: d.vehicle, is_available: d.is_available, licence_verified: d.licence_verified, background_check_verified: d.background_check_verified,
+      nav_app: d.nav_app, share_location: d.share_location, street_address: d.street_address, city: d.city, state: d.state, postal_code: d.postal_code, country: d.country,
+      vehicle_type: d.vehicle_type, vehicle_make: d.vehicle_make, vehicle_model: d.vehicle_model, vehicle_year: d.vehicle_year, vehicle_color: d.vehicle_color, license_plate: d.license_plate, driver_license_number: d.driver_license_number,
+      preferred_delivery_zones: d.preferred_delivery_zones, delivery_radius_km: d.delivery_radius_km == null ? null : Number(d.delivery_radius_km), payout_email: d.payout_email,
+      verification_status: d.status === 'approved' ? 'approved' : d.status === 'applied' ? 'pending' : 'rejected', is_active: d.status === 'approved', verification_notes: d.note,
+      ...(d.status === 'approved' ? expiry(d.documents) : { document_expired: false, document_expiring_soon: false, expiring_document_names: [] }), created_at: d.created_at,
+    };
+  };
 
   app.get('/driver/me', async (req) => {
     const d = await me(req);
     if (!d) return { status: 'none' };
-    return { id: d.id, status: d.status, phone: d.phone, vehicle: d.vehicle, is_available: d.is_available, licence_verified: d.licence_verified, background_check_verified: d.background_check_verified, nav_app: d.nav_app, share_location: d.share_location };
+    return profileOf(d, req.user!.id);
   });
 
   app.put('/driver/availability', async (req) => {
@@ -50,9 +91,16 @@ export const driverRoutes: FastifyPluginAsync = async (app) => {
   // A driver only ever sees jobs assigned to them, and only the customer details needed to deliver.
   app.get('/driver/jobs', async (req) => {
     const d = await approvedDriver(req);
-    const { scope } = z.object({ scope: z.enum(['active', 'history']).default('active') }).parse(req.query);
-    const where = scope === 'active' ? `d.status IN ('assigned','picked_up')` : `d.status IN ('delivered','failed')`;
+    const { scope } = z.object({ scope: z.enum(['active', 'history', 'all']).default('active') }).parse(req.query);
+    const where = scope === 'active' ? `d.status IN ('assigned','picked_up')` : scope === 'history' ? `d.status IN ('delivered','failed')` : `d.status IN ('assigned','picked_up','delivered','failed')`;
     return (await pool.query(`${JOB_SQL} WHERE d.driver_id = $1 AND ${where} ORDER BY d.assigned_at DESC LIMIT 100`, [d.id])).rows;
+  });
+
+  app.get<{ Params: { id: string } }>('/driver/jobs/:id', async (req) => {
+    const d = await approvedDriver(req);
+    const j = (await pool.query(`${JOB_SQL} WHERE d.id = $1 AND d.driver_id = $2`, [z.string().uuid().parse(req.params.id), d.id])).rows[0];
+    if (!j) throw notFound('Job not found');
+    return j;
   });
 
   const ownJob = async (req: FastifyRequest, id: string) => {
@@ -75,7 +123,7 @@ export const driverRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post('/driver/jobs/:id/deliver', async (req) => {
-    const b = z.object({ code: z.string().max(10).optional(), bypass_reason: z.string().min(5).max(300).optional() }).parse(req.body);
+    const b = z.object({ code: z.string().max(10).optional(), bypass_reason: z.string().min(5).max(300).optional(), photo_url: z.string().max(400).nullish() }).parse(req.body);
     const { d, j } = await ownJob(req, jobId(req));
     if (j.status !== 'picked_up') throw conflict('invalid_state', 'Pick up the order first.');
     const bypass = !b.code;
@@ -83,7 +131,7 @@ export const driverRoutes: FastifyPluginAsync = async (app) => {
     if (!bypass && b.code !== j.handover_code) throw bad('wrong_code', 'That code does not match. Ask the customer to check their order page.');
     return tx(async (c, after) => {
       await moveSuborder(c, after, j.suborder_id, 'delivered', { userId: req.user!.id, kind: 'driver' }, null);
-      await c.query(`UPDATE deliveries SET status='delivered', delivered_at=now(), code_bypassed=$2, completion_note=$3 WHERE id=$1`, [j.id, bypass, b.bypass_reason ?? null]);
+      await c.query(`UPDATE deliveries SET status='delivered', delivered_at=now(), code_bypassed=$2, completion_note=$3, photo_url=$4 WHERE id=$1`, [j.id, bypass, b.bypass_reason ?? null, b.photo_url ?? null]);
       await c.query('DELETE FROM delivery_locations WHERE delivery_id = $1', [j.id]);
       await c.query(`INSERT INTO delivery_events(delivery_id, type, actor_user_id, note) VALUES ($1,'delivered',$2,$3)`, [j.id, req.user!.id, bypass ? `CODE BYPASSED: ${b.bypass_reason}` : null]);
       // The customer's tip is released to the driver now that the order is delivered (unless it was refunded earlier).
@@ -161,11 +209,56 @@ export const driverRoutes: FastifyPluginAsync = async (app) => {
 
   // ---- Profile and settings ----
   app.put('/driver/profile', async (req) => {
-    const d = await approvedDriver(req);
-    const b = z.object({ phone: z.string().min(7).max(25), vehicle: z.string().max(80).nullable().optional(), nav_app: z.enum(['google', 'apple', 'waze']), share_location: z.boolean() }).parse(req.body);
-    await pool.query('UPDATE drivers SET phone = $2, vehicle = $3, nav_app = $4, share_location = $5 WHERE id = $1', [d.id, b.phone, b.vehicle ?? null, b.nav_app, b.share_location]);
-    if (!b.share_location) await pool.query(`DELETE FROM delivery_locations WHERE delivery_id IN (SELECT id FROM deliveries WHERE driver_id = $1)`, [d.id]);
+    const d = await me(req);
+    if (!d) throw notFound('No driver profile');
+    const b = detail.extend({ phone: z.string().min(7).max(25).optional(), vehicle: z.string().max(80).nullable().optional(), nav_app: z.enum(['google', 'apple', 'waze']).optional(), share_location: z.boolean().optional(),
+      first_name: z.string().trim().max(60).optional(), last_name: z.string().trim().max(60).optional() }).parse(req.body);
+    const sets: string[] = []; const args: unknown[] = [d.id];
+    const put = (col: string, v: unknown) => { args.push(v); sets.push(`${col} = $${args.length}`); };
+    if (b.phone !== undefined) put('phone', b.phone);
+    if (b.vehicle !== undefined) put('vehicle', b.vehicle);
+    if (b.nav_app !== undefined) put('nav_app', b.nav_app);
+    if (b.share_location !== undefined) put('share_location', b.share_location);
+    for (const k of COLS) if (b[k] !== undefined) put(k, k === 'vehicle_year' ? String(b[k]) : b[k]);
+    if (!b.vehicle && (b.vehicle_make || b.vehicle_model)) put('vehicle', [b.vehicle_year ?? d.vehicle_year, b.vehicle_make ?? d.vehicle_make, b.vehicle_model ?? d.vehicle_model].filter(Boolean).join(' '));
+    if (sets.length) await pool.query(`UPDATE drivers SET ${sets.join(', ')} WHERE id = $1`, args);
+    if (b.first_name !== undefined || b.last_name !== undefined) {
+      const cur = ((await pool.query('SELECT full_name FROM users WHERE id = $1', [req.user!.id])).rows[0].full_name as string).split(' ');
+      await pool.query('UPDATE users SET full_name = $2 WHERE id = $1', [req.user!.id, `${b.first_name ?? cur[0]} ${b.last_name ?? cur.slice(1).join(' ')}`.trim()]);
+    }
+    if (b.share_location === false) await pool.query(`DELETE FROM delivery_locations WHERE delivery_id IN (SELECT id FROM deliveries WHERE driver_id = $1)`, [d.id]);
     return { ok: true };
+  });
+
+  // Documents: read what is on file, or send new ones (after an expiry). New documents put the driver back in review.
+  app.get('/driver/documents', async (req) => {
+    const d = await me(req);
+    if (!d) throw notFound('No driver profile');
+    return { status: d.status, documents: d.documents };
+  });
+  app.put('/driver/documents', async (req) => {
+    const d = await me(req);
+    if (!d) throw notFound('No driver profile');
+    const b = docs.parse(req.body);
+    const merged = { ...d.documents, ...b };
+    await pool.query(`UPDATE drivers SET documents = $2, status = CASE WHEN status = 'suspended' THEN status ELSE 'applied' END, licence_verified = false, background_check_verified = false, is_available = false WHERE id = $1`, [d.id, JSON.stringify(merged)]);
+    await pool.query(`DELETE FROM user_roles WHERE user_id = $1 AND role = 'driver'`, [req.user!.id]);
+    return { ok: true, message: 'Documents sent for review. You will be notified once approved.' };
+  });
+
+  // ---- Chat with the EAZyfoods team ----
+  app.get('/driver/messages', async (req) => {
+    const d = await me(req);
+    if (!d) return [];
+    await pool.query(`UPDATE driver_messages SET read_by_other_at = now() WHERE driver_id = $1 AND from_staff AND read_by_other_at IS NULL`, [d.id]);
+    return (await pool.query('SELECT id, from_staff, body, created_at FROM driver_messages WHERE driver_id = $1 ORDER BY id DESC LIMIT 200', [d.id])).rows.reverse();
+  });
+  app.post('/driver/messages', async (req, reply) => {
+    const d = await me(req);
+    if (!d) throw notFound('No driver profile');
+    const { body } = z.object({ body: z.string().trim().min(1).max(2000) }).parse(req.body);
+    const r = await pool.query('INSERT INTO driver_messages(driver_id, from_staff, author_user_id, body) VALUES ($1,false,$2,$3) RETURNING id, from_staff, body, created_at', [d.id, req.user!.id, body]);
+    return reply.code(201).send(r.rows[0]);
   });
 
   // ---- Dashboard and performance (numbers come from the driver's own deliveries only) ----

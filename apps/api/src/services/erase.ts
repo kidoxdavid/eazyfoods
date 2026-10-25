@@ -50,7 +50,7 @@ export async function eraseUser(actorId: string, id: string): Promise<EraseResul
     });
     if (!gone) {
       await scrubUser(c, id);
-      if (driver) await c.query(`UPDATE drivers SET status = 'suspended', is_available = false, phone = '' WHERE user_id = $1`, [id]);
+      if (driver) await c.query(`UPDATE drivers SET status = 'suspended', is_available = false, phone = '', street_address = NULL, city = NULL, state = NULL, postal_code = NULL, driver_license_number = NULL, license_plate = NULL, documents = '{}'::jsonb WHERE user_id = $1`, [id]);
     }
     await audit(actorId, gone ? 'user.deleted' : 'user.closed', 'user', id, { email: u.email }, c);
     return gone ? { deleted: true, closed: false, note: 'The account was deleted.' }
@@ -93,7 +93,7 @@ export async function eraseDriver(actorId: string, id: string): Promise<EraseRes
       await c.query(`DELETE FROM user_roles WHERE user_id = $1 AND role = 'driver'`, [d.user_id]);
     });
     if (!gone) {
-      await c.query(`UPDATE drivers SET status = 'suspended', is_available = false WHERE id = $1`, [id]);
+      await c.query(`UPDATE drivers SET status = 'suspended', is_available = false, street_address = NULL, city = NULL, state = NULL, postal_code = NULL, driver_license_number = NULL, license_plate = NULL, documents = '{}'::jsonb WHERE id = $1`, [id]);
       await c.query(`DELETE FROM user_roles WHERE user_id = $1 AND role = 'driver'`, [d.user_id]);
       await c.query('DELETE FROM sessions WHERE user_id = $1', [d.user_id]);
     }

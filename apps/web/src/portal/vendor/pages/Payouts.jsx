@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import api from '../services/api'
+import MockConnect from '../../shared/MockConnect'
 import { DollarSign, TrendingUp, Percent, CreditCard, ExternalLink, CheckCircle } from 'lucide-react'
 import { formatCurrency, formatDate } from '../utils/format'
 
@@ -82,6 +83,7 @@ const Payouts = () => {
 
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6">
+      <MockConnect onDone={() => window.location.reload()} />
       <div>
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Payouts</h1>
         <p className="text-xs sm:text-sm text-gray-600 mt-1">Track your earnings and payouts</p>

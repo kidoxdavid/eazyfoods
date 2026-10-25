@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Browser } from 'playwright-core';
-import { base, db, DESKTOP, launch, MOBILE, newPage, signIn } from './helpers.js';
+import { base, db, DESKTOP, launch, MOBILE, newPage, seeText, signIn } from './helpers.js';
 
 let browser: Browser;
 beforeAll(async () => { browser = await launch(); });
@@ -202,14 +202,13 @@ describe('home chefs (browser)', () => {
   it('a cook adds a dish from the chef portal and it appears on the public kitchen page', async () => {
     const name = `Test stew ${Date.now()}`;
     const { page, ctx } = await newPage(browser, DESKTOP); await signIn(page, 'chef1@example.test');
-    await page.goto(base() + '/vendor/menu');
-    await page.getByRole('button', { name: 'Add a dish' }).click();
-    await page.getByLabel('Dish name').fill(name); await page.getByLabel('Price (CAD)').fill('14.50');
-    const save = page.getByRole('button', { name: 'Save dish' });
-    expect(await save.isDisabled()).toBe(true);               // allergen confirmation is mandatory
-    await page.getByRole('checkbox', { name: /Peanuts/ }).check();
-    await page.getByRole('checkbox', { name: /I confirm the allergen list/ }).check();
-    await save.click();
+    await page.goto(base() + '/vendor/cuisines/new');
+    await page.fill('input[name=name]', name); await page.fill('input[name=price]', '14.50'); await page.fill('input[name=portions]', '6');
+    await page.getByLabel('Peanuts', { exact: true }).check();
+    await page.getByRole('button', { name: 'Create Cuisine' }).click();
+    page.once('dialog', (d) => d.accept());                               // allergen confirmation is mandatory: the first save is refused
+    await page.getByLabel(/I confirm the allergen list/).check();
+    await page.getByRole('button', { name: 'Create Cuisine' }).click();
     await page.getByText(name).first().waitFor();
     const pub = await newPage(browser, DESKTOP);
     await pub.page.goto(base() + '/k/demo-mama-ngozi-kitchen'); await pub.page.waitForLoadState('networkidle');
@@ -226,8 +225,7 @@ describe('home chefs (browser)', () => {
     await page.fill('input[name=email]', 'chef1@example.test'); await page.fill('input[name=password]', 'dev-password-123');
     await page.click('button[type=submit]');
     await page.waitForURL(/\/vendor\/?$/);
-    await page.waitForSelector('.bo-brandbar', { state: 'attached' });
-    expect(await page.locator('.bo-brandbar').innerText()).toContain('Chef');
+    await seeText(page.locator('aside'), 'eazyfoods Chef');
   });
 });
 
@@ -260,12 +258,11 @@ describe('payouts (browser)', () => {
   it('a cook connects a (test) payout account and sees it connected', async () => {
     const { page } = await newPage(browser, DESKTOP); await signIn(page, 'chef2@example.test');
     await page.goto(base() + '/vendor/payouts'); await page.waitForLoadState('networkidle');
-    await page.getByText('Not connected').waitFor();
-    await page.getByRole('button', { name: 'Connect payout account' }).click();
+    await page.getByRole('button', { name: 'Connect with Stripe' }).click();
     await page.getByRole('button', { name: 'Finish test onboarding' }).waitFor();
     await page.getByRole('button', { name: 'Finish test onboarding' }).click();
-    await page.getByText('Connected', { exact: true }).waitFor();
-    await page.getByText('Payable now').waitFor();
+    await page.getByText(/Stripe connected/).waitFor();
+    await page.getByText('Available Balance').waitFor();
     await page.getByText('TEST MODE').waitFor();
   });
 });

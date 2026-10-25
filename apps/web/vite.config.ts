@@ -16,7 +16,7 @@ const bootData = (): Plugin => ({
 });
 
 /** Staff areas are their own app (portal.html, Tailwind, no customer styles). In development this serves it for those paths, like the API does in production. */
-const PORTAL_AREAS = ['vendor'];   // grows as each area is rebuilt
+const PORTAL_AREAS = ['vendor', 'driver'];   // grows as each area is rebuilt
 const portalRoutes = (): Plugin => ({
   name: 'portal-routes',
   apply: 'serve',
@@ -24,12 +24,7 @@ const portalRoutes = (): Plugin => ({
     server.middlewares.use(async (req, _res, next) => {
       const m = /^\/([a-z]+)(\/|\?|$)/.exec(req.url ?? '');
       if (m && PORTAL_AREAS.includes(m[1])) {
-        // A signed-in kitchen keeps the original console (the production server decides the same way).
-        let kitchen = false;
-        if (m[1] === 'vendor' && !/^\/vendor\/(signin|signup)/.test(req.url ?? '') && /ez_vendor=/.test(req.headers.cookie ?? '')) {
-          try { kitchen = (await (await fetch(`${api}/api/vendor/app-kind`, { headers: { cookie: req.headers.cookie ?? '' } })).json()).kitchen === true; } catch { /* dev only */ }
-        }
-        if (!kitchen) req.url = '/portal.html';
+        req.url = '/portal.html';
       }
       next();
     });

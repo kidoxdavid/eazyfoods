@@ -105,6 +105,7 @@ export function orderShape(r) {
     subtotal: cents(r.subtotal_cents), tax_amount: cents(r.tax_cents), shipping_amount: cents(r.delivery_cents), discount_amount: cents(r.discount_cents), total_amount: cents(r.total_cents),
     gross_sales: cents(r.subtotal_cents), commission_rate: (r.commission_bps ?? 0) / 100, commission_amount: cents(r.commission_cents), net_payout: cents(r.subtotal_cents - r.commission_cents),
     items: (r.lines || []).map((l) => ({ id: l.id, product_name: l.name + (l.pack_label ? ` (${l.pack_label})` : ''), quantity: l.quantity, unit_price: cents(l.unit_price_cents), total_price: cents(l.unit_price_cents * l.quantity), status: l.status })),
+    scheduled_for: r.scheduled_for || null, scheduled_until: r.scheduled_until || null,
     driver_id: r.driver_id || null,
     driver: r.driver_id ? { name: r.driver_first_name, phone: r.driver_phone, vehicle_type: r.driver_vehicle } : null,
     delivery: delivery_status ? { status: delivery_status } : null, needs_attention: r.needs_attention, store_name: r.store_name,
@@ -120,7 +121,7 @@ const routes = [
     const [first, ...rest] = (me?.full_name || '').split(' ')
     const operating_hours = {}
     for (const h of hours) { const d = DAYS[h.dow]; if (d && !operating_hours[d]) operating_hours[d] = { open: h.opens, close: h.closes } }
-    return { id: me?.id, email: me?.email, first_name: first, last_name: rest.join(' '), business_name: vp.name || stores[0]?.name || 'Vendor', phone: vp.phone || sp.phone || '', status: sp.ordering_paused ? 'inactive' : 'active',
+    return { id: me?.id, email: me?.email, first_name: first, last_name: rest.join(' '), business_name: vp.name || stores[0]?.name || 'Vendor', business_number: vp.business_number || '', legal_name: vp.legal_name || '', phone: vp.phone || sp.phone || '', status: sp.ordering_paused ? 'inactive' : 'active',
       description: sp.description || '', store_profile_image_url: sp.logo_url || '', street_address: sp.address_line || '', city: sp.city || '', state: 'Alberta', postal_code: sp.postal_code || '', country: 'Canada',
       pickup_available: !!sp.offers_pickup, delivery_available: !!sp.offers_delivery, delivery_radius_km: 5, region: (sp.regions || []).map((r) => REGION_NAME[r]).filter(Boolean).join(','), operating_hours, stores, approval_status: vp.status, kind: sp.kind }
   }],
@@ -143,7 +144,7 @@ const routes = [
       const hours = Object.entries(d.operating_hours).map(([day, v]) => ({ dow: DAYS.indexOf(day), opens: v.open, closes: v.close })).filter((h) => h.dow >= 0 && h.opens && h.closes && h.closes > h.opens)
       await raw('PUT', V(`/stores/${sid}/hours`), { hours })
     }
-    if (d.business_name || d.phone) { const p = await raw('GET', V('/profile')); await raw('PUT', V('/profile'), { name: d.business_name || p.name, legal_name: p.legal_name, business_number: p.business_number, phone: d.phone || p.phone, contact_email: p.contact_email }) }
+    if (d.business_name || d.phone || d.business_number !== undefined) { const p = await raw('GET', V('/profile')); await raw('PUT', V('/profile'), { name: d.business_name || p.name, legal_name: p.legal_name, business_number: d.business_number !== undefined ? d.business_number || null : p.business_number, phone: d.phone || p.phone, contact_email: p.contact_email }) }
     return { ok: true }
   }],
 

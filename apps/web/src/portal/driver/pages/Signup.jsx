@@ -1,0 +1,668 @@
+import { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import api from '../services/api'
+import { Truck, Mail, Phone, Lock, MapPin, Car, Eye, EyeOff, FileText, Upload } from 'lucide-react'
+import { vehicleModels } from '../utils/vehicleModels'
+
+// Calgary Delivery Zones with neighborhoods
+const DELIVERY_ZONES = [
+  { 
+    value: 'Zone 1 — Downtown / City Centre Hub', 
+    label: 'Zone 1 — Downtown / City Centre Hub',
+    center: 'Downtown / City Hall area',
+    neighborhoods: [
+      'Beltline', 'East Village', 'Bridgeland',
+      'Kensington', 'Sunalta', 'Mission',
+      'Inglewood', 'Ramsay',
+      'Parts of Renfrew', 'Crescent Heights'
+    ],
+    description: 'Good for: office orders, apartments, quick runs.'
+  },
+  { 
+    value: 'Zone 2 — Northwest Hub', 
+    label: 'Zone 2 — Northwest Hub',
+    center: 'around North Hill / SAIT',
+    neighborhoods: [
+      'Capitol Hill', 'Mount Pleasant',
+      'Dalhousie', 'Brentwood', 'Varsity',
+      'Bowness', 'Montgomery',
+      'Parts of Tuscany / Rocky Ridge (edge of range)'
+    ]
+  },
+  { 
+    value: 'Zone 3 — North Central Hub', 
+    label: 'Zone 3 — North Central Hub',
+    center: 'Country Hills / Harvest Hills',
+    neighborhoods: [
+      'Coventry Hills', 'Panorama Hills',
+      'Hidden Valley',
+      'Sandstone', 'Beddington',
+      'Carrington', 'Livingston (newer communities)'
+    ]
+  },
+  { 
+    value: 'Zone 4 — Northeast Hub', 
+    label: 'Zone 4 — Northeast Hub',
+    center: 'Sunridge / Marlborough area',
+    neighborhoods: [
+      'Forest Lawn',
+      'Rundle', 'Whitehorn', 'Marlborough',
+      'Falconridge', 'Castleridge',
+      'Temple', 'Pineridge',
+      'Parts of Saddleridge'
+    ]
+  },
+  { 
+    value: 'Zone 5 — Southeast Hub', 
+    label: 'Zone 5 — Southeast Hub',
+    center: 'Ogden / Quarry Park',
+    neighborhoods: [
+      'Riverbend', 'Douglas Glen',
+      'McKenzie Towne',
+      'Mahogany', 'Auburn Bay',
+      'Seton / Hospital area',
+      'Copperfield', 'New Brighton'
+    ],
+    description: 'Great for groceries — lots of families'
+  },
+  { 
+    value: 'Zone 6 — South / Chinook Hub', 
+    label: 'Zone 6 — South / Chinook Hub',
+    center: 'Chinook / Kingsland',
+    neighborhoods: [
+      'Fairview', 'Haysboro',
+      'Acadia', 'Willow Park',
+      'Maple Ridge',
+      'Reaches west toward Glamorgan and Lakeview'
+    ]
+  },
+  { 
+    value: 'Zone 7 — Southwest Hub', 
+    label: 'Zone 7 — Southwest Hub',
+    center: 'Westhills / Signal Hill',
+    neighborhoods: [
+      'Signal Hill', 'Aspen Woods',
+      'Strathcona', 'Cougar Ridge',
+      'Glenbrook', 'Rosscarrock',
+      'Parts of Discovery Ridge'
+    ]
+  },
+  { 
+    value: 'Zone 8 — Deep South Hub', 
+    label: 'Zone 8 — Deep South Hub',
+    center: 'Shawnessy area',
+    neighborhoods: [
+      'Somerset', 'Bridlewood',
+      'Evergreen',
+      'Silverado', 'Chaparral',
+      'Walden', 'Legacy'
+    ]
+  }
+]
+
+const Signup = () => {
+  const navigate = useNavigate()
+  const [showPassword, setShowPassword] = useState(false)
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    first_name: '',
+    last_name: '',
+    phone: '',
+    street_address: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    country: 'Canada',
+    vehicle_type: '',
+    vehicle_make: '',
+    vehicle_model: '',
+    custom_vehicle_make: '',
+    vehicle_year: '',
+    vehicle_color: '',
+    license_plate: '',
+    driver_license_number: '',
+    delivery_zone: '',
+    driver_license_url: '',
+    driver_license_validity: '',
+    vehicle_registration_url: '',
+    vehicle_registration_validity: '',
+    insurance_document_url: '',
+    insurance_validity: ''
+  })
+  const [docFiles, setDocFiles] = useState({
+    driver_license: null,
+    vehicle_registration: null,
+    insurance: null
+  })
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [requireDocs, setRequireDocs] = useState(true)
+
+  useEffect(() => {
+    api.get('/config/signup-documentation').then((r) => {
+      if (r.data && typeof r.data.require_driver_docs === 'boolean') {
+        setRequireDocs(r.data.require_driver_docs)
+      }
+    }).catch(() => {})
+  }, [])
+
+  const uploadDocument = async (file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await api.post('/uploads/driver-documents', fd)
+    return res.data?.url
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      let licenceUrl = null
+      let regUrl = null
+      let insUrl = null
+      if (requireDocs) {
+        if (!docFiles.driver_license || !docFiles.vehicle_registration || !docFiles.insurance) {
+          throw new Error('Please upload driver licence, insurance, and vehicle registration documents.')
+        }
+        if (!formData.driver_license_validity || !formData.vehicle_registration_validity || !formData.insurance_validity) {
+          throw new Error('Please enter validity dates for all documents.')
+        }
+        const urls = await Promise.all([
+          uploadDocument(docFiles.driver_license),
+          uploadDocument(docFiles.vehicle_registration),
+          uploadDocument(docFiles.insurance)
+        ])
+        licenceUrl = urls[0]
+        regUrl = urls[1]
+        insUrl = urls[2]
+        if (!licenceUrl || !regUrl || !insUrl) {
+          throw new Error('Failed to upload one or more documents. Please try again.')
+        }
+      } else if (docFiles.driver_license || docFiles.vehicle_registration || docFiles.insurance) {
+        const urls = await Promise.all([
+          docFiles.driver_license ? uploadDocument(docFiles.driver_license) : Promise.resolve(null),
+          docFiles.vehicle_registration ? uploadDocument(docFiles.vehicle_registration) : Promise.resolve(null),
+          docFiles.insurance ? uploadDocument(docFiles.insurance) : Promise.resolve(null)
+        ])
+        licenceUrl = urls[0]
+        regUrl = urls[1]
+        insUrl = urls[2]
+      }
+
+      // Clean up form data - remove empty strings and undefined values for optional fields
+      const cleanedData = {
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        phone: formData.phone,
+        street_address: formData.street_address,
+        city: formData.city,
+        postal_code: formData.postal_code,
+        country: formData.country || 'Canada'
+      }
+      
+      // Add optional fields only if they have values
+      if (formData.state && formData.state.trim()) {
+        cleanedData.state = formData.state
+      }
+      
+      if (formData.vehicle_type && formData.vehicle_type.trim()) {
+        cleanedData.vehicle_type = formData.vehicle_type
+      }
+      
+      // Use custom_vehicle_make if "Other" is selected, otherwise use vehicle_make
+      if (formData.vehicle_make === 'Other' && formData.custom_vehicle_make && formData.custom_vehicle_make.trim()) {
+        cleanedData.vehicle_make = formData.custom_vehicle_make
+      } else if (formData.vehicle_make && formData.vehicle_make !== 'Other' && formData.vehicle_make.trim()) {
+        cleanedData.vehicle_make = formData.vehicle_make
+      }
+      
+      if (formData.vehicle_model && formData.vehicle_model.trim()) {
+        cleanedData.vehicle_model = formData.vehicle_model
+      }
+      
+      if (formData.vehicle_year && formData.vehicle_year.trim()) {
+        const year = parseInt(formData.vehicle_year)
+        if (!isNaN(year)) {
+          cleanedData.vehicle_year = year
+        }
+      }
+      
+      if (formData.vehicle_color && formData.vehicle_color.trim()) {
+        cleanedData.vehicle_color = formData.vehicle_color
+      }
+      
+      if (formData.license_plate && formData.license_plate.trim()) {
+        cleanedData.license_plate = formData.license_plate
+      }
+      
+      if (formData.driver_license_number && formData.driver_license_number.trim()) {
+        cleanedData.driver_license_number = formData.driver_license_number
+      }
+      
+      // Add delivery zone if selected
+      if (formData.delivery_zone && formData.delivery_zone.trim()) {
+        cleanedData.preferred_delivery_zones = [formData.delivery_zone]
+      }
+
+      if (licenceUrl) cleanedData.driver_license_url = licenceUrl
+      if (formData.driver_license_validity) cleanedData.driver_license_validity = formData.driver_license_validity
+      if (regUrl) cleanedData.vehicle_registration_url = regUrl
+      if (formData.vehicle_registration_validity) cleanedData.vehicle_registration_validity = formData.vehicle_registration_validity
+      if (insUrl) cleanedData.insurance_document_url = insUrl
+      if (formData.insurance_validity) cleanedData.insurance_validity = formData.insurance_validity
+
+      const response = await api.post('/driver/auth/signup', cleanedData)
+      window.location.href = '/driver/'
+    } catch (err) {
+      console.error('Driver signup error:', err)
+      console.error('Error response:', err.response)
+      console.error('Error data:', err.response?.data)
+      const errorMessage = err.response?.data?.detail || err.response?.data?.message || err.message || 'Failed to submit application. Please try again.'
+      setError(errorMessage)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 py-12 px-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <Truck className="h-16 w-16 text-primary-600 mx-auto mb-4" />
+          <h1 className="text-4xl font-bold text-primary-600 mb-2">eazydrive</h1>
+          <p className="text-gray-600">Join eazyfoods as a delivery driver</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-lg p-8 space-y-8">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          {/* Personal Information */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Personal Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="tel"
+                    required
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Delivery Zone */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Delivery Zone
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Your Delivery Zone *</label>
+                <select
+                  required
+                  value={formData.delivery_zone}
+                  onChange={(e) => setFormData({ ...formData, delivery_zone: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">Select a delivery zone</option>
+                  {DELIVERY_ZONES.map(zone => (
+                    <option key={zone.value} value={zone.value}>{zone.label}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-2">
+                  Select the zone where you will primarily deliver. Each zone covers approximately a 10-km radius from the hub center.
+                </p>
+              </div>
+              {formData.delivery_zone && (() => {
+                const selectedZone = DELIVERY_ZONES.find(z => z.value === formData.delivery_zone)
+                return selectedZone ? (
+                  <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-primary-900 mb-2">{selectedZone.label}</h3>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <span className="font-medium">Center:</span> {selectedZone.center}
+                    </p>
+                    <div className="mb-2">
+                      <p className="text-sm font-medium text-gray-700 mb-1">Covers:</p>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        {selectedZone.neighborhoods.map((neighborhood, idx) => (
+                          <li key={idx} className="flex items-start">
+                            <span className="text-primary-600 mr-2">•</span>
+                            <span>{neighborhood}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {selectedZone.description && (
+                      <p className="text-sm text-primary-700 italic mt-2">{selectedZone.description}</p>
+                    )}
+                  </div>
+                ) : null
+              })()}
+            </div>
+          </div>
+
+          {/* Address */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Address
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Street Address *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.street_address}
+                  onChange={(e) => setFormData({ ...formData, street_address: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                <input
+                  type="text"
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.postal_code}
+                  onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Vehicle Information */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Car className="h-5 w-5" />
+              Vehicle Information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Type</label>
+                <select
+                  value={formData.vehicle_type}
+                  onChange={(e) => setFormData({ ...formData, vehicle_type: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">Select vehicle type</option>
+                  <option value="car">Car</option>
+                  <option value="motorcycle">Motorcycle</option>
+                  <option value="bicycle">Bicycle</option>
+                  <option value="scooter">Scooter</option>
+                  <option value="walking">Walking</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">License Plate</label>
+                <input
+                  type="text"
+                  value={formData.license_plate}
+                  onChange={(e) => setFormData({ ...formData, license_plate: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Make</label>
+                <select
+                  value={formData.vehicle_make}
+                  onChange={(e) => setFormData({ ...formData, vehicle_make: e.target.value, vehicle_model: '', custom_vehicle_make: '' })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="">Select make</option>
+                  {Object.keys(vehicleModels).map(make => (
+                    <option key={make} value={make}>{make}</option>
+                  ))}
+                  <option value="Other">Other</option>
+                </select>
+                {formData.vehicle_make === 'Other' && (
+                  <input
+                    type="text"
+                    placeholder="Enter vehicle make"
+                    value={formData.custom_vehicle_make || ''}
+                    onChange={(e) => setFormData({ ...formData, custom_vehicle_make: e.target.value })}
+                    className="w-full mt-2 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  />
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Model</label>
+                {formData.vehicle_make && formData.vehicle_make !== 'Other' ? (
+                  <select
+                    value={formData.vehicle_model}
+                    onChange={(e) => setFormData({ ...formData, vehicle_model: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="">Select model</option>
+                    {vehicleModels[formData.vehicle_make]?.map(model => (
+                      <option key={model} value={model}>{model}</option>
+                    ))}
+                  </select>
+                ) : formData.vehicle_make === 'Other' ? (
+                  <input
+                    type="text"
+                    placeholder="Enter vehicle model"
+                    value={formData.vehicle_model}
+                    onChange={(e) => setFormData({ ...formData, vehicle_model: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                  />
+                ) : (
+                  <select
+                    disabled
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
+                  >
+                    <option value="">Select make first</option>
+                  </select>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Year</label>
+                <input
+                  type="number"
+                  min="1900"
+                  max={new Date().getFullYear() + 1}
+                  value={formData.vehicle_year}
+                  onChange={(e) => setFormData({ ...formData, vehicle_year: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Color</label>
+                <input
+                  type="text"
+                  value={formData.vehicle_color}
+                  onChange={(e) => setFormData({ ...formData, vehicle_color: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Driver License Number</label>
+                <input
+                  type="text"
+                  value={formData.driver_license_number}
+                  onChange={(e) => setFormData({ ...formData, driver_license_number: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Documents - Required */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Required Documents
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">Upload driver licence, insurance, and vehicle registration. Accepts PDF or images (max 5MB each).</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Driver Licence *</label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
+                  onChange={(e) => setDocFiles((prev) => ({ ...prev, driver_license: e.target.files?.[0] || null }))}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                />
+                <label className="block text-xs text-gray-600 mt-2">Validity / Expiry date *</label>
+                <input
+                  type="date"
+                  required
+                  value={formData.driver_license_validity}
+                  onChange={(e) => setFormData({ ...formData, driver_license_validity: e.target.value })}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Registration *</label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
+                  onChange={(e) => setDocFiles((prev) => ({ ...prev, vehicle_registration: e.target.files?.[0] || null }))}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                />
+                <label className="block text-xs text-gray-600 mt-2">Validity / Expiry date *</label>
+                <input
+                  type="date"
+                  required
+                  value={formData.vehicle_registration_validity}
+                  onChange={(e) => setFormData({ ...formData, vehicle_registration_validity: e.target.value })}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Insurance *</label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,.gif"
+                  onChange={(e) => setDocFiles((prev) => ({ ...prev, insurance: e.target.files?.[0] || null }))}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
+                />
+                <label className="block text-xs text-gray-600 mt-2">Validity / Expiry date *</label>
+                <input
+                  type="date"
+                  required
+                  value={formData.insurance_validity}
+                  onChange={(e) => setFormData({ ...formData, insurance_validity: e.target.value })}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 disabled:opacity-50 font-medium"
+            >
+              {loading ? 'Submitting...' : 'Submit Application'}
+            </button>
+            <Link
+              to="/"
+              className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-center"
+            >
+              Cancel
+            </Link>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+export default Signup
+

@@ -116,16 +116,19 @@ describe('customer -> store -> dispatch -> driver -> review, on a phone', () => 
   it('the driver picks up and delivers using the code; a wrong code is refused', async () => {
     const { page } = await newPage(browser, MOBILE);
     await signIn(page, 'driver@example.test');
-    await page.goto(`${base()}/driver`);
-    await page.getByRole('link', { name: /Open job|Continue delivery/ }).first().click();
-    await page.getByRole('button', { name: /picked up the order/ }).click();
+    await page.goto(`${base()}/driver/my-deliveries`);
+    page.on('dialog', (d) => d.accept());
+    await page.getByRole('button', { name: 'Mark Picked Up' }).first().click();
+    await page.getByRole('button', { name: 'Mark Delivered' }).first().click();
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+    await page.locator('input[type=file]').setInputFiles({ name: 'proof.png', mimeType: 'image/png', buffer: png });
     const wrong = handover === '0000' ? '1111' : '0000';
-    await page.fill('input[inputmode=numeric]', wrong);
-    await page.getByRole('button', { name: 'Confirm delivery' }).click();
-    await seeText(page.locator('body'), 'does not match');
-    await page.fill('input[inputmode=numeric]', handover);
-    await page.getByRole('button', { name: 'Confirm delivery' }).click();
-    await page.waitForURL(/\/driver\/?$/);
+    await page.fill('#handover-code', wrong);
+    await page.getByRole('button', { name: 'Confirm delivered' }).click();
+    await seeText(page.locator('[role=alert]'), 'does not match');
+    await page.fill('#handover-code', handover);
+    await page.getByRole('button', { name: 'Confirm delivered' }).click();
+    await page.getByRole('dialog').waitFor({ state: 'detached' });
     const c = await db(); const r = await c.query(`SELECT s.status FROM suborders s JOIN orders o ON o.id=s.order_id WHERE o.customer_email=$1 AND o.payment_status <> 'failed'`, [email]); await c.end();
     expect(r.rows[0].status).toBe('delivered');
   });

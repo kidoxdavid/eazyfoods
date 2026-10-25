@@ -171,6 +171,13 @@ const Layout = ({ children }) => {
         {cfg?.notice && (
           <div role="note" className={`px-4 py-2 text-xs sm:text-sm border-b ${cfg.notice_tone === 'warn' ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-primary-50 border-primary-100 text-primary-800'}`}>{cfg.notice}</div>
         )}
+        {user && user.approval_status && user.approval_status !== 'approved' && (
+          <div role="status" className="px-4 py-2 text-xs sm:text-sm bg-amber-50 border-b border-amber-200 text-amber-900">
+            {user.approval_status === 'draft' ? 'Finish setting up and submit your application. The checklist on your dashboard shows what is left.'
+              : user.approval_status === 'submitted' ? 'Your application is being reviewed. We will tell you as soon as you are approved.'
+              : 'Your account is not active. Contact EAZyfoods support.'}
+          </div>
+        )}
         {user?.acting_vendor && (
           <div className="bg-amber-100 border-b border-amber-300 px-4 py-2 text-xs sm:text-sm text-amber-900 flex items-center justify-between gap-3">
             <span>Admin mode: you are viewing this portal as {user.business_name || 'a vendor'}.</span>

@@ -56,7 +56,7 @@ export const kitchenRoutes: FastifyPluginAsync = async (app) => {
     if (!(await kitchensOn())) throw notFound('Kitchen not found');
     const s = (await pool.query(`SELECT * FROM storefronts WHERE slug = $1 AND orderable AND kind = 'kitchen'`, [req.params.slug])).rows[0];
     if (!s) throw notFound('Kitchen not found');
-    const ext = (await pool.query('SELECT kitchen_type, video_url, address_line, phone FROM stores WHERE id = $1', [s.id])).rows[0];
+    const ext = (await pool.query('SELECT kitchen_type, video_url, address_line, phone, gallery FROM stores WHERE id = $1', [s.id])).rows[0];
     if (ext.kitchen_type === 'restaurant' && !(await featureOn('shop.restaurants'))) throw notFound('Kitchen not found');
     const showVideo = await featureOn('shop.vendor_videos');
     const restaurant = ext.kitchen_type === 'restaurant';
@@ -65,14 +65,15 @@ export const kitchenRoutes: FastifyPluginAsync = async (app) => {
       pool.query(
         `SELECT p.slug, p.name, p.description, p.cuisine, p.spice_level, p.serves, p.prep_minutes, p.allergens, p.ingredients, p.dish_tags, p.menu_section, p.video_url,
                 o.id AS offer_id, o.price_cents, o.compare_at_cents, o.on_promotion, GREATEST(o.stock_on_hand - o.stock_reserved, 0) AS available,
-                (SELECT url FROM product_images WHERE product_id = p.id ORDER BY sort_order LIMIT 1) AS image_url
+                (SELECT url FROM product_images WHERE product_id = p.id ORDER BY sort_order LIMIT 1) AS image_url,
+       COALESCE((SELECT array_agg(url ORDER BY sort_order) FROM product_images WHERE product_id = p.id AND sort_order > 0), '{}') AS images
            FROM offers_live o JOIN products p ON p.id = o.product_id AND p.status = 'dish_live'
           WHERE o.store_id = $1 AND o.is_active ORDER BY p.menu_section NULLS LAST, p.name`, [s.id]),
       pool.query('SELECT accent, tagline, story, announcement, website, instagram, facebook FROM store_branding WHERE store_id = $1', [s.id]),
     ]);
     const br = branding.rows[0];
     return {
-      slug: s.slug, name: s.name, description: s.description, city: s.city, area: (s.postal_code ?? '').slice(0, 3), kitchen_type: ext.kitchen_type, address_line: restaurant ? ext.address_line : null, postal_code: restaurant ? s.postal_code : null, phone: restaurant ? ext.phone : null, video_url: showVideo ? ext.video_url : null, is_open: s.is_open, min_order_cents: s.min_order_cents,
+      gallery: ext.gallery, slug: s.slug, name: s.name, description: s.description, city: s.city, area: (s.postal_code ?? '').slice(0, 3), kitchen_type: ext.kitchen_type, address_line: restaurant ? ext.address_line : null, postal_code: restaurant ? s.postal_code : null, phone: restaurant ? ext.phone : null, video_url: showVideo ? ext.video_url : null, is_open: s.is_open, min_order_cents: s.min_order_cents,
       is_test_data: s.is_test_data, logo_url: s.logo_url, cover_url: s.cover_url, policies: s.policies, offers_delivery: s.offers_delivery, offers_pickup: s.offers_pickup, ordering_paused: s.ordering_paused,
       cuisines: s.cuisines, preorders_enabled: s.preorders_enabled, hours: hours.rows, dishes: dishes.rows.map((d) => (showVideo ? d : { ...d, video_url: null })),
       branding: br ? { ...br, accent: br.accent && ACCENTS[br.accent] ? { primary: ACCENTS[br.accent].primary, deep: ACCENTS[br.accent].deep, tint: ACCENTS[br.accent].tint, glow: ACCENTS[br.accent].glow } : null } : null,
@@ -88,14 +89,15 @@ const dishBody = z.object({
   serves: z.string().trim().max(30).nullable().optional(), spice_level: z.number().int().min(0).max(3).nullable().optional(), prep_minutes: z.number().int().min(5).max(1440).nullable().optional(),
   allergens: z.array(z.enum(ALLERGENS)).max(ALLERGENS.length), allergens_confirmed: z.literal(true, { errorMap: () => ({ message: 'Confirm the allergen list is complete before saving.' }) }),
   ingredients: z.string().trim().max(800).nullable().optional(), dish_tags: z.array(z.enum(DISH_TAGS)).max(DISH_TAGS.length).default([]),
-  image_url: img, is_active: z.boolean().default(true),
+  image_url: img, images: z.array(z.string().refine(isOurImageUrl, 'Upload the image through EAZyfoods first.')).max(8).optional(), is_active: z.boolean().default(true),
   menu_section: z.string().trim().min(2).max(40).nullable().optional(),
   video_url: z.string().refine(isOurVideoUrl, 'Upload the video through EAZyfoods first.').nullable().optional(),
 });
 
 const DISH_SELECT = `SELECT p.id AS product_id, p.slug, p.name, p.description, p.cuisine, p.spice_level, p.serves, p.prep_minutes, p.allergens, p.ingredients, p.dish_tags, p.status, p.menu_section, p.video_url,
        o.id AS offer_id, o.price_cents, o.stock_on_hand, o.stock_reserved, o.is_active,
-       (SELECT url FROM product_images WHERE product_id = p.id ORDER BY sort_order LIMIT 1) AS image_url
+       (SELECT url FROM product_images WHERE product_id = p.id ORDER BY sort_order LIMIT 1) AS image_url,
+       COALESCE((SELECT array_agg(url ORDER BY sort_order) FROM product_images WHERE product_id = p.id AND sort_order > 0), '{}') AS images
   FROM store_offers o JOIN products p ON p.id = o.product_id AND p.owner_store_id = o.store_id`;
 
 /** Vendor side: a cook manages their own menu. */
@@ -126,6 +128,7 @@ export const dishRoutes: FastifyPluginAsync = async (app) => {
         [slug, b.name, norm(b.name), b.description ?? null, s.id, b.cuisine ?? null, b.spice_level ?? null, b.serves ?? null, b.prep_minutes ?? null, b.allergens, b.ingredients ?? null, b.dish_tags, b.menu_section ?? null, b.video_url ?? null])).rows[0];
       if (b.video_url) await assertVendorCan(s.vendor_id, 'videos', c);
       if (b.image_url) await c.query('INSERT INTO product_images(product_id, url, alt, sort_order) VALUES ($1,$2,$3,0)', [p.id, b.image_url, b.name]);
+      for (const [i, u] of (b.images ?? []).entries()) await c.query('INSERT INTO product_images(product_id, url, alt, sort_order) VALUES ($1,$2,$3,$4)', [p.id, u, b.name, i + 1]);
       const o = (await c.query('INSERT INTO store_offers(store_id, product_id, price_cents, stock_on_hand, is_active) VALUES ($1,$2,$3,$4,$5) RETURNING id', [s.id, p.id, b.price_cents, b.portions, b.is_active])).rows[0];
       await c.query(`INSERT INTO inventory_adjustments(offer_id, delta, reason, actor_user_id, resulting_on_hand) VALUES ($1,$2,'initial',$3,$2)`, [o.id, b.portions, req.user!.id]);
       await audit(req.user!.id, 'dish.created', 'product', p.id, { name: b.name }, c);
@@ -145,7 +148,14 @@ export const dishRoutes: FastifyPluginAsync = async (app) => {
       await c.query(`UPDATE products SET name=$2, name_norm=$3, description=$4, cuisine=$5, spice_level=$6, serves=$7, prep_minutes=$8, allergens=$9, ingredients=$10, dish_tags=$11, menu_section=$12, video_url = CASE WHEN $13::boolean THEN $14 ELSE video_url END WHERE id=$1`,
         [pid, b.name, norm(b.name), b.description ?? null, b.cuisine ?? null, b.spice_level ?? null, b.serves ?? null, b.prep_minutes ?? null, b.allergens, b.ingredients ?? null, b.dish_tags, b.menu_section ?? null, b.video_url !== undefined, b.video_url ?? null]);
       if (b.video_url) await assertVendorCan(s.vendor_id, 'videos', c);
-      if (b.image_url !== undefined) { await c.query('DELETE FROM product_images WHERE product_id = $1', [pid]); if (b.image_url) await c.query('INSERT INTO product_images(product_id, url, alt, sort_order) VALUES ($1,$2,$3,0)', [pid, b.image_url, b.name]); }
+      if (b.image_url !== undefined || b.images !== undefined) {
+        const cur = (await c.query('SELECT url FROM product_images WHERE product_id = $1 ORDER BY sort_order', [pid])).rows.map((r) => r.url as string);
+        const main = b.image_url !== undefined ? b.image_url : cur[0] ?? null;
+        const more = b.images !== undefined ? b.images : cur.slice(1);
+        await c.query('DELETE FROM product_images WHERE product_id = $1', [pid]);
+        if (main) await c.query('INSERT INTO product_images(product_id, url, alt, sort_order) VALUES ($1,$2,$3,0)', [pid, main, b.name]);
+        for (const [i, u] of more.entries()) await c.query('INSERT INTO product_images(product_id, url, alt, sort_order) VALUES ($1,$2,$3,$4)', [pid, u, b.name, i + 1]);
+      }
       await c.query('UPDATE store_offers SET price_cents = $2, stock_on_hand = $3, is_active = $4, updated_at = now() WHERE id = $1', [o.id, b.price_cents, b.portions, b.is_active]);
       if (b.portions !== o.stock_on_hand) await c.query(`INSERT INTO inventory_adjustments(offer_id, delta, reason, note, actor_user_id, resulting_on_hand) VALUES ($1,$2,'correction','Portions set from menu',$3,$4)`, [o.id, b.portions - o.stock_on_hand, req.user!.id, b.portions]);
       await audit(req.user!.id, 'dish.updated', 'product', pid, { name: b.name }, c);
