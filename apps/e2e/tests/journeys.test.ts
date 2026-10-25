@@ -85,8 +85,8 @@ describe('customer -> store -> dispatch -> driver -> review, on a phone', () => 
     const { page, errors } = await newPage(browser, DESKTOP);
     await signIn(page, 'owner1@example.test');
     await page.goto(`${base()}/vendor/orders?tab=delivery`);
-    await page.waitForSelector('text=E2E');                                                                // customer first name in the list
-    await page.getByText('E2E').first().click();                                                              // opens the order
+    await page.locator('tr', { hasText: 'paid' }).first().getByRole('link', { name: /View/ }).click();      // the paid order (the failed attempt is listed as cancelled)
+    page.on('dialog', (d) => d.accept());                                                                    // the portal asks "Are you sure?"
     for (const step of ['Accept Order', 'Start Picking', 'Mark Ready']) {
       await page.getByRole('button', { name: step }).click();
       await page.waitForTimeout(700);
