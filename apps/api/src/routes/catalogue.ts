@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { pool } from '../db/pool.js';
 import { productCards } from '../lib/listing.js';
 import { normalisePostal, isCanadianPostal } from '../services/pricing.js';
+import { getSetting } from '../lib/settings.js';
 
 export const catalogueRoutes: FastifyPluginAsync = async (app) => {
   app.get('/regions', async () => {
@@ -37,6 +38,42 @@ export const catalogueRoutes: FastifyPluginAsync = async (app) => {
              AND ($3::uuid IS NULL OR p.category_id = $3 OR p.category_id IN (SELECT id FROM categories WHERE parent_id = $3))
        END`, [col.id, col.region_id, col.category_id], 'p.name', 60);
     return { collection: { slug: col.slug, title: col.title, subtitle: col.subtitle }, products };
+  });
+
+  /**
+   * What the home page can honestly show right now, in one fast answer: only regions and departments that have something in stock,
+   * only collections with products, and whether deals, new arrivals, stores, home chefs and recipes have anything. The page draws exactly this
+   * (and the server embeds it in the first paint), so nothing appears and then disappears.
+   */
+  app.get('/home/shape', async () => {
+    const SELL = `p.status = 'published' AND EXISTS (SELECT 1 FROM offers_live o JOIN storefronts s ON s.id = o.store_id AND s.orderable
+                   WHERE o.product_id = p.id AND o.is_active AND o.stock_on_hand - o.stock_reserved > 0)`;
+    const [regions, departments, cols, deals, fresh, stores, kitchens, recipes] = await Promise.all([
+      pool.query(`SELECT r.slug, r.name, r.description, count(DISTINCT p.id)::int AS n FROM regions r
+                    JOIN region_countries rc ON rc.region_id = r.id JOIN product_countries pc ON pc.country_id = rc.country_id AND pc.kind = 'culinary'
+                    JOIN products p ON p.id = pc.product_id AND ${SELL} WHERE r.is_active GROUP BY r.id ORDER BY r.sort_order, r.name`),
+      pool.query(`SELECT c.slug, c.name, count(DISTINCT p.id)::int AS n FROM categories c
+                    JOIN products p ON (p.category_id = c.id OR p.category_id IN (SELECT id FROM categories WHERE parent_id = c.id)) AND ${SELL}
+                   GROUP BY c.id ORDER BY c.sort_order, c.name`),
+      pool.query('SELECT id, slug, title, subtitle, region_id, category_id FROM collections WHERE is_active ORDER BY sort_order, title'),
+      pool.query(`SELECT count(*)::int AS n FROM products p WHERE p.status = 'published' AND EXISTS (SELECT 1 FROM offers_live o JOIN storefronts s ON s.id = o.store_id AND s.orderable
+                   WHERE o.product_id = p.id AND o.is_active AND o.on_promotion AND o.stock_on_hand - o.stock_reserved > 0)`),
+      pool.query(`SELECT count(*)::int AS n FROM products p WHERE ${SELL}`),
+      pool.query(`SELECT count(*)::int AS n FROM storefronts WHERE orderable AND kind = 'grocery'`),
+      pool.query(`SELECT count(*)::int AS n FROM storefronts WHERE orderable AND kind = 'kitchen'`),
+      pool.query(`SELECT count(*)::int AS n FROM recipes WHERE status = 'published'`).catch(() => ({ rows: [{ n: 0 }] })),
+    ]);
+    const collections: { slug: string; title: string; subtitle: string | null }[] = [];
+    for (const c of cols.rows) {
+      const n = (await pool.query(
+        `SELECT count(*)::int AS n FROM products p WHERE ${SELL} AND CASE WHEN EXISTS (SELECT 1 FROM collection_products cp WHERE cp.collection_id = $1)
+            THEN p.id IN (SELECT product_id FROM collection_products WHERE collection_id = $1)
+            ELSE ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM product_countries pc JOIN region_countries rc ON rc.country_id = pc.country_id WHERE pc.product_id = p.id AND pc.kind = 'culinary' AND rc.region_id = $2))
+             AND ($3::uuid IS NULL OR p.category_id = $3 OR p.category_id IN (SELECT id FROM categories WHERE parent_id = $3)) END`, [c.id, c.region_id, c.category_id])).rows[0].n;
+      if (n > 0) collections.push({ slug: c.slug, title: c.title, subtitle: c.subtitle });
+    }
+    const kitchensOn = await getSetting<boolean>('kitchens.enabled').catch(() => true);
+    return { regions: regions.rows, departments: departments.rows, collections, deals: deals.rows[0].n, fresh: fresh.rows[0].n, stores: stores.rows[0].n, kitchens: kitchensOn ? kitchens.rows[0].n : 0, recipes: recipes.rows[0].n };
   });
 
   // Merchandising feeds for the home page.

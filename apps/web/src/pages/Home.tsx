@@ -21,10 +21,10 @@ const DEFAULT_LAYOUT = ['regions', 'deals', 'departments', 'collections_a', 'new
 type Search = { results: Card[] };
 const REGION_COLOURS: [string, string][] = [['#0f5a3a', '#1f8f5b'], ['#a3470f', '#e08a1e'], ['#254e8f', '#4a86d4'], ['#7a2e5d', '#b4508a'], ['#136f63', '#2bb3a1'], ['#8c2f39', '#d4564a']];
 
-function RegionQuad({ r }: { r: Region }) {
-  const { data } = useApi<Search>(`/search?region=${r.slug}&in_stock=1`);
-  const items = data?.results.slice(0, 4) ?? [];
-  if (data && !items.length) return null;
+type Shape = { regions: { slug: string; name: string }[]; departments: { slug: string; name: string }[]; collections: { slug: string }[]; deals: number; fresh: number; stores: number; kitchens: number; recipes: number };
+
+/** The home page only ever draws what the server says exists (see /home/shape), so nothing appears and then disappears. */
+function RegionQuad({ r }: { r: { slug: string; name: string } }) {
   return (
     <Link to={`/search?region=${r.slug}`} className="quad">
       <h3>Shop {r.name} groceries</h3>
@@ -72,12 +72,11 @@ export function Home() {
   const content = useApi<{ home_hero?: { title: string; subtitle: string }; home_layout?: Layout }>('/content/home');
   const { theme, loading: themeLoading } = useSiteTheme();
   const banners = useApi<{ id: string; title: string; subtitle: string; cta_label: string; cta_link: string; image_url: string | null; video_url: string | null; from_color: string; to_color: string }[]>('/home/banners');
+  const shape = useApi<Shape>('/home/shape');
   const regions = useApi<Region[]>('/regions');
   const stores = useApi<StoreCard[]>('/stores');
-  const cols = useApi<{ slug: string }[]>('/collections');
   const deals = useApi<Card[]>('/deals');
   const fresh = useApi<Card[]>('/new-arrivals');
-  const cats = useApi<{ slug: string; name: string }[]>('/categories');
   const kitchens = useApi<any[]>('/kitchens');
   const recipes = useApi<{ slug: string; title: string; summary: string }[]>('/recipes');
   const featured = useApi<Search>('/search?in_stock=1&sort=price_desc');
@@ -102,29 +101,30 @@ export function Home() {
   for (const sl of slides) if (!seen.current.includes(sl.id)) seen.current.push(sl.id);
   slides.sort((a, b) => seen.current.indexOf(a.id) - seen.current.indexOf(b.id));
 
+  const sh: Shape = shape.data ?? { regions: [], departments: [], collections: [], deals: 0, fresh: 0, stores: 0, kitchens: 0, recipes: 0 };
   const parts: Record<string, JSX.Element | null> = {
-    regions: <div key="regions" className="quads">{regions.data?.slice(0, 4).map((r) => <RegionQuad key={r.slug} r={r} />)}</div>,
-    deals: <Shelf key="deals" title="Today’s deals" subtitle="Live promotions — the price shown is what you pay" to="/deals" items={deals.data ?? []} />,
-    departments: (
+    regions: sh.regions.length ? <div key="regions" className="quads">{sh.regions.slice(0, 4).map((r) => <RegionQuad key={r.slug} r={r} />)}</div> : null,
+    deals: sh.deals > 0 ? (deals.data ? <Shelf key="deals" title="Today’s deals" subtitle="Live promotions — the price shown is what you pay" to="/deals" items={deals.data} /> : <SkelShelf key="deals" />) : null,
+    departments: sh.departments.length ? (
       <section key="departments" className="block" aria-labelledby="dept-h">
         <h2 id="dept-h">Shop by department</h2>
-        <ul className="depts" role="list">{cats.data?.map((c) => <CatTile key={c.slug} slug={c.slug} name={c.name} />)}</ul>
-      </section>),
-    collections_a: <div key="collections_a">{cols.data?.slice(0, 2).map((c) => <CollectionShelf key={c.slug} slug={c.slug} />)}</div>,
-    new: <Shelf key="new" title="New arrivals" subtitle="Just added to the catalogue" to="/new" items={fresh.data ?? []} />,
-    collections_b: <div key="collections_b">{cols.data?.slice(2, 4).map((c) => <CollectionShelf key={c.slug} slug={c.slug} />)}</div>,
-    stores: (
+        <ul className="depts" role="list">{sh.departments.map((c) => <CatTile key={c.slug} slug={c.slug} name={c.name} />)}</ul>
+      </section>) : null,
+    collections_a: <div key="collections_a">{sh.collections.slice(0, 2).map((c) => <CollectionShelf key={c.slug} slug={c.slug} />)}</div>,
+    new: sh.fresh > 0 ? (fresh.data ? <Shelf key="new" title="New arrivals" subtitle="Just added to the catalogue" to="/new" items={fresh.data} /> : <SkelShelf key="new" />) : null,
+    collections_b: <div key="collections_b">{sh.collections.slice(2, 4).map((c) => <CollectionShelf key={c.slug} slug={c.slug} />)}</div>,
+    stores: sh.stores > 0 ? (
       <section key="stores" className="block" aria-labelledby="stores-h">
         <div className="shelf-head"><h2 id="stores-h">Stores near you</h2><Link to="/stores" className="seeall">All stores</Link></div>
         {stores.loading && <SkelShelf />}{stores.error && <ErrorBox message={stores.error} retry={stores.reload} />}
         {stores.data && <StoreList stores={stores.data} />}
-      </section>),
-    kitchens: kitchens.data?.length ? (
+      </section>) : null,
+    kitchens: sh.kitchens > 0 && kitchens.data?.length ? (
       <section key="kitchens" className="block" aria-labelledby="kit-h">
         <div className="shelf-head"><div><h2 id="kit-h">Home chefs</h2><p className="muted">Meals cooked to order by local home cooks.</p></div><Link to="/kitchens" className="seeall">All home chefs</Link></div>
         <KitchenList items={kitchens.data.slice(0, 4)} />
       </section>) : null,
-    recipes: recipes.data?.length ? (
+    recipes: sh.recipes > 0 && recipes.data?.length ? (
       <section key="recipes" className="block" aria-labelledby="rec-h">
         <div className="shelf-head"><div><h2 id="rec-h">Cook something tonight</h2><p className="muted">Recipes linked to what’s in stock.</p></div><Link to="/recipes" className="seeall">All recipes</Link></div>
         <ul className="recipe-tiles" role="list">{recipes.data.slice(0, 4).map((r, i) => <li key={r.slug}><Link to={`/recipes/${r.slug}`} className="rtile" style={{ background: `linear-gradient(135deg, ${REGION_COLOURS[i % 6][0]}, ${REGION_COLOURS[i % 6][1]})` }}><h3>{r.title}</h3><p>{r.summary}</p></Link></li>)}</ul>
@@ -145,15 +145,12 @@ export function Home() {
       <Personal />
       <HomeBanner />
       {regions.error && <ErrorBox message={regions.error} retry={regions.reload} />}
-      {order.filter((x) => x.enabled).map((x) => parts[x.id])}
+      {shape.data ? order.filter((x) => x.enabled).map((x) => parts[x.id]) : <><div className="quads" aria-hidden="true">{[0, 1, 2, 3].map((i) => <div key={i} className="quad quad-skel" />)}</div><SkelShelf /></>}
       <span hidden><IconBook /></span>
     </>
   );
 }
 
 function CatTile({ slug, name }: { slug: string; name: string }) {
-  const { data } = useApi<Search>(`/search?category=${slug}&in_stock=1`);
-  const p = data?.results[0];
-  if (data && !p) return null;
-  return <li><Link to={`/search?category=${slug}`} className="dept"><div><DeptArt slug={slug} /></div>{name.replace(' & ', ' & ')}</Link></li>;
+  return <li><Link to={`/search?category=${slug}`} className="dept"><div><DeptArt slug={slug} /></div>{name}</Link></li>;
 }

@@ -309,3 +309,5 @@ main { padding-top: 14px; }
 @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
 
 .quad-art { aspect-ratio: 2 / 1; border-radius: 10px; overflow: hidden; }
+
+.quad-skel { min-height: 210px; background: var(--card); animation: none; }

@@ -162,15 +162,15 @@ export function VideoUpload({ value, onChange, label = 'Video' }: { value?: stri
 }
 
 export function ImageUpload({ value, onChange, label = 'Image', endpoint = '/uploads/image' }: { value?: string | null; onChange: (url: string | null) => void; label?: string; endpoint?: string }) {
-  const [busy, setBusy] = useState(false); const toast = useToast();
+  const [busy, setBusy] = useState(false); const toast = useToast(); const [gone, setGone] = useState(false);
   return (
     <div className="image-upload">
-      {value ? <img src={value} alt="" /> : <div className="image-empty">No image</div>}
+      {value && !gone ? <img src={value} alt="" onError={() => setGone(true)} onLoad={() => setGone(false)} /> : <div className="image-empty">{value ? 'File missing: upload it again' : 'No image'}</div>}
       <div className="stack">
         <label className="btn secondary sm">{busy ? 'Uploading…' : value ? `Change ${label.toLowerCase()}` : `Upload ${label.toLowerCase()}`}
           <input type="file" accept="image/jpeg,image/png,image/webp" hidden disabled={busy} onChange={async (e) => {
             const f = e.target.files?.[0]; if (!f) return; setBusy(true);
-            try { onChange((await upload(endpoint, f)).url); } catch (err: any) { toast(err.message, 'error'); } finally { setBusy(false); e.target.value = ''; }
+            try { setGone(false); onChange((await upload(endpoint, f)).url); } catch (err: any) { toast(err.message, 'error'); } finally { setBusy(false); e.target.value = ''; }
           }} />
         </label>
         {value && <button type="button" className="link" onClick={() => onChange(null)}>Remove</button>}

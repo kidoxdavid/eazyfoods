@@ -145,7 +145,7 @@ export async function buildApp() {
     const indexHtml = readFileSync(join(dist, 'index.html'), 'utf8');
     // The first screen needs the same few small answers on every page (theme, announcement, homepage banners, menus).
     // Embedding them in the page removes a round trip, so the first paint already has the real content instead of a placeholder.
-    const BOOT = ['/theme/active', '/content/home', '/home/banners', '/regions', '/categories'];
+    const BOOT = ['/theme/active', '/content/home', '/home/banners', '/regions', '/categories', '/home/shape'];
     app.get('/robots.txt', async (req, reply) => reply.type('text/plain').header('cache-control', 'public, max-age=3600').send(robotsTxt(siteOrigin(req.headers.host), seoIndexing())));
     app.get('/sitemap.xml', async (req, reply) => {
       if (!seoIndexing()) return reply.code(404).send({ error: 'not_found' });
