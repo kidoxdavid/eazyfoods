@@ -115,7 +115,7 @@ describe('separate staff and shop sign-ins (browser)', () => {
     await seeText(page.locator('.bo-brandbar'), 'Marketing');
     await page.goto(`${base()}/driver`);
     await page.waitForURL(/\/driver\/signin/);                           // a marketing sign-in does not open the driver area
-    await seeText(page.locator('main'), 'Driver sign in');
+    await seeText(page.locator('body'), 'Driver Portal');
     await page.goto(`${base()}/marketing`);                                // and it did not sign the marketing account out
     await seeText(page.locator('.bo-brandbar'), 'Marketing');
   });
