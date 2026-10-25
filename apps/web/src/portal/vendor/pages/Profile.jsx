@@ -266,7 +266,8 @@ const Profile = () => {
                     />
                   </label>
                   <input
-                    type="url"
+                    type="text"
+                    inputMode="url"
                     name="store_profile_image_url"
                     value={formData.store_profile_image_url}
                     onChange={handleChange}
