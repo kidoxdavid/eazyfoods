@@ -197,7 +197,7 @@ function LayoutForm({ initial }: { initial: { id: string; enabled: boolean }[] }
       <div style={{ marginTop: 10 }}>
         {rows.map((r, i) => (
           <div key={r.id} className={`layout-row ${r.enabled ? '' : 'off'}`}>
-            <Switch checked={r.enabled} label={`Show ${LABELS[r.id]}`} onChange={(v) => setRows((x) => x.map((y) => (y.id === r.id ? { ...y, enabled: v } : y)))} />
+            <Switch checked={r.enabled} label={`Show ${LABELS[r.id]}`} hideLabel onChange={(v) => setRows((x) => x.map((y) => (y.id === r.id ? { ...y, enabled: v } : y)))} />
             <span className="grow">{LABELS[r.id]}</span>
             <Button size="sm" variant="ghost" aria-label={`Move ${LABELS[r.id]} up`} disabled={i === 0} onClick={() => move(i, i - 1)}>↑</Button>
             <Button size="sm" variant="ghost" aria-label={`Move ${LABELS[r.id]} down`} disabled={i === rows.length - 1} onClick={() => move(i, i + 1)}>↓</Button>

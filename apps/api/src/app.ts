@@ -29,6 +29,7 @@ import { applySeo, robotsTxt, seoFor, seoIndexing, siteOrigin, sitemapXml } from
 import { engagementRoutes } from './routes/engagement.js';
 import { recipeRoutes } from './routes/recipes.js';
 import { adRoutes } from './routes/ads.js';
+import { badgeRoutes } from './routes/badges.js';
 import { uploadRoutes } from './routes/uploads.js';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
@@ -119,6 +120,7 @@ export async function buildApp() {
   await app.register(recipeRoutes, { prefix: '/api' });
   await app.register(adRoutes, { prefix: '/api' });
   await app.register(uploadRoutes, { prefix: '/api' });
+  await app.register(badgeRoutes, { prefix: '/api' });
 
   // Single-host deployment: serve the built web app (and its client-side routes) from the API when it has been built.
   const dist = resolve(dirname(fileURLToPath(import.meta.url)), '../../web/dist');

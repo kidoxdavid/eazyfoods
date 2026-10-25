@@ -122,3 +122,30 @@
 .bo-auth h1 { font-size: 22px; margin: 0 0 12px; }
 .bo-auth .auth { display: grid; gap: 12px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); max-width: none; margin: 0; }
 .bo-auth .auth a { color: #0369a1; } .bo-auth .muted, .bo-auth .small { color: #4b5563; }
+
+.bo-burger { position: relative; } .bo-dot { position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; border-radius: 50%; background: #dc2626; border: 2px solid #fff; }
+
+.portal.bo .btn { white-space: nowrap; }
+.portal.bo .cell { min-width: 0; }
+
+/* Long settings forms: titled sections and a save bar that stays in reach */
+.form-section { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; box-shadow: var(--shadow); }
+.form-section > header { margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); } .form-section h3 { margin: 0 0 2px; font-size: 15px; } .form-section header p { margin: 0; }
+.form-section .stack { display: grid; gap: 14px; }
+.media-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 20px; }
+.save-bar { position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin: 0 -4px; background: rgba(255,255,255,.96); backdrop-filter: blur(6px); border-top: 1px solid var(--line); border-radius: 12px 12px 0 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+@media (max-width: 640px) { .form-section { padding: 14px; } .save-bar .btn { flex: 1; } }
+
+.bo-grouplabel { margin: 14px 12px 4px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; } .bo-side nav > .bo-grouplabel:first-child { margin-top: 4px; }
+.portal.bo .grid { align-items: stretch; gap: 12px; }
+.portal.bo .stat { background: #fff; border-radius: 12px; box-shadow: var(--shadow); min-height: 84px; display: flex; flex-direction: column; gap: 2px; }
+
+.inv-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.inv-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; box-shadow: var(--shadow); display: grid; gap: 8px; }
+.inv-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; } .inv-name { display: grid; gap: 4px; min-width: 0; } .inv-name strong { overflow-wrap: anywhere; }
+.inv-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; color: #4b5563; } .inv-meta > span:first-child { color: #111827; font-weight: 700; }
+.inv-actions { display: flex; flex-wrap: wrap; gap: 8px; } .inv-actions .btn { flex: 1 1 auto; }
+.portal.bo .tabs { overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; } .portal.bo .tabs::-webkit-scrollbar { display: none; } .portal.bo .tabs button { flex: none; white-space: nowrap; }
+.portal.bo .cols-4 { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+@media (max-width: 640px) { .portal.bo .cols-4, .portal.bo .cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .portal.bo .cols-2 { grid-template-columns: 1fr; } .portal.bo .stat { padding: 12px; } .portal.bo .stat-value { font-size: 1.25rem; overflow-wrap: anywhere; } }
+@media (max-width: 1023px) { .bo-user { padding: 10px 12px; } .bo-umail { display: none; } }

@@ -149,9 +149,9 @@ export function Shelf({ title, subtitle, to, items, children }: { title: string;
 export function StoreTile({ s }: { s: StoreCard }) {
   return (
     <Link to={`/s/${s.slug}`} className="stile">
-      <div className="stile-cover"><StoreBanner name={s.name} /></div>
+      <div className="stile-cover">{s.cover_url ? <img src={s.cover_url} alt="" loading="lazy" /> : <StoreBanner name={s.name} />}</div>
       <div className="stile-body">
-        <StoreMark name={s.name} size={44} />
+        {s.logo_url ? <img src={s.logo_url} alt="" width={44} height={44} style={{ borderRadius: '50%', objectFit: 'cover' }} /> : <StoreMark name={s.name} size={44} />}
         <div><h3>{s.name}</h3><span className="muted small">{s.city}{s.min_order_cents ? ` · $${(s.min_order_cents / 100).toFixed(0)} minimum` : ''}</span></div>
       </div>
       <div className="row wrap" style={{ padding: '0 14px 14px' }}>

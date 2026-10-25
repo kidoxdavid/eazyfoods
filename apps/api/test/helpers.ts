@@ -9,8 +9,8 @@ export const app = await buildApp();
 const realInject = app.inject.bind(app) as any;
 (app as any).inject = (opts: any) => {
   const h = opts?.headers;
-  if (h?.cookie && !h['x-test-raw'] && String(h.cookie).startsWith('ez_session=') && !String(h.cookie).includes('ez_staff='))
-    return realInject({ ...opts, headers: { ...h, cookie: `${h.cookie}; ez_staff=${String(h.cookie).slice('ez_session='.length).split(';')[0]}` } });
+  if (h?.cookie && !h['x-test-raw'] && String(h.cookie).startsWith('ez_session=') && !String(h.cookie).includes('ez_admin='))
+    return realInject({ ...opts, headers: { ...h, cookie: (() => { const t = String(h.cookie).slice('ez_session='.length).split(';')[0]; return `${h.cookie}; ez_admin=${t}; ez_marketing=${t}; ez_vendor=${t}; ez_driver=${t}`; })() } });
   return realInject(opts);
 };
 

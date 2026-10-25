@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
-import { audit, COOKIES } from '../lib/auth.js';
+import { audit, COOKIES, createSession } from '../lib/auth.js';
 import { hashToken } from '../lib/password.js';
 import { bad, notFound } from '../lib/errors.js';
 import { requireLogin, requirePerm } from '../lib/permissions.js';
@@ -34,23 +34,22 @@ export const featureRoutes: FastifyPluginAsync = async (app) => {
 export const controlRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('preHandler', requirePerm('control.manage'));
 
-  // "Open their portal": the admin works inside a vendor's portal as that vendor's owner, on the staff sign-in only, until they exit. Audited both ways.
-  app.post<{ Params: { vendorId: string } }>('/act-as/:vendorId', async (req) => {
+  // "Open their portal": the admin works inside a vendor's portal as that vendor's owner. This opens a separate vendor-window sign-in for the admin (the admin sign-in is untouched), until they exit. Audited both ways.
+  app.post<{ Params: { vendorId: string } }>('/act-as/:vendorId', async (req, reply) => {
     const id = z.string().uuid().parse(req.params.vendorId);
-    const tok = req.cookies[COOKIES.staff];
-    if (!tok) throw bad('no_staff_session', 'Sign in to the staff area first.');
-    await tx(async (c) => {
-      if (!(await c.query('SELECT 1 FROM vendors WHERE id = $1', [id])).rowCount) throw notFound('Vendor not found');
-      await c.query('UPDATE sessions SET acting_vendor_id = $2 WHERE token_hash = $1', [hashToken(tok), id]);
-      await audit(req.user!.id, 'act_as.start', 'vendor', id, {}, c);
-    });
+    if (!(await pool.query('SELECT 1 FROM vendors WHERE id = $1', [id])).rowCount) throw notFound('Vendor not found');
+    const old = req.cookies[COOKIES.vendor];
+    if (old) await pool.query('DELETE FROM sessions WHERE token_hash = $1 AND acting_vendor_id IS NOT NULL', [hashToken(old)]);
+    const tok = await createSession(req.user!.id, reply, 'vendor');
+    await pool.query('UPDATE sessions SET acting_vendor_id = $2 WHERE token_hash = $1', [hashToken(tok), id]);
+    await audit(req.user!.id, 'act_as.start', 'vendor', id);
     return { ok: true };
   });
-  app.delete('/act-as', async (req) => {
-    const tok = req.cookies[COOKIES.staff];
+  app.delete('/act-as', async (req, reply) => {
+    const tok = req.cookies[COOKIES.vendor];
     if (tok) {
-      const r = await pool.query('UPDATE sessions SET acting_vendor_id = NULL WHERE token_hash = $1 AND acting_vendor_id IS NOT NULL RETURNING 1', [hashToken(tok)]);
-      if (r.rowCount) await audit(req.user!.id, 'act_as.stop', 'user', req.user!.id);
+      const r = await pool.query('DELETE FROM sessions WHERE token_hash = $1 AND acting_vendor_id IS NOT NULL RETURNING 1', [hashToken(tok)]);
+      if (r.rowCount) { await audit(req.user!.id, 'act_as.stop', 'user', req.user!.id); reply.clearCookie(COOKIES.vendor, { path: '/' }); }
     }
     return { ok: true };
   });

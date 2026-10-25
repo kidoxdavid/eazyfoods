@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Activity, BarChart3, BookOpen, Calendar, Circle, DollarSign, FileText, Image as ImageIcon, LayoutDashboard, LogOut, Mail, Map, MapPin, Megaphone, Menu, MessageCircle, MessageSquare, Package,
@@ -35,7 +35,15 @@ export function PortalLayout({ title, subtitle, nav, tone, children }: { title: 
   const loc = useLocation(); const go = useNavigate();
   const cfg = useApi<Cfg>(`/portal-config/${tone}`);
   const hidden = new Set(cfg.data?.hidden_nav ?? []);
-  const items = nav.filter((n) => !hidden.has(n.to));
+  // "Something is waiting" counts, refreshed every 30 seconds and whenever the tab is shown again.
+  const badges = useApi<Record<string, number>>(`/${tone === 'chef' ? 'vendor' : tone}/badges`);
+  useEffect(() => {
+    const t = setInterval(badges.reload, 30000); const vis = () => { if (!document.hidden) badges.reload(); };
+    document.addEventListener('visibilitychange', vis); return () => { clearInterval(t); document.removeEventListener('visibilitychange', vis); };
+  }, [badges.reload]); // eslint-disable-line react-hooks/exhaustive-deps
+  const items = nav.filter((n) => !hidden.has(n.to)).map((n) => ({ ...n, badge: n.badge || badges.data?.[n.to] || 0 }));
+  const waiting = items.reduce((a, n) => a + (n.badge || 0), 0);
+  useEffect(() => { const base = document.title.replace(/^\(\d+\+?\) /, ''); document.title = waiting ? `(${waiting > 99 ? '99+' : waiting}) ${base}` : base; return () => { document.title = base; }; }, [waiting]);
   const [open, setOpen] = useState(false);
   useEffect(() => { setOpen(false); }, [loc.pathname]);
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false); document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k); }, []);
@@ -65,13 +73,15 @@ export function PortalLayout({ title, subtitle, nav, tone, children }: { title: 
           <button className="bo-close" aria-label="Close menu" onClick={() => setOpen(false)}><X size={22} /></button>
         </div>
         <nav>
-          {items.map((n) => {
+          {items.map((n, i) => {
             const Icon = iconFor(n.label);
             return (
-              <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => `bo-link${isActive ? ' active' : ''}`}>
+              <Fragment key={n.to}>
+              {n.group && n.group !== items[i - 1]?.group && <div className="bo-grouplabel" role="presentation">{n.group}</div>}
+              <NavLink to={n.to} end={n.end} className={({ isActive }) => `bo-link${isActive ? ' active' : ''}`}>
                 <span className="bo-link-main"><Icon size={20} strokeWidth={1.9} /><span>{n.label}</span></span>
                 {n.badge ? <span className="count">{n.badge > 99 ? '99+' : n.badge}</span> : null}
-              </NavLink>);
+              </NavLink></Fragment>);
           })}
         </nav>
         <div className="bo-user">
@@ -90,7 +100,7 @@ export function PortalLayout({ title, subtitle, nav, tone, children }: { title: 
       <PasswordModal open={pw} onClose={() => setPw(false)} />
       <div className="bo-page">
         <header className="bo-top">
-          <button className="bo-burger" aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} onClick={() => setOpen((o) => !o)}><Menu size={22} /></button>
+          <button className="bo-burger" aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} onClick={() => setOpen((o) => !o)}><Menu size={22} />{waiting > 0 && !open && <span className="bo-dot" aria-label={`${waiting} waiting`} />}</button>
           <div className="bo-jump">
             <Search size={15} />
             <input ref={jump} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Go to…  ( / )" aria-label="Go to a page"

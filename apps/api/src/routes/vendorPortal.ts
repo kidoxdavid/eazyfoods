@@ -1,4 +1,4 @@
-import { assertVendorCan, vendorOfStore } from '../services/features.js';
+import { assertVendorCan, featureOn, vendorOfStore } from '../services/features.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
@@ -258,6 +258,36 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
       if (b.country_slugs.length) await c.query(`INSERT INTO product_countries SELECT $1, id, 'culinary' FROM countries WHERE slug = ANY($2::text[]) ON CONFLICT DO NOTHING`, [p.id, b.country_slugs]);
       if (b.image_url) await c.query('INSERT INTO product_images(product_id, url, alt, uploaded_by) VALUES ($1,$2,$3,$4)', [p.id, b.image_url, b.name, req.user!.id]);
       return p;
+    }).catch((e) => { if (e.code === '23505') throw conflict('duplicate_barcode', 'A product with that barcode already exists in the catalogue. Search for it and list it instead.'); throw e; });
+    return reply.code(201).send(out);
+  });
+
+  // One step: create the product and list it in this store with a price and opening stock. It stays hidden until approved when the switch says so.
+  app.post<{ Params: { storeId: string } }>('/stores/:storeId/products', rl(30, '1 hour'), async (req, reply) => {
+    const sid = await store(req);
+    const b = z.object({
+      name: z.string().trim().min(2).max(160), brand: z.string().trim().max(80).optional(), category_slug: z.string().optional(), description: z.string().trim().max(1500).optional(),
+      pack_size: z.number().positive().optional(), pack_unit: z.string().max(20).optional(), barcode: z.string().max(32).optional(), ingredients: z.string().max(1000).optional(),
+      sold_by: z.enum(['unit', 'weight']).default('unit'), country_slugs: z.array(z.string()).default([]), image_url: img,
+      price_cents: z.number().int().min(1).max(1000000), stock: z.number().int().min(0).max(100000).default(0),
+    }).parse(req.body);
+    const review = await featureOn('vendor.products_need_review');
+    const out = await tx(async (c) => {
+      const vid = (await c.query('SELECT vendor_id FROM stores WHERE id = $1', [sid])).rows[0].vendor_id;
+      let slug = slugify(b.name), n = 1;
+      while ((await c.query('SELECT 1 FROM products WHERE slug = $1', [slug])).rowCount) slug = `${slugify(b.name)}-${++n}`;
+      let brandId: string | null = null;
+      if (b.brand) brandId = (await c.query(`INSERT INTO brands(slug,name,name_norm) VALUES ($1,$2,$3) ON CONFLICT (slug) DO UPDATE SET name = brands.name RETURNING id`, [slugify(b.brand), b.brand, norm(b.brand)])).rows[0].id;
+      const cat = b.category_slug ? (await c.query('SELECT id FROM categories WHERE slug = $1', [b.category_slug])).rows[0]?.id : null;
+      const p = (await c.query(`INSERT INTO products(slug,name,name_norm,description,brand_id,category_id,pack_size,pack_unit,barcode,ingredients,sold_by,status,suggested_by_vendor_id)
+                                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id, slug, status`,
+        [slug, b.name, norm(b.name), b.description ?? null, brandId, cat ?? null, b.pack_size ?? null, b.pack_unit ?? null, b.barcode ?? null, b.ingredients ?? null, b.sold_by, review ? 'pending' : 'published', vid])).rows[0];
+      if (b.country_slugs.length) await c.query(`INSERT INTO product_countries SELECT $1, id, 'culinary' FROM countries WHERE slug = ANY($2::text[]) ON CONFLICT DO NOTHING`, [p.id, b.country_slugs]);
+      if (b.image_url) await c.query('INSERT INTO product_images(product_id, url, alt, uploaded_by) VALUES ($1,$2,$3,$4)', [p.id, b.image_url, b.name, req.user!.id]);
+      const o = (await c.query('INSERT INTO store_offers(store_id, product_id, price_cents, stock_on_hand, is_active) VALUES ($1,$2,$3,$4,true) RETURNING id', [sid, p.id, b.price_cents, b.stock])).rows[0];
+      if (b.stock > 0) await c.query(`INSERT INTO inventory_adjustments(offer_id, delta, reason, note, actor_user_id, resulting_on_hand) VALUES ($1,$2,'initial','Initial stock',$3,$2)`, [o.id, b.stock, req.user!.id]);
+      await audit(req.user!.id, 'product.created_by_vendor', 'product', p.id, { store: sid, review }, c);
+      return { product_id: p.id as string, slug: p.slug as string, status: p.status as string, needs_review: review };
     }).catch((e) => { if (e.code === '23505') throw conflict('duplicate_barcode', 'A product with that barcode already exists in the catalogue. Search for it and list it instead.'); throw e; });
     return reply.code(201).send(out);
   });

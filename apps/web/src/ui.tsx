@@ -181,12 +181,12 @@ export function ImageUpload({ value, onChange, label = 'Image', endpoint = '/upl
 }
 
 // ---------- Toggle switch (used all over the back office) ----------
-export function Switch({ checked, onChange, label, hint, disabled, busy }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint?: string; disabled?: boolean; busy?: boolean }) {
+export function Switch({ checked, onChange, label, hint, disabled, busy, hideLabel }: { checked: boolean; onChange: (v: boolean) => void; label: string; hint?: string; disabled?: boolean; busy?: boolean; hideLabel?: boolean }) {
   return (
     <label className={`switch${disabled ? ' disabled' : ''}`}>
       <input type="checkbox" role="switch" checked={checked} disabled={disabled || busy} onChange={(e) => onChange(e.target.checked)} aria-label={label} />
       <span className="switch-track" aria-hidden="true"><i /></span>
-      <span className="switch-text"><b>{label}</b>{hint ? <small>{hint}</small> : null}</span>
+      {hideLabel ? <span className="sr-only">{label}</span> : <span className="switch-text"><b>{label}</b>{hint ? <small>{hint}</small> : null}</span>}
     </label>
   );
 }

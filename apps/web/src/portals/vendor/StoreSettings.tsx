@@ -30,28 +30,45 @@ function ProfileForm() {
   if (p.error) return <ErrorBox message={p.error} retry={p.reload} />;
   if (!f) return null;
   const set = <K extends keyof Profile>(k: K, v: Profile[K]) => setF({ ...f, [k]: v });
+  const lbl = { fontWeight: 600, fontSize: '.9rem' } as const;
   return (
-    <Card><h2>{f.name}</h2>
-      <form onSubmit={(e) => { e.preventDefault(); save.run(); }}>
-        {save.error && <Notice tone="error">{save.error}</Notice>}
-        <div className="switch-row"><Switch checked={f.ordering_paused} onChange={(v) => set('ordering_paused', v)} label="Pause new orders" hint="Customers can browse but not check out. Use this when you are too busy or closing early." /></div>
-        <hr />
-        <div className="row wrap top"><div><span className="label" style={{ fontWeight: 600, fontSize: '.9rem' }}>Logo</span><ImageUpload value={f.logo_url} onChange={(u) => set('logo_url', u)} label="Logo" /></div><div><span className="label" style={{ fontWeight: 600, fontSize: '.9rem' }}>Cover image</span><ImageUpload value={f.cover_url} onChange={(u) => set('cover_url', u)} label="Cover" /></div></div>
-        <Field label="About your store"><Textarea value={f.description ?? ''} onChange={(e) => set('description', e.target.value)} maxLength={1500} /></Field>
+    <form onSubmit={(e) => { e.preventDefault(); save.run(); }} className="stack lg">
+      {save.error && <Notice tone="error">{save.error}</Notice>}
+      <FormSection title="Selling" sub="Whether you are taking orders right now, and how customers get them.">
+        <Switch checked={f.ordering_paused} onChange={(v) => set('ordering_paused', v)} label="Pause new orders" hint="Customers can browse but not check out. Use this when you are too busy or closing early." />
+        <div className="row wrap"><Switch checked={f.offers_delivery} label="We offer delivery" onChange={(v) => set('offers_delivery', v)} /><Switch checked={f.offers_pickup} label="We offer pickup" onChange={(v) => set('offers_pickup', v)} /></div>
+        <div className="form-grid"><Field label="Minimum order (CAD, optional)"><Input type="number" step="0.01" min="0" value={min} onChange={(e) => setMin(e.target.value)} inputMode="decimal" /></Field></div>
+      </FormSection>
+      <FormSection title="Look and feel" sub="What customers see on your page.">
+        <div className="media-row">
+          <div><span className="label" style={lbl}>Logo</span><ImageUpload value={f.logo_url} onChange={(u) => set('logo_url', u)} label="Logo" /></div>
+          <div><span className="label" style={lbl}>Cover image</span><ImageUpload value={f.cover_url} onChange={(u) => set('cover_url', u)} label="Cover" /></div>
+          <div><span className="label" style={lbl}>Video (optional)</span><VideoUpload value={f.video_url} onChange={(u) => set('video_url', u)} label="Video" /></div>
+        </div>
+        <Field label={f.kind === 'kitchen' ? 'About your cooking' : 'About your store'}><Textarea value={f.description ?? ''} onChange={(e) => set('description', e.target.value)} maxLength={1500} /></Field>
+        {f.kind === 'kitchen' && <Field label="Cuisines you cook" hint="Separate with commas, e.g. Nigerian, West African"><Input value={(f.cuisines ?? []).join(', ')} onChange={(e) => set('cuisines', e.target.value.split(',').map((c) => c.trim()).filter(Boolean).slice(0, 8))} /></Field>}
+        <fieldset style={{ border: 0, padding: 0, margin: 0 }}><legend className="label" style={lbl}>Regional specialties</legend>
+          <div className="pill-list">{regions.data?.map((r) => <label key={r.slug} className="check"><input type="checkbox" checked={f.regions.includes(r.slug)} onChange={(e) => set('regions', e.target.checked ? [...f.regions, r.slug] : f.regions.filter((x) => x !== r.slug))} />{r.name}</label>)}</div></fieldset>
+      </FormSection>
+      <FormSection title="Location and contact" sub={f.kitchen_type === 'restaurant' ? 'A restaurant’s address and phone are shown publicly.' : f.kind === 'kitchen' ? 'A home cook’s address is never shown publicly.' : 'Shown on your store page.'}>
+        {f.kind === 'kitchen' && <Field label="Business type" hint="Fixed once you are approved. A restaurant needs a business licence."><Select value={f.kitchen_type ?? 'home'} onChange={(e) => set('kitchen_type', e.target.value as 'home' | 'restaurant')}><option value="home">Home chef</option><option value="restaurant">Restaurant</option></Select></Field>}
         <div className="form-grid">
           <Field label="Street address"><Input value={f.address_line ?? ''} onChange={(e) => set('address_line', e.target.value)} required minLength={3} /></Field>
           <Field label="City"><Input value={f.city} onChange={(e) => set('city', e.target.value)} required /></Field>
           <Field label="Postal code"><Input value={f.postal_code ?? ''} onChange={(e) => set('postal_code', e.target.value)} required /></Field>
           <Field label="Phone"><Input type="tel" value={f.phone ?? ''} onChange={(e) => set('phone', e.target.value)} required /></Field>
-          <Field label="Minimum order (CAD, optional)"><Input type="number" step="0.01" min="0" value={min} onChange={(e) => setMin(e.target.value)} inputMode="decimal" /></Field></div>
-        <div className="row wrap"><Switch checked={f.offers_delivery} label="We offer delivery" onChange={(v) => set('offers_delivery', v)} /><Switch checked={f.offers_pickup} label="We offer pickup" onChange={(v) => set('offers_pickup', v)} /></div>
-        {f.kind === 'kitchen' && <Field label="Business type" hint="A restaurant's address and phone are shown publicly and it needs a business licence. A home cook's address is never shown. This is fixed once you are approved."><Select value={f.kitchen_type ?? 'home'} onChange={(e) => set('kitchen_type', e.target.value as 'home' | 'restaurant')}><option value="home">Home chef</option><option value="restaurant">Restaurant</option></Select></Field>}
-        <div><span className="label" style={{ fontWeight: 600, fontSize: '.9rem' }}>Video (optional)</span><VideoUpload value={f.video_url} onChange={(u) => set('video_url', u)} label="Video" /></div>
-        {f.kind === 'kitchen' && <Field label="Cuisines you cook" hint="Separate with commas, e.g. Nigerian, West African"><Input value={(f.cuisines ?? []).join(', ')} onChange={(e) => set('cuisines', e.target.value.split(',').map((c) => c.trim()).filter(Boolean).slice(0, 8))} /></Field>}
-        <fieldset style={{ border: 0, padding: 0, margin: '10px 0' }}><legend className="label" style={{ fontWeight: 600, fontSize: '.9rem' }}>Regional specialties</legend>
-          <div className="pill-list">{regions.data?.map((r) => <label key={r.slug} className="check"><input type="checkbox" checked={f.regions.includes(r.slug)} onChange={(e) => set('regions', e.target.checked ? [...f.regions, r.slug] : f.regions.filter((x) => x !== r.slug))} />{r.name}</label>)}</div></fieldset>
-        <Field label="Store policies (optional)" hint="For example how you handle substitutions or pickup times."><Textarea value={f.policies ?? ''} onChange={(e) => set('policies', e.target.value)} maxLength={3000} /></Field>
-        <Button type="submit" busy={save.busy}>Save store</Button></form></Card>);
+        </div>
+      </FormSection>
+      <FormSection title="Policies" sub="Optional.">
+        <Field label="Store policies" hint="For example how you handle substitutions or pickup times."><Textarea value={f.policies ?? ''} onChange={(e) => set('policies', e.target.value)} maxLength={3000} /></Field>
+      </FormSection>
+      <div className="save-bar"><Button type="submit" busy={save.busy}>Save changes</Button><span className="muted small">{f.name}</span></div>
+    </form>);
+}
+
+/** A titled block of a long settings form. */
+export function FormSection({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
+  return <section className="form-section"><header><h3>{title}</h3>{sub && <p className="muted small">{sub}</p>}</header><div className="stack">{children}</div></section>;
 }
 
 type Day = { on: boolean; opens: string; closes: string };

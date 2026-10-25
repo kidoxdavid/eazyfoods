@@ -29,7 +29,7 @@ export async function signIn(page: Page, email: string, password = 'dev-password
   await page.click('.auth button[type=submit]');
   await page.waitForURL((u) => !u.pathname.startsWith('/signin'));
   // Staff areas have their own sign-in, open only to the area accounts: do it too (customers are simply refused, which is fine here).
-  await page.evaluate(async ([e, pw]) => { await fetch('/api/auth/login', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json', 'x-area': 'staff' }, body: JSON.stringify({ email: e, password: pw }) }); }, [email, password]);
+  await page.evaluate(async ([e, pw]) => { for (const area of ['admin', 'marketing', 'vendor', 'driver']) await fetch('/api/auth/login', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json', 'x-area': area }, body: JSON.stringify({ email: e, password: pw, area }) }); }, [email, password]);
 }
 
 export async function db() { const c = new pg.Client({ connectionString: process.env.E2E_DB }); await c.connect(); return c; }

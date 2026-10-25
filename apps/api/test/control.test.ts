@@ -133,19 +133,24 @@ describe('admin opens a vendor portal', () => {
     // a non-admin cannot gain anything even if the flag is forced in the database
     const sup = (await pool.query(`SELECT id FROM users WHERE email = 'support@example.test'`)).rows[0].id;
     await pool.query('UPDATE sessions SET acting_vendor_id = $2 WHERE user_id = $1', [sup, vid]);
-    expect((await call(support, 'GET', '/api/vendor/stores')).body).toEqual([]);
+    expect((await call(support, 'GET', '/api/vendor/stores')).status).toBe(401);   // not a vendor, so the vendor window is closed to them
     await pool.query('UPDATE sessions SET acting_vendor_id = NULL WHERE user_id = $1', [sup]);
 
-    expect((await call(admin, 'GET', '/api/vendor/stores')).body).toEqual([]);                  // an admin is not a vendor by default
-    expect((await call(admin, 'POST', `/api/admin/control/act-as/${vid}`)).status).toBe(200);
-    expect((await call(admin, 'GET', '/api/auth/me')).body.acting_vendor.id).toBe(vid);
-    const stores = (await call(admin, 'GET', '/api/vendor/stores')).body;
+    expect((await call(admin, 'GET', '/api/vendor/stores')).status).toBe(401);                  // the admin account does not open the vendor window by itself
+    const act = await call(admin, 'POST', `/api/admin/control/act-as/${vid}`);
+    expect(act.status).toBe(200);
+    const vcookie = String(act.headers['set-cookie']).split(';')[0];                              // a separate vendor-window sign-in; the admin one is untouched
+    expect(vcookie).toMatch(/^ez_vendor=/);
+    const both = `ez_admin=${admin.split('=')[1]}; ${vcookie}`;
+    const as = (method: string, url: string, w = 'vendor') => call(both, method, url, undefined, { 'x-test-raw': '1', 'x-area': w });
+    expect((await as('GET', '/api/auth/me')).body.acting_vendor.id).toBe(vid);
+    expect((await as('GET', '/api/auth/me', 'admin')).body.acting_vendor).toBeFalsy();
+    const stores = (await as('GET', '/api/vendor/stores')).body;
     expect(stores.some((s: any) => s.slug === S1)).toBe(true);
-    expect((await call(admin, 'GET', '/api/vendor/orders')).status).toBe(200);
-    expect((await call(admin, 'GET', '/api/vendor/capabilities')).status).toBe(200);
-    expect((await call(admin, 'DELETE', '/api/admin/control/act-as')).status).toBe(200);
-    expect((await call(admin, 'GET', '/api/vendor/stores')).body).toEqual([]);
-    expect((await call(admin, 'GET', '/api/auth/me')).body.acting_vendor).toBeUndefined();
+    expect((await as('GET', '/api/vendor/orders')).status).toBe(200);
+    expect((await as('GET', '/api/vendor/capabilities')).status).toBe(200);
+    expect((await as('DELETE', '/api/admin/control/act-as')).status).toBe(200);
+    expect((await as('GET', '/api/vendor/stores')).status).toBe(401);
     const log = (await pool.query(`SELECT action FROM audit_log WHERE action LIKE 'act_as.%' ORDER BY id DESC LIMIT 2`)).rows.map((r) => r.action);
     expect(log).toEqual(['act_as.stop', 'act_as.start']);
   });

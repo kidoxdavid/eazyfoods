@@ -16,7 +16,6 @@ const BLURB: Record<Window, string> = {
 };
 const values = (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); return Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>; };
 const safeNext = (n: string | null, w: Window) => (n && n.startsWith(`/${w}`) && !n.startsWith('//') && !/^\/[a-z]+\/(signin|signup)/.test(n) ? n : `/${w}`);
-const HDR = { 'x-area': 'staff' };
 
 function Frame({ w, title, children }: { w: Window; title: string; children: React.ReactNode }) {
   return (
@@ -34,7 +33,7 @@ function Frame({ w, title, children }: { w: Window; title: string; children: Rea
 export function StaffSignIn({ area }: { area: Window }) {
   const [sp] = useSearchParams(); const nav = useNavigate(); const { reloadStaff, me, ready } = useAuth();
   const next = safeNext(sp.get('next'), area);
-  const go = useAction(async (e: FormEvent<HTMLFormElement>) => { await post('/auth/login', { ...values(e), area }, HDR); await reloadStaff(); nav(next); });
+  const go = useAction(async (e: FormEvent<HTMLFormElement>) => { await post('/auth/login', { ...values(e), area }, { 'x-area': area }); await reloadStaff(); nav(next); });
   if (ready && me) return <Navigate to={next} replace />;
   return (
     <Frame w={area} title={`${NAME[area]} sign in`}>
@@ -54,7 +53,7 @@ export function StaffSignIn({ area }: { area: Window }) {
 
 export function StaffSignUp({ area }: { area: 'vendor' | 'driver' }) {
   const nav = useNavigate(); const { reloadStaff } = useAuth();
-  const go = useAction(async (e: FormEvent<HTMLFormElement>) => { const f = values(e); await post('/auth/register-staff', { email: f.email, password: f.password, full_name: f.full_name, area }, HDR); await reloadStaff(); nav(`/${area}`); });
+  const go = useAction(async (e: FormEvent<HTMLFormElement>) => { const f = values(e); await post('/auth/register-staff', { email: f.email, password: f.password, full_name: f.full_name, area }, { 'x-area': area }); await reloadStaff(); nav(`/${area}`); });
   return (
     <Frame w={area} title={area === 'vendor' ? 'Create a vendor account' : 'Create a driver account'}>
       <form className="auth" onSubmit={go.run}>

@@ -109,18 +109,15 @@ describe('separate staff and shop sign-ins (browser)', () => {
     await ctx.close();
   });
 
-  it('each area opens only for its own account: the wrong one is signed out and asked for the right email', async () => {
+  it('each area opens only for its own sign-in; another area sign-in neither opens it nor is signed out by it', async () => {
     const { page } = await newPage(browser, DESKTOP);
     await signInStaff(page, 'marketing@example.test', 'dev-password-123', '/marketing');
     await seeText(page.locator('.bo-brandbar'), 'Marketing');
     await page.goto(`${base()}/driver`);
-    await seeText(page.locator('body'), 'cannot open the driver area');          // the driver area does not take a marketing account
-    await page.getByRole('button', { name: /Sign out and use a driver account/ }).click();
-    await page.waitForURL(/\/driver\/signin/);
+    await page.waitForURL(/\/driver\/signin/);                           // a marketing sign-in does not open the driver area
     await seeText(page.locator('main'), 'Driver sign in');
-    await page.goto(`${base()}/marketing`);
-    await page.waitForURL(/\/marketing\/signin/);                       // signed out of the staff area
-    await seeText(page.locator('main'), 'Marketing sign in');
+    await page.goto(`${base()}/marketing`);                                // and it did not sign the marketing account out
+    await seeText(page.locator('.bo-brandbar'), 'Marketing');
   });
 });
 
@@ -138,6 +135,22 @@ describe('selling and cooking entry (browser)', () => {
   });
 });
 
+describe('every area keeps its own sign-in (browser)', () => {
+  it('admin, vendor and driver can all be signed in at once in one browser; signing out of one leaves the others', async () => {
+    const { page } = await newPage(browser, DESKTOP);
+    await signInStaff(page, 'admin@example.test', 'dev-password-123', '/admin');
+    await signInStaff(page, 'owner1@example.test', 'dev-password-123', '/vendor');
+    await signInStaff(page, 'driver@example.test', 'dev-password-123', '/driver');
+    await page.goto(`${base()}/admin`); await seeText(page.locator('.bo-brandbar'), 'Admin');          // still signed in as admin
+    await page.goto(`${base()}/vendor`); await seeText(page.locator('.bo-brandbar'), 'Vendor');        // and as the vendor
+    await page.goto(`${base()}/driver`); await seeText(page.locator('.bo-brandbar'), 'Driver');
+    await page.getByRole('button', { name: 'Sign out' }).click();
+    await page.waitForURL(/\/driver\/signin/);
+    await page.goto(`${base()}/admin`); await seeText(page.locator('.bo-brandbar'), 'Admin');          // the others are untouched
+    await page.goto(`${base()}/vendor`); await seeText(page.locator('.bo-brandbar'), 'Vendor');
+  });
+});
+
 describe('own sign-up window (browser)', () => {
   it('a new vendor signs up in the vendor window, lands on the application, and can come back with the same login', async () => {
     const { page } = await newPage(browser, MOBILE);
@@ -151,7 +164,7 @@ describe('own sign-up window (browser)', () => {
     await page.getByRole('button', { name: 'Restaurant', exact: true }).click();
     await seeText(page.locator('body'), 'List your restaurant');
     await page.goto(`${base()}/admin`);                                        // it is not an admin, and has no shopping account either
-    await seeText(page.locator('body'), 'cannot open the admin area');
+    await page.waitForURL(/\/admin\/signin/);                            // not an admin; the vendor sign-in does not open admin
   });
 });
 
@@ -169,6 +182,6 @@ describe('admin has absolute control (browser)', () => {
     await page.getByRole('button', { name: 'Exit and go back to admin' }).click();
     await page.waitForURL('**/admin/vendors');
     await page.goto(`${base()}/vendor`);
-    await seeText(page.locator('body'), 'cannot open the vendor area');      // the admin account opens the admin area only
+    await page.waitForURL(/\/vendor\/signin/);                            // the admin sign-in does not open the vendor area (only "Open their portal" does)
   });
 });

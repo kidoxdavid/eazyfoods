@@ -8,6 +8,9 @@ import { DataTable, DeleteButton, Fetch, Need, del, patch, post, put, useCan } f
 
 type Meta = { label: string; kind: 'percent_bps' | 'dollars' | 'int' | 'bool' | 'text' | 'tax' | 'fixed'; unit?: string; help: string; range?: [number, number] };
 const META: Record<string, Meta> = {
+  'kitchens.enabled': { label: 'Home chefs and restaurants', kind: 'bool', help: 'Show home kitchens and restaurants and let them sell meals.' },
+  'payout.auto_enabled': { label: 'Automatic payouts', kind: 'bool', help: 'Pay connected vendors automatically once the hold period is over.' },
+  'payout.auto_min_cents': { label: 'Smallest automatic payout', kind: 'dollars', help: 'Balances below this wait until they reach it.', range: [1, 10000] },
   'currency': { label: 'Currency', kind: 'fixed', help: 'All prices are in Canadian dollars.' },
   'tax.rates_bps': { label: 'Tax rates', kind: 'tax', help: 'GST rate for zero-rated and standard-rated products. Delivery fees use the standard rate. Confirm treatment with an accountant.', range: [0, 30] },
   'commission.default_bps': { label: 'Default commission', kind: 'percent_bps', help: 'Marketplace commission on merchandise value. A vendor can have its own override. Applies to new orders only.', range: [0, 50] },
@@ -45,6 +48,7 @@ function Commercial() {
     const m = META[r.key]; setEdit(r);
     if (m.kind === 'percent_bps') setText(String(r.value / 100)); else if (m.kind === 'dollars') setText((r.value / 100).toFixed(2)); else if (m.kind === 'tax') { setText(String(r.value.zero_rated / 100)); setText2(String(r.value.standard / 100)); } else setText(String(r.value));
   };
+  const save2 = async (key: string, value: boolean, reload: () => void) => { try { await put(`/admin/settings/${key}`, { value }); toast('Saved and recorded in the audit log'); reload(); } catch (e: any) { toast(e.message, 'error'); } };
   const save = useAction(async (reload: () => void) => {
     const m = META[edit!.key]; let value: any;
     const nums = m.kind === 'tax' ? [Number(text), Number(text2)] : [Number(text)];
@@ -59,9 +63,9 @@ function Commercial() {
       <>
         {!can('settings.manage') && <Notice tone="info">You can view these settings. Only an admin can change them.</Notice>}
         <DataTable rows={rows} rowKey={(r) => r.key} empty="No settings."
-          columns={[{ key: 'l', header: 'Setting', render: (r) => <><strong>{META[r.key]?.label ?? r.key}</strong><div className="small muted">{META[r.key]?.help}</div></> }, { key: 'v', header: 'Value', render: (r) => <strong>{show(r.key, r.value)}</strong> },
+          columns={[{ key: 'l', header: 'Setting', render: (r) => <><strong>{META[r.key]?.label ?? r.key}</strong><div className="small muted">{META[r.key]?.help}</div></> }, { key: 'v', header: 'Value', render: (r) => (META[r.key]?.kind === 'bool' && can('settings.manage') ? <Switch checked={!!r.value} hideLabel label={META[r.key].label} onChange={(v) => save2(r.key, v, reload)} /> : <strong>{show(r.key, r.value)}</strong>) },
             { key: 'u', header: 'Changed', render: (r) => fmtDate(r.updated_at) },
-            { key: 'a', header: '', render: (r) => (can('settings.manage') && META[r.key]?.kind !== 'fixed' ? <Button size="sm" variant="secondary" onClick={() => open(r)}>Change</Button> : null) }]} />
+            { key: 'a', header: '', render: (r) => (can('settings.manage') && META[r.key]?.kind !== 'fixed' && META[r.key]?.kind !== 'bool' ? <Button size="sm" variant="secondary" onClick={() => open(r)}>Change</Button> : null) }]} />
         <Modal open={!!edit} onClose={() => setEdit(null)} title={edit ? META[edit.key]?.label ?? edit.key : ''}>
           {edit && <>
             <p className="small muted">{META[edit.key]?.help}</p>

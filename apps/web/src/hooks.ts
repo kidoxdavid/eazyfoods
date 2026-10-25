@@ -42,3 +42,11 @@ export function useDebounced<T>(value: T, ms = 250) {
   useEffect(() => { const t = setTimeout(() => setV(value), ms); return () => clearTimeout(t); }, [value, ms]);
   return v;
 }
+
+/** True on phone-sized screens; lets a page swap a wide table for compact cards. */
+export function useNarrow(px = 700) {
+  const q = `(max-width: ${px}px)`;
+  const [n, setN] = useState(() => typeof matchMedia !== 'undefined' && matchMedia(q).matches);
+  useEffect(() => { const m = matchMedia(q); const on = () => setN(m.matches); on(); m.addEventListener('change', on); return () => m.removeEventListener('change', on); }, [q]);
+  return n;
+}

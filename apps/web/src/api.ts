@@ -44,7 +44,7 @@ export type ProductCard = {
   slug: string; name: string; brand: string | null; pack_size: string | null; pack_unit: string | null; min_price: number; in_stock: boolean;
   store_count?: number; matched_alias?: string | null; category?: string; image_url?: string | null; sponsored_campaign_id?: string | null;
 };
-export type StoreCard = { slug: string; name: string; description: string; city: string; is_open: boolean; min_order_cents: number | null; is_test_data: boolean; regions: { slug: string; name: string }[]; logo_url?: string | null };
+export type StoreCard = { slug: string; name: string; description: string; city: string; is_open: boolean; min_order_cents: number | null; is_test_data: boolean; regions: { slug: string; name: string }[]; logo_url?: string | null; cover_url?: string | null };
 
 /** Price per 100 g or 100 ml for weight/volume packs (same rule as the server). Other pack types get none, never a guess. */
 export function unitPrice(priceCents: number, size?: string | number | null, unit?: string | null): { cents: number; basis: '100g' | '100ml' } | null {

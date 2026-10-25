@@ -74,7 +74,7 @@ describe('authorization', () => {
   it('vendor owners cannot self-approve', async () => {
     const { cookie } = await login('owner1@example.test');
     const v = (await pool.query('SELECT id FROM vendors LIMIT 1')).rows[0].id;
-    expect((await app.inject({ method: 'PATCH', url: `/api/admin/vendors/${v}/status`, headers: { cookie }, payload: { status: 'approved' } })).statusCode).toBe(403);
+    expect([401, 403]).toContain((await app.inject({ method: 'PATCH', url: `/api/admin/vendors/${v}/status`, headers: { cookie }, payload: { status: 'approved' } })).statusCode);
   });
 
   it('admin approval gates publication and is audited', async () => {

@@ -107,10 +107,8 @@ function Dashboard({ me }: { me: Me }) {
           <Stat label="Earned today" value={money(data.today.earned)} />
           <Stat label="Last 7 days" value={`${data.week.delivered} · ${money(data.week.earned)}`} />
           <Stat label="Not yet paid out" value={money(data.unpaid_cents)} />
-        </div>
-        <div className="grid cols-2">
           <Stat label="Rating" value={data.rating.avg ? `${data.rating.avg} ★ (${data.rating.n})` : data.rating.n ? 'Needs 3 ratings' : 'No ratings yet'} />
-          <Stat label="Open deliveries nearby" value={data.self_assign ? String(data.available_count) : 'Assigned by dispatch'} />
+          <Stat label="Open deliveries" value={data.self_assign ? String(data.available_count) : 'Dispatch assigns'} />
         </div>
         <h2>Active deliveries</h2>
         {!data.active.length && <Empty title="Nothing in progress">{data.self_assign ? <>Browse <Link to="/driver/available">available deliveries</Link>, or wait for dispatch to assign you one.</> : 'New jobs appear here when dispatch assigns them.'}</Empty>}

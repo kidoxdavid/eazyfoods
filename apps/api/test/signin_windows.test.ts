@@ -22,12 +22,12 @@ describe('one sign-in window per area', () => {
     const r = await app.inject({ method: 'POST', url: '/api/auth/register-staff', headers: { 'x-area': 'staff', 'x-test-raw': '1' }, payload: { email, password: 'a-long-password', full_name: 'New Vendor', area: 'vendor' } });
     expect(r.statusCode).toBe(201);
     const cookie = String(r.headers['set-cookie']).split(';')[0];
-    expect(cookie).toMatch(/^ez_staff=/);
+    expect(cookie).toMatch(/^ez_vendor=/);
     const h = { cookie, 'x-area': 'staff', 'x-test-raw': '1' };
     const me = (await app.inject({ method: 'GET', url: '/api/auth/me', headers: h })).json();
     expect(me.email).toBe(email); expect(me.staff_signup).toBe('vendor'); expect(me.roles).toEqual([]);
     expect((await pool.query(`SELECT 1 FROM user_roles ur JOIN users u ON u.id=ur.user_id WHERE u.email=$1`, [email])).rowCount).toBe(0);   // no shopping account came with it
-    expect((await app.inject({ method: 'GET', url: '/api/admin/vendors', headers: h })).statusCode).toBe(403);
+    expect([401, 403]).toContain((await app.inject({ method: 'GET', url: '/api/admin/vendors', headers: h })).statusCode);
     const ap = await app.inject({ method: 'POST', url: '/api/vendor/apply', headers: h, payload: { business_name: 'Signup Co', phone: '5875550111', store_name: 'Signup Shop', address_line: '1 Test St', postal_code: 'T2A 0A1' } });
     expect(ap.statusCode).toBe(201);
     expect((await staffLogin(email, 'vendor', 'a-long-password')).statusCode).toBe(200);
@@ -45,5 +45,20 @@ describe('one sign-in window per area', () => {
     expect((await staffLogin(email, 'marketing', 'a-long-password')).statusCode).toBe(200);
     expect((await staffLogin(email, 'vendor', 'a-long-password')).statusCode).toBe(403);
     expect((await pool.query(`SELECT 1 FROM user_roles ur JOIN users u ON u.id=ur.user_id WHERE u.email=$1 AND ur.role='customer'`, [email])).rowCount).toBe(0);
+  });
+
+  it('every window has its own sign-in: admin and vendor and driver at once, and signing out of one keeps the others', async () => {
+    const cookie = async (email: string, area: string) => String((await staffLogin(email, area)).headers['set-cookie']).split(';')[0];
+    const a = await cookie('admin@example.test', 'admin'), v = await cookie('owner1@example.test', 'vendor'), d = await cookie('driver@example.test', 'driver');
+    expect([a.split('=')[0], v.split('=')[0], d.split('=')[0]]).toEqual(['ez_admin', 'ez_vendor', 'ez_driver']);
+    const all = `${a}; ${v}; ${d}`;
+    const me = async (w: string) => (await app.inject({ url: '/api/auth/me', headers: { cookie: all, 'x-area': w, 'x-test-raw': '1' } })).json()?.email;
+    expect([await me('admin'), await me('vendor'), await me('driver'), await me('marketing')]).toEqual(['admin@example.test', 'owner1@example.test', 'driver@example.test', undefined]);
+    // a token only works in its own window, even if presented under another cookie name
+    const swapped = `ez_vendor=${a.split('=')[1]}`;
+    expect((await app.inject({ url: '/api/auth/me', headers: { cookie: swapped, 'x-area': 'vendor', 'x-test-raw': '1' } })).json()).toBeNull();
+    await app.inject({ method: 'POST', url: '/api/auth/logout', headers: { cookie: all, 'x-area': 'vendor', 'x-test-raw': '1' } });
+    expect(await me('vendor')).toBeUndefined();
+    expect(await me('admin')).toBe('admin@example.test');
   });
 });

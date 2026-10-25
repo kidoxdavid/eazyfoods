@@ -1,13 +1,13 @@
 import { useRef, useState } from 'react';
 import { api, centsToDollars, dollarsToCents, money, patch, post, put, fmtDate } from '../../api';
 import type { Region } from '../../api';
-import { useAction, useApi, useDebounced } from '../../hooks';
+import { useNarrow, useAction, useApi, useDebounced } from '../../hooks';
 import { useToast } from '../../toast';
 import { Badge, Button, Card, DataTable, Empty, ErrorBox, Field, ImageUpload, Input, Loading, Modal, Notice, PageHeader, Select, Tabs, Textarea, formValues, Switch } from '../../ui';
 import { ScanButton } from './Scanner';
 import { StoreSelect, useVendor } from './Shared';
 
-type Offer = { product_id: string; name: string; slug: string; price_cents: number; compare_at_cents: number | null; is_active: boolean; stock_on_hand: number; stock_reserved: number; available: number; low_stock: boolean; tiers: { min_qty: number; unit_price_cents: number }[] };
+type Offer = { product_status?: string; product_id: string; name: string; slug: string; price_cents: number; compare_at_cents: number | null; is_active: boolean; stock_on_hand: number; stock_reserved: number; available: number; low_stock: boolean; tiers: { min_qty: number; unit_price_cents: number }[] };
 
 export default function Inventory() {
   const { storeId } = useVendor();
@@ -15,10 +15,10 @@ export default function Inventory() {
   const [tab, setTab] = useState('list');
   return (
     <>
-      <PageHeader title="Inventory" sub="Your prices and stock. Every stock change is recorded." />
+      <PageHeader title="Inventory" sub="Your prices and stock. Every stock change is recorded." actions={<Button onClick={() => setTab('new')}>+ Add a product</Button>} />
       <StoreSelect />
-      <Tabs value={tab} onChange={setTab} tabs={[{ id: 'list', label: 'My products' }, { id: 'add', label: 'Add from catalogue' }, { id: 'suggest', label: 'Suggest new product' }, ...(caps.data?.csv_import === false ? [] : [{ id: 'csv', label: 'CSV import' }])]} />
-      {tab === 'list' && <List key={storeId} />}{tab === 'add' && <AddFromCatalogue key={storeId} />}{tab === 'suggest' && <Suggest />}{tab === 'csv' && <CsvImport key={storeId} />}
+      <Tabs value={tab} onChange={setTab} tabs={[{ id: 'list', label: 'My products' }, { id: 'new', label: 'Add a product' }, { id: 'add', label: 'From shared catalogue' }, ...(caps.data?.csv_import === false ? [] : [{ id: 'csv', label: 'CSV import' }])]} />
+      {tab === 'list' && <List key={storeId} />}{tab === 'add' && <AddFromCatalogue key={storeId} />}{tab === 'new' && <NewProduct key={storeId} onDone={() => setTab('list')} />}{tab === 'csv' && <CsvImport key={storeId} />}
     </>
   );
 }
@@ -28,21 +28,31 @@ function List() {
   const caps = useApi<Record<string, boolean>>('/vendor/capabilities');
   const { data, loading, error, reload } = useApi<Offer[]>(`/vendor/stores/${storeId}/offers`);
   const [tiers, setTiers] = useState<Offer | null>(null); const [edit, setEdit] = useState<Offer | null>(null); const [stock, setStock] = useState<Offer | null>(null); const [hist, setHist] = useState<Offer | null>(null);
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(''); const narrow = useNarrow();
   const toggle = async (o: Offer) => { try { await put(`/vendor/stores/${storeId}/offers/${o.product_id}`, { price_cents: o.price_cents, compare_at_cents: o.compare_at_cents, is_active: !o.is_active }); reload(); } catch (e: any) { toast(e.message, 'error'); } };
   if (loading && !data) return <Loading />;
   if (error) return <ErrorBox message={error} retry={reload} />;
   const rows = (data ?? []).filter((o) => o.name.toLowerCase().includes(q.toLowerCase()));
   return (<>
     <Field label="Filter products"><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Type a product name" /></Field>
-    <DataTable rows={rows} rowKey={(r) => r.product_id} empty={<>You have not listed anything yet. Use “Add from catalogue”.</>} columns={[
-      { key: 'name', header: 'Product', render: (o) => <strong>{o.name}</strong> },
+    {narrow ? (rows.length ? <ul className="inv-list" role="list">{rows.map((o) => (
+      <li key={o.product_id} className="inv-card">
+        <div className="inv-top"><div className="inv-name"><strong>{o.name}</strong>{o.product_status === 'pending' && <Badge tone="warn">Awaiting approval</Badge>}</div>
+          <Switch checked={o.is_active} onChange={() => toggle(o)} label={`Show ${o.name}`} hideLabel /></div>
+        <div className="inv-meta"><span>{money(o.price_cents)}{o.compare_at_cents ? <s className="muted small"> {money(o.compare_at_cents)}</s> : null}</span>
+          <span>{o.available} available</span>{o.available <= 0 ? <Badge tone="danger">Out of stock</Badge> : o.low_stock ? <Badge tone="warn">Low</Badge> : null}</div>
+        <div className="inv-actions"><Button size="sm" variant="secondary" onClick={() => setEdit(o)}>Price</Button><Button size="sm" variant="secondary" onClick={() => setStock(o)}>Stock</Button>
+          {caps.data?.multibuy !== false && <Button size="sm" variant="secondary" onClick={() => setTiers(o)}>Multi-buy{o.tiers.length ? ` (${o.tiers.length})` : ''}</Button>}<Button size="sm" variant="ghost" onClick={() => setHist(o)}>History</Button></div>
+      </li>))}</ul> : <Empty title="Nothing listed yet">Use <strong>+ Add a product</strong> to create your first one.</Empty>) : (
+    <DataTable rows={rows} rowKey={(r) => r.product_id} empty={<>Nothing listed yet. Use <strong>+ Add a product</strong> to create your first one.</>} columns={[
+      { key: 'name', header: 'Product', render: (o) => <><strong>{o.name}</strong>{o.product_status === 'pending' && <> <Badge tone="warn">Awaiting approval</Badge></>}</> },
       { key: 'price', header: 'Price', render: (o) => <>{money(o.price_cents)}{o.compare_at_cents ? <s className="muted small"> {money(o.compare_at_cents)}</s> : null}</> },
       { key: 'stock', header: 'On hand / reserved', render: (o) => `${o.stock_on_hand} / ${o.stock_reserved}` },
       { key: 'avail', header: 'Available', render: (o) => <>{o.available} {o.available <= 0 ? <Badge tone="danger">Out of stock</Badge> : o.low_stock ? <Badge tone="warn">Low</Badge> : null}</> },
-      { key: 'active', header: 'Shown to customers', render: (o) => <Switch checked={o.is_active} onChange={() => toggle(o)} label={`Show ${o.name}`} /> },
+      { key: 'active', header: 'Shown to customers', render: (o) => <Switch checked={o.is_active} onChange={() => toggle(o)} label={`Show ${o.name}`} hideLabel /> },
       { key: 'act', header: '', render: (o) => <div className="row wrap"><Button size="sm" variant="secondary" onClick={() => setEdit(o)}>Price</Button>{caps.data?.multibuy !== false && <Button size="sm" variant="secondary" onClick={() => setTiers(o)}>Multi-buy{o.tiers.length ? ` (${o.tiers.length})` : ''}</Button>}<Button size="sm" variant="secondary" onClick={() => setStock(o)}>Stock</Button><Button size="sm" variant="ghost" onClick={() => setHist(o)}>History</Button></div> },
     ]} />
+    )}
     {edit && <PriceModal o={edit} onClose={() => setEdit(null)} onDone={() => { setEdit(null); reload(); }} />}
     {tiers && <TiersModal o={tiers} onClose={() => setTiers(null)} onDone={() => { setTiers(null); reload(); }} />}
     {stock && <StockModal o={stock} onClose={() => setStock(null)} onDone={() => { setStock(null); reload(); }} />}
@@ -119,7 +129,7 @@ function AddFromCatalogue() {
     <Field label="Search the shared catalogue" hint="Search by name, brand, barcode or a known alternative name."><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. garri, shito, berbere" /></Field>
     <div className="row" style={{ marginTop: -6, marginBottom: 8 }}><ScanButton onCode={setQ} /></div>
     {res.loading && <Loading />}{res.error && <ErrorBox message={res.error} />}
-    {res.data && <DataTable rows={res.data} rowKey={(r) => r.id} empty={<>No match. Try another spelling, or <em>Suggest new product</em>.</>} columns={[
+    {res.data && <DataTable rows={res.data} rowKey={(r) => r.id} empty={<>No match. Try another spelling, or use <em>Add a product</em> to create it.</>} columns={[
       { key: 'name', header: 'Product', render: (r) => <><strong>{r.name}</strong> <span className="muted small">{r.brand ?? ''} {r.pack_size ? `${Number(r.pack_size)} ${r.pack_unit ?? ''}` : ''}</span></> },
       { key: 'a', header: '', render: (r) => r.already_listed ? <Badge tone="ok">Already listed</Badge> : <Button size="sm" onClick={() => setPick(r)}>List this</Button> }]} />}
     {pick && <Modal open onClose={() => setPick(null)} title={`List ${pick.name}`}>
@@ -130,22 +140,22 @@ function AddFromCatalogue() {
   </>);
 }
 
-function Suggest() {
-  const toast = useToast();
+function NewProduct({ onDone }: { onDone: () => void }) {
+  const { storeId } = useVendor(); const toast = useToast();
   const regions = useApi<Region[]>('/regions'); const cats = useApi<{ slug: string; name: string }[]>('/categories');
   const [img, setImg] = useState<string | null>(null); const [countries, setCountries] = useState<string[]>([]);
-  const [done, setDone] = useState(false);
   const all = Array.from(new Map((regions.data ?? []).flatMap((r) => r.countries).map((c) => [c.slug, c])).values()).sort((a, b) => a.name.localeCompare(b.name));
   const a = useAction(async (v: Record<string, string>) => {
-    await post('/vendor/products/suggest', { name: v.name, brand: v.brand || undefined, category_slug: v.category || undefined, description: v.description || undefined, pack_size: v.pack_size ? Number(v.pack_size) : undefined,
-      pack_unit: v.pack_unit || undefined, barcode: v.barcode || undefined, ingredients: v.ingredients || undefined, sold_by: v.sold_by, country_slugs: countries, image_url: img });
-    toast('Suggestion sent for review.'); setDone(true);
+    const r = await post(`/vendor/stores/${storeId}/products`, { name: v.name, brand: v.brand || undefined, category_slug: v.category || undefined, description: v.description || undefined, pack_size: v.pack_size ? Number(v.pack_size) : undefined,
+      pack_unit: v.pack_unit || undefined, barcode: v.barcode || undefined, ingredients: v.ingredients || undefined, sold_by: v.sold_by, country_slugs: countries, image_url: img,
+      price_cents: dollarsToCents(v.price), stock: Number(v.stock || 0) });
+    toast(r.needs_review ? 'Product added. It goes live once our team approves it.' : 'Product added and live.'); onDone();
   });
-  if (done) return <Notice tone="ok">Thank you. Our catalogue team will review your product. Once approved you can list it with your own price and stock. <button className="link" onClick={() => { setDone(false); setImg(null); setCountries([]); }}>Suggest another</button></Notice>;
-  return (<Card><p className="muted">Can’t find a product in the catalogue? Suggest it. It stays hidden from customers until our team approves it.</p>
+  return (<Card><p className="muted">Create a product and list it in this store in one step. If it is already in the shared catalogue, use the <em>From shared catalogue</em> tab instead so there are no duplicates.</p>
     <form onSubmit={(e) => a.run(formValues(e))}>{a.error && <Notice tone="error">{a.error}</Notice>}
       <ImageUpload value={img} onChange={setImg} label="Photo" />
       <div className="form-grid"><Field label="Product name"><Input name="name" required minLength={2} /></Field><Field label="Brand (optional)"><Input name="brand" /></Field>
+        <Field label="Your price (CAD)"><Input name="price" type="number" step="0.01" min="0.01" required inputMode="decimal" /></Field><Field label="Stock on hand"><Input name="stock" type="number" min="0" step="1" defaultValue="0" required inputMode="numeric" /></Field>
         <Field label="Category"><Select name="category" defaultValue=""><option value="">Choose…</option>{cats.data?.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</Select></Field>
         <Field label="Sold by"><Select name="sold_by" defaultValue="unit"><option value="unit">Unit / pack</option><option value="weight">Weight</option></Select></Field>
         <Field label="Pack size"><Input name="pack_size" type="number" step="0.001" min="0" inputMode="decimal" /></Field><Field label="Unit (g, kg, ml…)"><Input name="pack_unit" maxLength={20} /></Field>
@@ -153,7 +163,7 @@ function Suggest() {
       <Field label="Description"><Textarea name="description" maxLength={1500} /></Field><Field label="Ingredients (only if printed on the pack)"><Textarea name="ingredients" maxLength={1000} /></Field>
       <fieldset style={{ border: 0, padding: 0 }}><legend className="label" style={{ fontWeight: 600, fontSize: '.9rem' }}>Culinary tradition (countries)</legend>
         <div className="pill-list">{all.map((c) => <label key={c.slug} className="check"><input type="checkbox" checked={countries.includes(c.slug)} onChange={(e) => setCountries(e.target.checked ? [...countries, c.slug] : countries.filter((x) => x !== c.slug))} />{c.name}</label>)}</div></fieldset>
-      <Button type="submit" busy={a.busy}>Send suggestion</Button></form></Card>);
+      <Button type="submit" busy={a.busy}>Add product</Button></form></Card>);
 }
 
 type Imp = { dry_run: boolean; total_rows: number; succeeded: number; failed: number; errors: { row: number; message: string }[] };

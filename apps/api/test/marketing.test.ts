@@ -26,7 +26,7 @@ describe('access', () => {
     for (const c of [cust, support]) expect([401, 403]).toContain((await call(c, 'GET', '/api/marketing/dashboard')).status);
     expect((await call(null, 'GET', '/api/marketing/dashboard')).status).toBe(401);
     expect((await call(mk, 'GET', '/api/marketing/dashboard')).status).toBe(200);
-    expect((await call(owner, 'GET', '/api/marketing/dashboard')).status).toBe(200);
+    expect((await call(owner, 'GET', '/api/marketing/dashboard')).status).toBe(401);   // the admin account opens the admin window only
   });
 });
 

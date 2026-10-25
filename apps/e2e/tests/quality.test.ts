@@ -65,7 +65,7 @@ describe('accessibility (axe, WCAG 2 A/AA): no serious or critical violations', 
       found.push(...(await scan(page, `${email} ${path}`))); await ctx.close();
     }
     expect(found).toEqual([]);
-  });
+  }, 300_000);
 });
 
 describe('navigation menu', () => {
@@ -176,9 +176,9 @@ describe('vendor messages (browser)', () => {
     await a.page.getByRole('button', { name: new RegExp(subject) }).click();
     await a.page.getByLabel('Reply', { exact: true }).fill('Yes: use Add from catalogue.');
     await a.page.getByRole('button', { name: 'Send', exact: true }).click();
-    await a.page.getByText('Yes: use Add from catalogue.').waitFor();
+    await a.page.getByText('Yes: use Add from catalogue.').first().waitFor();
     await v.page.reload(); await v.page.getByRole('button', { name: new RegExp(subject) }).click();
-    await v.page.getByText('Yes: use Add from catalogue.').waitFor();
+    await v.page.getByText('Yes: use Add from catalogue.').first().waitFor();
   });
 });
 

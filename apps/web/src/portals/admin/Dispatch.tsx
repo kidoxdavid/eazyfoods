@@ -55,8 +55,8 @@ export function Drivers() {
           columns={[
             { key: 'n', header: 'Driver', render: (r) => <><strong>{r.full_name}</strong><div className="small muted">{r.email} · {r.phone}{r.vehicle ? ` · ${r.vehicle}` : ''}</div></> },
             { key: 's', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
-            { key: 'l', header: 'Licence verified', render: (r) => <Switch checked={r.licence_verified} label="Licence verified" onChange={(v) => act.run(() => patch(`/admin/drivers/${r.id}`, { licence_verified: v }), 'Updated', reload)} /> },
-            { key: 'b', header: 'Background check', render: (r) => <Switch checked={r.background_check_verified} label="Background check" onChange={(v) => act.run(() => patch(`/admin/drivers/${r.id}`, { background_check_verified: v }), 'Updated', reload)} /> },
+            { key: 'l', header: 'Licence verified', render: (r) => <Switch checked={r.licence_verified} label="Licence verified" hideLabel onChange={(v) => act.run(() => patch(`/admin/drivers/${r.id}`, { licence_verified: v }), 'Updated', reload)} /> },
+            { key: 'b', header: 'Background check', render: (r) => <Switch checked={r.background_check_verified} label="Background check" hideLabel onChange={(v) => act.run(() => patch(`/admin/drivers/${r.id}`, { background_check_verified: v }), 'Updated', reload)} /> },
             { key: 'j', header: 'Active jobs', render: (r) => r.active_jobs },
             { key: 'a', header: '', render: (r) => (
               <div className="row wrap">

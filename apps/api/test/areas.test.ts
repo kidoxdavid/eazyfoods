@@ -16,7 +16,7 @@ describe('separate shop and staff sign-ins', () => {
     const shop = await signIn('customer@example.test', 'shop');
     const staff = await signIn('admin@example.test', 'staff');
     expect(shop.startsWith('ez_session=')).toBe(true);
-    expect(staff.startsWith('ez_staff=')).toBe(true);
+    expect(staff.startsWith('ez_admin=')).toBe(true);
     const both = `${shop}; ${staff}`;
     expect((await raw(both, '/api/auth/me')).json().email).toBe('customer@example.test');                 // the shop sees the customer
     expect((await raw(both, '/api/auth/me', STAFF)).json().email).toBe('admin@example.test');              // staff pages see the admin
@@ -44,8 +44,8 @@ describe('separate shop and staff sign-ins', () => {
     // a customer's own shop sign-in is never a staff sign-in, even if the same token is presented as one
     const u = await newCustomer();
     const token = u.cookie.slice('ez_session='.length);
-    expect((await raw(`${u.cookie}; ez_staff=${token}`, '/api/auth/me', STAFF)).json()).toBeNull();
-    expect((await raw(`${u.cookie}; ez_staff=${token}`, '/api/admin/control/features')).statusCode).toBe(401);
+    expect((await raw(`${u.cookie}; ez_admin=${token}`, '/api/auth/me', STAFF)).json()).toBeNull();
+    expect((await raw(`${u.cookie}; ez_admin=${token}`, '/api/admin/control/features')).statusCode).toBe(401);
     expect((await app.inject({ method: 'POST', url: '/api/auth/staff-session', headers: { cookie: u.cookie, ...RAW } })).statusCode).toBe(404);   // the "continue as" shortcut is gone
     expect((await raw(u.cookie, '/api/auth/me')).json().email).toBe(u.email);                                                                          // the shop still works
   });

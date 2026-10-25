@@ -7,12 +7,12 @@ import { pool } from '../db/pool.js';
 export const storeRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { region?: string } }>('/stores', async (req) => {
     const { rows } = await pool.query(
-      `SELECT s.slug, s.name, s.description, s.city, s.is_open, s.min_order_cents, s.is_test_data,
+      `SELECT s.slug, s.name, s.description, s.city, s.is_open, s.min_order_cents, s.is_test_data, s.logo_url, s.cover_url,
               COALESCE(json_agg(DISTINCT jsonb_build_object('slug', r.slug, 'name', r.name)) FILTER (WHERE r.id IS NOT NULL), '[]') AS regions
          FROM storefronts s
          LEFT JOIN store_regions sr ON sr.store_id = s.id LEFT JOIN regions r ON r.id = sr.region_id
         WHERE s.orderable AND s.kind = 'grocery' AND ($1::text IS NULL OR EXISTS (SELECT 1 FROM store_regions x JOIN regions rr ON rr.id = x.region_id WHERE x.store_id = s.id AND rr.slug = $1))
-        GROUP BY s.id, s.slug, s.name, s.description, s.city, s.is_open, s.min_order_cents, s.is_test_data ORDER BY s.name`,
+        GROUP BY s.id, s.slug, s.name, s.description, s.city, s.is_open, s.min_order_cents, s.is_test_data, s.logo_url, s.cover_url ORDER BY s.name`,
       [req.query.region ?? null],
     );
     return rows;

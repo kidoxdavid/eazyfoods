@@ -21,7 +21,7 @@ export const vendorRoutes: FastifyPluginAsync = async (app) => {
     const { storeId } = z.object({ storeId: z.string().uuid() }).parse(req.params);
     if (!(await canManageStore(req.user!, storeId))) return reply.code(403).send({ error: 'forbidden' });
     const { rows } = await pool.query(
-      `SELECT o.id AS offer_id, o.product_id, p.name, p.slug, o.price_cents, o.compare_at_cents, o.is_active, o.stock_on_hand, o.stock_reserved,
+      `SELECT o.id AS offer_id, o.product_id, p.name, p.slug, p.status AS product_status, o.price_cents, o.compare_at_cents, o.is_active, o.stock_on_hand, o.stock_reserved,
               (o.stock_on_hand - o.stock_reserved) AS available, (o.stock_on_hand - o.stock_reserved) <= o.low_stock_threshold AS low_stock,
               (SELECT COALESCE(jsonb_agg(jsonb_build_object('min_qty', t.min_qty, 'unit_price_cents', t.unit_price_cents) ORDER BY t.min_qty), '[]') FROM offer_tiers t WHERE t.offer_id = o.id) AS tiers
          FROM store_offers o JOIN products p ON p.id = o.product_id WHERE o.store_id = $1 ORDER BY p.name`, [storeId]);
