@@ -2,12 +2,13 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { SkelRows } from './skeletons';
 import { useFeature } from './features';
 import { useT } from './i18n';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { useFavourites } from './favs';
 import { money, packLabel, post, unitPrice, unitText, type StoreCard } from './api';
 import { SaveToList } from './savelist';
 import { ProductArt, SafeImg, StoreBanner, StoreMark, Stars } from './art';
 import { useCart } from './cart';
-import { IconChevron, IconChevronL, IconEye, IconMinus, IconPlus } from './icons';
+import { IconChevron, IconChevronL, IconEye, IconHeart, IconMinus, IconPlus } from './icons';
 import { Badge, Button, Loading, Modal, Notice, Stepper } from './ui';
 import { useApi } from './hooks';
 
@@ -47,6 +48,8 @@ export function QuickAdd({ p }: { p: Card }) {
 
 export function ProductCard({ p }: { p: Card }) {
   const t = useT();
+  const fav = useFavourites(); const loc = useLocation();
+  const isSaved = fav.has(p.slug);
   const mbOn = useFeature('shop.multibuy');
   useAdImpression(p.sponsored_campaign_id);
   const [quick, setQuick] = useState(false);
@@ -61,6 +64,9 @@ export function ProductCard({ p }: { p: Card }) {
         {p.on_sale && off <= 0 && <span className="ribbon">Deal</span>}
         {!p.in_stock && <span className="ribbon grey">{t('Out of stock')}</span>}
       </Link>
+      {fav.me
+        ? <button type="button" className={`heart ${isSaved ? 'on' : ''}`} aria-pressed={isSaved} aria-label={isSaved ? `Remove ${p.name} from saved` : `Save ${p.name}`} onClick={() => fav.toggle(p.slug)}><IconHeart width={18} height={18} fill={isSaved ? 'currentColor' : 'none'} /></button>
+        : <Link className="heart" to={`/signin?next=${encodeURIComponent(loc.pathname + loc.search)}`} aria-label={`Sign in to save ${p.name}`}><IconHeart width={18} height={18} /></Link>}
       <button type="button" className="qv" onClick={() => setQuick(true)} aria-label={`Quick view: ${p.name}`}><IconEye width={16} height={16} /><span className="qv-txt">{t('Quick view')}</span></button>
       {quick && <QuickView slug={p.slug} onClose={() => setQuick(false)} />}
       <div className="pbody">
