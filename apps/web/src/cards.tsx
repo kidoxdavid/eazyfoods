@@ -174,7 +174,7 @@ export function RecentStrip({ items }: { items: Card[] }) {
   );
   return (
     <section className="shelf recent" aria-label="Recently viewed">
-      <div className="shelf-head"><div><h2>Recently viewed</h2><p className="muted">Pick up where you left off</p></div></div>
+      <h2 className="rhead">Recently viewed</h2>
       <div className={`rbox ${moving ? 'moving' : ''}`} ref={box}>
         <ul className="rtrack" role="list" ref={track} style={moving ? { animationDuration: `${Math.max(12, items.length * 4)}s` } : undefined}>
           {items.map((p) => tile(p))}{moving && items.map((p) => tile(p, true))}

@@ -325,3 +325,6 @@ main { padding-top: 14px; }
 .rtext { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .rname { font-size: .72rem; font-weight: 600; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .rprice { font-size: .72rem; font-weight: 700; color: var(--green); }
+
+.shelf.recent { margin: 10px 0; } .rhead { margin: 0 0 4px; font-size: .95rem; line-height: 1.2; }
+.rtrack { padding: 0; } .rtile { padding: 3px 6px 3px 3px; }
