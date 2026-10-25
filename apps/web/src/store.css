@@ -319,12 +319,12 @@ main { padding-top: 14px; }
 .rbox.moving .rtrack { animation: rdrift 40s linear infinite; } .rbox.moving:hover .rtrack, .rbox.moving:focus-within .rtrack { animation-play-state: paused; }
 @keyframes rdrift { to { transform: translateX(calc(-50% - 4px)); } }
 @media (prefers-reduced-motion: reduce) { .rbox.moving .rtrack { animation: none; } }
-.rtile { display: flex; align-items: center; gap: 6px; width: 118px; padding: 4px 6px 4px 4px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; text-decoration: none; color: inherit; }
-.rtile:hover { border-color: var(--line-2); box-shadow: 0 3px 10px rgba(20, 50, 35, .12); }
-.rimg { flex: 0 0 34px; width: 34px; height: 34px; border-radius: 6px; overflow: hidden; background: var(--tint); display: block; } .rimg img, .rimg svg { width: 100%; height: 100%; object-fit: cover; display: block; }
-.rtext { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.rname { font-size: .72rem; font-weight: 600; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.rprice { font-size: .72rem; font-weight: 700; color: var(--green); }
+.rvtile { display: flex; align-items: center; gap: 6px; width: 118px; padding: 4px 6px 4px 4px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; text-decoration: none; color: inherit; }
+.rvtile:hover { border-color: var(--line-2); box-shadow: 0 3px 10px rgba(20, 50, 35, .12); }
+.rvimg { flex: 0 0 34px; width: 34px; height: 34px; border-radius: 6px; overflow: hidden; background: var(--tint); display: block; } .rvimg img, .rvimg svg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rvtext { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rvname { font-size: .72rem; font-weight: 600; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rvprice { font-size: .72rem; font-weight: 700; color: var(--green); }
 
 .shelf.recent { margin: 10px 0; } .rhead { margin: 0 0 4px; font-size: .95rem; line-height: 1.2; }
-.rtrack { padding: 0; } .rtile { padding: 3px 6px 3px 3px; }
+.rtrack { padding: 0; } .rvtile { padding: 3px 6px 3px 3px; }

@@ -166,9 +166,9 @@ export function RecentStrip({ items }: { items: Card[] }) {
   if (!items.length) return null;
   const tile = (p: Card, hidden = false) => (
     <li key={(hidden ? 'c' : '') + p.slug} aria-hidden={hidden || undefined}>
-      <Link to={`/p/${p.slug}`} className="rtile" tabIndex={hidden ? -1 : undefined}>
-        <span className="rimg">{p.image_url ? <SafeImg src={p.image_url} loading="lazy" decoding="async" fallback={<ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />} /> : <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />}</span>
-        <span className="rtext"><span className="rname">{p.name}</span><span className="rprice">{money(p.min_price)}</span></span>
+      <Link to={`/p/${p.slug}`} className="rvtile" tabIndex={hidden ? -1 : undefined}>
+        <span className="rvimg">{p.image_url ? <SafeImg src={p.image_url} loading="lazy" decoding="async" fallback={<ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />} /> : <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />}</span>
+        <span className="rvtext"><span className="rvname">{p.name}</span><span className="rvprice">{money(p.min_price)}</span></span>
       </Link>
     </li>
   );
