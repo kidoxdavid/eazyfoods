@@ -5,7 +5,7 @@ import { useT } from './i18n';
 import { Link } from 'react-router-dom';
 import { money, packLabel, post, unitPrice, unitText, type StoreCard } from './api';
 import { SaveToList } from './savelist';
-import { ProductArt, StoreBanner, StoreMark, Stars } from './art';
+import { ProductArt, SafeImg, StoreBanner, StoreMark, Stars } from './art';
 import { useCart } from './cart';
 import { IconChevron, IconChevronL, IconEye, IconMinus, IconPlus } from './icons';
 import { Badge, Button, Loading, Modal, Notice, Stepper } from './ui';
@@ -56,7 +56,7 @@ export function ProductCard({ p }: { p: Card }) {
   return (
     <article className="pcard">
       <Link to={`/p/${p.slug}`} className="pimg" onClick={click} tabIndex={-1} aria-hidden="true">
-        {p.image_url ? <img src={p.image_url} alt="" loading="lazy" decoding="async" /> : <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />}
+        {p.image_url ? <SafeImg src={p.image_url} loading="lazy" decoding="async" fallback={<ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />} /> : <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />}
         {p.on_sale && off > 0 && <span className="ribbon">{off}% off</span>}
         {p.on_sale && off <= 0 && <span className="ribbon">Deal</span>}
         {!p.in_stock && <span className="ribbon grey">{t('Out of stock')}</span>}
@@ -100,7 +100,7 @@ export function QuickView({ slug, onClose }: { slug: string; onClose: () => void
       {error && <Notice tone="error">Could not load this product. <Link to={`/p/${slug}`} onClick={onClose}>Open the full page</Link></Notice>}
       {p && (
         <div className="qv-body">
-          <div className="qv-art">{p.images[0] ? <img src={p.images[0].url} alt={p.images[0].alt} /> : <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />}</div>
+          <div className="qv-art">{p.images[0] ? <SafeImg src={p.images[0].url} alt={p.images[0].alt} fallback={<ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />} /> : <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />}</div>
           <div className="qv-info">
             <span className="muted small">{[p.brand, packLabel(p), cur ? unitText(unitPrice(cur.price_cents, p.pack_size, p.pack_unit)) : ''].filter(Boolean).join(' · ')}</span>
             {cur ? (<>
@@ -149,7 +149,7 @@ export function Shelf({ title, subtitle, to, items, children }: { title: string;
 export function StoreTile({ s }: { s: StoreCard }) {
   return (
     <Link to={`/s/${s.slug}`} className="stile">
-      <div className="stile-cover">{s.cover_url ? <img src={s.cover_url} alt="" loading="lazy" /> : <StoreBanner name={s.name} />}</div>
+      <div className="stile-cover">{s.cover_url ? <SafeImg src={s.cover_url} loading="lazy" fallback={<StoreBanner name={s.name} />} /> : <StoreBanner name={s.name} />}</div>
       <div className="stile-body">
         {s.logo_url ? <img src={s.logo_url} alt="" width={44} height={44} style={{ borderRadius: '50%', objectFit: 'cover' }} /> : <StoreMark name={s.name} size={44} />}
         <div><h3>{s.name}</h3><span className="muted small">{s.city}{s.min_order_cents ? ` · $${(s.min_order_cents / 100).toFixed(0)} minimum` : ''}</span></div>

@@ -1,3 +1,4 @@
+import { useState, type ReactNode } from 'react';
 import { useId, type CSSProperties } from 'react';
 
 /**
@@ -203,4 +204,108 @@ export function Stars({ value, count }: { value: number | null | undefined; coun
       {count != null && <span className="stars-n">({count})</span>}
     </span>
   );
+}
+
+/* ---------- Department and region illustrations (original flat art, no photos needed) ---------- */
+const DEPT_HUE: Record<string, [string, string]> = {
+  'rice-grains-flour': ['#c98a1b', '#e7b84a'], 'spices-seasonings-sauces': ['#b3261e', '#e0613a'], 'fresh-produce': ['#1f7a4d', '#52b36f'], frozen: ['#2c6aa8', '#6fb1e6'],
+  'snacks-drinks': ['#7a3f98', '#c070d6'], 'soup-stew': ['#a3470f', '#e08a1e'], 'oils-butters': ['#8a7a12', '#d4c23a'], 'canned-jarred': ['#4a5a6a', '#8aa0b3'],
+  breakfast: ['#c2631a', '#f0a24a'], 'dried-fish-meat': ['#7a4a2a', '#b98458'],
+};
+const GLYPH: Record<string, JSX.Element> = {
+  'rice-grains-flour': <><path d="M16 54h68c0 20-15 30-34 30S16 74 16 54z" /><path d="M24 54c4-18 15-27 26-27s22 9 26 27z" opacity=".8" /><path d="M50 24c-6-6-5-12 0-14 5 2 6 8 0 14zM36 30c-8-2-10-8-7-12 5 0 9 5 7 12zM64 30c8-2 10-8 7-12-5 0-9 5-7 12z" /></>,
+  'spices-seasonings-sauces': <><path d="M60 26c12 2 19 14 12 32-7 18-25 28-45 23 15-5 24-13 29-27 4-10 1-18 4-28z" /><path d="M58 24c1-7 8-10 14-7-4 1-6 4-6 8z" opacity=".85" /><circle cx="30" cy="30" r="4" opacity=".7" /><circle cx="40" cy="20" r="3" opacity=".7" /><circle cx="22" cy="42" r="3" opacity=".7" /></>,
+  'fresh-produce': <><path d="M50 84C24 72 20 40 50 16c30 24 26 56 0 68z" /><path d="M50 30v52M50 52l-12-10M50 62l12-10" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" opacity=".45" /></>,
+  frozen: <><g stroke="#fff" strokeWidth="6" strokeLinecap="round" fill="none"><path d="M50 14v72M19 32l62 36M81 32L19 68" /><path d="M42 20l8 8 8-8M42 80l8-8 8 8M20 44l10 3-3 10M80 44l-10 3 3 10" strokeWidth="4" /></g></>,
+  'snacks-drinks': <><path d="M28 36h44l-6 46H34z" /><path d="M54 36l7-18h14" stroke="#fff" strokeWidth="5" fill="none" strokeLinecap="round" /><ellipse cx="50" cy="36" rx="22" ry="5" opacity=".75" /><path d="M36 54h28" stroke="currentColor" strokeWidth="4" opacity=".35" /></>,
+  'soup-stew': <><path d="M16 50h68v10c0 16-12 24-34 24S16 76 16 60z" /><path d="M10 50h8M82 50h8" stroke="#fff" strokeWidth="5" strokeLinecap="round" /><path d="M36 38c-5-6 5-10 0-18M52 38c-5-6 5-10 0-18M68 38c-5-6 5-10 0-18" stroke="#fff" strokeWidth="4" fill="none" strokeLinecap="round" opacity=".85" /></>,
+  'oils-butters': <><path d="M43 14h14v12l10 12v42a6 6 0 01-6 6H39a6 6 0 01-6-6V38l10-12z" /><path d="M50 50c-7 9-9 13-5 18 3 3 8 3 10 0 4-5 2-9-5-18z" stroke="currentColor" strokeWidth="2.5" fill="none" opacity=".5" /></>,
+  'canned-jarred': <><path d="M28 30v44c0 7 10 12 22 12s22-5 22-12V30z" /><ellipse cx="50" cy="30" rx="22" ry="8" opacity=".75" /><path d="M28 46h44M28 62h44" stroke="currentColor" strokeWidth="3.5" opacity=".35" /></>,
+  breakfast: <><path d="M18 58h64c0 17-14 26-32 26S18 75 18 58z" /><path d="M30 58c3-9 11-14 20-14s17 5 20 14z" opacity=".8" /><g stroke="#fff" strokeWidth="4" strokeLinecap="round"><path d="M50 12v10M30 20l6 8M70 20l-6 8M20 36h9M71 36h9" /></g></>,
+  'dried-fish-meat': <><path d="M14 50c14-20 36-22 50-8l18-14v44L64 58C50 72 28 70 14 50z" /><circle cx="34" cy="46" r="3.5" fill="currentColor" opacity=".55" /><path d="M46 40v20M54 38v22" stroke="currentColor" strokeWidth="3" opacity=".3" /></>,
+};
+const FALLBACK_GLYPH = <><path d="M20 44h60l-8 36H28z" /><path d="M34 44l10-22M66 44L56 22" stroke="#fff" strokeWidth="5" strokeLinecap="round" fill="none" /></>;
+
+/** A round department badge: bold flat illustration on a colour, so every department looks finished even before photos exist. */
+export function DeptArt({ slug }: { slug: string }) {
+  const [a, b] = DEPT_HUE[slug] ?? ['#1f6b47', '#4aa275'];
+  const id = `dg-${slug}`;
+  return (
+    <svg viewBox="0 0 100 100" aria-hidden="true" style={{ width: '100%', height: '100%', margin: 0, display: 'block', color: a }}>
+      <defs><linearGradient id={id} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={a} /><stop offset="1" stopColor={b} /></linearGradient></defs>
+      <rect width="100" height="100" fill={`url(#${id})`} />
+      <g fill="#fff">{GLYPH[slug] ?? FALLBACK_GLYPH}</g>
+    </svg>
+  );
+}
+
+const REGION_HUE: Record<string, [string, string]> = {
+  'west-africa': ['#14503a', '#2e9a68'], 'east-africa': ['#b4511a', '#f0a24a'], 'central-africa': ['#0e5f57', '#34b3a0'], 'north-africa': ['#1d4f8c', '#69a8e6'], 'southern-africa': ['#5b2a6b', '#c0568a'],
+};
+const KENTE = ['#f2b632', '#c8302b', '#1c1c1c', '#2e9a68'];
+
+/**
+ * A wide banner for each region, drawn from what the region is known for:
+ * West Africa: baobab and kente cloth. East Africa: Kilimanjaro and acacia savanna. Central Africa: Congo rainforest, river and Kuba cloth.
+ * North Africa: the pyramids, dunes and palms. Southern Africa: Table Mountain and Ndebele beadwork.
+ */
+export function RegionArt({ slug, className = '' }: { slug: string; className?: string }) {
+  const [a, b] = REGION_HUE[slug] ?? ['#1f6b47', '#4aa275'];
+  const id = `rg-${slug}`;
+  let motif: JSX.Element;
+  switch (slug) {
+    case 'west-africa': motif = (<>
+      <circle cx="152" cy="34" r="15" fill="#ffd166" />
+      <rect x="0" y="80" width="200" height="20" fill="#0d3a28" opacity=".55" />
+      <g stroke="#0b3322" strokeWidth="4.5" strokeLinecap="round" fill="none"><path d="M88 50C78 45 70 40 62 37M90 50C85 42 82 35 79 30M100 50V27M110 50C115 42 118 35 121 30M112 50C122 45 130 40 138 37" /></g>
+      <path d="M86 84C91 74 91 62 87 50h26c-4 12-4 24 1 34z" fill="#0b3322" />
+      <g fill="#0b3322">{[[62, 35, 7], [79, 28, 7], [100, 24, 8], [121, 28, 7], [138, 35, 7], [72, 40, 5], [128, 40, 5]].map(([x, y, r], i) => <circle key={i} cx={x} cy={y} r={r} />)}</g>
+      {Array.from({ length: 20 }, (_, i) => <rect key={i} x={i * 10} y="88" width="10" height="12" fill={KENTE[i % 4]} />)}
+      {Array.from({ length: 10 }, (_, i) => <path key={'k' + i} d={`M${i * 20 + 10} 90l4 4-4 4-4-4z`} fill="#fff" opacity=".85" />)}
+    </>); break;
+    case 'east-africa': motif = (<>
+      <circle cx="40" cy="30" r="13" fill="#ffe08a" />
+      <path d="M14 84L66 38l16-8 16 8 56 46z" fill="#6b3512" opacity=".8" />
+      <path d="M66 38l16-8 16 8-7 6-7-5-6 7-6-6z" fill="#fff" opacity=".95" />
+      <rect x="0" y="82" width="200" height="18" fill="#8a3d10" opacity=".6" />
+      <path d="M156 86V66" stroke="#3a1a08" strokeWidth="4" strokeLinecap="round" /><path d="M156 68c-8-3-14-3-18 0M156 68c8-3 14-3 18 0" stroke="#3a1a08" strokeWidth="3" fill="none" strokeLinecap="round" />
+      <ellipse cx="156" cy="62" rx="26" ry="6" fill="#3a1a08" /><ellipse cx="140" cy="64" rx="12" ry="4" fill="#3a1a08" /><ellipse cx="172" cy="64" rx="12" ry="4" fill="#3a1a08" />
+    </>); break;
+    case 'central-africa': motif = (<>
+      {Array.from({ length: 10 }, (_, i) => <g key={i}><rect x={i * 20} y="0" width="20" height="16" fill="#0a403a" opacity=".85" /><path d={`M${i * 20 + 10} 2l6 6-6 6-6-6z`} fill="#f2d49b" /><path d={`M${i * 20 + 4} 8h12M${i * 20 + 10} 2v12`} stroke="#0a403a" strokeWidth="1.5" /></g>)}
+      <g fill="#0a403a">{[[14, 62, 18], [50, 56, 20], [90, 60, 18], [134, 54, 22], [176, 60, 20]].map(([x, y, r], i) => <circle key={i} cx={x} cy={y} r={r} opacity=".6" />)}</g>
+      <g fill="#07342f">{[[0, 74, 20], [32, 70, 22], [70, 74, 20], [112, 72, 22], [150, 74, 20], [188, 72, 22]].map(([x, y, r], i) => <circle key={i} cx={x} cy={y} r={r} />)}</g>
+      <path d="M100 100C70 92 128 84 98 76S112 64 100 56" stroke="#a9ecff" strokeWidth="7" strokeLinecap="round" fill="none" opacity=".9" />
+    </>); break;
+    case 'north-africa': motif = (<>
+      <path d="M30 14a10 10 0 1 0 9 17a8 8 0 1 1-9-17z" fill="#fff" opacity=".95" />
+      <path d="M22 84L68 34l46 50z" fill="#ecc97e" /><path d="M68 34l46 50H68z" fill="#000" opacity=".16" />
+      <path d="M100 84l30-32 30 32z" fill="#dcb466" /><path d="M130 52l30 32h-30z" fill="#000" opacity=".16" />
+      <path d="M146 84l16-17 16 17z" fill="#cfa557" />
+      <path d="M0 84C36 76 76 90 118 83S180 77 200 84V100H0z" fill="#f3dca5" />
+      <path d="M176 90C178 78 180 68 177 58" stroke="#12351f" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+      <g stroke="#12351f" strokeWidth="3" strokeLinecap="round" fill="none"><path d="M177 58c-8-8-16-8-22-4M177 58c8-8 16-8 22-4M177 58c-4-10-2-16 2-20M177 58c-8-2-14 2-18 8" /></g>
+    </>); break;
+    case 'southern-africa': motif = (<>
+      <circle cx="170" cy="26" r="11" fill="#ffd166" />
+      <path d="M8 84L46 46l12-5h96l14 6 28 37z" fill="#3b1a49" />
+      <path d="M46 42c10-8 28-7 38-3 12-8 36-4 46 3 10-4 22-3 26 2z" fill="#fff" opacity=".9" />
+      <rect x="0" y="82" width="200" height="18" fill="#2d6fa8" opacity=".7" />
+      <path d="M0 88c10-4 20 4 30 0s20-4 30 0 20 4 30 0 20-4 30 0 20 4 30 0 20-4 30 0 20 4 20 0" stroke="#fff" strokeWidth="1.8" fill="none" opacity=".6" />
+      {Array.from({ length: 20 }, (_, i) => <path key={i} d={`M${i * 10} 100l5-9 5 9z`} fill={['#fff', '#f2b632', '#1fa5a0', '#e04f4f'][i % 4]} />)}
+    </>); break;
+    default: motif = <circle cx="100" cy="50" r="24" fill="rgba(255,255,255,.35)" />;
+  }
+  return (
+    <svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true" className={className} style={{ width: '100%', height: '100%', display: 'block' }}>
+      <defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={a} /><stop offset="1" stopColor={b} /></linearGradient></defs>
+      <rect width="200" height="100" fill={`url(#${id})`} />{motif}
+    </svg>
+  );
+}
+
+/** A picture that quietly falls back to its illustration if the file cannot be loaded (never a broken-image icon). */
+export function SafeImg({ src, alt = '', fallback, ...rest }: { src: string; alt?: string; fallback: ReactNode } & React.ImgHTMLAttributes<HTMLImageElement>) {
+  const [bad, setBad] = useState(false);
+  return bad ? <>{fallback}</> : <img src={src} alt={alt} onError={() => setBad(true)} {...rest} />;
 }

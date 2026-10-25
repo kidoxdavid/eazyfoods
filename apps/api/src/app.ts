@@ -33,7 +33,7 @@ import { badgeRoutes } from './routes/badges.js';
 import { uploadRoutes } from './routes/uploads.js';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
-import { publicDir } from './lib/storage.js';
+import { mimeOf, readStored } from './lib/storage.js';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -55,7 +55,19 @@ export async function buildApp() {
   await app.register(cookie);
   await app.register(rateLimit, { global: false });
   await app.register(multipart);
-  await app.register(fastifyStatic, { root: publicDir, prefix: '/uploads/', decorateReply: false, immutable: true, maxAge: '30d', dotfiles: 'deny' });
+  // Uploads come from disk, or from the database when the host wiped the disk; either way the URL never changes.
+  app.get<{ Params: { key: string } }>('/uploads/:key', async (req, reply) => {
+    const buf = await readStored(req.params.key, 'public');
+    if (!buf) return reply.code(404).send({ error: 'not_found' });
+    reply.header('content-type', mimeOf(req.params.key)).header('cache-control', 'public, max-age=2592000, immutable').header('x-content-type-options', 'nosniff').header('accept-ranges', 'bytes');
+    const m = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range ?? ''));   // video players (Safari especially) ask for byte ranges
+    if (m && (m[1] || m[2])) {
+      const start = m[1] ? Number(m[1]) : Math.max(0, buf.length - Number(m[2])); const end = m[1] && m[2] ? Math.min(Number(m[2]), buf.length - 1) : buf.length - 1;
+      if (start > end || start >= buf.length) return reply.code(416).header('content-range', `bytes */${buf.length}`).send();
+      return reply.code(206).header('content-range', `bytes ${start}-${end}/${buf.length}`).header('content-length', end - start + 1).send(buf.subarray(start, end + 1));
+    }
+    return reply.send(buf);
+  });
 
   app.decorateRequest('user', null);
   app.addHook('onRequest', loadUser);

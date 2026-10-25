@@ -9,7 +9,7 @@ import { useAction, useApi } from '../hooks';
 import { useToast } from '../toast';
 import { useAuth } from '../auth';
 import { usePlace } from '../place';
-import { ProductArt, Stars } from '../art';
+import { ProductArt, SafeImg, Stars } from '../art';
 import { Badge, Button, ErrorBox, Loading, Notice } from '../ui';
 import { AddToBasket, BasketBar, Price, Shelf, type Card } from '../cards';
 import { IconShield, IconTruck } from '../icons';
@@ -99,7 +99,7 @@ export function ProductPage() {
       <nav className="crumbs" aria-label="Breadcrumb"><Link to="/">Home</Link><span>›</span>{p.category && <><Link to={`/search?category=${p.category_slug}`}>{p.category}</Link><span>›</span></>}{p.name}</nav>
       <div className="pdp">
         <div className="pdp-gallery">
-          <div className="pdp-main">{p.images[0] ? <img src={p.images[0].url} alt={p.images[0].alt} /> : <ProductArt name={p.name} brand={p.brand} category={p.category} size={pack} />}</div>
+          <div className="pdp-main">{p.images[0] ? <SafeImg src={p.images[0].url} alt={p.images[0].alt} fallback={<ProductArt name={p.name} brand={p.brand} category={p.category} size={pack} />} /> : <ProductArt name={p.name} brand={p.brand} category={p.category} size={pack} />}</div>
           {!p.images[0] && <p className="pdp-note">Illustration of the pack. Stores add real photos.</p>}
         </div>
 

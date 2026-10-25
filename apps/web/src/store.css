@@ -307,3 +307,5 @@ main { padding-top: 14px; }
 .skel-rows { display: grid; gap: 8px; } .skel-row { display: flex; align-items: center; gap: 12px; margin: 0; } .skel-thumb { width: 56px; height: 56px; border-radius: 10px; flex: none; }
 .skel-pdp { pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+
+.quad-art { aspect-ratio: 2 / 1; border-radius: 10px; overflow: hidden; }

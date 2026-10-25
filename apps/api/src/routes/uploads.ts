@@ -24,7 +24,7 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
     if (!vendorIdsOf(req.user!).length && !isStaff(req.user)) throw forbidden();
     const buf = await readFile(req);
     const t = sniff(buf, ['jpg', 'png', 'webp']);
-    return save(buf, t.ext, 'public');
+    return await save(buf, t.ext, 'public');
   });
 
   // A photo for a review: only customers with a delivered order, a few per hour. Staff can hide any review that misuses it.
@@ -34,7 +34,7 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
     if (!ok) throw forbidden('You can add photos once you have received an order.');
     const buf = await readFile(req);
     const t = sniff(buf, ['jpg', 'png', 'webp']);
-    return save(buf, t.ext, 'public');
+    return await save(buf, t.ext, 'public');
   });
 
   // Short videos (MP4 or WebM, 25 MB at most): homepage banners (staff who manage content) and store, kitchen or dish videos (vendors allowed the 'videos' capability).
@@ -49,7 +49,7 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
     const buf = await part.toBuffer();
     if (part.file.truncated) throw bad('too_large', 'Video is too large (25 MB maximum). Use a shorter clip or lower resolution.');
     const t = sniff(buf, ['mp4', 'webm']);
-    return save(buf, t.ext, 'public');
+    return await save(buf, t.ext, 'public');
   });
 
   // Business documents are private: stored outside the public directory and downloadable only by staff who verify vendors.
@@ -59,7 +59,7 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
     const buf = await readFile(req);
     const kind = z.enum(['business_licence', 'gst_registration', 'food_premises_permit', 'food_handler_cert', 'id', 'other']).parse((req.query as any).kind);
     const t = sniff(buf, ['jpg', 'png', 'webp', 'pdf']);
-    const { url } = save(buf, t.ext, 'private');
+    const { url } = await save(buf, t.ext, 'private');
     const r = await pool.query(`INSERT INTO vendor_documents(vendor_id, kind, url) VALUES ($1,$2,$3) RETURNING id, kind, status`, [vids[0], kind, url]);
     return reply.code(201).send(r.rows[0]);
   });
@@ -73,7 +73,7 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
     const d = (await pool.query('SELECT url FROM vendor_documents WHERE id = $1', [z.string().uuid().parse(req.params.id)])).rows[0];
     if (!d?.url?.startsWith('private:')) return reply.code(404).send({ error: 'not_found' });
     const key = d.url.slice(8);
-    const stream = openPrivate(key);
+    const stream = await openPrivate(key);
     if (!stream) return reply.code(404).send({ error: 'not_found' });
     reply.header('content-type', key.endsWith('.pdf') ? 'application/pdf' : `image/${key.endsWith('.jpg') ? 'jpeg' : key.split('.')[1]}`).header('content-disposition', 'attachment');
     return reply.send(stream);

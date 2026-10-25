@@ -3,7 +3,7 @@ import { SkelGrid, SkelStore } from '../skeletons';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { money } from '../api';
 import { useApi } from '../hooks';
-import { ProductArt, StoreBanner, StoreMark } from '../art';
+import { ProductArt, SafeImg, StoreBanner, StoreMark } from '../art';
 import { AddToBasket, BasketBar } from '../cards';
 import { paletteCss } from '../theme';
 import { Badge, ErrorBox, Loading, Notice } from '../ui';
@@ -22,7 +22,7 @@ type K = Omit<KCard, 'dish_count' | 'from_cents'> & { postal_code?: string | nul
 function KitchenTile({ k }: { k: KCard }) {
   return (
     <Link to={`/k/${k.slug}`} className="stile">
-      <div className="stile-cover">{k.cover_url ? <img src={k.cover_url} alt="" loading="lazy" /> : <StoreBanner name={k.name} />}</div>
+      <div className="stile-cover">{k.cover_url ? <SafeImg src={k.cover_url} loading="lazy" fallback={<StoreBanner name={k.name} />} /> : <StoreBanner name={k.name} />}</div>
       <div className="stile-body">
         {k.logo_url ? <img src={k.logo_url} alt="" width={44} height={44} style={{ borderRadius: '50%', objectFit: 'cover' }} /> : <StoreMark name={k.name} size={44} />}
         <div><h3>{k.name}</h3><span className="muted small">{k.kitchen_type === 'restaurant' && k.address_line ? `${k.address_line}, ${k.city}` : k.area ? `${k.city} · ${k.area}` : k.city}{k.from_cents ? ` · dishes from ${money(k.from_cents)}` : ''}</span></div>

@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { recentSlugs, type Region, type StoreCard } from '../api';
 import { useAuth } from '../auth';
 import { useApi } from '../hooks';
-import { ProductArt } from '../art';
+import { DeptArt, ProductArt, RegionArt } from '../art';
 import { Shelf, StoreList, type Card } from '../cards';
 import { HeroCarousel, type Slide } from '../carousel';
 import { ErrorBox, Loading, Notice } from '../ui';
@@ -28,7 +28,7 @@ function RegionQuad({ r }: { r: Region }) {
   return (
     <Link to={`/search?region=${r.slug}`} className="quad">
       <h3>Shop {r.name} groceries</h3>
-      <div className="quad-grid">{(items.length ? items : Array.from({ length: 4 }, () => null)).map((p, i) => <div key={i}>{p ? <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} /> : null}</div>)}</div>
+      <div className="quad-art"><RegionArt slug={r.slug} /></div>
       <span className="go">See all {r.name.split(' ')[0]} products</span>
     </Link>
   );
@@ -155,5 +155,5 @@ function CatTile({ slug, name }: { slug: string; name: string }) {
   const { data } = useApi<Search>(`/search?category=${slug}&in_stock=1`);
   const p = data?.results[0];
   if (data && !p) return null;
-  return <li><Link to={`/search?category=${slug}`} className="dept"><div>{p && <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} />}</div>{name.replace(' & ', ' & ')}</Link></li>;
+  return <li><Link to={`/search?category=${slug}`} className="dept"><div><DeptArt slug={slug} /></div>{name.replace(' & ', ' & ')}</Link></li>;
 }

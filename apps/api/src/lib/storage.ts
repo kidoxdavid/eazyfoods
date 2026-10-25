@@ -1,8 +1,9 @@
-import { mkdirSync, writeFileSync, createReadStream, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { config } from '../config.js';
 import { bad } from './errors.js';
+import { pool } from '../db/pool.js';
 
 /**
  * Local-disk storage behind a tiny interface so S3-compatible storage can replace it without touching callers.
@@ -30,17 +31,31 @@ export function sniff(buf: Buffer, allow: ('jpg' | 'png' | 'webp' | 'pdf' | 'mp4
   return t;
 }
 
-export function save(buf: Buffer, ext: string, visibility: 'public' | 'private'): { key: string; url: string } {
+const MIME: Record<string, string> = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', pdf: 'application/pdf', mp4: 'video/mp4', webm: 'video/webm' };
+export const mimeOf = (key: string) => MIME[key.split('.').pop() ?? ''] ?? 'application/octet-stream';
+
+/** Write to disk (fast) and to the database (survives redeploys). */
+export async function save(buf: Buffer, ext: string, visibility: 'public' | 'private'): Promise<{ key: string; url: string }> {
   const key = randomBytes(16).toString('hex') + '.' + ext;
   writeFileSync(join(visibility === 'public' ? publicDir : privateDir, key), buf);
+  await pool.query('INSERT INTO uploaded_files(key, visibility, mime, data) VALUES ($1,$2,$3,$4)', [key, visibility, mimeOf(key), buf]);
   return { key, url: visibility === 'public' ? `/uploads/${key}` : `private:${key}` };
 }
 
-export function openPrivate(key: string) {
+/** The file's bytes from disk, or from the database when the disk was wiped (the disk copy is then restored). */
+export async function readStored(key: string, visibility: 'public' | 'private'): Promise<Buffer | null> {
+  if (!/^[a-f0-9]{32}\.(jpg|png|webp|pdf|mp4|webm)$/.test(key)) return null;
+  const p = join(visibility === 'public' ? publicDir : privateDir, key);
+  if (existsSync(p)) return readFileSync(p);
+  const r = (await pool.query('SELECT data FROM uploaded_files WHERE key = $1 AND visibility = $2', [key, visibility])).rows[0];
+  if (!r) return null;
+  try { writeFileSync(p, r.data); } catch { /* read-only disk: serve from the database each time */ }
+  return r.data as Buffer;
+}
+
+export async function openPrivate(key: string) {
   if (!/^[a-f0-9]{32}\.(jpg|png|webp|pdf)$/.test(key)) throw bad('bad_key', 'Invalid file.');
-  const p = join(privateDir, key);
-  if (!existsSync(p)) return null;
-  return createReadStream(p);
+  return readStored(key, 'private');
 }
 
 /** Only accept image URLs that we issued, so a vendor cannot hotlink arbitrary third-party URLs into the catalogue. */
