@@ -146,6 +146,44 @@ export function Shelf({ title, subtitle, to, items, children }: { title: string;
   );
 }
 
+/** Recently viewed: small tiles in one row. When they do not fit the screen the row drifts sideways on its own (pauses on hover or focus; still, and swipeable, for reduced motion). */
+export function RecentStrip({ items }: { items: Card[] }) {
+  const box = useRef<HTMLDivElement>(null);
+  const track = useRef<HTMLUListElement>(null);
+  const [moving, setMoving] = useState(false);
+  useEffect(() => {
+    const measure = () => {
+      const b = box.current, t = track.current; if (!b || !t) return;
+      const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      // when moving the track holds two copies, so one copy is half of it
+      const one = moving ? t.scrollWidth / 2 : t.scrollWidth;
+      setMoving(!still && one > b.clientWidth + 1);
+    };
+    measure();
+    const ro = new ResizeObserver(measure); if (box.current) ro.observe(box.current);
+    return () => ro.disconnect();
+  }, [items, moving]);
+  if (!items.length) return null;
+  const tile = (p: Card, hidden = false) => (
+    <li key={(hidden ? 'c' : '') + p.slug} aria-hidden={hidden || undefined}>
+      <Link to={`/p/${p.slug}`} className="rtile" tabIndex={hidden ? -1 : undefined}>
+        <span className="rimg">{p.image_url ? <SafeImg src={p.image_url} loading="lazy" decoding="async" fallback={<ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />} /> : <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />}</span>
+        <span className="rtext"><span className="rname">{p.name}</span><span className="rprice">{money(p.min_price)}</span></span>
+      </Link>
+    </li>
+  );
+  return (
+    <section className="shelf recent" aria-label="Recently viewed">
+      <div className="shelf-head"><div><h2>Recently viewed</h2><p className="muted">Pick up where you left off</p></div></div>
+      <div className={`rbox ${moving ? 'moving' : ''}`} ref={box}>
+        <ul className="rtrack" role="list" ref={track} style={moving ? { animationDuration: `${Math.max(12, items.length * 4)}s` } : undefined}>
+          {items.map((p) => tile(p))}{moving && items.map((p) => tile(p, true))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 export function StoreTile({ s }: { s: StoreCard }) {
   return (
     <Link to={`/s/${s.slug}`} className="stile">

@@ -6,7 +6,7 @@ import { recentSlugs, type Region, type StoreCard } from '../api';
 import { useAuth } from '../auth';
 import { useApi } from '../hooks';
 import { DeptArt, ProductArt, RegionArt } from '../art';
-import { Shelf, StoreList, type Card } from '../cards';
+import { RecentStrip, Shelf, StoreList, type Card } from '../cards';
 import { HeroCarousel, type Slide } from '../carousel';
 import { ErrorBox, Loading, Notice } from '../ui';
 import { IconShield, IconStore, IconSwap, IconTruck, IconBook } from '../icons';
@@ -63,7 +63,7 @@ function Personal() {
   return (
     <>
       {!!again.data?.length && <Shelf title="Buy it again" subtitle="Things you have ordered before" items={again.data} />}
-      {!!recent.data?.length && <Shelf title="Recently viewed" subtitle="Pick up where you left off" items={recent.data} />}
+      {!!recent.data?.length && <RecentStrip items={recent.data} />}
     </>
   );
 }
