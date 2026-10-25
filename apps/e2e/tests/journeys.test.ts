@@ -84,8 +84,8 @@ describe('customer -> store -> dispatch -> driver -> review, on a phone', () => 
   it('the store accepts and marks the order ready (vendor portal)', async () => {
     const { page, errors } = await newPage(browser, DESKTOP);
     await signIn(page, 'owner1@example.test');
-    await page.goto(`${base()}/vendor/orders`);
-    await page.waitForSelector('text=E2E');                                                                   // customer first name in the list
+    await page.goto(`${base()}/vendor/orders?tab=delivery`);
+    await page.waitForSelector('text=E2E');                                                                // customer first name in the list
     await page.getByText('E2E').first().click();                                                              // opens the order
     for (const step of ['Accept Order', 'Start Picking', 'Mark Ready']) {
       await page.getByRole('button', { name: step }).click();
@@ -177,6 +177,7 @@ describe('inventory, stale baskets and access control', () => {
     await page.fill('input[placeholder="Search products..."]', 'Garri (White)');
     await page.waitForTimeout(1200);
     await page.locator('tbody tr', { hasText: 'Garri (White)' }).first().locator('a[href*="/edit"]').click();
+    await page.waitForFunction(() => !!(document.querySelector('input[name=name]') as HTMLInputElement | null)?.value);   // the saved product has loaded into the form
     await page.fill('input[name=price]', '21.50');
     await page.getByRole('button', { name: /Update Product|Save/ }).click();
     await page.waitForTimeout(1200);

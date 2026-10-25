@@ -13,3 +13,7 @@ body {
 @layer components {
   .input { @apply w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent; }
 }
+
+/* Small text on white must reach 4.5:1 */
+.text-green-600 { color: #15803d; }
+.text-red-600 { color: #b91c1c; }

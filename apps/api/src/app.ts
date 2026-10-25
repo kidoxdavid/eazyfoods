@@ -145,6 +145,19 @@ export async function buildApp() {
   await app.register(uploadRoutes, { prefix: '/api' });
   await app.register(badgeRoutes, { prefix: '/api' });
 
+  // Kitchens (home chefs and restaurants) manage dishes, slots and cuisines, which the grocery portal has no pages for, so a signed-in kitchen keeps the original console until its own portal is rebuilt.
+  const keepsOwnApp = async (req: any, area: string) => {
+    if (area !== 'vendor' || /^\/vendor\/(signin|signup)/.test(req.url)) return false;
+    const token = req.cookies?.ez_vendor; if (!token) return false;
+    try {
+      const { rows } = await pool.query(
+        `SELECT 1 FROM sessions se LEFT JOIN user_roles r ON r.user_id = se.user_id JOIN stores s ON s.vendor_id = COALESCE(se.acting_vendor_id, r.vendor_id)
+          WHERE se.token_hash = $1 AND se.expires_at > now() AND s.kind = 'kitchen' LIMIT 1`, [hashToken(token)]);
+      return rows.length > 0;
+    } catch { return false; }
+  };
+  app.get('/api/vendor/app-kind', async (req) => ({ kitchen: await keepsOwnApp(req, 'vendor') }));   // the dev server asks this to pick the right console
+
   // Single-host deployment: serve the built web app (and its client-side routes) from the API when it has been built.
   const dist = resolve(dirname(fileURLToPath(import.meta.url)), '../../web/dist');
   if (existsSync(join(dist, 'index.html'))) {
@@ -165,17 +178,6 @@ export async function buildApp() {
     // Staff areas that have been rebuilt as their own app (portal.html: Tailwind, no customer styles). The list grows as each area is rebuilt.
     const PORTAL_AREAS = ['vendor'];
     const portalHtml = existsSync(join(dist, 'portal.html')) ? readFileSync(join(dist, 'portal.html'), 'utf8') : null;
-    // Kitchens (home chefs and restaurants) manage dishes, slots and cuisines, which the grocery portal has no pages for, so a signed-in kitchen keeps the original console until its own portal is rebuilt.
-    const keepsOwnApp = async (req: any, area: string) => {
-      if (area !== 'vendor' || /^\/vendor\/(signin|signup)/.test(req.url)) return false;
-      const token = req.cookies?.ez_vendor; if (!token) return false;
-      try {
-        const { rows } = await pool.query(
-          `SELECT 1 FROM sessions se LEFT JOIN user_roles r ON r.user_id = se.user_id JOIN stores s ON s.vendor_id = COALESCE(se.acting_vendor_id, r.vendor_id)
-            WHERE se.token_hash = $1 AND se.expires_at > now() AND s.kind = 'kitchen' LIMIT 1`, [hashToken(token)]);
-        return rows.length > 0;
-      } catch { return false; }
-    };
     app.setNotFoundHandler(async (req, reply) => {
       const area = /^\/([a-z]+)(\/|\?|$)/.exec(req.url)?.[1];
       if (req.method === 'GET' && portalHtml && area && PORTAL_AREAS.includes(area) && !(await keepsOwnApp(req, area))) return reply.header('cache-control', 'no-cache').type('text/html').send(portalHtml);

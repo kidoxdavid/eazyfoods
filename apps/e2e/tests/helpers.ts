@@ -63,6 +63,6 @@ export async function signInStaff(page: Page, email: string, password = 'dev-pas
   await page.goto(`${base()}/${next.split('/')[1]}/signin?next=${encodeURIComponent(next)}`);   // every staff area has its own sign-in window
   await page.fill('input[name=email]', email);
   await page.fill('input[name=password]', password);
-  await page.click('.auth button[type=submit]');
+  await page.click('form button[type=submit]');
   await page.waitForURL((u) => u.pathname.startsWith(next) && !/signin/.test(u.pathname));
 }

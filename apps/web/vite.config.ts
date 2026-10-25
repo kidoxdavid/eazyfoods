@@ -21,9 +21,16 @@ const portalRoutes = (): Plugin => ({
   name: 'portal-routes',
   apply: 'serve',
   configureServer(server) {
-    server.middlewares.use((req, _res, next) => {
+    server.middlewares.use(async (req, _res, next) => {
       const m = /^\/([a-z]+)(\/|\?|$)/.exec(req.url ?? '');
-      if (m && PORTAL_AREAS.includes(m[1])) req.url = '/portal.html';
+      if (m && PORTAL_AREAS.includes(m[1])) {
+        // A signed-in kitchen keeps the original console (the production server decides the same way).
+        let kitchen = false;
+        if (m[1] === 'vendor' && !/^\/vendor\/(signin|signup)/.test(req.url ?? '') && /ez_vendor=/.test(req.headers.cookie ?? '')) {
+          try { kitchen = (await (await fetch(`${api}/api/vendor/app-kind`, { headers: { cookie: req.headers.cookie ?? '' } })).json()).kitchen === true; } catch { /* dev only */ }
+        }
+        if (!kitchen) req.url = '/portal.html';
+      }
       next();
     });
   },
