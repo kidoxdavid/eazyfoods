@@ -8,7 +8,7 @@ import { useCart } from '../cart';
 import { useAuth } from '../auth';
 import { useToast } from '../toast';
 import { Badge, Button, Empty, Loading, Notice, Stepper } from '../ui';
-import { ProductArt } from '../art';
+import { ProductArt, SafeImg } from '../art';
 
 export function CartPage() {
   const on = useFeatures();
@@ -59,7 +59,7 @@ export function CartPage() {
           {!s.is_open && <p className="small warnc">Closed now: you can check out once it opens.</p>}
           {s.items.map((i) => (
             <div key={i.offer_id} className="line">
-              <div className="pimg-s"><ProductArt name={i.name} brand={i.brand} size={packLabel(i)} /></div>
+              <div className="pimg-s">{i.image_url ? <SafeImg src={i.image_url} alt={i.name} loading="lazy" fallback={<ProductArt name={i.name} brand={i.brand} size={packLabel(i)} />} /> : <ProductArt name={i.name} brand={i.brand} size={packLabel(i)} />}</div>
               <div>
                 <Link to={`/p/${i.slug}`} style={{ color: 'inherit', textDecoration: 'none' }}><strong>{i.name}</strong></Link>
                 <div className="muted small">{packLabel(i)} · {money(i.unit_price_cents)}{i.price_changed && <> <Badge tone="warn">was {money(i.previous_price_cents)}</Badge></>}</div>

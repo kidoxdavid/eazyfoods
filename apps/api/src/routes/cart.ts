@@ -9,7 +9,7 @@ const ITEMS_SQL = `
   SELECT ci.offer_id, ci.quantity, ci.added_price_cents, ci.sub_pref, o.price_cents AS base_price_cents,
          LEAST(o.price_cents, COALESCE(t.unit_price_cents, o.price_cents)) AS price_cents,
          (SELECT COALESCE(jsonb_agg(jsonb_build_object('min_qty', min_qty, 'unit_price_cents', unit_price_cents) ORDER BY min_qty), '[]') FROM offer_tiers WHERE offer_id = ci.offer_id) AS tiers, o.compare_at_cents, o.is_active, GREATEST(o.stock_on_hand - o.stock_reserved, 0) AS available,
-         p.slug, p.name, p.status AS pstatus, p.sold_by, p.pack_size, p.pack_unit, b.name AS brand,
+         (SELECT url FROM product_images WHERE product_id = p.id ORDER BY sort_order LIMIT 1) AS image_url, p.slug, p.name, p.status AS pstatus, p.sold_by, p.pack_size, p.pack_unit, b.name AS brand,
          s.slug AS store_slug, s.name AS store_name, s.orderable, s.is_open, s.min_order_cents, s.is_test_data
     FROM cart_items ci JOIN carts ct ON ct.id = ci.cart_id
     JOIN offers_live o ON o.id = ci.offer_id
@@ -25,7 +25,7 @@ export async function cartView(userId: string) {
     const st = stores.get(r.store_slug) ?? stores.set(r.store_slug, { slug: r.store_slug, name: r.store_name, is_open: r.is_open, is_test_data: r.is_test_data, min_order_cents: r.min_order_cents, orderable: r.orderable, subtotal_cents: 0, items: [] }).get(r.store_slug);
     const unavailable = !r.is_active || !['published', 'dish_live'].includes(r.pstatus) || !r.orderable || r.available < 1;
     st.items.push({
-      offer_id: r.offer_id, slug: r.slug, name: r.name, brand: r.brand, pack_size: r.pack_size, pack_unit: r.pack_unit, sold_by: r.sold_by,
+      offer_id: r.offer_id, slug: r.slug, name: r.name, image_url: r.image_url, brand: r.brand, pack_size: r.pack_size, pack_unit: r.pack_unit, sold_by: r.sold_by,
       quantity: r.quantity, unit_price_cents: r.price_cents, compare_at_cents: r.compare_at_cents, available: r.available,
       unavailable, short: !unavailable && r.available < r.quantity, price_changed: r.added_price_cents !== r.base_price_cents, sub_pref: r.sub_pref, tiers: r.tiers, base_price_cents: r.base_price_cents, previous_price_cents: r.added_price_cents,
     });
