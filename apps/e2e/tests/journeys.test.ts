@@ -159,9 +159,9 @@ describe('customer -> store -> dispatch -> driver -> review, on a phone', () => 
     expect(denied.status()).toBe(403);
     const fin = await newPage(browser, DESKTOP);
     await signIn(fin.page, 'finance@example.test');
+    fin.page.on('dialog', (d) => d.accept());
     await fin.page.goto(`${base()}/admin/refunds`);
     await fin.page.getByRole('button', { name: 'Approve' }).first().click();
-    await fin.page.getByRole('button', { name: 'Yes, continue' }).click();
     await fin.page.waitForTimeout(800);
     const c = await db();
     const o = await c.query(`SELECT payment_status FROM orders WHERE id=$1`, [rows[0].oid]);
@@ -216,7 +216,7 @@ describe('inventory, stale baskets and access control', () => {
     await signIn(cust.page, 'customer@example.test');
     await cust.page.goto(`${base()}/admin`);
     await cust.page.waitForURL(/\/admin\/signin/);
-    await seeText(cust.page.locator('body'), 'Admin sign in');                          // a shopper is asked for the admin account, not shown the console
+    await seeText(cust.page.locator('body'), 'Admin Console');                          // a shopper is asked for the admin account, not shown the console
     await cust.page.goto(`${base()}/vendor`);
     await cust.page.waitForURL(/\/vendor\/signin/);
     await seeText(cust.page.locator('body'), 'Vendor Portal');
@@ -237,11 +237,11 @@ describe('inventory, stale baskets and access control', () => {
     await c.end();
     const { page } = await newPage(browser, DESKTOP);
     await signIn(page, 'admin@example.test');
+    page.on('dialog', (d) => d.accept());
     await page.goto(`${base()}/admin/vendors/${v}`);
     await page.getByRole('button', { name: 'Verify' }).first().click();
     await page.waitForTimeout(500);
     await page.getByRole('button', { name: 'Approve vendor' }).click();
-    await page.getByRole('button', { name: 'Yes, continue' }).click();
     await page.waitForTimeout(600);
     const c2 = await db(); const r = await c2.query('SELECT status FROM vendors WHERE id=$1', [v]); await c2.end();
     expect(r.rows[0].status).toBe('approved');

@@ -29,5 +29,18 @@ describe('driver application and portal profile', () => {
     const other = (await login('customer@example.test')).cookie;
     expect([401, 403, 404]).toContain((await call(other, 'GET', '/api/driver/documents/driver_license/file')).status);
     expect([401, 403]).toContain((await call(other, 'POST', '/api/driver/files')).status);
+
+    // staff see the application, the document list (never the file paths) and answer the driver
+    const admin = (await login('admin@example.test')).cookie;
+    const list = (await call(admin, 'GET', '/api/admin/drivers')).body as any[];
+    const row = list.find((d) => d.email === email);
+    expect(row.unread_messages).toBe(1);
+    const detail = (await call(admin, 'GET', `/api/admin/drivers/${row.id}`)).body;
+    expect(detail).toMatchObject({ city: 'Calgary', vehicle_make: 'Toyota', license_plate: 'ABC123', payout_email: 'ada@example.test' });
+    expect(detail.documents.driver_license).toEqual({ on_file: true, validity: '2030-01-01' });
+    expect(JSON.stringify(detail)).not.toContain('private:');
+    expect((await call(admin, 'POST', `/api/admin/drivers/${row.id}/messages`, { body: 'Please upload a newer insurance slip' })).status).toBe(201);
+    expect((await asDriver(cookie, 'GET', '/api/driver/messages')).body.map((m: any) => m.body)).toContain('Please upload a newer insurance slip');
+    expect([401, 403]).toContain((await call(other, 'GET', `/api/admin/drivers/${row.id}`)).status);
   });
 });

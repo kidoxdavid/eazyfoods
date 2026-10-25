@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ReactNode } from 'react';
+import { Suspense, useEffect, type ReactNode } from 'react';
 import { SkelPage } from './skeletons';
 import { Link, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth';
@@ -8,8 +8,7 @@ import { PlaceProvider } from './place';
 import { ThemeProvider } from './theme';
 import { Footer, Header, TabBar } from './shell';
 import { Empty, Loading } from './ui';
-import { RequireArea, RequireAuth } from './guard';
-import { StaffSignIn, StaffSignUp } from './pages/StaffAuth';
+import { RequireAuth } from './guard';
 import { Home } from './pages/Home';
 import { SearchPage } from './pages/Search';
 import { ProductPage } from './pages/Product';
@@ -30,10 +29,15 @@ import { ContentPage } from './pages/ContentPage';
 import { Unsubscribe } from './pages/Unsubscribe';
 import { AlertsPage, ListPage, ListsPage, SharedListPage } from './pages/Lists';
 
-const Vendor = lazy(() => import('./portals/vendor'));
-const Admin = lazy(() => import('./portals/admin'));
-const Driver = lazy(() => import('./portals/driver'));
-const Marketing = lazy(() => import('./portals/marketing'));
+
+/** The staff areas are their own apps (portal.html); reaching one from inside the shop is a full page load. */
+function HardNav() {
+  useEffect(() => {
+    try { const last = Number(sessionStorage.getItem('hardnav') ?? 0); if (Date.now() - last < 3000) return; sessionStorage.setItem('hardnav', String(Date.now())); } catch { /* storage blocked: still go */ }
+    window.location.replace(window.location.pathname + window.location.search);
+  }, []);
+  return <SkelPage />;
+}
 
 const Site = ({ children }: { children: ReactNode }) => (
   <>
@@ -54,14 +58,7 @@ export function App() {
           <ThemeProvider>
           <Suspense fallback={<SkelPage />}>
             <Routes>
-              <Route path="/admin/signin" element={<StaffSignIn area="admin" />} />
-              <Route path="/marketing/signin" element={<StaffSignIn area="marketing" />} />
-              <Route path="/vendor/signin" element={<StaffSignIn area="vendor" />} /><Route path="/vendor/signup" element={<StaffSignUp area="vendor" />} />
-              <Route path="/driver/signin" element={<StaffSignIn area="driver" />} /><Route path="/driver/signup" element={<StaffSignUp area="driver" />} />
-              <Route path="/vendor/*" element={<RequireArea area="vendor"><Vendor /></RequireArea>} />
-              <Route path="/admin/*" element={<RequireArea area="admin"><Admin /></RequireArea>} />
-              <Route path="/driver/*" element={<RequireArea area="driver"><Driver /></RequireArea>} />
-              <Route path="/marketing/*" element={<RequireArea area="marketing"><Marketing /></RequireArea>} />
+              <Route path="/admin/*" element={<HardNav />} /><Route path="/marketing/*" element={<HardNav />} /><Route path="/vendor/*" element={<HardNav />} /><Route path="/driver/*" element={<HardNav />} />
               <Route path="*" element={
                 <Site>
                   <Routes>

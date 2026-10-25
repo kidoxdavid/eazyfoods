@@ -49,10 +49,10 @@ export const Input = (p) => <input {...p} className={`${inputCls} ${p.className 
 export const Select = ({ children, ...p }) => <select {...p} className={`${inputCls} ${p.className || ''}`}>{children}</select>
 export const Textarea = (p) => <textarea rows={4} {...p} className={`${inputCls} ${p.className || ''}`} />
 
-export const Switch = ({ checked, onChange, label, hint }) => (
+export const Switch = ({ checked, onChange, label, hint, disabled }) => (
   <div className="flex items-center justify-between gap-3">
     <div className="min-w-0"><p className="text-sm font-medium text-gray-800">{label}</p>{hint && <p className="text-xs text-gray-500">{hint}</p>}</div>
-    <button type="button" role="switch" aria-checked={!!checked} aria-label={label} onClick={() => onChange(!checked)} className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors ${checked ? 'bg-green-600' : 'bg-gray-300'}`}>
+    <button type="button" role="switch" aria-checked={!!checked} aria-label={label} disabled={disabled} onClick={() => onChange(!checked)} className={`relative disabled:opacity-60 inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors ${checked ? 'bg-green-600' : 'bg-gray-300'}`}>
       <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
     </button>
   </div>

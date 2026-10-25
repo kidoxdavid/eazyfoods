@@ -175,7 +175,7 @@ export async function buildApp() {
       return reply.type('application/xml').header('cache-control', 'public, max-age=3600').send(await sitemapXml(siteOrigin(req.headers.host)));
     });
     // Staff areas that have been rebuilt as their own app (portal.html: Tailwind, no customer styles). The list grows as each area is rebuilt.
-    const PORTAL_AREAS = ['vendor', 'driver', 'marketing'];
+    const PORTAL_AREAS = ['vendor', 'driver', 'marketing', 'admin'];
     const portalHtml = existsSync(join(dist, 'portal.html')) ? readFileSync(join(dist, 'portal.html'), 'utf8') : null;
     app.setNotFoundHandler(async (req, reply) => {
       const area = /^\/([a-z]+)(\/|\?|$)/.exec(req.url)?.[1];

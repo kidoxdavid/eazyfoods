@@ -18,7 +18,7 @@ export const badgeRoutes: FastifyPluginAsync = async (app) => {
       out['/admin/vendors'] = await n(`SELECT count(*)::int n FROM vendors WHERE status = 'submitted'`);
       out['/admin/messages'] = await n(`SELECT count(*)::int n FROM vendor_messages WHERE NOT from_staff AND read_by_other_at IS NULL`);
     }
-    if (can(u, 'drivers.manage')) out['/admin/drivers'] = await n(`SELECT count(*)::int n FROM drivers WHERE status = 'applied'`);
+    if (can(u, 'drivers.manage')) out['/admin/drivers'] = await n(`SELECT ((SELECT count(*) FROM drivers WHERE status = 'applied') + (SELECT count(*) FROM driver_messages WHERE NOT from_staff AND read_by_other_at IS NULL))::int AS n`);
     if (can(u, 'dispatch.manage')) out['/admin/dispatch'] = await n(`SELECT count(*)::int n FROM deliveries d JOIN suborders s ON s.id = d.suborder_id WHERE d.status = 'unassigned' AND s.status = 'ready'`);
     if (can(u, 'refunds.approve')) out['/admin/refunds'] = await n(`SELECT count(*)::int n FROM refunds WHERE status = 'requested'`);
     if (can(u, 'support.manage')) out['/admin/support'] = await n(`SELECT count(*)::int n FROM support_tickets WHERE status = 'open'`);

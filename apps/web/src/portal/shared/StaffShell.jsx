@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { Link, useLocation, Navigate } from 'react-router-dom'
 import { Menu, X, User } from 'lucide-react'
 import { call, getArea } from './client'
 import { Spinner, Toasts } from './ui'
+
+export const UserContext = createContext(null)
+export const useUser = () => useContext(UserContext)
 
 /** The original portals' sidebar and top bar, shared by the marketing and admin apps: sign-out, a link back to the shop, red pending badges, hidden menu items and a notice posted from the Control centre. */
 export function useSession() {
@@ -11,7 +14,7 @@ export function useSession() {
   return state.user
 }
 
-export default function StaffShell({ brand, nav, badgesPath, children, titleOf }) {
+export default function StaffShell({ brand, nav, badgesPath, children, titleOf, canSee }) {
   const user = useSession()
   const location = useLocation()
   const [open, setOpen] = useState(false)
@@ -32,7 +35,7 @@ export default function StaffShell({ brand, nav, badgesPath, children, titleOf }
   if (user === null) return <Navigate to="/signin" replace />
 
   const hidden = new Set(cfg?.hidden_nav || [])
-  const visible = nav.filter((i) => !hidden.has(`/${area}${i.href === '/' ? '' : i.href}`))
+  const visible = nav.filter((i) => !hidden.has(`/${area}${i.href === '/' ? '' : i.href}`) && (!canSee || canSee(i, user)))
   const isActive = (href) => (href === '/' ? location.pathname === '/' : location.pathname === href || location.pathname.startsWith(`${href}/`))
   const logout = async () => { await call('POST', '/auth/logout', {}).catch(() => {}); window.location.href = `/${area}/signin` }
   let lastGroup = null
@@ -82,7 +85,7 @@ export default function StaffShell({ brand, nav, badgesPath, children, titleOf }
           </div>
         </header>
         {cfg?.notice && <div role="note" className={`px-4 py-2 text-xs sm:text-sm border-b ${cfg.notice_tone === 'warn' ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-primary-50 border-primary-100 text-primary-800'}`}>{cfg.notice}</div>}
-        <main className="p-3 sm:p-4 lg:p-6 max-w-full min-w-0"><div className="space-y-3 sm:space-y-4 lg:space-y-6">{children}</div></main>
+        <main className="p-3 sm:p-4 lg:p-6 max-w-full min-w-0"><UserContext.Provider value={user}><div className="space-y-3 sm:space-y-4 lg:space-y-6">{children}</div></UserContext.Provider></main>
       </div>
       <Toasts />
     </div>

@@ -19,7 +19,7 @@ describe('control centre (browser)', () => {
     await tips.waitFor();
     expect(await tips.isChecked()).toBe(true);
     await tips.click({ force: true });
-    await page.waitForFunction(() => (document.querySelector('input[aria-label="Driver tips"]') as HTMLInputElement | null)?.checked === false);
+    await page.waitForFunction(() => document.querySelector('[aria-label="Driver tips"]')?.getAttribute('aria-checked') === 'false');
 
     const cust = await newPage(browser, MOBILE);
     await cust.page.goto(`${base()}/register`);
@@ -35,7 +35,7 @@ describe('control centre (browser)', () => {
     await noText(cust.page.locator('main'), 'Tip your driver');
 
     await tips.click({ force: true });
-    await page.waitForFunction(() => (document.querySelector('input[aria-label="Driver tips"]') as HTMLInputElement | null)?.checked === true);
+    await page.waitForFunction(() => document.querySelector('[aria-label="Driver tips"]')?.getAttribute('aria-checked') === 'true');
     await cust.page.reload(); await cust.page.waitForSelector('.checkout');
     await seeText(cust.page.locator('main'), 'Tip your driver');
   });
@@ -86,17 +86,17 @@ describe('separate staff and shop sign-ins (browser)', () => {
     await page.click('.auth button[type=submit]'); await page.waitForURL((u) => !u.pathname.startsWith('/signin'));
     await page.goto(`${base()}/admin`);
     await page.waitForURL(/\/admin\/signin/);                            // a shopper does not get into the admin
-    await seeText(page.locator('main'), 'Admin sign in');
+    await seeText(page.locator('body'), 'Admin Console');
     await noText(page.locator('main'), 'Continue as');
     await page.fill('input[name=email]', 'customer@example.test');     // not even by trying the customer's own email
     await page.fill('input[name=password]', 'dev-password-123');
-    await page.click('.auth button[type=submit]');
-    await seeText(page.locator('main'), 'only for the admin, marketing, vendor and driver accounts');
+    await page.click('form button[type=submit]');
+    await seeText(page.locator('body'), 'only for the admin, marketing, vendor and driver accounts');
     await page.fill('input[name=email]', 'admin@example.test');
     await page.fill('input[name=password]', 'dev-password-123');
-    await page.click('.auth button[type=submit]');
-    await page.waitForURL('**/admin');
-    await seeText(page.locator('.bo-brandbar'), 'Admin');
+    await page.click('form button[type=submit]');
+    await page.waitForURL(/\/admin\/?$/);
+    await seeText(page.locator('aside'), 'Admin');
     await page.goto(`${base()}/account`);
     await seeText(page.locator('main'), 'customer@example.test');       // the shop still knows the customer
     await page.goto(`${base()}/admin`);
@@ -141,12 +141,12 @@ describe('every area keeps its own sign-in (browser)', () => {
     await signInStaff(page, 'admin@example.test', 'dev-password-123', '/admin');
     await signInStaff(page, 'owner1@example.test', 'dev-password-123', '/vendor');
     await signInStaff(page, 'driver@example.test', 'dev-password-123', '/driver');
-    await page.goto(`${base()}/admin`); await seeText(page.locator('.bo-brandbar'), 'Admin');          // still signed in as admin
+    await page.goto(`${base()}/admin`); await seeText(page.locator('aside'), 'Admin');          // still signed in as admin
     await page.goto(`${base()}/vendor`); await seeText(page.locator('aside'), 'Vendor');             // and as the vendor
     await page.goto(`${base()}/driver`); await seeText(page.locator('aside'), 'Driver');
     await page.getByRole('button', { name: 'Sign out' }).click();
     await page.waitForURL(/\/driver\/signin/);
-    await page.goto(`${base()}/admin`); await seeText(page.locator('.bo-brandbar'), 'Admin');          // the others are untouched
+    await page.goto(`${base()}/admin`); await seeText(page.locator('aside'), 'Admin');          // the others are untouched
     await page.goto(`${base()}/vendor`); await seeText(page.locator('aside'), 'Vendor');
   });
 });

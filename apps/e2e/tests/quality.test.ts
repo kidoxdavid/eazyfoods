@@ -10,7 +10,7 @@ afterAll(async () => { await browser?.close(); });
 const PUBLIC = ['/', '/search?q=garri', '/search?region=east-africa', '/stores', '/kitchens', '/k/demo-mama-ngozi-kitchen', '/k/demo-habesha-table', '/s/demo-calgary-west-african-market', '/p/garri-white', '/recipes', '/recipes/jollof-rice-nigerian-style', '/cart', '/signin', '/register', '/pages/refund-policy'];
 const SIGNED_IN = ['/account', '/orders', '/checkout'];
 const PORTALS: [string, string][] = [['owner1@example.test', '/vendor'], ['owner1@example.test', '/vendor/orders'], ['owner1@example.test', '/vendor/inventory'], ['owner1@example.test', '/vendor/stores'], ['owner1@example.test', '/vendor/products'],
-  ['admin@example.test', '/admin'], ['admin@example.test', '/admin/catalogue'], ['admin@example.test', '/admin/settings'], ['admin@example.test', '/admin/studio'], ['owner1@example.test', '/vendor/chat'], ['chef1@example.test', '/vendor'], ['chef1@example.test', '/vendor/menu'], ['chef1@example.test', '/vendor/store'], ['chef1@example.test', '/vendor/orders'], ['chef1@example.test', '/vendor/payouts'], ['owner1@example.test', '/vendor/payouts'], ['finance@example.test', '/admin/finance'], ['marketing@example.test', '/marketing'], ['marketing@example.test', '/marketing/emails'], ['marketing@example.test', '/marketing/audiences'], ['marketing@example.test', '/marketing/campaigns'], ['marketing@example.test', '/marketing/automations'], ['marketing@example.test', '/marketing/calendar'], ['marketing@example.test', '/marketing/social'], ['marketing@example.test', '/marketing/budget'], ['marketing@example.test', '/marketing/library'], ['marketing@example.test', '/marketing/analytics'], ['marketing@example.test', '/marketing/settings'], ['admin@example.test', '/admin/dishes'], ['admin@example.test', '/admin/insights'], ['admin@example.test', '/admin/messages'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
+  ['admin@example.test', '/admin'], ['admin@example.test', '/admin/orders'], ['admin@example.test', '/admin/dispatch'], ['admin@example.test', '/admin/drivers'], ['admin@example.test', '/admin/support'], ['admin@example.test', '/admin/refunds'], ['admin@example.test', '/admin/vendors'], ['admin@example.test', '/admin/messages'], ['admin@example.test', '/admin/stores'], ['admin@example.test', '/admin/catalogue'], ['admin@example.test', '/admin/dishes'], ['admin@example.test', '/admin/taxonomy'], ['admin@example.test', '/admin/zones'], ['admin@example.test', '/admin/promotions'], ['admin@example.test', '/admin/ads'], ['admin@example.test', '/admin/studio'], ['admin@example.test', '/admin/content'], ['admin@example.test', '/admin/crm'], ['admin@example.test', '/admin/finance'], ['admin@example.test', '/admin/insights'], ['admin@example.test', '/admin/reports'], ['admin@example.test', '/admin/control'], ['admin@example.test', '/admin/settings'], ['admin@example.test', '/admin/system'], ['owner1@example.test', '/vendor/chat'], ['chef1@example.test', '/vendor'], ['chef1@example.test', '/vendor/menu'], ['chef1@example.test', '/vendor/store'], ['chef1@example.test', '/vendor/orders'], ['chef1@example.test', '/vendor/payouts'], ['owner1@example.test', '/vendor/payouts'], ['finance@example.test', '/admin/finance'], ['marketing@example.test', '/marketing'], ['marketing@example.test', '/marketing/emails'], ['marketing@example.test', '/marketing/audiences'], ['marketing@example.test', '/marketing/campaigns'], ['marketing@example.test', '/marketing/automations'], ['marketing@example.test', '/marketing/calendar'], ['marketing@example.test', '/marketing/social'], ['marketing@example.test', '/marketing/budget'], ['marketing@example.test', '/marketing/library'], ['marketing@example.test', '/marketing/analytics'], ['marketing@example.test', '/marketing/settings'], ['driver@example.test', '/driver'], ['driver@example.test', '/driver/earnings']];
 const WIDTHS = [360, 390, 768, 1280];
 
 describe('responsive: no horizontal scrolling at common widths', () => {
@@ -36,7 +36,7 @@ describe('responsive: no horizontal scrolling at common widths', () => {
         await ctx.close();
       }
       expect(bad).toEqual([]);
-    });
+    }, 600_000);
   }
 });
 
@@ -65,7 +65,7 @@ describe('accessibility (axe, WCAG 2 A/AA): no serious or critical violations', 
       found.push(...(await scan(page, `${email} ${path}`))); await ctx.close();
     }
     expect(found).toEqual([]);
-  }, 300_000);
+  }, 900_000);
 });
 
 describe('navigation menu', () => {

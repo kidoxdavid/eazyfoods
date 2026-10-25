@@ -17,8 +17,29 @@ export const adminOpsRoutes: FastifyPluginAsync = async (app) => {
   // ---- Drivers ----
   app.get('/drivers', { preHandler: requirePerm('drivers.manage') }, async () =>
     (await pool.query(`SELECT d.id, d.status, d.phone, d.vehicle, d.is_available, d.licence_verified, d.background_check_verified, u.full_name, u.email,
-        (SELECT count(*)::int FROM deliveries x WHERE x.driver_id = d.id AND x.status IN ('assigned','picked_up')) AS active_jobs
+        (SELECT count(*)::int FROM deliveries x WHERE x.driver_id = d.id AND x.status IN ('assigned','picked_up')) AS active_jobs,
+        (SELECT count(*)::int FROM driver_messages m WHERE m.driver_id = d.id AND NOT m.from_staff AND m.read_by_other_at IS NULL) AS unread_messages
         FROM drivers d JOIN users u ON u.id = d.user_id ORDER BY (d.status = 'applied') DESC, d.created_at DESC`)).rows);
+
+  /** Everything the driver told us on the application, plus which documents are on file (never the private file paths) and the conversation with our team. */
+  app.get<{ Params: { id: string } }>('/drivers/:id', { preHandler: requirePerm('drivers.manage') }, async (req) => {
+    const id = uuid.parse(req.params.id);
+    const d = (await pool.query(`SELECT d.id, d.status, d.phone, d.vehicle, d.licence_verified, d.background_check_verified, d.street_address, d.city, d.state, d.postal_code, d.country, d.vehicle_type, d.vehicle_make, d.vehicle_model, d.vehicle_year,
+        d.vehicle_color, d.license_plate, d.driver_license_number, d.preferred_delivery_zones, d.delivery_radius_km, d.payout_email, d.documents, d.created_at, u.full_name, u.email
+        FROM drivers d JOIN users u ON u.id = d.user_id WHERE d.id = $1`, [id])).rows[0];
+    if (!d) throw notFound('Driver not found');
+    const documents = Object.fromEntries(Object.entries((d.documents ?? {}) as Record<string, { url?: string; validity?: string | null }>).map(([k, v]) => [k, { on_file: !!v?.url, validity: v?.validity ?? null }]));
+    await pool.query(`UPDATE driver_messages SET read_by_other_at = now() WHERE driver_id = $1 AND NOT from_staff AND read_by_other_at IS NULL`, [id]);
+    const messages = (await pool.query('SELECT id, from_staff, body, created_at FROM driver_messages WHERE driver_id = $1 ORDER BY id DESC LIMIT 200', [id])).rows.reverse();
+    return { ...d, documents, messages };
+  });
+  app.post<{ Params: { id: string } }>('/drivers/:id/messages', { preHandler: requirePerm('drivers.manage') }, async (req, reply) => {
+    const id = uuid.parse(req.params.id);
+    const { body } = z.object({ body: z.string().trim().min(1).max(2000) }).parse(req.body);
+    if (!(await pool.query('SELECT 1 FROM drivers WHERE id = $1', [id])).rowCount) throw notFound('Driver not found');
+    const r = await pool.query('INSERT INTO driver_messages(driver_id, from_staff, author_user_id, body) VALUES ($1,true,$2,$3) RETURNING id, from_staff, body, created_at', [id, req.user!.id, body]);
+    return reply.code(201).send(r.rows[0]);
+  });
 
   app.delete<{ Params: { id: string } }>('/drivers/:id', { preHandler: requirePerm('drivers.manage') }, async (req) => eraseDriver(req.user!.id, z.string().uuid().parse(req.params.id)));
   app.patch<{ Params: { id: string } }>('/drivers/:id', { preHandler: requirePerm('drivers.manage') }, async (req) => {

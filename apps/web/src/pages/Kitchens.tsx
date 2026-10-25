@@ -16,7 +16,7 @@ const TAGS: Record<string, string> = { halal: 'Halal', vegan: 'Vegan', vegetaria
 type KCard = { kitchen_type?: 'home' | 'restaurant'; address_line?: string | null; slug: string; name: string; description: string | null; city: string; area: string; is_open: boolean; min_order_cents: number | null; is_test_data: boolean; logo_url: string | null; cover_url: string | null; cuisines: string[]; ordering_paused: boolean; dish_count: number; from_cents: number | null };
 type Dish = { slug: string; name: string; description: string | null; cuisine: string | null; spice_level: number | null; serves: string | null; prep_minutes: number | null; allergens: string[] | null; ingredients: string | null; dish_tags: string[];
   offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; available: number; image_url: string | null; menu_section?: string | null; video_url?: string | null };
-type K = Omit<KCard, 'dish_count' | 'from_cents'> & { postal_code?: string | null; phone?: string | null; video_url?: string | null; preorders_enabled?: boolean; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; hours: { dow: number; opens: string; closes: string }[]; dishes: Dish[]; allergen_notice: string;
+type K = Omit<KCard, 'dish_count' | 'from_cents'> & { postal_code?: string | null; phone?: string | null; video_url?: string | null; gallery?: string[]; preorders_enabled?: boolean; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; hours: { dow: number; opens: string; closes: string }[]; dishes: Dish[]; allergen_notice: string;
   branding: { accent: { primary: string; deep: string; tint: string; glow: string } | null; tagline: string | null; story: string | null; announcement: string | null; website: string | null; instagram: string | null; facebook: string | null } | null };
 
 function KitchenTile({ k }: { k: KCard }) {
@@ -128,6 +128,7 @@ export function KitchenPage() {
         {!k.is_open && !k.ordering_paused && <Notice>This kitchen is closed right now. You can fill your basket, but you can only check out while it is open.</Notice>}
         <p style={{ marginTop: 14 }}>{k.description}</p>
         {k.video_url && <ClipPlayer src={k.video_url} label={`Video from ${k.name}`} />}
+        {!!k.gallery?.length && <ul className="kitchen-gallery" aria-label={`Photos from ${k.name}`} style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: 0, margin: '10px 0', listStyle: 'none' }}>{k.gallery.map((u, i) => <li key={u} style={{ flex: '0 0 auto' }}><SafeImg src={u} alt={`${k.name} photo ${i + 1}`} loading="lazy" fallback={null} style={{ height: 150, width: 'auto', borderRadius: 10, display: 'block' }} /></li>)}</ul>}
         {br?.story && <section className="store-story" aria-label={`About ${k.name}`}><h2>Our story</h2><p>{br.story}</p></section>}
         <Notice>{k.allergen_notice}</Notice>
         <details className="avoid" open={avoid.length > 0}>
