@@ -29,6 +29,11 @@ import { applySeo, robotsTxt, seoFor, seoIndexing, siteOrigin, sitemapXml } from
 import { engagementRoutes } from './routes/engagement.js';
 import { recipeRoutes } from './routes/recipes.js';
 import { adRoutes } from './routes/ads.js';
+import { vendorAnalyticsRoutes } from './routes/vendorAnalytics.js';
+import { vendorAdRoutes } from './routes/vendorAds.js';
+import { vendorStaffRoutes } from './routes/vendorStaff.js';
+import { vendorReviewRoutes } from './routes/vendorReviews.js';
+import { vendorCatalogueRoutes } from './routes/vendorCatalogue.js';
 import { badgeRoutes } from './routes/badges.js';
 import { uploadRoutes } from './routes/uploads.js';
 import multipart from '@fastify/multipart';
@@ -109,6 +114,11 @@ export async function buildApp() {
   await app.register(vendorPortalRoutes, { prefix: '/api/vendor' });
   await app.register(vendorMessageRoutes, { prefix: '/api/vendor' });
   await app.register(dishRoutes, { prefix: '/api/vendor' });
+  await app.register(vendorCatalogueRoutes, { prefix: '/api/vendor' });
+  await app.register(vendorReviewRoutes, { prefix: '/api/vendor' });
+  await app.register(vendorStaffRoutes, { prefix: '/api/vendor' });
+  await app.register(vendorAdRoutes, { prefix: '/api/vendor' });
+  await app.register(vendorAnalyticsRoutes, { prefix: '/api/vendor' });
   await app.register(kitchenRoutes, { prefix: '/api' });
   await app.register(cardRoutes, { prefix: '/api' });
   await app.register(customerRoutes, { prefix: '/api' });
@@ -151,7 +161,12 @@ export async function buildApp() {
       if (!seoIndexing()) return reply.code(404).send({ error: 'not_found' });
       return reply.type('application/xml').header('cache-control', 'public, max-age=3600').send(await sitemapXml(siteOrigin(req.headers.host)));
     });
+    // Staff areas that have been rebuilt as their own app (portal.html: Tailwind, no customer styles). The list grows as each area is rebuilt.
+    const PORTAL_AREAS = ['vendor'];
+    const portalHtml = existsSync(join(dist, 'portal.html')) ? readFileSync(join(dist, 'portal.html'), 'utf8') : null;
     app.setNotFoundHandler(async (req, reply) => {
+      const area = /^\/([a-z]+)(\/|\?|$)/.exec(req.url)?.[1];
+      if (req.method === 'GET' && portalHtml && area && PORTAL_AREAS.includes(area)) return reply.header('cache-control', 'no-cache').type('text/html').send(portalHtml);
       if (req.method === 'GET' && !req.url.startsWith('/api') && !req.url.startsWith('/uploads')) {
         const entries = await Promise.all(BOOT.map(async (p) => { try { const r = await app.inject({ url: `/api${p}` }); return r.statusCode === 200 ? [p, r.json()] : null; } catch { return null; } }));
         const json = JSON.stringify(Object.fromEntries(entries.filter(Boolean) as [string, unknown][])).replace(/</g, '\\u003c');

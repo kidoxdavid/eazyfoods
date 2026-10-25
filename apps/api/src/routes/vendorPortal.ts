@@ -294,18 +294,20 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
 
   // ---------- Promotions (scheduled sale prices) ----------
   app.get<{ Params: { storeId: string } }>('/stores/:storeId/promotions', async (req) => (await pool.query(
-    `SELECT pr.id, p.name, o.price_cents AS regular_price_cents, pr.sale_price_cents, pr.starts_at, pr.ends_at, pr.cancelled_at,
+    `SELECT pr.id, pr.group_id, pr.name, pr.description, pr.discount_type, pr.discount_value, p.id AS product_id, p.name AS product_name, o.price_cents AS regular_price_cents, pr.sale_price_cents, pr.starts_at, pr.ends_at, pr.cancelled_at,
             CASE WHEN pr.cancelled_at IS NOT NULL THEN 'cancelled' WHEN now() < pr.starts_at THEN 'scheduled' WHEN now() >= pr.ends_at THEN 'ended' ELSE 'active' END AS state
        FROM offer_promotions pr JOIN store_offers o ON o.id = pr.offer_id JOIN products p ON p.id = o.product_id WHERE o.store_id = $1 ORDER BY pr.starts_at DESC`, [await store(req)])).rows);
 
   app.post<{ Params: { storeId: string } }>('/stores/:storeId/promotions', async (req, reply) => {
     const sid = await store(req); await assertVendorCan((await vendorOfStore(sid))!, 'promotions');
-    const b = z.object({ product_id: uuid, sale_price_cents: z.number().int().positive(), starts_at: z.coerce.date(), ends_at: z.coerce.date() }).parse(req.body);
+    const b = z.object({ product_id: uuid, sale_price_cents: z.number().int().positive(), starts_at: z.coerce.date(), ends_at: z.coerce.date(),
+      group_id: uuid.optional(), name: z.string().max(120).optional(), description: z.string().max(500).optional(), discount_type: z.enum(['percentage', 'fixed']).optional(), discount_value: z.number().positive().optional() }).parse(req.body);
     if (b.ends_at <= b.starts_at) throw bad('invalid_dates', 'The end must be after the start.');
     const o = (await pool.query('SELECT id, price_cents FROM store_offers WHERE store_id = $1 AND product_id = $2', [sid, b.product_id])).rows[0];
     if (!o) throw notFound('List this product first.');
     if (b.sale_price_cents >= o.price_cents) throw bad('invalid_price', 'The sale price must be lower than the regular price.');
-    const r = await pool.query('INSERT INTO offer_promotions(offer_id, sale_price_cents, starts_at, ends_at, created_by) VALUES ($1,$2,$3,$4,$5) RETURNING id', [o.id, b.sale_price_cents, b.starts_at, b.ends_at, req.user!.id]);
+    const r = await pool.query('INSERT INTO offer_promotions(offer_id, sale_price_cents, starts_at, ends_at, created_by, group_id, name, description, discount_type, discount_value) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id',
+      [o.id, b.sale_price_cents, b.starts_at, b.ends_at, req.user!.id, b.group_id ?? null, b.name ?? null, b.description ?? null, b.discount_type ?? null, b.discount_value ?? null]);
     return reply.code(201).send({ id: r.rows[0].id });
   });
   app.delete<{ Params: { storeId: string; id: string } }>('/stores/:storeId/promotions/:id', async (req) => {

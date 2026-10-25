@@ -65,8 +65,16 @@ export const supportRoutes: FastifyPluginAsync = async (app) => {
 
   app.get('/vendor/support', async (req) =>
     (await pool.query(`SELECT t.id, t.subject, t.status, t.created_at, t.updated_at,
-        (SELECT body FROM ticket_messages m WHERE m.ticket_id = t.id AND NOT m.is_internal AND m.author_user_id <> $2 ORDER BY m.id DESC LIMIT 1) AS last_reply
+        (SELECT body FROM ticket_messages m WHERE m.ticket_id = t.id AND NOT m.is_internal AND m.author_user_id <> $2 ORDER BY m.id DESC LIMIT 1) AS last_reply,
+        (SELECT body FROM ticket_messages m WHERE m.ticket_id = t.id ORDER BY m.id LIMIT 1) AS first_message
        FROM support_tickets t WHERE t.kind = 'vendor' AND t.vendor_id = ANY($1::uuid[]) ORDER BY t.updated_at DESC LIMIT 50`, [vendorIdsOf(req.user!), req.user!.id])).rows);
+
+  // A vendor reopens a ticket that was marked resolved.
+  app.post<{ Params: { id: string } }>('/vendor/support/:id/reopen', async (req) => {
+    const r = await pool.query(`UPDATE support_tickets SET status = 'open', updated_at = now() WHERE id = $1 AND kind = 'vendor' AND vendor_id = ANY($2::uuid[]) AND status IN ('resolved','closed') RETURNING id`, [z.string().uuid().parse(req.params.id), vendorIdsOf(req.user!)]);
+    if (!r.rowCount) throw notFound('Ticket not found or already open');
+    return { ok: true };
+  });
 
   // Vendors ask for help with disputes or fulfilment problems.
   app.post('/vendor/support', async (req, reply) => {

@@ -15,8 +15,22 @@ const bootData = (): Plugin => ({
   },
 });
 
+/** Staff areas are their own app (portal.html, Tailwind, no customer styles). In development this serves it for those paths, like the API does in production. */
+const PORTAL_AREAS = ['vendor'];   // grows as each area is rebuilt
+const portalRoutes = (): Plugin => ({
+  name: 'portal-routes',
+  apply: 'serve',
+  configureServer(server) {
+    server.middlewares.use((req, _res, next) => {
+      const m = /^\/([a-z]+)(\/|\?|$)/.exec(req.url ?? '');
+      if (m && PORTAL_AREAS.includes(m[1])) req.url = '/portal.html';
+      next();
+    });
+  },
+});
+
 export default defineConfig({
-  plugins: [react(), bootData()],
+  plugins: [react(), bootData(), portalRoutes()],
   server: { host: true, port: Number(process.env.WEB_PORT ?? 5173), proxy: { '/api': api, '/uploads': api } },
-  build: { rollupOptions: { output: { manualChunks: { react: ['react', 'react-dom', 'react-router-dom'] } } } },
+  build: { rollupOptions: { input: { main: 'index.html', portal: 'portal.html' }, output: { manualChunks: { react: ['react', 'react-dom', 'react-router-dom'] } } } },
 });
