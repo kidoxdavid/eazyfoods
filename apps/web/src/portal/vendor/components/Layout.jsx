@@ -22,6 +22,10 @@ import {
   Settings,
   MapPin,
   FileText,
+  Store,
+  HelpCircle,
+  FileSpreadsheet,
+  Upload,
 } from 'lucide-react'
 
 const { raw } = makeHttp('vendor')
@@ -33,6 +37,8 @@ const Layout = ({ children }) => {
   const { notifications } = useNotifications()
   // Admins can hide menu items and post a notice for this area (Control centre).
   const [cfg, setCfg] = useState(null)
+  const [badges, setBadges] = useState({})
+  useEffect(() => { const load = () => raw('GET', '/vendor/badges').then(setBadges).catch(() => {}); load(); const t = setInterval(load, 30000); return () => clearInterval(t) }, [])
   useEffect(() => { raw('GET', '/portal-config/vendor').then(setCfg).catch(() => {}) }, [])
 
   // Show loading while auth is being checked
@@ -50,11 +56,15 @@ const Layout = ({ children }) => {
     { name: 'Products', href: '/products', icon: Package },
     { name: 'Orders', href: notifications.orders > 0 ? '/orders?status=new' : '/orders', icon: ShoppingCart, badge: notifications.orders },
     { name: 'Inventory', href: '/inventory', icon: Warehouse },
+    { name: 'Import', href: '/import', icon: Upload },
+    { name: 'Storefront', href: '/storefront', icon: Store },
+    { name: 'Questions', href: '/questions', icon: HelpCircle, badge: badges['/vendor/questions'] },
     { name: 'Promotions', href: '/promotions', icon: Tag },
     { name: 'Ads', href: '/ads', icon: Image },
     { name: 'Reviews', href: '/reviews', icon: Star, badge: notifications.reviews },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Payouts', href: '/payouts', icon: DollarSign },
+    { name: 'Reports', href: '/reports', icon: FileSpreadsheet },
     { name: 'Support', href: '/support', icon: MessageSquare, badge: notifications.support },
     { name: 'Chat', href: '/chat', icon: MessageCircle },
     { name: 'Staff', href: '/staff', icon: Users },

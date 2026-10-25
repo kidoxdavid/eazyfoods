@@ -112,12 +112,12 @@ describe('separate staff and shop sign-ins (browser)', () => {
   it('each area opens only for its own sign-in; another area sign-in neither opens it nor is signed out by it', async () => {
     const { page } = await newPage(browser, DESKTOP);
     await signInStaff(page, 'marketing@example.test', 'dev-password-123', '/marketing');
-    await seeText(page.locator('.bo-brandbar'), 'Marketing');
+    await seeText(page.locator('aside'), 'Marketing');
     await page.goto(`${base()}/driver`);
     await page.waitForURL(/\/driver\/signin/);                           // a marketing sign-in does not open the driver area
     await seeText(page.locator('body'), 'Driver Portal');
     await page.goto(`${base()}/marketing`);                                // and it did not sign the marketing account out
-    await seeText(page.locator('.bo-brandbar'), 'Marketing');
+    await seeText(page.locator('aside'), 'Marketing');
   });
 });
 

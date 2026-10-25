@@ -18,6 +18,9 @@ import Promotions from './pages/Promotions'
 import Payouts from './pages/Payouts'
 import Settings from './pages/Settings'
 import Layout from './components/Layout'
+import Storefront from '../shared/pages/Storefront'
+import Questions from '../shared/pages/Questions'
+import Reports from '../shared/pages/Reports'
 
 const Spinner = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -61,6 +64,9 @@ export default function App() {
                   <Route path="/promotions" element={<Promotions />} />
                   <Route path="/payouts" element={<Payouts />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/storefront" element={<Storefront />} />
+                  <Route path="/questions" element={<Questions />} />
+                  <Route path="/reports" element={<Reports />} />
                   {/* Links in older emails and bookmarks */}
                   <Route path="/menu" element={<Navigate to="/cuisines" replace />} />
                   <Route path="/store" element={<Navigate to="/profile" replace />} />

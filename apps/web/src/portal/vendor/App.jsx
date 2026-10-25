@@ -21,6 +21,10 @@ import AdDesigner from './pages/AdDesigner'
 import Stores from './pages/Stores'
 import Chat from './pages/Chat'
 import Layout from './components/Layout'
+import Storefront from '../shared/pages/Storefront'
+import Questions from '../shared/pages/Questions'
+import Reports from '../shared/pages/Reports'
+import Import from '../shared/pages/Import'
 
 const Spinner = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -70,13 +74,15 @@ export default function App() {
                   <Route path="/ads/new" element={<AdDesigner />} />
                   <Route path="/ads/:id/edit" element={<AdDesigner />} />
                   <Route path="/stores" element={<Stores />} />
+                  <Route path="/storefront" element={<Storefront />} />
+                  <Route path="/questions" element={<Questions />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/import" element={<Import />} />
                   {/* Links in older emails and bookmarks */}
                   <Route path="/messages" element={<Navigate to="/chat" replace />} />
                   <Route path="/store" element={<Navigate to="/profile" replace />} />
-                  <Route path="/storefront" element={<Navigate to="/profile" replace />} />
                   <Route path="/menu" element={<Navigate to="/products" replace />} />
                   <Route path="/insights" element={<Navigate to="/analytics" replace />} />
-                  <Route path="/questions" element={<Navigate to="/support" replace />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Layout>

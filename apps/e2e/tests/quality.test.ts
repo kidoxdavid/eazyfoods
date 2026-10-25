@@ -277,15 +277,15 @@ describe('marketing (browser)', () => {
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await page.getByText('Saved').first().waitFor();
     await page.goto(base() + '/marketing/emails');
-    await page.getByRole('button', { name: 'New email' }).click();
+    await page.getByRole('button', { name: /Create Campaign/ }).click();
     await page.getByRole('heading', { name: 'Untitled email' }).waitFor();
     await page.getByLabel('Internal name').fill('E2E blast');
     await page.getByLabel('Subject', { exact: true }).fill('Fresh deals, {{first_name}}');
     await page.getByRole('button', { name: 'Preview' }).click();
     await page.getByText('Unsubscribe any time').waitFor();
     await page.keyboard.press('Escape');
+    page.once('dialog', (d) => d.accept());                                 // "Send this email now? This cannot be undone."
     await page.getByRole('button', { name: 'Send now…' }).click();
-    await page.getByRole('button', { name: 'Yes, continue' }).click();
     await page.getByText(/Queued for \d+ people/).waitFor();
     const token = (await c.query(`SELECT s.token FROM email_sends s JOIN users u ON u.id = s.user_id JOIN email_campaigns e ON e.id = s.email_campaign_id WHERE u.email = 'customer@example.test' AND e.name = 'E2E blast'`)).rows[0].token;
     const pub = await newPage(browser, MOBILE);
@@ -365,7 +365,7 @@ describe('banner video', () => {
     const themes = (await c.query('SELECT id, status FROM themes')).rows; await c.query(`UPDATE themes SET status = 'off'`);   // the date-driven festival theme would lead otherwise
     try {
       const staff = await newPage(browser, DESKTOP); await signIn(staff.page, 'marketing@example.test');
-      await staff.page.goto(base() + '/admin/studio');
+      await staff.page.goto(base() + '/marketing/studio');
       await staff.page.getByRole('tab', { name: 'Banners' }).click();
       await staff.page.getByRole('button', { name: 'New banner' }).click();
       await staff.page.getByLabel('Title').fill('Video test banner');

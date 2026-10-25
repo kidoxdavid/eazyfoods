@@ -1,122 +1,55 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import api from '../services/api'
-import { Users, Plus, Filter, Target, Mail, MapPin, Calendar } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { useApi, useAction, toast } from '../../shared/hooks'
+import { get, post, put, del } from '../../shared/client'
+import { Alert, Button, Card, DataTable, Field, Input, Modal, PageHeader, Select, Switch, confirmThen } from '../../shared/ui'
 
-const Audiences = () => {
-  const [audiences, setAudiences] = useState([])
-  const [loading, setLoading] = useState(true)
+const FIELDS = [
+  ['min_orders', 'At least this many orders', 'number'], ['max_orders', 'At most this many orders (0 = never ordered)', 'number'], ['days_since_last_order_min', 'Last ordered at least … days ago', 'number'],
+  ['days_since_last_order_max', 'Last ordered within … days', 'number'], ['min_spend_cents', 'Spent at least (CAD)', 'money'], ['joined_within_days', 'Joined within … days', 'number'],
+]
+const clean = (r) => Object.fromEntries(Object.entries(r).filter(([, v]) => v !== undefined && v !== '' && v !== false))
+const describe = (r) => Object.entries(r).filter(([, v]) => v !== undefined && v !== '' && v !== false).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${k.endsWith('cents') ? `$${Number(v) / 100}` : v === true ? 'yes' : v}`).join(' · ') || 'Everyone who opted in'
 
+export default function Audiences() {
+  const { data, reload } = useApi('/marketing/segments')
+  const regions = useApi('/regions')
+  const [edit, setEdit] = useState(null)
+  const [count, setCount] = useState(null)
   useEffect(() => {
-    fetchAudiences()
-  }, [])
-
-  const fetchAudiences = async () => {
-    setLoading(true)
-    try {
-      const response = await api.get('/admin/marketing/audiences', { params: { limit: 1000 } })
-      setAudiences(response.data || [])
-    } catch (error) {
-      console.error('Failed to fetch audiences:', error)
-      setAudiences([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
-    )
-  }
-
+    if (!edit) return
+    let live = true
+    const t = setTimeout(() => post('/marketing/segments/preview', { rules: clean(edit.rules) }).then((r) => live && setCount(r), () => live && setCount(null)), 300)
+    return () => { live = false; clearTimeout(t) }
+  }, [edit])
+  const save = useAction(async () => { const b = { name: edit.name, description: edit.description || null, rules: clean(edit.rules) }; if (edit.id) await put(`/marketing/segments/${edit.id}`, b); else await post('/marketing/segments', b); toast('Audience saved'); setEdit(null); reload() })
+  const remove = useAction(async (id) => { await del(`/marketing/segments/${id}`); reload() })
+  const setRule = (k, v) => setEdit({ ...edit, rules: { ...edit.rules, [k]: v } })
+  void get
   return (
-    <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Audiences</h1>
-          <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5">Customer segments</p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            to="/segments"
-            className="px-4 py-2 bg-white text-primary-600 border border-primary-600 rounded-lg hover:bg-primary-50 flex items-center gap-2"
-          >
-            <Filter className="h-4 w-4" />
-            Segment Builder
-          </Link>
-          <Link
-            to="/audiences/new"
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Create Audience
-          </Link>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {audiences.map((audience) => (
-          <div key={audience.id} className="bg-white rounded-lg shadow border border-gray-200 p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary-100 rounded-lg">
-                  <Users className="h-6 w-6 text-primary-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{audience.name}</h3>
-                  <p className="text-sm text-gray-500">{audience.description}</p>
-                </div>
-              </div>
+    <>
+      <PageHeader title="Audiences" sub="Saved groups of customers. Everyone in them has agreed to marketing email, always." actions={<Button onClick={() => { setEdit({ name: '', description: '', rules: {} }); setCount(null) }}><Plus className="h-4 w-4" /> Create Audience</Button>} />
+      <DataTable rows={data ?? []} empty="No saved audiences yet. Emails without an audience go to everyone who opted in." columns={[
+        { key: 'n', header: 'Name', render: (r) => <strong>{r.name}</strong> }, { key: 'r', header: 'Who', nowrap: false, render: (r) => describe(r.rules) },
+        { key: 'x', header: '', right: true, render: (r) => <span className="inline-flex gap-1"><Button size="sm" variant="secondary" onClick={() => { setEdit({ ...r, rules: { ...r.rules } }); setCount(null) }}>Edit</Button><Button size="sm" variant="ghost" onClick={confirmThen('Delete this audience?', () => remove.run(r.id))}>Delete</Button></span> }]} />
+      {edit && (
+        <Modal wide title={edit.id ? 'Edit audience' : 'New audience'} onClose={() => setEdit(null)}>
+          <div className="space-y-3">
+            <Alert>{save.error}</Alert>
+            <Field label="Name" htmlFor="an"><Input id="an" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} maxLength={80} /></Field>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {FIELDS.map(([k, label, kind]) => (
+                <Field key={k} label={label} htmlFor={k}><Input id={k} type="number" min={0} value={kind === 'money' ? (edit.rules[k] == null ? '' : Number(edit.rules[k]) / 100) : (edit.rules[k] ?? '')}
+                  onChange={(e) => setRule(k, e.target.value === '' ? undefined : kind === 'money' ? Math.round(Number(e.target.value) * 100) : Number(e.target.value))} /></Field>
+              ))}
+              <Field label="Has bought from region" htmlFor="rg"><Select id="rg" value={String(edit.rules.region ?? '')} onChange={(e) => setRule('region', e.target.value || undefined)}><option value="">Any</option>{regions.data?.map((r) => <option key={r.slug} value={r.slug}>{r.name}</option>)}</Select></Field>
             </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Audience Size</span>
-                <span className="text-lg font-bold text-gray-900">{audience.size.toLocaleString()}</span>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Filter className="h-4 w-4" />
-                <span>Segmented</span>
-              </div>
-
-              <div className="pt-3 border-t border-gray-200 flex gap-2">
-                <Link
-                  to={`/audiences/${audience.id}`}
-                  className="flex-1 text-center px-3 py-2 bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 text-sm font-medium"
-                >
-                  View Details
-                </Link>
-                <Link
-                  to={`/campaigns?audience=${audience.id}`}
-                  className="flex-1 text-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
-                >
-                  Use in Campaign
-                </Link>
-              </div>
-            </div>
+            <Switch checked={!!edit.rules.kitchen_buyers} label="Has ordered from a home chef" onChange={(v) => setRule('kitchen_buyers', v || undefined)} />
+            <Card><strong>{count ? `${count.count} ${count.count === 1 ? 'person' : 'people'} match` : 'Counting…'}</strong>{count?.sample?.length ? <p className="text-xs text-gray-500 mt-1">For example: {count.sample.map((s) => `${s.first_name} (${s.email})`).join(', ')}</p> : null}</Card>
+            <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setEdit(null)}>Cancel</Button><Button busy={save.busy} disabled={edit.name.trim().length < 2} onClick={() => save.run()}>Save audience</Button></div>
           </div>
-        ))}
-      </div>
-
-      {audiences.length === 0 && (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-          <Users className="h-24 w-24 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 mb-2 text-lg">No audiences created yet</p>
-          <Link
-            to="/audiences/new"
-            className="inline-block px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-          >
-            Create Your First Audience
-          </Link>
-        </div>
+        </Modal>
       )}
-    </div>
+    </>
   )
 }
-
-export default Audiences
-
