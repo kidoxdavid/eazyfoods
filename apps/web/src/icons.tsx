@@ -4,6 +4,7 @@ const P = (d: string) => (props: SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}><path d={d} /></svg>
 );
 export const IconHome = P('M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10');
+export const IconKitchen = P('M4 11h16v6a3 3 0 01-3 3H7a3 3 0 01-3-3v-6zM2 11h20M9 7c0-1.5 1-2 1-4M14 7c0-1.5 1-2 1-4');
 export const IconSearch = P('M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.3-4.3');
 export const IconBasket = P('M3 9h18l-2 11H5L3 9zM8 9l3-6M16 9l-3-6');
 export const IconOrders = P('M6 3h12v18l-3-2-3 2-3-2-3 2V3zM9 8h6M9 12h6');
