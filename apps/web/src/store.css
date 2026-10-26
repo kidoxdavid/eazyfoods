@@ -341,5 +341,5 @@ main { padding-top: 14px; }
 /* Phones: slightly smaller shelf cards */
 @media (max-width: 899px) { .shelf-row > li { flex-basis: 142px; } .shelf-row { gap: 8px; } }
 /* Logo: the e sits on the same baseline as the other letters, and closer to them */
-.logo .logo-mark { transform: translateY(-6px); }
-@media (max-width: 480px) { .hdr .logo .logo-mark { margin-right: -7px; transform: translateY(-6px); } .logo { gap: 0; } }
+.logo .logo-mark { transform: translateY(-1.75px); }
+@media (max-width: 480px) { .hdr .logo .logo-mark { margin-right: -7px; transform: translateY(-2.75px); } .logo { gap: 0; } }
