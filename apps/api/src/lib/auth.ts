@@ -4,13 +4,13 @@ import { config, isProd } from '../config.js';
 import { hashToken, newToken } from './password.js';
 
 /**
- * Five independent sign-ins in one browser: the shop and each staff window (admin, marketing, vendor, driver), each with its own cookie, so being signed in
+ * Six independent sign-ins in one browser: the shop and each staff window (admin, finance, marketing, vendor, driver), each with its own cookie, so being signed in
  * to one never signs you out of, or into, another. A request belongs to a window when the page says so with `x-area: <window>`, or by its API path
  * (/api/vendor/... is the vendor window). Anything else is the shop. (`x-area: staff` is the old catch-all, kept for older clients and tests.)
  */
-export const WINDOWS = ['admin', 'marketing', 'vendor', 'driver'] as const;
+export const WINDOWS = ['admin', 'finance', 'marketing', 'vendor', 'driver'] as const;
 export type StaffWindow = (typeof WINDOWS)[number];
-export const COOKIES = { shop: 'ez_session', admin: 'ez_admin', marketing: 'ez_marketing', vendor: 'ez_vendor', driver: 'ez_driver' } as const;
+export const COOKIES = { shop: 'ez_session', admin: 'ez_admin', finance: 'ez_finance', marketing: 'ez_marketing', vendor: 'ez_vendor', driver: 'ez_driver' } as const;
 export type Area = keyof typeof COOKIES;
 const STAFF_API = /^\/api\/(admin|marketing|vendor|driver)(\/|\?|$)/;
 // Applying to become a vendor or driver: a shopper does it with the shop sign-in; someone who signed up in the vendor or driver window does it with that window's sign-in (the page says so with x-area).
@@ -26,7 +26,7 @@ export function windowsOf(req: FastifyRequest): StaffWindow[] {
 }
 export const areaOf = (req: FastifyRequest): Area => windowsOf(req)[0] ?? 'shop';
 /** Which roles open which staff window. The admin account opens only the admin window; it cannot be signed in to the others. */
-export const AREA_LOGIN_ROLES = { admin: ['admin', 'support', 'finance', 'dispatcher', 'catalog', 'marketing'], marketing: ['marketing'], vendor: ['vendor_owner', 'vendor_staff'], driver: ['driver'] } as const;   // marketing reaches only the shared studio and coupons in the admin window
+export const AREA_LOGIN_ROLES = { admin: ['admin', 'support', 'finance', 'dispatcher', 'catalog', 'marketing'], finance: ['finance'], marketing: ['marketing'], vendor: ['vendor_owner', 'vendor_staff'], driver: ['driver'] } as const;   // marketing reaches only the shared studio and coupons in the admin window
 /** Only accounts that hold one of these roles may use a staff sign-in. Customers cannot, wherever they come from. */
 export const STAFF_AREA_ROLES = ['admin', 'support', 'finance', 'dispatcher', 'catalog', 'marketing', 'vendor_owner', 'vendor_staff', 'driver'];
 export const COOKIE = COOKIES.shop;

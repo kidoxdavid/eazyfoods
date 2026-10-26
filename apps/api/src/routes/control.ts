@@ -8,7 +8,7 @@ import { requireLogin, requirePerm } from '../lib/permissions.js';
 import { allFlags, clearFeatureCache, VENDOR_CAPS, vendorCaps, type VendorCap } from '../services/features.js';
 import { vendorIdsOf } from './vendorOrders.js';
 
-const PORTALS = ['admin', 'marketing', 'vendor', 'chef', 'driver'] as const;
+const PORTALS = ['admin', 'finance', 'marketing', 'vendor', 'chef', 'driver'] as const;
 /** Existing yes/no settings that the control centre may flip. */
 const PLATFORM_SWITCHES: Record<string, { label: string; description: string }> = {
   'kitchens.enabled': { label: 'Home chefs', description: 'Show home kitchens and let cooks sell meals. Turning this off hides them everywhere.' },

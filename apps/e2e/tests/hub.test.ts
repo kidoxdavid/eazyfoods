@@ -15,7 +15,7 @@ describe('portals hub (browser)', () => {
       await page.getByRole('heading', { name: 'Sign in to your portal' }).waitFor();
       const hrefs = async (name: string) => page.getByRole('link', { name: new RegExp(`^${name}`) }).first().getAttribute('href');
       expect(await hrefs('Customer')).toBe('/'); expect(await hrefs('Vendor')).toBe('/vendor/signin'); expect(await hrefs('Chef')).toBe('/vendor/signin');
-      expect(await hrefs('Delivery')).toBe('/driver/signin'); expect(await hrefs('Marketing')).toBe('/marketing/signin'); expect(await hrefs('Admin')).toBe('/admin/signin');
+      expect(await hrefs('Delivery')).toBe('/driver/signin'); expect(await hrefs('Marketing')).toBe('/marketing/signin'); expect(await hrefs('Admin')).toBe('/admin/signin'); expect(await hrefs('Finance')).toBe('/finance/signin');
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
       const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
       expect(r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id} ${v.nodes[0]?.html.slice(0, 120)}`)).toEqual([]);

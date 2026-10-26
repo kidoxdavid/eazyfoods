@@ -44,7 +44,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post('/login', limit, async (req, reply) => {
-    const body = creds.extend({ area: z.enum(['admin', 'marketing', 'vendor', 'driver']).optional() }).parse(req.body);
+    const body = creds.extend({ area: z.enum(['admin', 'finance', 'marketing', 'vendor', 'driver']).optional() }).parse(req.body);
     const { rows } = await pool.query('SELECT id, password_hash, staff_signup FROM users WHERE email = $1 AND disabled_at IS NULL', [body.email]);
     const ok = await verifyPassword(body.password, rows[0]?.password_hash ?? DUMMY);
     if (!rows[0] || !ok) return reply.code(401).send({ error: 'invalid_credentials', message: 'Email or password is incorrect.' });
@@ -54,7 +54,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       // Each staff window only takes its own accounts: the admin cannot sign in to the vendor, driver or marketing windows, and so on.
       const opens = (w: StaffWindow) => held.some((r) => (AREA_LOGIN_ROLES[w] as readonly string[]).includes(r)) || rows[0].staff_signup === w;
       const target = body.area ?? (wins.length === 1 ? wins[0] : WINDOWS.find(opens));
-      if (!target || !opens(target)) return reply.code(403).send({ error: 'not_staff', message: 'This sign-in is only for the admin, marketing, vendor and driver accounts. Use the email for that area.' });
+      if (!target || !opens(target)) return reply.code(403).send({ error: 'not_staff', message: 'This sign-in is only for the admin, finance, marketing, vendor and driver accounts. Use the email for that area.' });
       await createSession(rows[0].id, reply, target);
       return { ok: true };
     }

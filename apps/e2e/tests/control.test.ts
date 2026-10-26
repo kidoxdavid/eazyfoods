@@ -91,7 +91,7 @@ describe('separate staff and shop sign-ins (browser)', () => {
     await page.fill('input[name=email]', 'customer@example.test');     // not even by trying the customer's own email
     await page.fill('input[name=password]', 'dev-password-123');
     await page.click('form button[type=submit]');
-    await seeText(page.locator('body'), 'only for the admin, marketing, vendor and driver accounts');
+    await seeText(page.locator('body'), 'only for the admin, finance, marketing, vendor and driver accounts');
     await page.fill('input[name=email]', 'admin@example.test');
     await page.fill('input[name=password]', 'dev-password-123');
     await page.click('form button[type=submit]');

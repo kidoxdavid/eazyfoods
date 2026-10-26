@@ -5,7 +5,7 @@ import { watchAccessibility } from './a11y'
 
 // Each staff area is its own app, like the original EAZyfoods portals. The first part of the path says which one.
 const AREA = window.location.pathname.split('/')[1]
-const apps = { vendor: () => import('./vendor/App.jsx'), chef: () => import('./chef/App.jsx'), driver: () => import('./driver/App.jsx'), marketing: () => import('./marketing/App.jsx'), admin: () => import('./admin/App.jsx'), portals: () => import('./hub/App.jsx') }
+const apps = { vendor: () => import('./vendor/App.jsx'), chef: () => import('./chef/App.jsx'), driver: () => import('./driver/App.jsx'), marketing: () => import('./marketing/App.jsx'), admin: () => import('./admin/App.jsx'), finance: () => import('./finance/App.jsx'), portals: () => import('./hub/App.jsx') }
 
 /** The vendor window serves two portals: stores get the vendor portal, kitchens (home chefs and restaurants) get the chef portal. */
 async function pick() {

@@ -5,6 +5,24 @@ import { pool } from '../src/db/pool.js';
 const staffLogin = (email: string, area: string, password = 'dev-password-123') =>
   app.inject({ method: 'POST', url: '/api/auth/login', headers: { 'x-area': 'staff', 'x-test-raw': '1' }, payload: { email, password, area } });
 
+describe('the finance window', () => {
+  it('opens only for finance accounts, has its own cookie, reaches the money endpoints, and nobody else gets in', async () => {
+    const r = await staffLogin('finance@example.test', 'finance');
+    expect(r.statusCode).toBe(200);
+    const cookie = String(r.headers['set-cookie']).split(';')[0];
+    expect(cookie).toMatch(/^ez_finance=/);                                              // its own sign-in, separate from the admin one
+    const h = { cookie, 'x-area': 'finance', 'x-test-raw': '1' };
+    expect((await app.inject({ method: 'GET', url: '/api/auth/me', headers: h })).json().email).toBe('finance@example.test');
+    expect((await app.inject({ method: 'GET', url: '/api/admin/finance/summary', headers: h })).statusCode).toBe(200);
+    expect((await app.inject({ method: 'GET', url: '/api/admin/pricing/rules', headers: h })).statusCode).toBe(200);
+    expect((await app.inject({ method: 'GET', url: '/api/admin/dispatch', headers: h })).statusCode).toBe(403);        // the role still limits what it can do
+    expect((await app.inject({ method: 'POST', url: '/api/admin/pricing/rules/00000000-0000-0000-0000-000000000000/approve', headers: h, payload: { confirm: true } })).statusCode).toBe(403);
+    // the finance cookie does not open the other windows
+    expect([401, 403]).toContain((await app.inject({ method: 'GET', url: '/api/vendor/stores', headers: { cookie, 'x-area': 'vendor', 'x-test-raw': '1' } })).statusCode);
+    for (const e of ['admin@example.test', 'support@example.test', 'owner1@example.test', 'customer@example.test']) expect((await staffLogin(e, 'finance')).statusCode).toBe(403);
+  });
+});
+
 describe('one sign-in window per area', () => {
   it('each window takes only its own accounts; the admin cannot open the vendor, driver or marketing windows', async () => {
     expect((await staffLogin('admin@example.test', 'admin')).statusCode).toBe(200);

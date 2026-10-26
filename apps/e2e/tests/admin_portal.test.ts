@@ -132,4 +132,24 @@ describe('admin portal (browser)', () => {
     await seeText(page.locator('main'), 'No delivery rule is live yet');
     expect(errors.filter((e) => !/40[0-9]/.test(e))).toEqual([]);
   });
+
+  it('the finance window: its own sign-in, only the money screens, the same pricing rules screen, a shopper cannot get in', async () => {
+    const { page } = await newPage(browser, DESKTOP);
+    await signInStaff(page, 'finance@example.test', 'dev-password-123', '/finance');
+    await seeText(page.locator('aside'), 'eazyfoods Finance');
+    for (const t of ['Refunds', 'Pricing & rules', 'Reports']) await seeText(page.locator('aside'), t);
+    for (const t of ['Dispatch', 'Control centre', 'Vendors']) await noText(page.locator('aside'), t);
+    await page.goto(`${base()}/finance/pricing`);
+    await seeText(page.locator('main'), 'Proposed Calgary distance bands');
+    // finance can write and submit but not approve
+    await page.getByText('Proposed Calgary distance bands').first().click();
+    await noText(page.getByRole('dialog').first(), 'Review and approve');
+    await page.keyboard.press('Escape');
+    // a shopper is refused at this window
+    const cust = await newPage(browser, DESKTOP);
+    await cust.page.goto(`${base()}/finance/signin`);
+    await cust.page.fill('input[name=email]', 'customer@example.test'); await cust.page.fill('input[name=password]', 'dev-password-123');
+    await cust.page.click('form button[type=submit]');
+    await seeText(cust.page.locator('body'), 'only for the admin, finance, marketing, vendor and driver accounts');
+  });
 });

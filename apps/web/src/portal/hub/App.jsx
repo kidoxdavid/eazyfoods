@@ -1,4 +1,4 @@
-import { ArrowRight, Briefcase, ChefHat, Heart, Mail, MapPin, ShieldCheck, ShoppingBag, Sparkles, Store, Truck, Megaphone } from 'lucide-react'
+import { ArrowRight, Briefcase, ChefHat, Heart, Mail, MapPin, ShieldCheck, ShoppingBag, Wallet, Sparkles, Store, Truck, Megaphone } from 'lucide-react'
 
 /**
  * One front door for every portal. Each card goes to that portal's own sign-in window (each window has its own sign-in, so signing in to one never signs you out of another).
@@ -11,6 +11,7 @@ const PORTALS = [
 ]
 const STAFF = [
   { name: 'Marketing', desc: 'Campaigns, email, offers and the storefront.', href: '/marketing/signin', icon: Megaphone, tone: 'text-fuchsia-400 bg-fuchsia-500/10' },
+  { name: 'Finance', desc: 'Payouts, refunds, the ledger and pricing rules.', href: '/finance/signin', icon: Wallet, tone: 'text-yellow-400 bg-yellow-500/10' },
   { name: 'Admin', desc: 'Operations, marketplace, finance and settings.', href: '/admin/signin', icon: ShieldCheck, tone: 'text-sky-400 bg-sky-500/10' },
 ]
 

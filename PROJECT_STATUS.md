@@ -197,3 +197,10 @@ For now the staff areas open **only for their own accounts**, from anywhere: `ad
 - **Admin screen**: Admin → Pricing & rules (rules per kind, band editor, validation in plain language, approval confirmation, history, simulator). New permissions `pricing.view`, `pricing.edit` (finance, admin), `pricing.approve` (admin).
 - **Verified**: 16 unit tests of the calculations (boundaries, fallbacks, commission base, driver extras, your $70 example), 4 integration tests (permissions, second approver, stale edits, locking of price and driver pay, effective dates, fallbacks, simulator), a browser test of the screen.
 - **Honest gaps**: no routing/geocoding provider (distance rules use their stated fallback; the proposed bands cannot price by distance until one is connected), waiting-time pay not applied, customer service fee and promotion subsidies not yet in checkout/ledger, no settlement preview or reconciliation, statements and exceptions queue not built, driver wage-compliance reporting not built. The proposed rates are drafts and not live.
+
+## Milestone: finance window
+
+- **/finance**: the finance team's own window with its own sign-in and cookie (`ez_finance`), a Finance-only menu (Finance and payouts, Refunds, Gift cards, Pricing & rules, Insights, Reports, Orders, System & audit) and its own menu/notice settings in the Control centre. It reuses the same pages and calls the same server, ledger and rules as the admin console, so there is one source of truth.
+- **Who gets in**: only accounts with the `finance` role open the finance window. For now finance accounts can also still use the admin window (many tests and habits rely on it); making the finance role finance-window-only is a one-line change to `AREA_LOGIN_ROLES` once you have moved your finance staff over. Finance can write and submit pricing rules but only an admin can approve them; every permission is still enforced by the server.
+- **Hub**: the Portals page (`/portals`) now has a Finance card.
+- Migration 039 adds the finance row to the portal settings table.
