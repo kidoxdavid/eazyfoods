@@ -60,7 +60,7 @@ export default function StaffShell({ brand, nav, badgesPath, children, titleOf, 
                   {heading && <p className="px-3 sm:px-4 pt-3 pb-1 text-[11px] font-semibold tracking-wide uppercase text-gray-500">{heading}</p>}
                   <Link to={item.href} className={`flex items-center justify-between px-3 sm:px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${isActive(item.href) ? 'bg-primary-50 text-primary-700 shadow-sm' : 'text-gray-700 hover:bg-gray-100'}`}>
                     <div className="flex items-center min-w-0 flex-1"><Icon className="mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" /><span className="truncate">{item.name}</span></div>
-                    {badge > 0 && <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] text-center animate-pulse flex-shrink-0" aria-label={`${badge} waiting`}>{badge > 99 ? '99+' : badge}</span>}
+                    {badge > 0 && <span className="ml-2 px-2 py-0.5 bg-red-700 text-white text-xs font-bold rounded-full min-w-[20px] text-center animate-pulse flex-shrink-0" aria-label={`${badge} waiting`}>{badge > 99 ? '99+' : badge}</span>}
                   </Link>
                 </div>
               )

@@ -51,7 +51,7 @@ const Login = () => {
           </button>
         </form>
         <p className="text-center text-sm text-gray-600">New here? <Link to="/signup" className="text-primary-600 hover:text-primary-700 font-medium">Become a driver</Link></p>
-        <p className="text-center text-xs text-gray-400"><a href="/" className="hover:text-gray-600">← Back to the shop</a></p>
+        <p className="text-center text-xs text-gray-600"><a href="/" className="hover:text-gray-900 underline">← Back to the shop</a></p>
       </div>
     </div>
   )

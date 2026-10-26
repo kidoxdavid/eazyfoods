@@ -104,7 +104,7 @@ export function Modal({ title, onClose, children, wide }) {
 
 export const Tabs = ({ tabs, value, onChange }) => (
   <div className="flex gap-1 overflow-x-auto border-b border-gray-200" role="tablist">
-    {tabs.map((t) => <button key={t.id} type="button" role="tab" aria-selected={value === t.id} onClick={() => onChange(t.id)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${value === t.id ? 'border-primary-600 text-primary-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>{t.label}{t.badge > 0 && <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">{t.badge}</span>}</button>)}
+    {tabs.map((t) => <button key={t.id} type="button" role="tab" aria-selected={value === t.id} onClick={() => onChange(t.id)} className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${value === t.id ? 'border-primary-600 text-primary-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>{t.label}{t.badge > 0 && <span className="ml-1.5 px-1.5 py-0.5 text-xs bg-red-700 text-white rounded-full">{t.badge}</span>}</button>)}
   </div>
 )
 

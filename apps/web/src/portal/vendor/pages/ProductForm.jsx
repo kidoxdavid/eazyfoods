@@ -565,7 +565,7 @@ const ProductForm = () => {
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, image_url: '' })}
-                    className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-700 text-white rounded-full p-1 hover:bg-red-600"
                   >
                     <X className="h-3 w-3 sm:h-4 sm:w-4" />
                   </button>
@@ -629,7 +629,7 @@ const ProductForm = () => {
                         newImages[index] = ''
                         setAdditionalImages(newImages)
                       }}
-                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600"
+                      className="absolute -top-1 -right-1 bg-red-700 text-white rounded-full p-0.5 hover:bg-red-600"
                     >
                       <X className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                     </button>

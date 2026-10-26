@@ -25,7 +25,7 @@ export function Messages() {
           <ul className={`bg-white rounded-lg border border-gray-200 divide-y divide-gray-100 ${sel ? 'hidden lg:block' : ''}`} aria-label="Conversations">
             {list.data.map((t) => (
               <li key={t.id}><button type="button" onClick={() => setSel(t.id)} aria-current={sel === t.id} className={`w-full text-left px-4 py-3 space-y-0.5 hover:bg-gray-50 ${sel === t.id ? 'bg-primary-50' : ''}`}>
-                <span className="flex justify-between gap-2"><strong className="text-sm truncate">{t.subject}</strong>{t.unread > 0 && <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full" aria-label={`${t.unread} unread`}>{t.unread}</span>}</span>
+                <span className="flex justify-between gap-2"><strong className="text-sm truncate">{t.subject}</strong>{t.unread > 0 && <span className="px-2 py-0.5 bg-red-700 text-white text-xs font-bold rounded-full" aria-label={`${t.unread} unread`}>{t.unread}</span>}</span>
                 <span className="block text-xs text-gray-500">{t.vendor_name} · {fmtDateTime(t.last_message_at)}{t.status === 'closed' ? ' · closed' : ''}</span>
                 {t.preview && <span className="block text-xs text-gray-700 truncate">{t.preview}</span>}
               </button></li>

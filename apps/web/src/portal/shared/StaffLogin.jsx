@@ -28,7 +28,7 @@ export default function StaffLogin({ title, subtitle }) {
               <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" aria-label={show ? 'Hide password' : 'Show password'}>{show ? <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Eye className="h-4 w-4 sm:h-5 sm:w-5" />}</button></div></div>
           <button type="submit" disabled={busy} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 text-sm sm:text-base font-medium"><LogIn className="h-4 w-4 sm:h-5 sm:w-5" /> {busy ? 'Signing in…' : 'Sign in'}</button>
         </form>
-        <p className="text-center text-xs text-gray-400"><a href="/" className="hover:text-gray-600">← Back to the shop</a></p>
+        <p className="text-center text-xs text-gray-600"><a href="/" className="hover:text-gray-900 underline">← Back to the shop</a></p>
       </div>
     </div>
   )

@@ -51,7 +51,7 @@ const DeliverModal = ({ deliveryId, onClose, onDone }) => {
         {preview ? (
           <div className="relative rounded-lg overflow-hidden border border-gray-200 bg-gray-50 mb-4">
             <img src={preview} alt="Delivery proof" className="w-full h-44 object-contain" />
-            <button type="button" onClick={() => { setFile(null); setPreview(null) }} className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600" aria-label="Remove photo"><X className="h-4 w-4" /></button>
+            <button type="button" onClick={() => { setFile(null); setPreview(null) }} className="absolute top-2 right-2 p-1.5 bg-red-700 text-white rounded-full hover:bg-red-600" aria-label="Remove photo"><X className="h-4 w-4" /></button>
           </div>
         ) : (
           <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-primary-500 hover:bg-primary-50/30 transition-colors mb-4" onClick={() => input.current?.click()}>
