@@ -1,3 +1,4 @@
+import { driverStatement } from '../services/settlements.js';
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
@@ -308,6 +309,14 @@ export const driverRoutes: FastifyPluginAsync = async (app) => {
   app.get('/driver/support', async (req) => {
     await approvedDriver(req);
     return (await pool.query(`SELECT t.id, t.subject, t.status, t.created_at, (SELECT body FROM ticket_messages WHERE ticket_id = t.id ORDER BY id DESC LIMIT 1) AS last_message FROM support_tickets t WHERE t.user_id = $1 AND t.kind = 'driver' ORDER BY t.created_at DESC LIMIT 30`, [req.user!.id])).rows;
+  });
+
+  /** The driver's own statement: base pay and tips separately, and payout status. */
+  app.get('/driver/statement', async (req) => {
+    const d = await me(req);
+    if (!d) throw notFound('No driver profile');
+    const q = z.object({ from: z.string().optional(), to: z.string().optional() }).parse(req.query);
+    return driverStatement(d.id, q.from, q.to);
   });
 
   app.get('/driver/earnings', async (req) => {

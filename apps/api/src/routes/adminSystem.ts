@@ -32,6 +32,7 @@ export const SETTING_SCHEMAS: Record<string, z.ZodTypeAny> = {
   'payout.hold_days_kitchen': int(0, 30),
   'payout.auto_enabled': z.boolean(),
   'payout.auto_min_cents': int(100, 1000000),
+  'payout.approval_threshold_cents': int(0, 100000000),
 };
 
 export const adminSystemRoutes: FastifyPluginAsync = async (app) => {

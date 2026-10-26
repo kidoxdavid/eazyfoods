@@ -1,3 +1,4 @@
+import { vendorStatement } from '../services/settlements.js';
 import { assertVendorCan, featureOn, vendorOfStore } from '../services/features.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
@@ -52,6 +53,9 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.get('/onboarding', async (req) => onboardingStatus(vendorId(req)));
+
+  /** The vendor's own statement: sales, commission, refunds, net, payouts and what is owed. Only their own records. */
+  app.get('/statement', async (req) => { const q = z.object({ from: z.string().optional(), to: z.string().optional() }).parse(req.query); return vendorStatement(vendorId(req), q.from, q.to); });
 
   app.get('/profile', async (req) => {
     const v = (await pool.query('SELECT name, legal_name, business_number, phone, contact_email, status, agreement_accepted_at, stripe_account_id IS NOT NULL AS payout_connected FROM vendors WHERE id = $1', [vendorId(req)])).rows[0];

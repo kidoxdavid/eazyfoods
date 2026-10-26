@@ -7,7 +7,7 @@ import type { AuthUser } from './auth.js';
 export const ROLE_PERMS: Record<string, string[]> = {
   admin: ['*'],
   support: ['orders.view', 'orders.manage', 'support.manage', 'refunds.request', 'users.view'],
-  finance: ['orders.view', 'refunds.approve', 'payouts.manage', 'reports.view', 'ledger.view', 'settings.view', 'audit.view', 'pricing.view', 'pricing.edit'],
+  finance: ['orders.view', 'refunds.approve', 'payouts.manage', 'reports.view', 'ledger.view', 'settings.view', 'audit.view', 'pricing.view', 'pricing.edit', 'settlements.view'],
   dispatcher: ['dispatch.manage', 'orders.view', 'orders.manage', 'drivers.manage'],
   catalog: ['catalog.manage'],
   marketing: ['marketing.manage', 'content.manage', 'promotions.manage'],

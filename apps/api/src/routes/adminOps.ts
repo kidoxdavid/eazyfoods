@@ -1,4 +1,5 @@
 import { eraseDriver } from '../services/erase.js';
+import { createDriverPayout } from '../services/settlements.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
@@ -186,16 +187,7 @@ export const adminOpsRoutes: FastifyPluginAsync = async (app) => {
   });
 
   app.post<{ Params: { driverId: string } }>('/payouts/driver/:driverId', { preHandler: requirePerm('payouts.manage') }, async (req, reply) => {
-    const driverId = uuid.parse(req.params.driverId);
-    const p = await tx(async (c) => {
-      const es = (await c.query('SELECT id, amount_cents FROM driver_earnings WHERE driver_id = $1 AND payout_id IS NULL FOR UPDATE', [driverId])).rows;
-      const amount = es.reduce((a, e) => a + e.amount_cents, 0);
-      if (amount <= 0) throw bad('nothing_payable', 'No unpaid earnings.');
-      const row = (await c.query(`INSERT INTO payouts(payee_type, driver_id, amount_cents, created_by) VALUES ('driver',$1,$2,$3) RETURNING *`, [driverId, amount, req.user!.id])).rows[0];
-      await c.query('UPDATE driver_earnings SET payout_id = $2 WHERE id = ANY($1::uuid[])', [es.map((e) => e.id), row.id]);
-      await audit(req.user!.id, 'payout.created', 'payout', row.id, { driverId, amount }, c);
-      return row;
-    });
+    const p = await createDriverPayout(uuid.parse(req.params.driverId), req.user!.id);
     return reply.code(201).send(await settlePayout(p.id, req.user!.id));
   });
 

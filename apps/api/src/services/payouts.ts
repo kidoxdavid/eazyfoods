@@ -1,6 +1,6 @@
 import { pool, tx } from '../db/pool.js';
 import { audit } from '../lib/auth.js';
-import { bad } from '../lib/errors.js';
+import { bad, conflict } from '../lib/errors.js';
 import { getSetting } from '../lib/settings.js';
 import { getProvider } from '../payments/provider.js';
 import { postPayout } from './ledger.js';
@@ -33,14 +33,17 @@ export async function createVendorPayout(vendorId: string, actor: string | null,
   const v = (await pool.query('SELECT kind FROM vendors WHERE id = $1', [vendorId])).rows[0];
   if (!v) throw bad('no_vendor', 'Vendor not found.');
   const days = await holdDays(v.kind);
+  if ((await pool.query('SELECT 1 FROM payout_holds WHERE vendor_id = $1 AND released_at IS NULL LIMIT 1', [vendorId])).rowCount) throw conflict('payout_on_hold', 'Payouts to this vendor are on hold.');
+  const threshold = await getSetting<number>('payout.approval_threshold_cents');
   return tx(async (c) => {
     const subs = (await c.query(`SELECT s.id, ${NET} AS net FROM suborders s WHERE s.vendor_id = $1 AND ${ELIGIBLE} FOR UPDATE OF s`, [vendorId, days])).rows;
     const amount = subs.reduce((a, s) => a + s.net, 0);
     if (amount <= 0) throw bad('nothing_payable', 'Nothing is payable to this vendor yet (orders must be delivered and past the hold period).');
-    const row = (await c.query(`INSERT INTO payouts(payee_type, vendor_id, amount_cents, created_by, trigger) VALUES ('vendor',$1,$2,$3,$4) RETURNING *`, [vendorId, amount, actor, trigger])).rows[0];
+    const status = threshold > 0 && amount > threshold ? 'awaiting_approval' : 'pending';
+    const row = (await c.query(`INSERT INTO payouts(payee_type, vendor_id, amount_cents, created_by, trigger, status) VALUES ('vendor',$1,$2,$3,$4,$5) RETURNING *`, [vendorId, amount, actor, trigger, status])).rows[0];
     await c.query('UPDATE suborders SET payout_id = $2 WHERE id = ANY($1::uuid[])', [subs.map((s) => s.id), row.id]);
-    await audit(actor, 'payout.created', 'payout', row.id, { vendorId, amount, trigger }, c);
-    return row as { id: string; amount_cents: number };
+    await audit(actor, 'payout.created', 'payout', row.id, { vendorId, amount, trigger, status }, c);
+    return row as { id: string; amount_cents: number; status: string };
   });
 }
 
@@ -53,6 +56,8 @@ export async function settlePayout(payoutId: string, actor: string | null) {
     `SELECT p.*, v.stripe_account_id, v.payout_status FROM payouts p LEFT JOIN vendors v ON v.id = p.vendor_id WHERE p.id = $1`, [payoutId])).rows[0];
   if (!p) throw bad('no_payout', 'Payout not found.');
   if (p.status === 'paid') return { id: p.id, status: 'paid' as const, amount_cents: p.amount_cents };
+  if (p.status === 'awaiting_approval') return { id: p.id, status: 'awaiting_approval' as const, amount_cents: p.amount_cents, message: 'This payout needs a second person to approve it before it is sent.' };
+  if (p.status === 'cancelled') throw conflict('cancelled', 'This payout was cancelled.');
   const provider = getProvider();
   if (p.payee_type === 'vendor' && p.stripe_account_id && p.payout_status === 'enabled' && provider.transfer) {
     await pool.query('UPDATE payouts SET attempts = attempts + 1 WHERE id = $1', [p.id]);
@@ -92,7 +97,7 @@ export async function runAutoPayouts() {
     const b = await vendorBalance(v.id);
     if (b.payable_now_cents < min) continue;
     try { const p = await createVendorPayout(v.id, null, 'auto'); await settlePayout(p.id, null); created++; }
-    catch (e: any) { if (e.code !== 'nothing_payable') console.error('auto payout failed', v.id, e); }
+    catch (e: any) { if (e.code !== 'nothing_payable' && e.code !== 'payout_on_hold') console.error('auto payout failed', v.id, e); }
   }
   return { created, retried };
 }
