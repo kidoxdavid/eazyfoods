@@ -4,6 +4,8 @@ import { allocate, bps } from '../lib/money.js';
 import { getSetting } from '../lib/settings.js';
 import { findSlot } from './slots.js';
 import { creditBalance } from './credit.js';
+import { deliveryFee, haversineKm, resolveRule } from './financeRules.js';
+import { routeDistanceKm } from './geo.js';
 
 /** Card payments below this cannot be processed, so credit never covers the last bit of an order. */
 export const MIN_CARD_CENTS = 50;
@@ -17,7 +19,7 @@ export type QuoteLine = {
 export type QuoteSub = {
   store_id: string; store_slug: string; store_name: string; vendor_id: string; lines: QuoteLine[];
   subtotal_cents: number; discount_cents: number; delivery_cents: number; delivery_tax_cents: number; tax_cents: number; tip_cents: number; total_cents: number;
-  commission_bps: number; commission_cents: number; eta_minutes: number | null; fulfilment_method: 'delivery' | 'pickup';
+  commission_bps: number; commission_cents: number; pricing?: Record<string, unknown>; delivery_basis?: string | null; eta_minutes: number | null; fulfilment_method: 'delivery' | 'pickup';
   scheduled_for: string | null; scheduled_until: string | null; preorders_enabled: boolean;
 };
 export type Quote = {
@@ -36,6 +38,7 @@ type Opts = { addressId?: string | null; method: 'delivery' | 'pickup'; couponCo
 export async function buildQuote(c: Queryable, userId: string, opts: Opts): Promise<Quote> {
   const issues: Issue[] = [];
   const warnings: Issue[] = [];
+  const at = new Date();   // pricing is locked at this moment and stored with the order
   // Sequential: `c` may be a single transaction client, which must not run queries concurrently.
   const taxRates = await getSetting<Record<string, number>>('tax.rates_bps', c);
   const defaultBps = await getSetting<number>('commission.default_bps', c);
@@ -47,7 +50,7 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
     `SELECT ci.offer_id, ci.quantity, ci.added_price_cents, ci.sub_pref,
             o.price_cents AS base_price_cents, LEAST(o.price_cents, COALESCE(t.unit_price_cents, o.price_cents)) AS price_cents, o.is_active, o.stock_on_hand - o.stock_reserved AS available, o.store_id,
             p.id AS product_id, p.slug AS product_slug, p.name, p.status AS pstatus, p.tax_class, p.sold_by, p.pack_size, p.pack_unit, b.name AS brand,
-            s.slug AS store_slug, s.name AS store_name, s.orderable, s.is_open, s.ordering_paused, s.min_order_cents, s.offers_delivery, s.offers_pickup, s.vendor_id, s.preorders_enabled,
+            s.slug AS store_slug, s.name AS store_name, s.orderable, s.is_open, s.ordering_paused, s.min_order_cents, s.offers_delivery, s.offers_pickup, s.vendor_id, s.preorders_enabled, s.lat AS store_lat, s.lng AS store_lng,
             v.commission_bps
        FROM cart_items ci JOIN carts ct ON ct.id = ci.cart_id
        JOIN offers_live o ON o.id = ci.offer_id
@@ -63,12 +66,14 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
   // Delivery zone for the chosen address
   let zone: { id: string; fee_cents: number; free_over_cents: number | null; eta_minutes: number } | null = null;
   let zoneStores = new Set<string>();
+  let addrGeo: { lat: number; lng: number } | null = null;
   if (opts.method === 'delivery') {
     if (!opts.addressId) issues.push({ type: 'address_required', message: 'Choose a delivery address.' });
     else {
-      const a = (await c.query('SELECT postal_code FROM addresses WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [opts.addressId, userId])).rows[0];
+      const a = (await c.query('SELECT postal_code, lat, lng FROM addresses WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL', [opts.addressId, userId])).rows[0];
       if (!a) issues.push({ type: 'address_required', message: 'That address was not found.' });
       else {
+        if (a.lat != null && a.lng != null) addrGeo = { lat: Number(a.lat), lng: Number(a.lng) };
         zone = (await c.query(
           `SELECT z.id, z.fee_cents, z.free_over_cents, z.eta_minutes FROM delivery_zone_fsas f JOIN delivery_zones z ON z.id = f.zone_id AND z.is_active WHERE f.fsa = $1`,
           [a.postal_code.slice(0, 3)])).rows[0] ?? null;
@@ -91,6 +96,8 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
   }
 
   const subs: QuoteSub[] = [];
+  const commissionRules = new Map<string, Awaited<ReturnType<typeof resolveRule<'commission'>>>>();
+  const storeGeo = new Map<string, { lat: number; lng: number } | null>();
   const stdRate = taxRates.standard ?? 0;
   for (const [storeId, rows] of groups) {
     const f = rows[0];
@@ -123,7 +130,12 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
     const subtotal = lines.reduce((a, l) => a + l.line_total_cents, 0);
     if (f.min_order_cents && subtotal < f.min_order_cents)
       issues.push({ type: 'min_order', message: `${f.store_name} has a ${(f.min_order_cents / 100).toFixed(2)} minimum order. Add ${((f.min_order_cents - subtotal) / 100).toFixed(2)} more.`, store_slug: f.store_slug });
-    const cbps = f.commission_bps ?? defaultBps;
+    // Commission: a store or vendor agreement rule wins; a global rule applies unless this vendor already has its own negotiated rate; otherwise the old vendor/default rate.
+    const crule = await resolveRule(c, 'commission', { zoneId: zone?.id, storeId, vendorId: f.vendor_id }, at);
+    const useRule = !!crule && (crule.scope_type !== 'global' || f.commission_bps == null);
+    const cbps = useRule ? crule!.params.bps : f.commission_bps ?? defaultBps;
+    commissionRules.set(storeId, useRule ? crule : null);
+    storeGeo.set(storeId, f.store_lat != null && f.store_lng != null ? { lat: Number(f.store_lat), lng: Number(f.store_lng) } : null);
     subs.push({
       store_id: storeId, store_slug: f.store_slug, store_name: f.store_name, vendor_id: f.vendor_id, lines, subtotal_cents: subtotal, discount_cents: 0,
       delivery_cents: 0, delivery_tax_cents: 0, tax_cents: 0, tip_cents: 0, total_cents: 0, commission_bps: cbps, commission_cents: 0,
@@ -150,14 +162,37 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
   }
 
   for (const s of subs) {
+    const crule = commissionRules.get(s.store_id) ?? null;
     for (const l of s.lines) {
       l.tax_cents = bps(l.line_total_cents - l.discount_cents, l.tax_rate_bps);
-      l.commission_cents = bps(l.line_total_cents, s.commission_bps);
+      l.commission_cents = bps(crule && crule.params.base === 'after_discount' ? l.line_total_cents - l.discount_cents : l.line_total_cents, s.commission_bps);
     }
     s.tax_cents = s.lines.reduce((a, l) => a + l.tax_cents, 0);
     s.commission_cents = s.lines.reduce((a, l) => a + l.commission_cents, 0);
+    if (crule && crule.params.min_cents && s.commission_cents < crule.params.min_cents) {
+      const target = Math.min(crule.params.min_cents, s.subtotal_cents - s.discount_cents);
+      if (target > s.commission_cents) allocate(target - s.commission_cents, s.lines.map((l) => l.line_total_cents)).forEach((x, i) => (s.lines[i].commission_cents += x));
+      s.commission_cents = s.lines.reduce((a, l) => a + l.commission_cents, 0);
+    }
+    s.pricing = { at: at.toISOString(), commission: crule ? { source: 'rule', rule_id: crule.id, rule_version: crule.version, rule_scope: crule.scope_type, bps: s.commission_bps, base: crule.params.base, min_cents: crule.params.min_cents } : { source: 'vendor_or_default', bps: s.commission_bps } };
     if (opts.method === 'delivery' && zone) {
-      s.delivery_cents = zone.free_over_cents && s.subtotal_cents >= zone.free_over_cents ? 0 : zone.fee_cents;
+      const drule = await resolveRule(c, 'delivery', { zoneId: zone.id, storeId: s.store_id, vendorId: s.vendor_id }, at);
+      if (drule) {
+        const sg = storeGeo.get(s.store_id) ?? null;
+        const route = await routeDistanceKm(sg, addrGeo);
+        const r = deliveryFee(drule.params, { distance: { routeKm: route, straightKm: sg && addrGeo ? haversineKm(sg, addrGeo) : null }, zoneFeeCents: zone.fee_cents, subtotalCents: s.subtotal_cents });
+        if (!r.ok) issues.push({ type: r.reason === 'too_far' || r.reason === 'quote_required' ? 'not_deliverable' : 'delivery_unavailable', message: `${s.store_name}: ${r.message}`, store_slug: s.store_slug });
+        else {
+          // When the rule fell back to the zone fee, the zone's own free-over threshold still applies.
+          const zoneFree = r.model === 'zone_fee' && zone.free_over_cents && s.subtotal_cents >= zone.free_over_cents;
+          s.delivery_cents = zoneFree ? 0 : r.fee_cents;
+          s.delivery_basis = r.distance_km != null ? `${r.distance_km} km${r.distance_method === 'straight_line_estimate' ? ' (estimated)' : ''}` : null;
+          (s.pricing as any).delivery = { source: 'rule', rule_id: drule.id, rule_version: drule.version, rule_scope: drule.scope_type, model: r.model, distance_km: r.distance_km, distance_method: r.distance_method, free_applied: r.free_applied || !!zoneFree, fee_cents: s.delivery_cents, notes: r.notes, zone_id: zone.id };
+        }
+      } else {
+        s.delivery_cents = zone.free_over_cents && s.subtotal_cents >= zone.free_over_cents ? 0 : zone.fee_cents;
+        (s.pricing as any).delivery = { source: 'zone_fee', zone_id: zone.id, fee_cents: s.delivery_cents };
+      }
       s.delivery_tax_cents = bps(s.delivery_cents, stdRate);
     }
     s.total_cents = s.subtotal_cents - s.discount_cents + s.delivery_cents + s.delivery_tax_cents + s.tax_cents;

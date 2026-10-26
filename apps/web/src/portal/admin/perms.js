@@ -2,7 +2,7 @@
 export const ROLE_PERMS = {
   admin: ['*'],
   support: ['orders.view', 'orders.manage', 'support.manage', 'refunds.request', 'users.view'],
-  finance: ['orders.view', 'refunds.approve', 'payouts.manage', 'reports.view', 'ledger.view', 'settings.view', 'audit.view'],
+  finance: ['orders.view', 'refunds.approve', 'payouts.manage', 'reports.view', 'ledger.view', 'settings.view', 'audit.view', 'pricing.view', 'pricing.edit'],
   dispatcher: ['dispatch.manage', 'orders.view', 'orders.manage', 'drivers.manage'],
   catalog: ['catalog.manage'],
   marketing: ['marketing.manage', 'content.manage', 'promotions.manage'],

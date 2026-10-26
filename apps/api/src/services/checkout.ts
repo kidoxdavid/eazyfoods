@@ -56,9 +56,9 @@ export async function placeOrder(user: { id: string; email: string; full_name: s
       for (const s of q.suborders) {
         const sub = (await c.query(
           `INSERT INTO suborders(order_id, store_id, vendor_id, fulfilment_method, subtotal_cents, discount_cents, delivery_cents, delivery_tax_cents, tax_cents, total_cents,
-                                 commission_bps, commission_cents, eta_minutes, scheduled_for, scheduled_until, tip_cents)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING id`,
-          [o.id, s.store_id, s.vendor_id, s.fulfilment_method, s.subtotal_cents, s.discount_cents, s.delivery_cents, s.delivery_tax_cents, s.tax_cents, s.total_cents, s.commission_bps, s.commission_cents, s.eta_minutes, s.scheduled_for, s.scheduled_until, s.tip_cents])).rows[0];
+                                 commission_bps, commission_cents, eta_minutes, scheduled_for, scheduled_until, tip_cents, pricing_snapshot)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING id`,
+          [o.id, s.store_id, s.vendor_id, s.fulfilment_method, s.subtotal_cents, s.discount_cents, s.delivery_cents, s.delivery_tax_cents, s.tax_cents, s.total_cents, s.commission_bps, s.commission_cents, s.eta_minutes, s.scheduled_for, s.scheduled_until, s.tip_cents, JSON.stringify(s.pricing ?? null)])).rows[0];
         for (const l of s.lines) {
           const line = (await c.query(
             `INSERT INTO order_lines(suborder_id, offer_id, product_id, product_name, brand, pack_label, sold_by, unit_price_cents, quantity, line_total_cents, discount_cents, tax_rate_bps, tax_cents, commission_cents, sub_pref)
