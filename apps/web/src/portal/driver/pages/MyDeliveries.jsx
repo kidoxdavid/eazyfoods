@@ -1,4 +1,4 @@
-import { directionsUrl } from '../services/maps'
+import { beforePickup, directionsUrl } from '../services/maps'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
@@ -107,7 +107,7 @@ const MyDeliveries = () => {
               className="px-3 py-1 bg-primary-600 text-white rounded text-sm hover:bg-primary-700 flex items-center gap-1"
             >
               <Navigation className="h-3 w-3" />
-              Track
+              Track {beforePickup(row) ? 'to store' : 'to customer'}
             </button>
           )}
           {['accepted', 'picked_up', 'in_transit'].includes(row.status) && (

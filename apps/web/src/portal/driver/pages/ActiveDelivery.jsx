@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { directionsUrl } from '../services/maps'
 import { startLocationTracking, stopLocationTracking, getCurrentPosition } from '../services/locationTracking'
 import { MapPin, Clock, Navigation, CheckCircle, ArrowLeft, ChevronRight } from 'lucide-react'
 import DeliverModal from '../components/DeliverModal'
@@ -118,20 +119,7 @@ const ActiveDelivery = () => {
     }
   }
 
-  const getNavigationUrl = () => {
-    if (delivery?.delivery_latitude && delivery?.delivery_longitude) {
-      return `https://www.google.com/maps/dir/?api=1&destination=${delivery.delivery_latitude},${delivery.delivery_longitude}`
-    }
-    // Fallback: use address text when lat/long are missing
-    const addr = delivery?.delivery_address
-    if (addr && (addr.street || addr.city)) {
-      const parts = [addr.street, addr.city, addr.state, addr.postal_code].filter(Boolean)
-      if (parts.length) {
-        return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(parts.join(', '))}`
-      }
-    }
-    return null
-  }
+  const getNavigationUrl = () => directionsUrl(delivery)
 
   const navUrl = getNavigationUrl()
 

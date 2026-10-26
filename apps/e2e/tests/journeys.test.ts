@@ -120,11 +120,15 @@ describe('customer -> store -> dispatch -> driver -> review, on a phone', () => 
     page.on('dialog', (d) => d.accept());
     // Track opens Google Maps with directions from where the driver is to the customer's address
     await page.evaluate(() => { (window as any).__opened = []; window.open = ((u: string) => { (window as any).__opened.push(u); return null; }) as any; });
-    await page.getByRole('button', { name: 'Track' }).first().click();
+    await page.getByRole('button', { name: 'Track to store' }).first().click();
     const mapsUrl = new URL((await page.evaluate(() => (window as any).__opened))[0]);
     expect(mapsUrl.hostname).toBe('www.google.com'); expect(mapsUrl.pathname).toBe('/maps/dir/');
     expect(mapsUrl.searchParams.get('destination')).toMatch(/Calgary/i); expect(mapsUrl.searchParams.has('origin')).toBe(false);
+    const toStore = mapsUrl.searchParams.get('destination');
     await page.getByRole('button', { name: 'Mark Picked Up' }).first().click();
+    await page.getByRole('button', { name: 'Track to customer' }).first().click();
+    const toCustomer = new URL((await page.evaluate(() => (window as any).__opened))[1]).searchParams.get('destination');
+    expect(toCustomer).not.toBe(toStore);                              // before pickup the way leads to the store, after pickup to the customer
     await page.getByRole('button', { name: 'Mark Delivered' }).first().click();
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
     await page.locator('input[type=file]').setInputFiles({ name: 'proof.png', mimeType: 'image/png', buffer: png });
