@@ -118,6 +118,12 @@ describe('customer -> store -> dispatch -> driver -> review, on a phone', () => 
     await signIn(page, 'driver@example.test');
     await page.goto(`${base()}/driver/my-deliveries`);
     page.on('dialog', (d) => d.accept());
+    // Track opens Google Maps with directions from where the driver is to the customer's address
+    await page.evaluate(() => { (window as any).__opened = []; window.open = ((u: string) => { (window as any).__opened.push(u); return null; }) as any; });
+    await page.getByRole('button', { name: 'Track' }).first().click();
+    const mapsUrl = new URL((await page.evaluate(() => (window as any).__opened))[0]);
+    expect(mapsUrl.hostname).toBe('www.google.com'); expect(mapsUrl.pathname).toBe('/maps/dir/');
+    expect(mapsUrl.searchParams.get('destination')).toMatch(/Calgary/i); expect(mapsUrl.searchParams.has('origin')).toBe(false);
     await page.getByRole('button', { name: 'Mark Picked Up' }).first().click();
     await page.getByRole('button', { name: 'Mark Delivered' }).first().click();
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');

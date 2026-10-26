@@ -1,3 +1,4 @@
+import { directionsUrl } from '../services/maps'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
@@ -102,11 +103,19 @@ const MyDeliveries = () => {
         <div className="flex gap-2 flex-wrap">
           {['accepted', 'picked_up', 'in_transit'].includes(row.status) && (
             <button
-              onClick={() => navigate(`/deliveries/${row.id}/track`)}
+              onClick={() => { const u = directionsUrl(row); if (u) window.open(u, '_blank', 'noopener'); else navigate(`/deliveries/${row.id}/track`) }}
               className="px-3 py-1 bg-primary-600 text-white rounded text-sm hover:bg-primary-700 flex items-center gap-1"
             >
               <Navigation className="h-3 w-3" />
               Track
+            </button>
+          )}
+          {['accepted', 'picked_up', 'in_transit'].includes(row.status) && (
+            <button
+              onClick={() => navigate(`/deliveries/${row.id}/track`)}
+              className="px-3 py-1 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+            >
+              Details
             </button>
           )}
           {row.status === 'accepted' && (
