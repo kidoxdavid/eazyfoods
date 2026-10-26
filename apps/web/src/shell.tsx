@@ -137,7 +137,7 @@ export function Header() {
         </div></div>
         <div className="hdr-main"><div className="wrap hdr-row">
           <button className="icon-btn menu-btn" aria-label={t('Open all departments')} aria-expanded={menu} onClick={openMenu}><IconMenu /></button>
-          <Link to="/" className="logo" aria-label="EAZyfoods home"><img className="logo-mark" src="/logo-192.png" alt="" width={36} height={36} /><b className="wm">azy<span>foods</span></b></Link>
+          <Link to="/" className="logo"><img className="logo-mark" src="/logo-192.png" alt="e" width={36} height={36} /><b className="wm">azy<span>foods</span></b></Link>
           <button className="deliver" onClick={() => setOpen(true)}>
             <IconPin width={22} height={22} /><span><small>{t('Deliver to')}</small><b>{place ? `${place.fsa} ${place.serviceable ? '' : '(not yet)'}` : t('Choose location')}</b></span>
           </button>

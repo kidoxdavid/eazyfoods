@@ -143,9 +143,10 @@ export function Home() {
       {slides.length ? <HeroCarousel slides={slides} /> : <div className="hero-skel" aria-hidden="true" />}
       {stores.data?.some((s) => s.is_test_data) && <Notice tone="warn"><strong>Development data.</strong> Stores marked “Demo store” are invented for testing and are not real businesses. Product pictures are illustrations until stores upload photos.</Notice>}
       <Personal />
+      {shape.data && order.some((x) => x.id === 'new' && x.enabled) && parts.new}
       <HomeBanner />
       {regions.error && <ErrorBox message={regions.error} retry={regions.reload} />}
-      {shape.data ? order.filter((x) => x.enabled).map((x) => parts[x.id]) : <><div className="quads" aria-hidden="true">{[0, 1, 2, 3].map((i) => <div key={i} className="quad quad-skel" />)}</div><SkelShelf /></>}
+      {shape.data ? order.filter((x) => x.enabled && x.id !== 'new').map((x) => parts[x.id]) : <><div className="quads" aria-hidden="true">{[0, 1, 2, 3].map((i) => <div key={i} className="quad quad-skel" />)}</div><SkelShelf /></>}
       <span hidden><IconBook /></span>
     </>
   );

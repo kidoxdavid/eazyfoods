@@ -335,5 +335,11 @@ main { padding-top: 14px; }
 @media (hover: none), (max-width: 699px) { .pcard .heart { top: 6px; right: 42px; width: 30px; height: 30px; } }
 
 /* Wordmark: the logo is the "e", so it reads eazyfoods */
-.logo { gap: 1px; text-transform: none; } .hdr .logo .logo-mark { margin-right: -2px; }
+.logo { gap: 1px; text-transform: none; } .hdr .logo .logo-mark { margin-right: -5px; }
 .logo .wm { font: inherit; letter-spacing: inherit; color: inherit; }
+
+/* Phones: slightly smaller shelf cards */
+@media (max-width: 899px) { .shelf-row > li { flex-basis: 142px; } .shelf-row { gap: 8px; } }
+/* Logo: the e sits on the same baseline as the other letters, and closer to them */
+.logo .logo-mark { transform: translateY(2px); }
+@media (max-width: 480px) { .hdr .logo .logo-mark { margin-right: -7px; transform: translateY(1px); } .logo { gap: 0; } }
