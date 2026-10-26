@@ -1,7 +1,7 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
-import { LayoutDashboard, Package, MapPin, User, Menu, X, ToggleLeft, ToggleRight, DollarSign, BarChart3, Star, MessageSquare, MessageCircle, History, Settings, FileText } from 'lucide-react'
+import { LayoutDashboard, Package, MapPin, User, Menu, X, ToggleLeft, ToggleRight, DollarSign, BarChart3, Star, MessageSquare, MessageCircle, History, Settings, FileText, Receipt } from 'lucide-react'
 import { useState } from 'react'
 import api from '../services/api'
 
@@ -18,6 +18,7 @@ const Layout = () => {
     { name: 'My Deliveries', href: '/my-deliveries', icon: Package, badge: notifications.activeDeliveries },
     { name: 'Delivery History', href: '/delivery-history', icon: History },
     { name: 'Earnings', href: '/earnings', icon: DollarSign },
+    { name: 'Statement', href: '/statement', icon: Receipt },
     { name: 'Performance', href: '/performance', icon: BarChart3 },
     { name: 'Ratings & Reviews', href: '/ratings', icon: Star, badge: notifications.unreadRatings },
     { name: 'Support', href: '/support', icon: MessageSquare },

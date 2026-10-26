@@ -24,6 +24,7 @@ import Layout from './components/Layout'
 import Storefront from '../shared/pages/Storefront'
 import Questions from '../shared/pages/Questions'
 import Reports from '../shared/pages/Reports'
+import Statement from '../shared/pages/Statement'
 import Import from '../shared/pages/Import'
 
 const Spinner = () => (
@@ -77,6 +78,7 @@ export default function App() {
                   <Route path="/storefront" element={<Storefront />} />
                   <Route path="/questions" element={<Questions />} />
                   <Route path="/reports" element={<Reports />} />
+                  <Route path="/statement" element={<Statement kind="vendor" />} />
                   <Route path="/import" element={<Import />} />
                   {/* Links in older emails and bookmarks */}
                   <Route path="/messages" element={<Navigate to="/chat" replace />} />

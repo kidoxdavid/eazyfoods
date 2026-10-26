@@ -4,6 +4,7 @@ import { makeHttp } from '../../http'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
 import {
+  Receipt,
   LayoutDashboard,
   Package,
   ShoppingCart,
@@ -64,6 +65,7 @@ const Layout = ({ children }) => {
     { name: 'Reviews', href: '/reviews', icon: Star, badge: notifications.reviews },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
     { name: 'Payouts', href: '/payouts', icon: DollarSign },
+    { name: 'Statement', href: '/statement', icon: Receipt },
     { name: 'Reports', href: '/reports', icon: FileSpreadsheet },
     { name: 'Support', href: '/support', icon: MessageSquare, badge: notifications.support },
     { name: 'Chat', href: '/chat', icon: MessageCircle },

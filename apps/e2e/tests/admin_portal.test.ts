@@ -152,4 +152,30 @@ describe('admin portal (browser)', () => {
     await cust.page.click('form button[type=submit]');
     await seeText(cust.page.locator('body'), 'only for the admin, finance, marketing, vendor and driver accounts');
   });
+
+  it('settlements and reconciliation: finance previews a vendor before paying, sees the checks, and vendors and drivers read their own statements', async () => {
+    const { page, errors } = await newPage(browser, DESKTOP);
+    await signInStaff(page, 'finance@example.test', 'dev-password-123', '/finance');
+    await page.goto(`${base()}/finance/settlements`);
+    await seeText(page.locator('main'), 'Settlements');
+    await page.getByRole('tab', { name: 'Preview a vendor' }).click();
+    await page.getByLabel('Vendor').selectOption({ index: 1 });
+    await seeText(page.locator('main'), 'Net payable now');
+    await seeText(page.locator('main'), 'Orders included');
+    await page.getByRole('tab', { name: 'Statements' }).click();
+    await page.getByLabel('Statement for').selectOption({ index: 1 });
+    await seeText(page.locator('main'), 'Merchandise');
+    await page.goto(`${base()}/finance/reconciliation`);
+    await seeText(page.locator('main'), 'never creates a balancing entry');
+    await page.getByRole('link', { name: 'Download movements (CSV)' }).waitFor();
+    const vendor = await newPage(browser, DESKTOP);
+    await signInStaff(vendor.page, 'owner1@example.test', 'dev-password-123', '/vendor');
+    await vendor.page.goto(`${base()}/vendor/statement`);
+    await seeText(vendor.page.locator('main'), 'You earn');
+    const driver = await newPage(browser, DESKTOP);
+    await signInStaff(driver.page, 'driver@example.test', 'dev-password-123', '/driver');
+    await driver.page.goto(`${base()}/driver/statement`);
+    await seeText(driver.page.locator('main'), 'Total earned');
+    expect(errors.filter((e) => !/40[0-9]/.test(e))).toEqual([]);
+  });
 });

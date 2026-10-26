@@ -41,6 +41,9 @@ describe('settlement preview, approval and holds', () => {
     expect(pv.discrepancy_cents).toBe(0);                                                         // ledger and orders agree
     expect(pv.method).toBe('manual_bank_transfer');
     expect([401, 403]).toContain((await call(support, 'GET', `/api/admin/settlements/vendors/${vendorId}/preview`)).status);
+    const payees = (await call(fin, 'GET', '/api/admin/settlements/payees')).body;
+    expect(payees.vendors.some((v: any) => v.id === vendorId)).toBe(true); expect(Array.isArray(payees.drivers)).toBe(true);
+    expect([401, 403]).toContain((await call(support, 'GET', '/api/admin/settlements/payees')).status);
 
     const hold = await call(fin, 'POST', '/api/admin/holds', { payee_type: 'vendor', vendor_id: vendorId, reason: 'Checking a complaint' });
     expect(hold.status).toBe(201);

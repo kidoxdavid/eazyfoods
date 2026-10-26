@@ -21,6 +21,7 @@ import Layout from './components/Layout'
 import Storefront from '../shared/pages/Storefront'
 import Questions from '../shared/pages/Questions'
 import Reports from '../shared/pages/Reports'
+import Statement from '../shared/pages/Statement'
 
 const Spinner = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -67,6 +68,7 @@ export default function App() {
                   <Route path="/storefront" element={<Storefront />} />
                   <Route path="/questions" element={<Questions />} />
                   <Route path="/reports" element={<Reports />} />
+                  <Route path="/statement" element={<Statement kind="vendor" />} />
                   {/* Links in older emails and bookmarks */}
                   <Route path="/menu" element={<Navigate to="/cuisines" replace />} />
                   <Route path="/store" element={<Navigate to="/profile" replace />} />

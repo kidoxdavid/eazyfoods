@@ -23,6 +23,7 @@ export const badgeRoutes: FastifyPluginAsync = async (app) => {
     if (can(u, 'refunds.approve')) out['/admin/refunds'] = await n(`SELECT count(*)::int n FROM refunds WHERE status = 'requested'`);
     if (can(u, 'support.manage')) out['/admin/support'] = await n(`SELECT count(*)::int n FROM support_tickets WHERE status = 'open'`);
     if (can(u, 'support.manage')) out['/admin/reviews'] = await n(`SELECT count(*)::int n FROM reviews WHERE vendor_reported_at IS NOT NULL AND NOT is_hidden`);
+    if (can(u, 'payouts.manage') || can(u, 'payouts.approve')) out['/admin/settlements'] = await n(`SELECT count(*)::int n FROM payouts WHERE status IN ('awaiting_approval','failed')`);
     if (can(u, 'ads.manage')) out['/admin/ads'] = await n(`SELECT count(*)::int n FROM ad_campaigns WHERE status = 'pending'`);
     if (can(u, 'catalog.manage')) out['/admin/catalogue'] = await n(`SELECT count(*)::int n FROM products WHERE status = 'pending'`);
     return out;

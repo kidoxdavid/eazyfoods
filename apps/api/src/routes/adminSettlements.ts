@@ -15,6 +15,12 @@ export const adminSettlementRoutes: FastifyPluginAsync = async (app) => {
   const manage = requirePerm('payouts.manage');
   const approve = requirePerm('payouts.approve');
 
+  /** Who can be paid or have a statement: approved vendors and drivers. Finance does not need the vendor-management permission for this. */
+  app.get('/settlements/payees', { preHandler: read }, async () => ({
+    vendors: (await pool.query(`SELECT id, name, kind FROM vendors WHERE status IN ('approved','suspended') ORDER BY name`)).rows,
+    drivers: (await pool.query(`SELECT d.id, u.full_name FROM drivers d JOIN users u ON u.id = d.user_id WHERE d.status IN ('approved','suspended') ORDER BY u.full_name`)).rows,
+  }));
+
   app.get<{ Params: { id: string } }>('/settlements/vendors/:id/preview', { preHandler: read }, async (req) => vendorSettlementPreview(uuid.parse(req.params.id)));
 
   /** Everything that needs a person: payouts waiting for approval, failed, or pending. */

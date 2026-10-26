@@ -8,6 +8,8 @@ import MyDeliveries from './pages/MyDeliveries'
 import ActiveDelivery from './pages/ActiveDelivery'
 import DeliveryHistory from './pages/DeliveryHistory'
 import Earnings from './pages/Earnings'
+import { setArea } from '../shared/client'
+import Statement from '../shared/pages/Statement'
 import Performance from './pages/Performance'
 import Ratings from './pages/Ratings'
 import Support from './pages/Support'
@@ -32,6 +34,8 @@ function Guard({ children }) {
   return children
 }
 
+setArea('driver')
+
 export default function App() {
   return (
     <AuthProvider>
@@ -48,6 +52,7 @@ export default function App() {
             <Route path="deliveries/:deliveryId/track" element={<ActiveDelivery />} />
             <Route path="delivery-history" element={<DeliveryHistory />} />
             <Route path="earnings" element={<Earnings />} />
+            <Route path="statement" element={<Statement kind="driver" />} />
             <Route path="performance" element={<Performance />} />
             <Route path="ratings" element={<Ratings />} />
             <Route path="support" element={<Support />} />

@@ -204,3 +204,11 @@ For now the staff areas open **only for their own accounts**, from anywhere: `ad
 - **Who gets in**: only accounts with the `finance` role open the finance window. For now finance accounts can also still use the admin window (many tests and habits rely on it); making the finance role finance-window-only is a one-line change to `AREA_LOGIN_ROLES` once you have moved your finance staff over. Finance can write and submit pricing rules but only an admin can approve them; every permission is still enforced by the server.
 - **Hub**: the Portals page (`/portals`) now has a Finance card.
 - Migration 039 adds the finance row to the portal settings table.
+
+## Milestone: settlements and reconciliation
+
+- **Finance window** now has Settlements (needs-attention queue, preview a vendor before paying, holds, statements) and Reconciliation (checks, exceptions with notes, CSV of every cash movement with provider references). Details in `docs/FINANCE_RULES.md`.
+- **Approval step**: payouts above `payout.approval_threshold_cents` (Admin → Settings, default 0 = off) wait for a different approver. Holds stop payouts to one vendor or driver.
+- **Statements**: Vendor and chef portals get Statement; the driver portal gets Statement (base pay and tips shown separately). All from the same ledger entries as the payouts.
+- **Reconciliation never invents entries.** It reports differences; finance records what they did; the difference stays until the data is fixed. Migration 040.
+- **Honest gaps**: no automated comparison with Stripe's own balance and payout reports (use the CSV), chargebacks, driver wage-compliance reports, settlement notifications, per-period settlement batches (payouts still bundle everything payable).

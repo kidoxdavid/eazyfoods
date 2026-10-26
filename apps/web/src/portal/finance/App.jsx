@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { Wallet, RotateCcw, Gift, Calculator, BarChart3, FileSpreadsheet, ShoppingCart, Activity } from 'lucide-react'
+import { Wallet, Banknote, Scale, RotateCcw, Gift, Calculator, BarChart3, FileSpreadsheet, ShoppingCart, Activity } from 'lucide-react'
 import { setArea } from '../shared/client'
 import StaffShell from '../shared/StaffShell'
 import StaffLogin from '../shared/StaffLogin'
@@ -9,6 +9,7 @@ import { Orders, OrderDetail, Refunds } from '../admin/pages/Operations'
 import { Finance, Reports, System } from '../admin/pages/Insight'
 import { GiftCards } from '../admin/pages/People'
 import { Pricing } from '../admin/pages/Pricing'
+import { Settlements, Reconciliation } from '../admin/pages/Settlements'
 import { Insights } from '../admin/pages/Talk'
 
 setArea('finance')
@@ -19,6 +20,8 @@ setArea('finance')
  */
 const NAV = [
   { name: 'Finance', href: '/', icon: Wallet, group: 'Money', need: ['ledger.view', 'payouts.manage'] },
+  { name: 'Settlements', href: '/settlements', icon: Banknote, badge: '/admin/settlements', need: ['settlements.view', 'ledger.view', 'payouts.manage'] },
+  { name: 'Reconciliation', href: '/reconciliation', icon: Scale, need: ['settlements.view', 'ledger.view', 'payouts.manage'] },
   { name: 'Refunds', href: '/refunds', icon: RotateCcw, badge: '/admin/refunds', need: ['refunds.approve', 'refunds.request'] },
   { name: 'Gift cards', href: '/gift-cards', icon: Gift, need: ['ledger.view'] },
   { name: 'Pricing & rules', href: '/pricing', icon: Calculator, group: 'Rules', need: ['pricing.view', 'pricing.edit', 'pricing.approve'] },
@@ -39,7 +42,7 @@ export default function App() {
           <StaffShell brand="eazyfoods Finance" nav={NAV} badgesPath="/admin/badges" canSee={canSee} titleOf={(u) => u.full_name}>
             <Routes>
               <Route path="/" element={<Finance />} />
-              <Route path="/refunds" element={<Refunds />} />
+              <Route path="/refunds" element={<Refunds />} /><Route path="/settlements" element={<Settlements />} /><Route path="/reconciliation" element={<Reconciliation />} />
               <Route path="/gift-cards" element={<GiftCards />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/insights" element={<Insights />} />
