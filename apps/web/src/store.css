@@ -333,3 +333,7 @@ main { padding-top: 14px; }
 .pcard .heart { position: absolute; z-index: 3; top: 8px; right: 8px; width: 32px; height: 32px; display: inline-grid; place-items: center; padding: 0; border-radius: 50%; border: 1px solid rgba(0,0,0,.18); background: rgba(255,255,255,.94); color: #1b2a21; cursor: pointer; box-shadow: 0 1px 5px rgba(0,0,0,.2); text-decoration: none; }
 .pcard .heart.on { color: #c0392b; border-color: #c0392b; } .pcard .heart:hover { background: #fff; }
 @media (hover: none), (max-width: 699px) { .pcard .heart { top: 6px; right: 42px; width: 30px; height: 30px; } }
+
+/* Wordmark: the logo is the "e", so it reads eazyfoods */
+.logo { gap: 1px; text-transform: none; } .hdr .logo .logo-mark { margin-right: -2px; }
+.logo .wm { font: inherit; letter-spacing: inherit; color: inherit; }
