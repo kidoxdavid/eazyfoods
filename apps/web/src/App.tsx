@@ -58,7 +58,7 @@ export function App() {
           <ThemeProvider>
           <Suspense fallback={<SkelPage />}>
             <Routes>
-              <Route path="/admin/*" element={<HardNav />} /><Route path="/marketing/*" element={<HardNav />} /><Route path="/vendor/*" element={<HardNav />} /><Route path="/driver/*" element={<HardNav />} />
+              <Route path="/admin/*" element={<HardNav />} /><Route path="/marketing/*" element={<HardNav />} /><Route path="/vendor/*" element={<HardNav />} /><Route path="/driver/*" element={<HardNav />} /><Route path="/portals" element={<HardNav />} />
               <Route path="*" element={
                 <Site>
                   <Routes>
