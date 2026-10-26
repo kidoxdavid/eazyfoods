@@ -98,4 +98,38 @@ describe('admin portal (browser)', () => {
     await seeText(page.locator('main'), 'Finance');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
   });
+
+  it('financial rules: the proposed profile is waiting as drafts, a bad band is explained, a rule goes through draft, submit and approve, and the simulator warns when nothing is live', async () => {
+    const { page, errors } = await newPage(browser, DESKTOP);
+    await signInStaff(page, 'admin@example.test', 'dev-password-123', '/admin');
+    await page.goto(`${base()}/admin/pricing`);
+    await seeText(page.locator('main'), 'Proposed Calgary distance bands');
+    await page.getByRole('row', { name: /Proposed Calgary distance bands/ }).getByText('Draft').waitFor();     // seeded, not live
+    // open the proposed delivery rule, break a band, and see the plain-language problem
+    await page.getByText('Proposed Calgary distance bands').first().click();
+    const dialog = page.getByRole('dialog').first();
+    await dialog.getByLabel('Up to (km)').fill('9');                                                            // first band now ends after the second (5 km)
+    await dialog.getByRole('button', { name: 'Save draft' }).click();
+    await seeText(dialog, 'overlap');
+    await page.keyboard.press('Escape');
+    // a service-fee rule through the whole lifecycle
+    await page.getByRole('tab', { name: 'Service fee' }).click();
+    await page.getByRole('button', { name: /New service fee rule/ }).click();
+    const d2 = page.getByRole('dialog').first();
+    await d2.getByLabel('Name', { exact: true }).fill('E2E service fee');
+    await d2.getByLabel('Amount ($)').fill('0.99');
+    await d2.getByRole('button', { name: 'Save draft' }).click();
+    await page.getByText('E2E service fee').first().click();
+    await page.getByRole('dialog').first().getByRole('button', { name: 'Submit for approval' }).click();
+    await seeText(page.getByRole('dialog').first(), 'Waiting for approval');
+    await page.getByRole('button', { name: 'Review and approve' }).click();
+    await page.getByRole('button', { name: 'Yes, make it live' }).click();
+    await page.getByRole('row', { name: /E2E service fee/ }).getByText('Live').waitFor();
+    const c = await db(); const live = (await c.query(`SELECT status FROM pricing_rules WHERE name = 'E2E service fee'`)).rows[0].status;
+    await c.query(`UPDATE pricing_rules SET status = 'retired', effective_to = now() WHERE name = 'E2E service fee'`); await c.end();
+    expect(live).toBe('active');
+    await page.getByRole('tab', { name: 'Simulator' }).click();
+    await seeText(page.locator('main'), 'No delivery rule is live yet');
+    expect(errors.filter((e) => !/40[0-9]/.test(e))).toEqual([]);
+  });
 });

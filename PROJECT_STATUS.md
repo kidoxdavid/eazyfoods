@@ -189,3 +189,11 @@ For now the staff areas open **only for their own accounts**, from anywhere: `ad
 - **Customer parity**: the kitchen gallery uploaded in the chef portal now shows on the customer's kitchen page; the basket shows real product photos.
 - **Verified**: typecheck, API tests, full browser suite incl. the new `admin_portal.test.ts`, axe (WCAG 2 A/AA) and no-horizontal-scroll on every admin page at 360/390/768/1280px.
 - **Still yours / not done**: Google Maps needs `VITE_GOOGLE_MAPS_API_KEY`; Stripe keys go in the host settings; real photos and legal review of policy pages; push notifications and meal plans from the original marketing portal have no backend yet.
+
+## Milestone: financial rules engine (finance control centre, step 1)
+
+- **One engine** for delivery fees, driver pay, commission and service fees (`services/financeRules.ts`), with versioned, effective-dated, scoped rules (store, vendor, zone, global), draft/submit/approve workflow, append-only history and a simulator that uses the same code as checkout. Details: `docs/FINANCE_RULES.md`; audit and plan: `docs/FINANCE_AUDIT.md`.
+- **Integrated**: checkout quotes use the live delivery and commission rules; each suborder stores a pricing snapshot; the delivery job takes driver pay from the rule in force when the order was placed (`deliveries.pay_breakdown`). With no active rule everything behaves as before.
+- **Admin screen**: Admin → Pricing & rules (rules per kind, band editor, validation in plain language, approval confirmation, history, simulator). New permissions `pricing.view`, `pricing.edit` (finance, admin), `pricing.approve` (admin).
+- **Verified**: 16 unit tests of the calculations (boundaries, fallbacks, commission base, driver extras, your $70 example), 4 integration tests (permissions, second approver, stale edits, locking of price and driver pay, effective dates, fallbacks, simulator), a browser test of the screen.
+- **Honest gaps**: no routing/geocoding provider (distance rules use their stated fallback; the proposed bands cannot price by distance until one is connected), waiting-time pay not applied, customer service fee and promotion subsidies not yet in checkout/ledger, no settlement preview or reconciliation, statements and exceptions queue not built, driver wage-compliance reporting not built. The proposed rates are drafts and not live.
