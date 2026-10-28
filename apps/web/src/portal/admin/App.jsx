@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { LayoutDashboard, ShoppingCart, Truck, UserCheck, LifeBuoy, RotateCcw, Store, MessageSquare, MapPin, Package, Utensils, Layers, Map, Tag, Megaphone, Palette, FileText, Handshake, DollarSign, Calculator, Banknote, Scale, BarChart3, Users, Star, Gift, FileSpreadsheet, SlidersHorizontal, Settings as SettingsIcon, Activity } from 'lucide-react'
+import { LayoutDashboard, ShoppingCart, Truck, UserCheck, LifeBuoy, RotateCcw, Store, MessageSquare, MapPin, Package, Utensils, Layers, Map, Tag, Megaphone, Palette, FileText, Handshake, DollarSign, LineChart, Calculator, Banknote, Scale, BarChart3, Users, Star, Gift, FileSpreadsheet, SlidersHorizontal, Settings as SettingsIcon, Activity } from 'lucide-react'
 import { setArea } from '../shared/client'
 import StaffShell, { useUser } from '../shared/StaffShell'
 import StaffLogin from '../shared/StaffLogin'
@@ -17,6 +17,7 @@ import { Settings, ControlCentre } from './pages/Platform'
 import { Messages, Insights } from './pages/Talk'
 import { Pricing } from './pages/Pricing'
 import { Settlements, Reconciliation } from './pages/Settlements'
+import { FinanceOverview } from './pages/Overview'
 import { Customers, CustomerDetail, ReviewsAdmin, GiftCards } from './pages/People'
 
 setArea('admin')
@@ -44,6 +45,7 @@ const NAV = [
   { name: 'Content', href: '/content', icon: FileText, need: ['content.manage'] },
   { name: 'Vendor pipeline', href: '/crm', icon: Handshake, need: ['crm.manage'] },
   { name: 'Finance', href: '/finance', icon: DollarSign, group: 'Finance & insight', need: ['ledger.view', 'payouts.manage'] },
+  { name: 'Financial overview', href: '/overview', icon: LineChart, need: ['ledger.view', 'reports.view', 'settlements.view'] },
   { name: 'Settlements', href: '/settlements', icon: Banknote, badge: '/admin/settlements', need: ['settlements.view', 'ledger.view', 'payouts.manage'] },
   { name: 'Reconciliation', href: '/reconciliation', icon: Scale, need: ['settlements.view', 'ledger.view', 'payouts.manage'] },
   { name: 'Pricing & rules', href: '/pricing', icon: Calculator, need: ['pricing.view', 'pricing.edit', 'pricing.approve'] },
@@ -81,7 +83,7 @@ export default function App() {
               <Route path="/orders" element={<Orders />} /><Route path="/orders/:id" element={<OrderDetail />} />
               <Route path="/dispatch" element={<Dispatch />} /><Route path="/drivers" element={<Drivers />} />
               <Route path="/support" element={<Support />} /><Route path="/support/:id" element={<TicketDetail />} />
-              <Route path="/refunds" element={<Refunds />} /><Route path="/customers" element={<Customers />} /><Route path="/customers/:id" element={<CustomerDetail />} /><Route path="/reviews" element={<ReviewsAdmin />} /><Route path="/pricing" element={<Pricing />} /><Route path="/settlements" element={<Settlements />} /><Route path="/reconciliation" element={<Reconciliation />} /><Route path="/gift-cards" element={<GiftCards />} />
+              <Route path="/refunds" element={<Refunds />} /><Route path="/customers" element={<Customers />} /><Route path="/customers/:id" element={<CustomerDetail />} /><Route path="/reviews" element={<ReviewsAdmin />} /><Route path="/pricing" element={<Pricing />} /><Route path="/overview" element={<FinanceOverview />} /><Route path="/settlements" element={<Settlements />} /><Route path="/reconciliation" element={<Reconciliation />} /><Route path="/gift-cards" element={<GiftCards />} />
               <Route path="/vendors" element={<Vendors />} /><Route path="/vendors/:id" element={<VendorDetail />} />
               <Route path="/messages" element={<Messages />} /><Route path="/stores" element={<StoresAdmin />} />
               <Route path="/catalogue" element={<Catalogue />} /><Route path="/catalogue/:id" element={<ProductEditor />} />

@@ -5,6 +5,7 @@ import { audit } from '../lib/auth.js';
 import { requirePerm } from '../lib/permissions.js';
 import { bad, conflict, notFound } from '../lib/errors.js';
 import { getSetting } from '../lib/settings.js';
+import { notifyStaff } from '../services/notify.js';
 import { CommissionParams, DeliveryParams, DriverPayParams, KINDS, ServiceFeeParams, resolveRule, simulate, validateParams, type Kind } from '../services/financeRules.js';
 
 const uuid = z.string().uuid();
@@ -107,6 +108,8 @@ export const adminFinanceRoutes: FastifyPluginAsync = async (app) => {
       if (!v.ok) throw bad('invalid_rule', v.errors.join(' '));
       await c.query(`UPDATE pricing_rules SET status = 'pending_approval', submitted_by = $2, submitted_at = now(), updated_at = now() WHERE id = $1`, [id, req.user!.id]);
       await EVENT(c, id, 'submitted', req.user!.id);
+      const who = (await c.query('SELECT full_name FROM users WHERE id = $1', [req.user!.id])).rows[0]?.full_name;
+      await notifyStaff(c, { event: 'pricing_rule_pending', perm: 'pricing.approve', template: 'staff_pricing_rule_pending', vars: { name: r.name, kind: r.kind.replace('_', ' '), who }, key: `rule_submitted:${id}:${Date.now()}` });
       await audit(req.user!.id, 'pricing_rule.submitted', 'pricing_rule', id, {}, c);
       return { ok: true };
     });

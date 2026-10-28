@@ -178,4 +178,20 @@ describe('admin portal (browser)', () => {
     await seeText(driver.page.locator('main'), 'Total earned');
     expect(errors.filter((e) => !/40[0-9]/.test(e))).toEqual([]);
   });
+
+  it('the financial overview: grouped figures with definitions, honest about what is not recorded, filters, and the records behind the numbers', async () => {
+    const { page, errors } = await newPage(browser, DESKTOP);
+    await signInStaff(page, 'finance@example.test', 'dev-password-123', '/finance');
+    await seeText(page.locator('main'), 'Financial overview');                                    // the finance window opens on it
+    for (const t of ['EAZyfoods revenue', 'Sales volume and pass-through money', 'Contribution margin', 'Estimated margin']) await seeText(page.locator('main'), t);
+    await seeText(page.locator('main'), 'Not recorded');                                           // processing fees and chargebacks are not invented
+    await page.getByText('What is this?').first().click();
+    await seeText(page.locator('main'), 'Marketplace commission kept');
+    await page.getByLabel('Payment status').selectOption('refunded');
+    await page.getByRole('button', { name: /Show the records behind these numbers/ }).click();
+    await seeText(page.locator('main'), 'One row per store order');
+    await page.getByLabel('From', { exact: true }).fill('2099-01-01'); await page.getByLabel('To', { exact: true }).fill('2099-01-31');
+    await seeText(page.locator('main'), 'No paid orders in this period');
+    expect(errors.filter((e) => !/40[0-9]/.test(e))).toEqual([]);
+  });
 });

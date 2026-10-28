@@ -212,3 +212,9 @@ For now the staff areas open **only for their own accounts**, from anywhere: `ad
 - **Statements**: Vendor and chef portals get Statement; the driver portal gets Statement (base pay and tips shown separately). All from the same ledger entries as the payouts.
 - **Reconciliation never invents entries.** It reports differences; finance records what they did; the difference stays until the data is fixed. Migration 040.
 - **Honest gaps**: no automated comparison with Stripe's own balance and payout reports (use the CSV), chargebacks, driver wage-compliance reports, settlement notifications, per-period settlement batches (payouts still bundle everything payable).
+
+## Milestone: financial overview and staff alerts
+
+- **Financial overview** (finance window landing page; also Admin): filters, grouped figures with definitions, drill-down records that add up to the totals. Costs that are not recorded (processing fees, chargebacks) are shown as "Not recorded"; the estimated margin uses an adjustable assumption and is labelled an estimate. A test caught and fixed a double-counting join before release.
+- **Staff alerts**: payout awaiting approval, payout failed, pricing rule awaiting approval, new reconciliation difference, hold placed. Each can be switched off (Settings), and repeats never email twice. Migrations 041 and 042.
+- **Honest gaps**: still no automated comparison with Stripe's own reports, chargebacks, driver wage-compliance reporting, payout batches by period, and a launch-readiness report.

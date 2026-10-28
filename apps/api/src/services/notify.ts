@@ -14,6 +14,30 @@ export async function notify(c: Queryable, a: { userId?: string | null; email: s
     [a.userId ?? null, a.email, a.template, vars, render(t.subject, vars), render(t.body, vars), a.transactional ?? true]);
 }
 
+import { ROLE_PERMS } from '../lib/permissions.js';
+import { getSetting } from '../lib/settings.js';
+
+/**
+ * Alert the staff who hold a permission about a money event. Each alert can be switched off in Settings, and a unique key per person and event
+ * means a retried or repeated event never sends the same email twice.
+ */
+export async function notifyStaff(c: Queryable, a: { event: string; perm: string; template: string; vars: Record<string, unknown>; key: string }) {
+  const on = await getSetting<Record<string, boolean>>('finance.notifications', c).catch(() => ({} as Record<string, boolean>));
+  if (on[a.event] === false) return 0;
+  const roles = Object.entries(ROLE_PERMS).filter(([, p]) => p.includes('*') || p.includes(a.perm)).map(([r]) => r);
+  const who = (await c.query(`SELECT DISTINCT u.id, u.email FROM user_roles ur JOIN users u ON u.id = ur.user_id WHERE ur.role = ANY($1::text[]) AND u.disabled_at IS NULL`, [roles])).rows;
+  const t = (await c.query('SELECT subject, body FROM notification_templates WHERE key = $1', [a.template])).rows[0];
+  if (!t) return 0;
+  const vars = { ...a.vars, web_url: config.WEB_ORIGIN };
+  let n = 0;
+  for (const u of who) {
+    const r = await c.query(`INSERT INTO notifications(user_id, to_email, template, vars, subject, body, transactional, dedupe_key) VALUES ($1,$2,$3,$4,$5,$6,true,$7) ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING`,
+      [u.id, u.email, a.template, vars, render(t.subject, vars), render(t.body, vars), a.key]);
+    n += r.rowCount ?? 0;
+  }
+  return n;
+}
+
 export async function notifyVendorOwners(c: Queryable, vendorId: string, template: string, vars: Record<string, unknown>) {
   const r = await c.query(`SELECT u.id, u.email FROM user_roles ur JOIN users u ON u.id = ur.user_id WHERE ur.vendor_id = $1 AND u.disabled_at IS NULL`, [vendorId]);
   for (const u of r.rows) await notify(c, { userId: u.id, email: u.email, template, vars });

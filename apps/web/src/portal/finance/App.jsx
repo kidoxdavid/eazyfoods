@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { Wallet, Banknote, Scale, RotateCcw, Gift, Calculator, BarChart3, FileSpreadsheet, ShoppingCart, Activity } from 'lucide-react'
+import { Wallet, LineChart, Banknote, Scale, RotateCcw, Gift, Calculator, BarChart3, FileSpreadsheet, ShoppingCart, Activity } from 'lucide-react'
 import { setArea } from '../shared/client'
 import StaffShell from '../shared/StaffShell'
 import StaffLogin from '../shared/StaffLogin'
@@ -10,6 +10,7 @@ import { Finance, Reports, System } from '../admin/pages/Insight'
 import { GiftCards } from '../admin/pages/People'
 import { Pricing } from '../admin/pages/Pricing'
 import { Settlements, Reconciliation } from '../admin/pages/Settlements'
+import { FinanceOverview } from '../admin/pages/Overview'
 import { Insights } from '../admin/pages/Talk'
 
 setArea('finance')
@@ -19,7 +20,8 @@ setArea('finance')
  * server, ledger and rules (one source of truth); the server still checks every permission, so this menu only tidies what a person sees.
  */
 const NAV = [
-  { name: 'Finance', href: '/', icon: Wallet, group: 'Money', need: ['ledger.view', 'payouts.manage'] },
+  { name: 'Overview', href: '/', icon: LineChart, group: 'Money', need: ['ledger.view', 'reports.view', 'settlements.view'] },
+  { name: 'Balances & payouts', href: '/balances', icon: Wallet, need: ['ledger.view', 'payouts.manage'] },
   { name: 'Settlements', href: '/settlements', icon: Banknote, badge: '/admin/settlements', need: ['settlements.view', 'ledger.view', 'payouts.manage'] },
   { name: 'Reconciliation', href: '/reconciliation', icon: Scale, need: ['settlements.view', 'ledger.view', 'payouts.manage'] },
   { name: 'Refunds', href: '/refunds', icon: RotateCcw, badge: '/admin/refunds', need: ['refunds.approve', 'refunds.request'] },
@@ -41,7 +43,7 @@ export default function App() {
         <Route path="/*" element={
           <StaffShell brand="eazyfoods Finance" nav={NAV} badgesPath="/admin/badges" canSee={canSee} titleOf={(u) => u.full_name}>
             <Routes>
-              <Route path="/" element={<Finance />} />
+              <Route path="/" element={<FinanceOverview />} /><Route path="/balances" element={<Finance />} />
               <Route path="/refunds" element={<Refunds />} /><Route path="/settlements" element={<Settlements />} /><Route path="/reconciliation" element={<Reconciliation />} />
               <Route path="/gift-cards" element={<GiftCards />} />
               <Route path="/pricing" element={<Pricing />} />

@@ -33,6 +33,9 @@ export const SETTING_SCHEMAS: Record<string, z.ZodTypeAny> = {
   'payout.auto_enabled': z.boolean(),
   'payout.auto_min_cents': int(100, 1000000),
   'payout.approval_threshold_cents': int(0, 100000000),
+  'finance.notifications': z.object({ payout_needs_approval: z.boolean(), payout_failed: z.boolean(), pricing_rule_pending: z.boolean(), reconciliation_difference: z.boolean(), payout_hold_placed: z.boolean() }),
+  'finance.processing_assumption_bps': int(0, 1000),
+  'finance.processing_assumption_fixed_cents': int(0, 200),
 };
 
 export const adminSystemRoutes: FastifyPluginAsync = async (app) => {

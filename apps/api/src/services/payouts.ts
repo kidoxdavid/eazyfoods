@@ -4,7 +4,7 @@ import { bad, conflict } from '../lib/errors.js';
 import { getSetting } from '../lib/settings.js';
 import { getProvider } from '../payments/provider.js';
 import { postPayout } from './ledger.js';
-import { notifyVendorOwners } from './notify.js';
+import { notifyStaff, notifyVendorOwners } from './notify.js';
 
 /** Days between delivery and the order becoming payable. Home kitchens are paid sooner (their food is delivered and consumed quickly, and they carry little stock). */
 export async function holdDays(kind: 'store' | 'chef') {
@@ -43,6 +43,11 @@ export async function createVendorPayout(vendorId: string, actor: string | null,
     const row = (await c.query(`INSERT INTO payouts(payee_type, vendor_id, amount_cents, created_by, trigger, status) VALUES ('vendor',$1,$2,$3,$4,$5) RETURNING *`, [vendorId, amount, actor, trigger, status])).rows[0];
     await c.query('UPDATE suborders SET payout_id = $2 WHERE id = ANY($1::uuid[])', [subs.map((s) => s.id), row.id]);
     await audit(actor, 'payout.created', 'payout', row.id, { vendorId, amount, trigger, status }, c);
+    if (status === 'awaiting_approval') {
+      const name = (await c.query('SELECT name FROM vendors WHERE id = $1', [vendorId])).rows[0]?.name;
+      const who = actor ? (await c.query('SELECT full_name FROM users WHERE id = $1', [actor])).rows[0]?.full_name : 'The automatic payout run';
+      await notifyStaff(c, { event: 'payout_needs_approval', perm: 'payouts.approve', template: 'staff_payout_needs_approval', vars: { amount: (amount / 100).toFixed(2), payee: name, who }, key: `payout_approval:${row.id}` });
+    }
     return row as { id: string; amount_cents: number; status: string };
   });
 }
@@ -76,6 +81,8 @@ export async function settlePayout(payoutId: string, actor: string | null) {
       return { id: p.id, status: 'paid' as const, amount_cents: p.amount_cents };
     } catch (e: any) {
       await pool.query(`UPDATE payouts SET status='failed', note=$2 WHERE id=$1`, [p.id, String(e.message).slice(0, 300)]);
+      const name = (await pool.query('SELECT name FROM vendors WHERE id = $1', [p.vendor_id])).rows[0]?.name;
+      await notifyStaff(pool, { event: 'payout_failed', perm: 'payouts.manage', template: 'staff_payout_failed', vars: { amount: (p.amount_cents / 100).toFixed(2), payee: name, reason: String(e.message).slice(0, 200) }, key: `payout_failed:${p.id}:${p.attempts + 1}` });
       return { id: p.id, status: 'failed' as const, amount_cents: p.amount_cents, error: String(e.message) };
     }
   }

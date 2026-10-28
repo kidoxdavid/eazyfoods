@@ -3,6 +3,7 @@ import { audit } from '../lib/auth.js';
 import { bad, conflict } from '../lib/errors.js';
 import { getSetting } from '../lib/settings.js';
 import { holdDays, settlePayout, vendorBalance } from './payouts.js';
+import { notifyStaff } from './notify.js';
 
 /**
  * Statements, settlement previews, holds, approvals and reconciliation.
@@ -100,6 +101,11 @@ export async function createDriverPayout(driverId: string, actor: string) {
     const row = (await c.query(`INSERT INTO payouts(payee_type, driver_id, amount_cents, created_by, status) VALUES ('driver',$1,$2,$3,$4) RETURNING *`, [driverId, amount, actor, status])).rows[0];
     await c.query('UPDATE driver_earnings SET payout_id = $2 WHERE id = ANY($1::uuid[])', [es.map((e) => e.id), row.id]);
     await audit(actor, 'payout.created', 'payout', row.id, { driverId, amount, status }, c);
+    if (status === 'awaiting_approval') {
+      const payee = (await c.query('SELECT u.full_name FROM drivers d JOIN users u ON u.id = d.user_id WHERE d.id = $1', [driverId])).rows[0]?.full_name;
+      const who = (await c.query('SELECT full_name FROM users WHERE id = $1', [actor])).rows[0]?.full_name;
+      await notifyStaff(c, { event: 'payout_needs_approval', perm: 'payouts.approve', template: 'staff_payout_needs_approval', vars: { amount: (amount / 100).toFixed(2), payee, who }, key: `payout_approval:${row.id}` });
+    }
     return row as { id: string; status: string };
   });
 }
@@ -211,4 +217,16 @@ export async function movements(fromS?: string, toS?: string) {
        SELECT p.paid_at, 'payout_' || p.payee_type, CASE WHEN p.note = 'Paid manually' THEN 'manual' ELSE 'provider' END, p.provider_transfer_id, -p.amount_cents, p.id::text, EXISTS (SELECT 1 FROM ledger_entries l WHERE l.kind = 'payout' AND l.ref_id = p.id::text)
          FROM payouts p WHERE p.status = 'paid'
      ) m WHERE at BETWEEN $1 AND $2 ORDER BY at`, [from, to])).rows;
+}
+
+/**
+ * Email the finance team about a high-severity difference the first time it appears (once per difference, never repeated).
+ * Runs from the background job, not when someone opens the page. It only tells people; it changes nothing.
+ */
+export async function notifyReconciliationDifferences() {
+  const r = await reconcile();
+  let sent = 0;
+  for (const e of r.exceptions.filter((x) => x.severity === 'high' && x.status === 'open'))
+    sent += await notifyStaff(pool, { event: 'reconciliation_difference', perm: 'payouts.manage', template: 'staff_reconciliation_difference', vars: { title: e.title, detail: e.detail }, key: `recon:${e.key}` });
+  return sent;
 }

@@ -4,6 +4,8 @@ import { pool } from '../db/pool.js';
 import { audit } from '../lib/auth.js';
 import { requirePerm } from '../lib/permissions.js';
 import { conflict, notFound } from '../lib/errors.js';
+import { OverviewFilters, overview, overviewTransactions } from '../services/financeOverview.js';
+import { notifyStaff } from '../services/notify.js';
 import { approvePayout, cancelPayout, driverStatement, movements, reconcile, vendorSettlementPreview, vendorStatement } from '../services/settlements.js';
 
 const uuid = z.string().uuid();
@@ -19,7 +21,17 @@ export const adminSettlementRoutes: FastifyPluginAsync = async (app) => {
   app.get('/settlements/payees', { preHandler: read }, async () => ({
     vendors: (await pool.query(`SELECT id, name, kind FROM vendors WHERE status IN ('approved','suspended') ORDER BY name`)).rows,
     drivers: (await pool.query(`SELECT d.id, u.full_name FROM drivers d JOIN users u ON u.id = d.user_id WHERE d.status IN ('approved','suspended') ORDER BY u.full_name`)).rows,
+    stores: (await pool.query(`SELECT id, name, city FROM stores ORDER BY name`)).rows,
+    zones: (await pool.query(`SELECT id, name FROM delivery_zones ORDER BY name`)).rows,
   }));
+
+  /** The financial overview: every figure from the ledger and order records, with definitions, filters and the records behind it. */
+  app.get('/finance/overview', { preHandler: requirePerm('ledger.view', 'reports.view', 'settlements.view') }, async (req) => overview(OverviewFilters.parse(req.query)));
+  app.get('/finance/overview/transactions', { preHandler: requirePerm('ledger.view', 'reports.view', 'settlements.view') }, async (req) => {
+    const q = OverviewFilters.extend({ limit: z.coerce.number().int().min(1).max(200).default(50), offset: z.coerce.number().int().min(0).default(0) }).parse(req.query);
+    const { limit, offset, ...f } = q;
+    return overviewTransactions(f, limit, offset);
+  });
 
   app.get<{ Params: { id: string } }>('/settlements/vendors/:id/preview', { preHandler: read }, async (req) => vendorSettlementPreview(uuid.parse(req.params.id)));
 
@@ -46,6 +58,9 @@ export const adminSettlementRoutes: FastifyPluginAsync = async (app) => {
     if (!id) throw conflict('missing_payee', 'Choose who the hold is for.');
     const r = (await pool.query(`INSERT INTO payout_holds(payee_type, vendor_id, driver_id, reason, created_by) VALUES ($1,$2,$3,$4,$5) RETURNING id`, [b.payee_type, b.payee_type === 'vendor' ? id : null, b.payee_type === 'driver' ? id : null, b.reason, req.user!.id])).rows[0];
     await audit(req.user!.id, 'payout_hold.placed', 'payout_hold', r.id, { payee_type: b.payee_type, payee: id, reason: b.reason });
+    const payee = b.payee_type === 'vendor' ? (await pool.query('SELECT name FROM vendors WHERE id = $1', [id])).rows[0]?.name : (await pool.query('SELECT u.full_name AS name FROM drivers d JOIN users u ON u.id = d.user_id WHERE d.id = $1', [id])).rows[0]?.name;
+    const who = (await pool.query('SELECT full_name FROM users WHERE id = $1', [req.user!.id])).rows[0]?.full_name;
+    await notifyStaff(pool, { event: 'payout_hold_placed', perm: 'payouts.approve', template: 'staff_payout_hold_placed', vars: { payee, reason: b.reason, who }, key: `hold:${r.id}` });
     return reply.code(201).send({ id: r.id });
   });
   app.post<{ Params: { id: string } }>('/holds/:id/release', { preHandler: approve }, async (req) => {

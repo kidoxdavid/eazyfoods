@@ -4,6 +4,7 @@ import { moveSuborder } from './services/orders.js';
 import { releaseExpiredReservations } from './services/payments.js';
 import { processOutbox } from './services/notify.js';
 import { runAutoPayouts } from './services/payouts.js';
+import { notifyReconciliationDifferences } from './services/settlements.js';
 import { runAutomations, runScheduledCampaigns } from './services/marketing.js';
 import { runListReminders, runProductAlerts } from './services/alerts.js';
 import { processSms } from './services/sms.js';
@@ -41,7 +42,7 @@ export function startJobs() {
       await runListReminders();
       await processSms();
       if (Date.now() - lastAutomations > 600_000) { lastAutomations = Date.now(); await runAutomations(); }
-      if (Date.now() - lastAutoPayout > 3_600_000) { lastAutoPayout = Date.now(); await runAutoPayouts(); }   // hourly; does nothing unless finance turned automatic payouts on
+      if (Date.now() - lastAutoPayout > 3_600_000) { lastAutoPayout = Date.now(); await runAutoPayouts(); await notifyReconciliationDifferences(); }   // hourly; does nothing unless finance turned automatic payouts on
     } catch (e) { console.error('background job failed', e); } finally { running = false; }
   };
   const t = setInterval(tick, 30_000);
