@@ -171,7 +171,12 @@ describe('vendor messages (browser)', () => {
     await v.page.getByPlaceholder('Type your message...').fill(text);
     await v.page.getByRole('button', { name: 'Send message' }).click();
     await v.page.getByText(text).first().waitFor();
-    const c = await db(); const subject = (await c.query(`SELECT t.subject FROM vendor_messages m JOIN vendor_threads t ON t.id = m.thread_id WHERE m.body = $1`, [text])).rows[0].subject; await c.end();
+    const c = await db(); let subject = '';
+    for (let i = 0; i < 40 && !subject; i++) {                                                   // the message appears on screen a moment before it is saved
+      subject = (await c.query(`SELECT t.subject FROM vendor_messages m JOIN vendor_threads t ON t.id = m.thread_id WHERE m.body = $1`, [text])).rows[0]?.subject ?? '';
+      if (!subject) await new Promise((r) => setTimeout(r, 250));
+    }
+    await c.end(); expect(subject).not.toBe('');
     const a = await newPage(browser, DESKTOP); await signIn(a.page, 'admin@example.test');
     await a.page.goto(base() + '/admin/messages');
     await a.page.getByRole('button', { name: new RegExp(subject) }).first().click();
