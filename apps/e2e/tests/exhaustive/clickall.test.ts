@@ -27,7 +27,7 @@ const ROLES: Role[] = [
 ];
 
 const CLICKABLE = 'button, [role="button"], [role="tab"], [role="menuitem"], summary, input[type="checkbox"], input[type="radio"], input[type="submit"], a:not([href]), a[href="#"]';
-const SKIP = /sign ?out|log ?out|delete (my )?account|erase|deactivate/i;   // ends the session or the account: checked separately
+const SKIP = /sign ?out|log ?out|d[ée]connexion|se d[ée]connecter|delete (my )?account|erase|deactivate|^(EN|FR)$/i;   // ends the session or the account: checked separately
 const EXPECTED = (url: string, status: number) => (/\/api\/auth\/login/.test(url) && status === 403) || (/\/api\/auth\/me/.test(url) && status === 401) || status === 304;
 const MAX_PER_PAGE = 120;
 
