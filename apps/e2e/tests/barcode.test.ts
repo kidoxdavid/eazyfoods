@@ -60,5 +60,31 @@ for (const [name, size] of [['desktop', DESKTOP], ['small phone', { width: 360, 
       await seeText(page.locator('body'), 'No product found with this barcode');       // a code that is not in the catalogue is offered as a new product
       await ctx.close();
     });
+
+    it('works from a photo of the barcode, which is the fallback for phones where live scanning is poor', async () => {
+      if (!ready) return;
+      const ctx = await browser.newContext({ viewport: size });
+      const page = await ctx.newPage();
+      await signIn(page, 'owner1@example.test');
+      await page.goto(`${base()}/vendor/products`); await page.waitForLoadState('networkidle');
+      await page.getByRole('button', { name: /^Scan( Barcode)?$/ }).first().click();
+      await page.getByLabel('Take or choose a photo of the barcode').setInputFiles(resolve(import.meta.dirname, '../fixtures/ean13.png'));
+      await page.getByRole('heading', { name: 'Barcode Scan Result' }).waitFor({ timeout: 20_000 });
+      await seeText(page.locator('body'), '6112699910004');
+      await ctx.close();
+    });
+
+    it('explains why the camera cannot start instead of doing nothing', async () => {
+      const ctx = await browser.newContext({ viewport: size, permissions: [] });
+      const page = await ctx.newPage();
+      await page.addInitScript(() => { navigator.mediaDevices.getUserMedia = () => Promise.reject(Object.assign(new Error('denied'), { name: 'NotAllowedError' })); });
+      await signIn(page, 'owner1@example.test');
+      await page.goto(`${base()}/vendor/products`); await page.waitForLoadState('networkidle');
+      await page.getByRole('button', { name: /^Scan( Barcode)?$/ }).first().click();
+      await page.getByRole('button', { name: /Start Camera Scan/ }).click();
+      await seeText(page.locator('body'), 'Camera access is blocked');                       // a clear message, and the other ways to scan are still there
+      await page.getByRole('button', { name: /Enter barcode manually/ }).waitFor();
+      await ctx.close();
+    });
   });
 }

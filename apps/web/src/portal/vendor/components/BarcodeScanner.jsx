@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
-import { Camera, X, CheckCircle, AlertCircle, Keyboard } from 'lucide-react'
+import { Camera, X, CheckCircle, AlertCircle, Keyboard, ImagePlus, Loader2 } from 'lucide-react'
 
 // Messages emitted by html5-qrcode on every frame when no code is in view — not real errors
 const SCAN_NOISE_PATTERNS = [
@@ -20,6 +20,28 @@ const SCAN_NOISE_PATTERNS = [
 const isScanNoise = (msg) =>
   SCAN_NOISE_PATTERNS.some((p) => typeof msg === 'string' && msg.includes(p))
 
+const FORMATS = [0, 1, 2, 3, 4, 5, 6, 8, 9, 13, 15, 16]   // QR, Aztec, Codabar, Code 39/93/128, Data Matrix, EAN-8, EAN-13, ITF, UPC-A, UPC-E
+
+/** Turn a camera failure into something a person can act on. */
+function cameraProblem(err) {
+  const text = String(err?.name ?? err?.message ?? err ?? '')
+  if (!window.isSecureContext) return 'The camera only works on a secure (https) page. Open the site with https://, or take a photo or type the code instead.'
+  if (/NotAllowed|Permission|denied/i.test(text)) return 'Camera access is blocked. Allow the camera for this site in your browser settings (the lock or aA icon next to the address), then try again. You can also take a photo or type the code.'
+  if (/NotFound|Overconstrained|no camera/i.test(text)) return 'No camera was found on this device. Take a photo of the barcode or type the code instead.'
+  if (/NotReadable|TrackStart|in use/i.test(text)) return 'The camera is being used by another app. Close it and try again, or take a photo or type the code.'
+  if (/instagram|fban|fbav|line\//i.test(navigator.userAgent)) return 'This in-app browser blocks the camera. Open the page in Safari or Chrome, or take a photo or type the code.'
+  return 'The camera could not start. Take a photo of the barcode or type the code instead.'
+}
+
+/** Stopping a scanner that never started throws (sometimes straight away, sometimes later). That must never take the page down with it. */
+function safeStop(scanner) {
+  if (!scanner) return
+  try {
+    const r = scanner.stop()
+    if (r && typeof r.then === 'function') r.then(() => { try { scanner.clear() } catch { /* nothing to clear */ } }).catch(() => {})
+  } catch { /* it was not running */ }
+}
+
 let scannerInstanceCount = 0
 
 const BarcodeScanner = ({ onScan, onClose, title = 'Scan Barcode', stopAfterScan = true }) => {
@@ -34,16 +56,15 @@ const BarcodeScanner = ({ onScan, onClose, title = 'Scan Barcode', stopAfterScan
   const [lastScanned, setLastScanned] = useState(null)
   const [manualEntry, setManualEntry] = useState(false)
   const [manualValue, setManualValue] = useState('')
+  const [starting, setStarting] = useState(false)
+  const [slow, setSlow] = useState(false)
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const photoRef = useRef(null)
 
   const stopScanner = () => {
-    if (html5QrCodeRef.current) {
-      html5QrCodeRef.current
-        .stop()
-        .then(() => { html5QrCodeRef.current?.clear() })
-        .catch(() => {})
-      html5QrCodeRef.current = null
-    }
-    setScanning(false)
+    safeStop(html5QrCodeRef.current)
+    html5QrCodeRef.current = null
+    setScanning(false); setStarting(false); setSlow(false)
   }
 
   useEffect(() => {
@@ -55,28 +76,20 @@ const BarcodeScanner = ({ onScan, onClose, title = 'Scan Barcode', stopAfterScan
     const html5QrCode = new Html5Qrcode(instanceId.current)
     html5QrCodeRef.current = html5QrCode
 
+    setStarting(true); setSlow(false)
+    const slowTimer = setTimeout(() => setSlow(true), 10000)   // after 10 seconds without a read, tell the person what to try
     html5QrCode
       .start(
+        // A sharper picture makes 1D barcodes readable, especially on iPhones (they decode in software, not in hardware).
         { facingMode: 'environment' },
         {
-          fps: 20,
-          qrbox: { width: 300, height: 180 },
-          aspectRatio: 1.7,
+          fps: 10,
+          // A wide, short box suits barcodes, and it always fits the viewfinder (a fixed 300px box does not fit a small phone).
+          qrbox: (w, h) => ({ width: Math.floor(w * 0.95), height: Math.floor(h * 0.8) }),
+          videoConstraints: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+          disableFlip: true,
           experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-          formatsToSupport: [
-            0,  // QR_CODE
-            1,  // AZTEC
-            2,  // CODABAR
-            3,  // CODE_39
-            4,  // CODE_93
-            5,  // CODE_128
-            6,  // DATA_MATRIX
-            8,  // EAN_8
-            9,  // EAN_13
-            13, // ITF
-            15, // UPC_A
-            16, // UPC_E
-          ],
+          formatsToSupport: FORMATS,
         },
         (decodedText) => {
           // Debounce: ignore the same barcode within 2 seconds
@@ -94,20 +107,38 @@ const BarcodeScanner = ({ onScan, onClose, title = 'Scan Barcode', stopAfterScan
           if (!isScanNoise(errorMessage)) setError(errorMessage)
         }
       )
+      .then(() => setStarting(false))
       .catch((err) => {
         console.error('Unable to start scanning:', err)
-        setError('Unable to access camera. Check permissions or use manual entry below.')
+        clearTimeout(slowTimer); setStarting(false)
+        setError(cameraProblem(err))
         setScanning(false)
       })
 
     return () => {
+      clearTimeout(slowTimer)
       clearTimeout(debounceTimerRef.current)
-      if (html5QrCodeRef.current) {
-        html5QrCodeRef.current.stop().catch(() => {})
-        html5QrCodeRef.current = null
-      }
+      safeStop(html5QrCodeRef.current)
+      html5QrCodeRef.current = null
     }
   }, [scanning])
+
+  /** A photo of the barcode works on every phone, including ones where live scanning is poor. */
+  const handlePhoto = async (e) => {
+    const file = e.target.files?.[0]; e.target.value = ''
+    if (!file) return
+    setPhotoBusy(true); setError(null)
+    const holder = document.getElementById(`${instanceId.current}-photo`)
+    try {
+      const reader = new Html5Qrcode(`${instanceId.current}-photo`, { formatsToSupport: FORMATS, verbose: false })
+      const text = await reader.scanFile(file, false)
+      reader.clear()
+      setLastScanned(text)
+      if (onScan) onScan(text)
+    } catch {
+      setError('Could not read a barcode from that photo. Get closer, fill the frame with the barcode, avoid glare, and try again, or type the code.')
+    } finally { setPhotoBusy(false); void holder }
+  }
 
   const startScanning = () => {
     setScanning(true)
@@ -175,6 +206,14 @@ const BarcodeScanner = ({ onScan, onClose, title = 'Scan Barcode', stopAfterScan
                 Start Camera Scan
               </button>
               <button
+                onClick={() => photoRef.current?.click()}
+                disabled={photoBusy}
+                className="px-4 py-2 border border-primary-300 text-primary-700 rounded-lg hover:bg-primary-50 flex items-center gap-2 text-sm"
+              >
+                {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                {photoBusy ? 'Reading the photo…' : 'Take or choose a photo of the barcode'}
+              </button>
+              <button
                 onClick={() => setManualEntry(true)}
                 className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700"
               >
@@ -184,7 +223,10 @@ const BarcodeScanner = ({ onScan, onClose, title = 'Scan Barcode', stopAfterScan
             </div>
           ) : (
             <div className="relative">
-              <div id={instanceId.current} className="w-full rounded-lg overflow-hidden" />
+              <div id={instanceId.current} className="w-full rounded-lg overflow-hidden min-h-[160px] bg-black" />
+              <p role="status" className="mt-2 text-sm text-gray-700 flex items-center gap-2">
+                {starting ? <><Loader2 className="h-4 w-4 animate-spin" /> Starting the camera… allow access if your browser asks.</> : slow ? 'Still looking. Move closer, hold steady, avoid glare, or take a photo / type the code below.' : 'Camera is on. Hold the barcode steady inside the box.'}
+              </p>
               <div className="mt-2 flex justify-between items-center">
                 <button
                   onClick={() => { stopScanner(); setManualEntry(true) }}
@@ -202,6 +244,9 @@ const BarcodeScanner = ({ onScan, onClose, title = 'Scan Barcode', stopAfterScan
             </div>
           )}
         </div>
+
+        <input ref={photoRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="sr-only" aria-label="Take or choose a photo of the barcode" />
+        <div id={`${instanceId.current}-photo`} className="hidden" aria-hidden="true" />
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
