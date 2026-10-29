@@ -387,7 +387,7 @@ const Products = () => {
                       </td>
                       <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center justify-end space-x-2">
-                          {!product.barcode && (
+                          {!product.barcode && product.owned && (
                             <button
                               onClick={() => {
                                 setSelectedProductForBarcode(product)
@@ -466,9 +466,9 @@ const Products = () => {
                         </p>
                       </div>
                       <div className="grid grid-cols-2 gap-0.5 flex-shrink-0">
-                        {!product.barcode ? (
+                        {!product.barcode ? (product.owned ? (
                           <button onClick={() => { setSelectedProductForBarcode(product); setShowBarcodeGenerator(true); setBarcodeNote(''); handleGenerateBarcode(product) }} className={`${ib} text-purple-600 hover:bg-purple-50`} title="Generate Barcode"><Barcode className="h-5 w-5" /></button>
-                        ) : (
+                        ) : <span className="w-8" />) : (
                           <button onClick={() => { setSelectedProductForBarcode(product); setShowBarcodeGenerator(true) }} className={`${ib} text-purple-600 hover:bg-purple-50`} title="View Barcode"><Barcode className="h-5 w-5" /></button>
                         )}
                         <button onClick={() => handleDuplicateProduct(product)} className={`${ib} text-gray-600 hover:bg-gray-100`} title="Duplicate"><Copy className="h-5 w-5" /></button>
@@ -503,7 +503,7 @@ const Products = () => {
 
       {scannedResult && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div role="dialog" aria-modal="true" aria-label="Barcode Scan Result" className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Barcode Scan Result</h2>
               <button onClick={() => setScannedResult(null)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
@@ -560,7 +560,7 @@ const Products = () => {
 
       {showBarcodeGenerator && selectedProductForBarcode && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+          <div role="dialog" aria-modal="true" aria-label="Product Barcode" className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Product Barcode</h2>
               <button

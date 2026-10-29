@@ -269,7 +269,7 @@ const StoreModal = ({ store, onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-white rounded-t-2xl sm:rounded-lg shadow-xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto p-4 sm:p-5 lg:p-6">
+      <div role="dialog" aria-modal="true" aria-label={store ? 'Edit Store' : 'Add New Store'} className="bg-white rounded-t-2xl sm:rounded-lg shadow-xl max-w-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto p-4 sm:p-5 lg:p-6">
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
             {store ? 'Edit Store' : 'Add New Store'}

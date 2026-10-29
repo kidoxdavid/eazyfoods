@@ -76,6 +76,7 @@ async function clickEverything(page: Page, url: string, prefix: string, rep: Rep
       try { await el.click({ timeout: 3000 }); rep.clicked++; }
       catch (e: any) {
         const m = String(e.message);
+        if (/intercepts pointer events/i.test(m)) { await page.keyboard.press('Escape').catch(() => {}); await open(); }   // something left open on top: close it by starting the page afresh
         if (/intercepts pointer events|not visible|outside of the viewport/i.test(m)) rep.warn.push(`${where} "${target.name}": cannot be clicked (${/intercepts/.test(m) ? 'covered by another element' : /outside/.test(m) ? 'off screen' : 'hidden'})`);
         continue;
       }

@@ -441,7 +441,7 @@ const InventoryAdjustmentModal = ({ onClose, onSuccess, showScanner, setShowScan
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 my-4 max-h-[90vh] overflow-y-auto">
+      <div role="dialog" aria-modal="true" aria-label="Add Inventory Adjustment" className="bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 my-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Add Inventory Adjustment</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1">
