@@ -75,9 +75,11 @@ export function ProductCard({ p }: { p: Card }) {
           <Price cents={p.min_price} className={p.on_sale ? 'sale' : ''} />
           {was && <s className="was">{money(was)}</s>}
         </div>
-        {p.unit_price_cents != null && p.unit_basis && <span className="unit">{unitText({ cents: p.unit_price_cents, basis: p.unit_basis })}</span>}
+        <div className="ufrom">
+          {p.unit_price_cents != null && p.unit_basis && <span className="unit">{unitText({ cents: p.unit_price_cents, basis: p.unit_basis })}</span>}
+          {(p.store_count ?? 1) > 1 && <span className="from">lowest of {p.store_count} stores</span>}
+        </div>
         {p.multibuy && mbOn && <span className="multibuy">Buy {p.multibuy.min_qty}+: {money(p.multibuy.unit_price_cents)} each</span>}
-        {(p.store_count ?? 1) > 1 && <span className="from">lowest of {p.store_count} stores</span>}
         <Link to={`/p/${p.slug}`} className="pname" onClick={click}>{p.name}</Link>
         <span className="pmeta">{[p.brand, packLabel(p)].filter(Boolean).join(' · ')}</span>
         {p.matched_alias && <Badge>Also known as “{p.matched_alias}”</Badge>}

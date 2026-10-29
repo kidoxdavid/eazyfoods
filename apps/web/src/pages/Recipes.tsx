@@ -15,7 +15,7 @@ export function RecipesPage() {
     <>
       <h1>Recipes</h1>
       <p className="muted">Cook with ingredients you can buy here. We only add what is genuinely in stock.</p>
-      <div className="row wrap" style={{ marginBottom: 12 }}>
+      <div className="row wrap hscroll" style={{ marginBottom: 12 }}>
         <Button size="sm" variant={sp.get('region') ? 'secondary' : 'primary'} onClick={() => setSp({})}>All</Button>
         {regions.data?.map((r) => <Button key={r.slug} size="sm" variant={sp.get('region') === r.slug ? 'primary' : 'secondary'} onClick={() => setSp({ region: r.slug })}>{r.name}</Button>)}
       </div>
