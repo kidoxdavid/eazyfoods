@@ -45,3 +45,35 @@ describe('barcode suggestions and bulk product creation', () => {
     expect((await asVendor(owner, 'GET', `/api/vendor/stores/${sid}/barcode?code=7770001110001`)).status).toBe(200);
   });
 });
+
+import { runLowStockAlerts } from '../src/services/alerts.js';
+describe('low-stock emails', () => {
+  it('sends one digest per vendor, not again until restocked, and respects the switch', async () => {
+    await openAllStores();
+    const owner = (await login('owner1@example.test')).cookie, sid = await storeId(S1);
+    const pid = (await pool.query(`SELECT p.id FROM products p JOIN store_offers o ON o.product_id=p.id WHERE o.store_id=$1 AND p.slug='garri-white'`, [sid])).rows[0].id;
+    const vendor = (await pool.query('SELECT vendor_id FROM stores WHERE id=$1', [sid])).rows[0].vendor_id;
+    // Everything else is fine; this one item runs low.
+    await pool.query(`UPDATE store_offers SET low_stock_notified_at = now() WHERE store_id=$1`, [sid]);
+    await pool.query(`UPDATE store_offers SET low_stock_notified_at = NULL, is_active = true, stock_on_hand = 2, stock_reserved = 0, low_stock_threshold = 3 WHERE store_id=$1 AND product_id=$2`, [sid, pid]);
+    await pool.query(`DELETE FROM notifications WHERE template='vendor_low_stock'`);
+    await pool.query(`UPDATE vendors SET low_stock_emails = true WHERE id=$1`, [vendor]);
+    await runLowStockAlerts();
+    const first = (await pool.query(`SELECT body FROM notifications WHERE template='vendor_low_stock' AND body LIKE '%2 left%'`)).rowCount ?? 0;
+    expect(first).toBeGreaterThan(0);
+    const before = (await pool.query(`SELECT count(*)::int n FROM notifications WHERE template='vendor_low_stock'`)).rows[0].n;
+    await runLowStockAlerts();                                                    // nothing new: no repeat
+    expect((await pool.query(`SELECT count(*)::int n FROM notifications WHERE template='vendor_low_stock'`)).rows[0].n).toBe(before);
+    await pool.query(`UPDATE store_offers SET stock_on_hand = 50 WHERE store_id=$1 AND product_id=$2`, [sid, pid]);
+    await runLowStockAlerts();                                                    // restocked: re-armed
+    await pool.query(`UPDATE store_offers SET stock_on_hand = 1 WHERE store_id=$1 AND product_id=$2`, [sid, pid]);
+    await runLowStockAlerts();
+    expect((await pool.query(`SELECT count(*)::int n FROM notifications WHERE template='vendor_low_stock'`)).rows[0].n).toBe(before + 1);
+    // Switched off: nothing more is sent.
+    expect((await asVendor(owner, 'PUT', '/api/vendor/low-stock-emails', { enabled: false })).body).toEqual({ enabled: false });
+    await pool.query(`UPDATE store_offers SET low_stock_notified_at = NULL WHERE store_id=$1 AND product_id=$2`, [sid, pid]);
+    await runLowStockAlerts();
+    expect((await pool.query(`SELECT count(*)::int n FROM notifications WHERE template='vendor_low_stock'`)).rows[0].n).toBe(before + 1);
+    await asVendor(owner, 'PUT', '/api/vendor/low-stock-emails', { enabled: true });
+  });
+});

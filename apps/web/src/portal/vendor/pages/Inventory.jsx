@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import api from '../services/api'
 import { AlertTriangle, TrendingDown, Package, Plus, Camera, Barcode, X, Download, CheckCircle } from 'lucide-react'
 import BarcodeScanner from '../components/BarcodeScanner'
+import { Link } from 'react-router-dom'
+import { raw } from '../../shared/pages/useStore'
 
 const Inventory = () => {
   const [lowStockAlerts, setLowStockAlerts] = useState([])
@@ -9,6 +11,9 @@ const Inventory = () => {
   const [loading, setLoading] = useState(true)
   const [showAdjustmentModal, setShowAdjustmentModal] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
+  const [emailsOn, setEmailsOn] = useState(null)   // low-stock emails to the team; null until loaded
+  useEffect(() => { raw('GET', '/vendor/low-stock-emails').then((r) => setEmailsOn(r.enabled)).catch(() => setEmailsOn(null)) }, [])
+  const setEmails = async (enabled) => { try { await raw('PUT', '/vendor/low-stock-emails', { enabled }); setEmailsOn(enabled) } catch { alert('Only the store owner can change this.') } }
   const [selectedProduct, setSelectedProduct] = useState(null)
 
   useEffect(() => {
@@ -93,6 +98,10 @@ const Inventory = () => {
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Inventory Management</h1>
           <p className="text-xs sm:text-sm text-gray-600 mt-1">Track stock levels and adjustments</p>
         </div>
+        <Link to="/inventory/scan" className="w-full sm:w-auto px-3 sm:px-4 py-2 border border-gray-300 bg-white text-gray-800 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm sm:text-base">
+          <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
+          Scan stock
+        </Link>
         <button
           onClick={() => setShowAdjustmentModal(true)}
           className="w-full sm:w-auto px-3 sm:px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center gap-2 text-sm sm:text-base"
@@ -120,6 +129,11 @@ const Inventory = () => {
             </button>
           )}
         </div>
+        {emailsOn !== null && (
+          <label className="flex items-center gap-2 mb-3 text-sm text-gray-700">
+            <input type="checkbox" checked={emailsOn} onChange={(e) => setEmails(e.target.checked)} /> Email my team when items run low or sell out
+          </label>
+        )}
         {lowStockAlerts.length === 0 ? (
           <p className="text-sm sm:text-base text-gray-600">No low stock alerts</p>
         ) : (

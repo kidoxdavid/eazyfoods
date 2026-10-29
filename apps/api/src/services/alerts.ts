@@ -1,5 +1,5 @@
 import { pool } from '../db/pool.js';
-import { notify } from './notify.js';
+import { notify, notifyVendorOwners } from './notify.js';
 
 /**
  * Send the alerts people asked for: "tell me when it is back" and "tell me if the price drops". Each alert fires once, then switches itself off.
@@ -41,5 +41,29 @@ export async function runListReminders() {
     sent++;
   }
   await pool.query(`UPDATE list_reminders SET next_at = now() + make_interval(days => every_days) WHERE next_at <= now()`);   // empty lists just skip this round
+  return sent;
+}
+
+/**
+ * Tell each vendor which items are running low or sold out. One digest per vendor; an item is reported once, and again only after it was
+ * restocked above its level and fell below it again. The items are claimed before sending so a crash never double-sends.
+ */
+export async function runLowStockAlerts() {
+  // Restocked items become reportable again.
+  await pool.query(`UPDATE store_offers SET low_stock_notified_at = NULL WHERE low_stock_notified_at IS NOT NULL AND stock_on_hand - stock_reserved > low_stock_threshold`);
+  const vendors = (await pool.query(
+    `SELECT DISTINCT s.vendor_id FROM store_offers o JOIN stores s ON s.id = o.store_id JOIN vendors v ON v.id = s.vendor_id AND v.low_stock_emails
+      WHERE o.is_active AND o.low_stock_notified_at IS NULL AND o.stock_on_hand - o.stock_reserved <= o.low_stock_threshold LIMIT 100`)).rows;
+  let sent = 0;
+  for (const v of vendors) {
+    const items = (await pool.query(
+      `UPDATE store_offers o SET low_stock_notified_at = now() FROM stores s, products p, vendors vd
+        WHERE s.id = o.store_id AND p.id = o.product_id AND vd.id = s.vendor_id AND s.vendor_id = $1 AND o.is_active AND o.low_stock_notified_at IS NULL AND o.stock_on_hand - o.stock_reserved <= o.low_stock_threshold
+        RETURNING p.name, s.name AS store, o.stock_on_hand - o.stock_reserved AS available, vd.name AS vendor`, [v.vendor_id])).rows;
+    if (!items.length) continue;
+    const lines = items.slice(0, 30).map((i) => `- ${i.name} (${i.store}): ${i.available <= 0 ? 'sold out' : `${i.available} left`}`).join('\n') + (items.length > 30 ? `\n…and ${items.length - 30} more` : '');
+    await notifyVendorOwners(pool, v.vendor_id, 'vendor_low_stock', { count: items.length, vendor: items[0].vendor, items: lines });
+    sent++;
+  }
   return sent;
 }

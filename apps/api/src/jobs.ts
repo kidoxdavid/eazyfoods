@@ -6,7 +6,7 @@ import { processOutbox } from './services/notify.js';
 import { runAutoPayouts } from './services/payouts.js';
 import { notifyReconciliationDifferences } from './services/settlements.js';
 import { runAutomations, runScheduledCampaigns } from './services/marketing.js';
-import { runListReminders, runProductAlerts } from './services/alerts.js';
+import { runListReminders, runLowStockAlerts, runProductAlerts } from './services/alerts.js';
 import { processSms } from './services/sms.js';
 
 /** Stores that never respond get the order rejected (and the customer fully refunded) after the configured time. */
@@ -40,6 +40,7 @@ export function startJobs() {
       await runScheduledCampaigns();
       await runProductAlerts();
       await runListReminders();
+      await runLowStockAlerts();
       await processSms();
       if (Date.now() - lastAutomations > 600_000) { lastAutomations = Date.now(); await runAutomations(); }
       if (Date.now() - lastAutoPayout > 3_600_000) { lastAutoPayout = Date.now(); await runAutoPayouts(); await notifyReconciliationDifferences(); }   // hourly; does nothing unless finance turned automatic payouts on

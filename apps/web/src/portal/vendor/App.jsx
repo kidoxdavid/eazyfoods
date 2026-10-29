@@ -26,6 +26,8 @@ import Questions from '../shared/pages/Questions'
 import Reports from '../shared/pages/Reports'
 import Statement from '../shared/pages/Statement'
 import Import from '../shared/pages/Import'
+import StockScan from './pages/StockScan'
+import Labels from './pages/Labels'
 
 const Spinner = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -80,6 +82,8 @@ export default function App() {
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/statement" element={<Statement kind="vendor" />} />
                   <Route path="/import" element={<Import />} />
+                  <Route path="/inventory/scan" element={<StockScan />} />
+                  <Route path="/labels" element={<Labels />} />
                   {/* Links in older emails and bookmarks */}
                   <Route path="/messages" element={<Navigate to="/chat" replace />} />
                   <Route path="/store" element={<Navigate to="/profile" replace />} />

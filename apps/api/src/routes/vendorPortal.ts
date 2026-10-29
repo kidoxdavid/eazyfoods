@@ -394,6 +394,14 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
     });
     return reply.code(dry_run ? 200 : 201).send({ dry_run, total_rows: rows.length, succeeded: ok, created, needs_review: review && created > 0, failed: errors.length, errors });
   });
+  // Whether low-stock emails go to this vendor's team.
+  app.get('/low-stock-emails', async (req) => ({ enabled: (await pool.query('SELECT low_stock_emails FROM vendors WHERE id = $1', [vendorId(req)])).rows[0].low_stock_emails }));
+  app.put('/low-stock-emails', async (req) => {
+    ownerOnly(req);
+    const { enabled } = z.object({ enabled: z.boolean() }).parse(req.body);
+    await pool.query('UPDATE vendors SET low_stock_emails = $2 WHERE id = $1', [vendorId(req), enabled]);
+    return { enabled };
+  });
   app.get<{ Params: { storeId: string } }>('/stores/:storeId/imports', async (req) => (await pool.query('SELECT id, total_rows, succeeded, failed, errors, created_at FROM import_jobs WHERE store_id = $1 ORDER BY created_at DESC LIMIT 20', [await store(req)])).rows);
 
   // ---------- Dashboard & settlement ----------
