@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { LiveBoundary } from '../../live'
 import { LayoutDashboard, ShoppingCart, Truck, UserCheck, LifeBuoy, RotateCcw, Store, MessageSquare, MapPin, Package, Utensils, Layers, Map, Tag, Megaphone, Palette, FileText, Handshake, DollarSign, LineChart, Calculator, Banknote, Scale, BarChart3, Users, Star, Gift, FileSpreadsheet, SlidersHorizontal, Settings as SettingsIcon, Activity } from 'lucide-react'
 import { setArea } from '../shared/client'
 import StaffShell, { useUser } from '../shared/StaffShell'
@@ -78,6 +79,7 @@ export default function App() {
         <Route path="/login" element={<Navigate to="/signin" replace />} />
         <Route path="/*" element={
           <StaffShell brand="eazyfoods Admin" nav={NAV} badgesPath="/admin/badges" canSee={canSee} titleOf={(u) => (u.roles ?? []).filter((r) => STAFF_ROLES.includes(r.role)).map((r) => r.role).join(', ') || u.full_name}>
+<LiveBoundary>
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/orders" element={<Orders />} /><Route path="/orders/:id" element={<OrderDetail />} />
@@ -95,6 +97,7 @@ export default function App() {
               <Route path="/control" element={<ControlCentre />} /><Route path="/settings" element={<Settings />} /><Route path="/system" element={<System />} />
               <Route path="*" element={<NoAccess what="this page" />} />
             </Routes>
+</LiveBoundary>
           </StaffShell>
         } />
       </Routes>

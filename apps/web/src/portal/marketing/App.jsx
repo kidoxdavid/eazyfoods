@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { LiveBoundary } from '../../live'
 import { LayoutDashboard, Megaphone, Mail, FileText, Users, Workflow, Share2, DollarSign, Sparkles, Image, BarChart3, Tag, Palette, Gift, Settings as SettingsIcon } from 'lucide-react'
 import { setArea } from '../shared/client'
 import StaffShell from '../shared/StaffShell'
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/login" element={<Navigate to="/signin" replace />} />
         <Route path="/*" element={
           <StaffShell brand="eazyfoods Marketing" nav={NAV} badgesPath="/marketing/badges">
+<LiveBoundary>
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/analytics" element={<Analytics />} />
@@ -52,6 +54,7 @@ export default function App() {
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+</LiveBoundary>
           </StaffShell>
         } />
       </Routes>

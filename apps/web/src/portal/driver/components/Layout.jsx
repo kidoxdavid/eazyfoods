@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { LiveBoundary } from '../../../live'
 import { useAuth } from '../contexts/AuthContext'
 import { useNotifications } from '../hooks/useNotifications'
 import { LayoutDashboard, Package, MapPin, User, Menu, X, ToggleLeft, ToggleRight, DollarSign, BarChart3, Star, MessageSquare, MessageCircle, History, Settings, FileText, Receipt } from 'lucide-react'
@@ -173,7 +174,7 @@ const Layout = () => {
           </div>
         )}
         <main className="p-3 sm:p-4 lg:p-6 max-w-full min-w-0 overflow-x-auto">
-          <Outlet />
+          <LiveBoundary><Outlet /></LiveBoundary>
         </main>
       </div>
     </div>

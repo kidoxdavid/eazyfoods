@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { api, put, post, del } from './api';
 import { useAuth } from './auth';
 import { useToast } from './toast';
+import { useLiveVersion } from './live';
 
 export type CartItem = {
   offer_id: string; slug: string; name: string; image_url?: string | null; brand: string | null; pack_size: string | null; pack_unit: string | null; sold_by: string;
@@ -36,6 +37,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try { setCart(await api<Cart>('/cart')); } catch { /* keep previous */ } finally { setLoading(false); }
   }, [me]);
+
+  // Another device changed the basket: pick it up.
+  const live = useLiveVersion();
+  useEffect(() => { if (live > 0 && me) refresh(); }, [live]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // On sign-in, fold the signed-out basket into the account basket, then clear it.
   useEffect(() => {

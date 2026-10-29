@@ -49,7 +49,7 @@ async function clickEverything(page: Page, url: string, prefix: string, rep: Rep
   const onPopup = (p: Page) => p.close().catch(() => {});
   page.on('response', onResp); page.on('pageerror', onErr); page.on('dialog', onDialog); page.on('popup', onPopup);
   const open = async () => { await page.goto(base() + url, { waitUntil: 'networkidle', timeout: 30_000 }).catch(() => {}); await page.waitForTimeout(200); };
-  const done = new Set<string>();
+  const done = new Set<string>(); const kindCount = new Map<string, number>();
   try {
     await page.addInitScript(SIG);
     await open();
@@ -62,16 +62,17 @@ async function clickEverything(page: Page, url: string, prefix: string, rep: Rep
         const el = all.nth(i);
         if (!(await el.isVisible().catch(() => false))) continue;
         const name = await nameOf(el).catch(() => '');
-        const k = `${name}#${seenCount.get(name) ?? 0}`; seenCount.set(name, (seenCount.get(name) ?? 0) + 1);
-        if (done.has(k) || SKIP.test(name)) continue;
+        const nth = seenCount.get(name) ?? 0; const k = `${name.replace(/\d+/g, '#')}#${Math.min(nth, 0)}:${name}`; seenCount.set(name, nth + 1);
+        if (done.has(k) || SKIP.test(name) || (kindCount.get(name.replace(/\b(Add|Remove|Save|Quick view|Open|Edit|Delete|View)\b.*$/i, '$1')) ?? 0) >= 3) continue;
         target = { i, key: k, name };
       }
       if (!target) break;
-      done.add(target.key);
+      done.add(target.key); { const kk = target.name.replace(/\b(Add|Remove|Save|Quick view|Open|Edit|Delete|View)\b.*$/i, '$1'); kindCount.set(kk, (kindCount.get(kk) ?? 0) + 1); }
       const el = all.nth(target.i);
       const before = await page.evaluate(() => ({ html: sig(), url: location.href, dlg: document.querySelectorAll('[role=dialog]').length }));
       const reqBefore = reqs; hard = []; warn = [];
-      await el.locator('xpath=ancestor::*[self::article or self::li or self::tr][1]').hover({ timeout: 800 }).catch(() => {});   // some buttons only appear on hover
+      const card = el.locator('xpath=ancestor::*[self::article or self::li or self::tr][1]');
+      if (await card.count()) await card.hover({ timeout: 800 }).catch(() => {});   // some buttons only appear on hover
       try { await el.click({ timeout: 3000 }); rep.clicked++; }
       catch (e: any) {
         const m = String(e.message);

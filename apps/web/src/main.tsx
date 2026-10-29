@@ -1,4 +1,5 @@
 import { StrictMode } from 'react';
+import { LiveProvider } from './live';
 import { FeaturesProvider } from './features';
 import { createRoot } from 'react-dom/client';
 import { registerServiceWorker } from './pwa';
@@ -14,5 +15,5 @@ import './store.css';
 installAreaFetch();
 registerServiceWorker();
 createRoot(document.getElementById('root')!).render(
-  <StrictMode><LangProvider><FeaturesProvider><BrowserRouter><App /></BrowserRouter></FeaturesProvider></LangProvider></StrictMode>,
+  <StrictMode><LangProvider><FeaturesProvider><LiveProvider><BrowserRouter><App /></BrowserRouter></LiveProvider></FeaturesProvider></LangProvider></StrictMode>,
 );

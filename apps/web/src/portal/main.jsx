@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
 import { watchAccessibility } from './a11y'
+import { LiveProvider } from '../live'
 
 // Each staff area is its own app, like the original EAZyfoods portals. The first part of the path says which one.
 const AREA = window.location.pathname.split('/')[1]
@@ -22,7 +23,7 @@ async function pick() {
   watchAccessibility()
   if (load) {
     load().then(({ default: App }) => {
-      ReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>)
+      ReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><LiveProvider><App /></LiveProvider></React.StrictMode>)
     })
   } else {
     document.getElementById('root').textContent = 'Unknown area'

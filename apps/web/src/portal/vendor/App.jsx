@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { LiveBoundary } from '../../live'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/*" element={
             <Guard>
               <Layout>
+<LiveBoundary>
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/products" element={<Products />} />
@@ -91,6 +93,7 @@ export default function App() {
                   <Route path="/insights" element={<Navigate to="/analytics" replace />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
+</LiveBoundary>
               </Layout>
             </Guard>
           } />

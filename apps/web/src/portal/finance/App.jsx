@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { LiveBoundary } from '../../live'
 import { Wallet, LineChart, Banknote, Scale, RotateCcw, Gift, Calculator, BarChart3, FileSpreadsheet, ShoppingCart, Activity } from 'lucide-react'
 import { setArea } from '../shared/client'
 import StaffShell from '../shared/StaffShell'
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="/login" element={<Navigate to="/signin" replace />} />
         <Route path="/*" element={
           <StaffShell brand="eazyfoods Finance" nav={NAV} badgesPath="/admin/badges" canSee={canSee} titleOf={(u) => u.full_name}>
+<LiveBoundary>
             <Routes>
               <Route path="/" element={<FinanceOverview />} /><Route path="/balances" element={<Finance />} />
               <Route path="/refunds" element={<Refunds />} /><Route path="/settlements" element={<Settlements />} /><Route path="/reconciliation" element={<Reconciliation />} />
@@ -53,6 +55,7 @@ export default function App() {
               <Route path="/system" element={<System />} />
               <Route path="*" element={<NoAccess what="this page" />} />
             </Routes>
+</LiveBoundary>
           </StaffShell>
         } />
       </Routes>

@@ -3,6 +3,7 @@ import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import compress from '@fastify/compress';
+import { liveRoutes } from './routes/live.js';
 import rateLimit from '@fastify/rate-limit';
 import { ZodError } from 'zod';
 import { config } from './config.js';
@@ -106,6 +107,7 @@ export async function buildApp() {
     return { ok: true };
   });
 
+  await app.register(liveRoutes);
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(catalogueRoutes, { prefix: '/api' });
   await app.register(searchRoutes, { prefix: '/api' });

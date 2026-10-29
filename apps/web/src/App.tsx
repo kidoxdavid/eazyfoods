@@ -1,4 +1,5 @@
 import { Suspense, useEffect, type ReactNode } from 'react';
+import { LiveBoundary } from './live';
 import { SkelPage } from './skeletons';
 import { Link, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth';
@@ -61,6 +62,7 @@ export function App() {
               <Route path="/admin/*" element={<HardNav />} /><Route path="/marketing/*" element={<HardNav />} /><Route path="/vendor/*" element={<HardNav />} /><Route path="/driver/*" element={<HardNav />} /><Route path="/portals" element={<HardNav />} /><Route path="/finance/*" element={<HardNav />} />
               <Route path="*" element={
                 <Site>
+                  <LiveBoundary>
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/search" element={<SearchPage />} />
@@ -90,6 +92,7 @@ export function App() {
                     <Route path="/unsubscribe/:token" element={<Unsubscribe />} />
                     <Route path="*" element={<Empty title="Page not found"><Link to="/">Back to the shop</Link></Empty>} />
                   </Routes>
+                  </LiveBoundary>
                 </Site>
               } />
             </Routes>
