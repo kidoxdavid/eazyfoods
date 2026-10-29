@@ -334,6 +334,7 @@ const routes = [
   ['PUT', /^\/products\/([0-9a-f-]{36})$/, async (m, { data }) => raw('PUT', V(`/stores/${await sid(data)}/catalogue/${m[1]}`), productBody(data))],
   ['DELETE', /^\/products\/([0-9a-f-]{36})$/, async (m) => raw('DELETE', V(`/stores/${await currentStoreId()}/catalogue/${m[1]}`))],
   ['GET', /^\/barcode\/lookup$/, async (m, { params }) => raw('GET', V(`/stores/${await currentStoreId()}/barcode?code=${encodeURIComponent(params.barcode)}`))],
+  ['GET', /^\/barcode\/suggest$/, async (m, { params }) => raw('GET', V(`/stores/${await currentStoreId()}/barcode/suggest?code=${encodeURIComponent(params.barcode)}`))],
   ['POST', /^\/barcode\/generate$/, async (m, { params }) => raw('POST', V(`/stores/${await currentStoreId()}/catalogue/${params.product_id}/barcode`))],
   ['POST', /^\/uploads\/(products|ads|vendor-profile|vendor-documents)$/, async (m, { data }) => {
     if (m[1] === 'vendor-documents') { const f = data.get('file'); const key = `pending:${pendingDocs.size + 1}`; pendingDocs.set(key, f); return { url: key } }

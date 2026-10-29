@@ -68,6 +68,25 @@ const ProductForm = () => {
     }
   }
 
+  // Fill the name, size and description from a public product database. Only fills what is still empty.
+  const [lookup, setLookup] = useState({ state: 'idle', message: '' })
+  const lookUpBarcode = async (code) => {
+    const c = String(code || '').trim()
+    if (!/^\d{6,14}$/.test(c)) { setLookup({ state: 'idle', message: 'Enter the 6 to 14 digit barcode first.' }); return }
+    setLookup({ state: 'busy', message: 'Looking it up…' })
+    try {
+      const { data } = await api.get('/barcode/suggest', { params: { barcode: c } })
+      if (data.exists) { setLookup({ state: 'done', message: 'This barcode is already in the catalogue. Search for it and list it instead of adding it again.' }); return }
+      if (!data.found) { setLookup({ state: 'done', message: 'Nothing found for this barcode. Please type the details in.' }); return }
+      const s = data.suggestion
+      const base = s.brand && !s.name.toLowerCase().includes(s.brand.toLowerCase()) ? `${s.brand} ${s.name}` : s.name
+      const full = s.quantity && !base.includes(s.quantity) ? `${base} ${s.quantity}` : base
+      setFormData((f) => ({ ...f, name: f.name || full, description: f.description || s.description || '' }))
+      setLookup({ state: 'done', message: 'Filled in from the Open Food Facts database. Check it, then add your own photo and price.' })
+    } catch { setLookup({ state: 'done', message: 'Could not look it up right now. Please type the details in.' }) }
+  }
+  useEffect(() => { if (prefillBarcode && !id) lookUpBarcode(prefillBarcode) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const fetchProduct = useCallback(async () => {
     if (!id) return
     
@@ -510,14 +529,23 @@ const ProductForm = () => {
           </div>
 
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Barcode</label>
-            <input
-              type="text"
-              name="barcode"
-              value={formData.barcode}
-              onChange={handleChange}
-              className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-            />
+            <label htmlFor="barcode-field" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Barcode</label>
+            <div className="flex gap-2">
+              <input
+                id="barcode-field"
+                type="text"
+                name="barcode"
+                inputMode="numeric"
+                value={formData.barcode}
+                onChange={handleChange}
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              />
+              {!isEdit && (
+                <button type="button" onClick={() => lookUpBarcode(formData.barcode)} disabled={lookup.state === 'busy'}
+                  className="shrink-0 px-3 py-2 text-xs sm:text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50">Look up details</button>
+              )}
+            </div>
+            {lookup.message && <p role="status" className="mt-1 text-xs text-gray-600">{lookup.message}</p>}
           </div>
 
           <div className="sm:col-span-2">

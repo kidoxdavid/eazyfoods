@@ -336,7 +336,7 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
 
   // ---------- CSV import ----------
   app.get('/import-template', async (_req, reply) => reply.header('content-type', 'text/csv').header('content-disposition', 'attachment; filename="eazyfoods-import-template.csv"')
-    .send(toCsv([['barcode', 'sku', 'slug', 'price', 'stock', 'active'], ['', '', 'garri-white', '4.99', '25', 'yes'], ['0123456789012', '', '', '12.50', '8', 'yes']])));
+    .send(toCsv([['barcode', 'sku', 'slug', 'name', 'unit', 'price', 'stock', 'active'], ['', '', 'garri-white', '', '', '4.99', '25', 'yes'], ['0123456789012', '', '', 'Example New Product 500g', '500 g', '12.50', '8', 'yes']])));
 
   app.post<{ Params: { storeId: string } }>('/stores/:storeId/import', async (req, reply) => {
     const sid = await store(req); await assertVendorCan((await vendorOfStore(sid))!, 'csv_import');
@@ -347,8 +347,11 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
     if (col('price') < 0 || col('stock') < 0 || (col('barcode') < 0 && col('sku') < 0 && col('slug') < 0)) throw bad('bad_header', 'The first row must include price, stock, and at least one of barcode, sku or slug.');
     if (rows.length > 2000) throw bad('too_many_rows', 'Import at most 2,000 rows at a time.');
     const errors: { row: number; message: string }[] = [];
-    let ok = 0;
+    let ok = 0, created = 0;
+    const review = await featureOn('vendor.products_need_review');
+    const seen = new Set<string>();
     await tx(async (c) => {
+      const vendor = (await c.query('SELECT vendor_id FROM stores WHERE id = $1', [sid])).rows[0].vendor_id;
       for (const [i, r] of rows.entries()) {
         const rowNo = i + 2, get = (n: string) => (col(n) >= 0 ? (r[col(n)] ?? '').trim() : '');
         const priceStr = get('price'), stockStr = get('stock');
@@ -356,7 +359,23 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
         if (!/^\d+$/.test(stockStr)) { errors.push({ row: rowNo, message: `Stock "${stockStr}" must be a whole number, 0 or more.` }); continue; }
         const barcode = get('barcode'), sku = get('sku'), slug = get('slug');
         const p = (await c.query(`SELECT id FROM products WHERE status = 'published' AND (($1 <> '' AND barcode = $1) OR ($2 <> '' AND sku = $2) OR ($3 <> '' AND slug = $3)) LIMIT 2`, [barcode, sku, slug])).rows;
-        if (p.length !== 1) { errors.push({ row: rowNo, message: p.length ? 'More than one catalogue product matches.' : 'No published catalogue product matches. Suggest it as a new product first.' }); continue; }
+        const name = get('name');
+        if (p.length > 1) { errors.push({ row: rowNo, message: 'More than one catalogue product matches.' }); continue; }
+        if (p.length === 0) {
+          // No match: a row with a name and a barcode or SKU creates a new product, the same as adding it by hand.
+          if (name.length < 2 || (!barcode && !sku)) { errors.push({ row: rowNo, message: 'No published catalogue product matches. To create it, give a name and a barcode or SKU.' }); continue; }
+          const key = barcode || `sku:${sku}`;
+          if (seen.has(key)) { errors.push({ row: rowNo, message: 'This barcode or SKU appears earlier in the file.' }); continue; }
+          if (barcode && !/^\d{6,14}$/.test(barcode)) { errors.push({ row: rowNo, message: `Barcode "${barcode}" must be 6 to 14 digits.` }); continue; }
+          if ((await c.query('SELECT 1 FROM products WHERE (barcode = $1 AND $1 <> \'\') OR (sku = $2 AND $2 <> \'\')', [barcode, sku])).rowCount) { errors.push({ row: rowNo, message: 'That barcode or SKU already belongs to a product that is not live yet.' }); continue; }
+          seen.add(key);
+          if (dry_run) { ok++; created++; continue; }
+          let slug = slugify(name), n = 1;
+          while ((await c.query('SELECT 1 FROM products WHERE slug = $1', [slug])).rowCount) slug = `${slugify(name)}-${++n}`;
+          p.push((await c.query(`INSERT INTO products(slug,name,name_norm,sku,barcode,pack_unit,sold_by,status,suggested_by_vendor_id) VALUES ($1,$2,$3,$4,$5,$6,'unit',$7,$8) RETURNING id`,
+            [slug, name, norm(name), sku || null, barcode || null, get('unit') || null, review ? 'pending' : 'published', vendor])).rows[0]);
+          created++;
+        }
         const price = Math.round(Number(priceStr) * 100), stock = Number(stockStr);
         const active = get('active') === '' ? true : !['no', 'false', '0'].includes(get('active').toLowerCase());
         const cur = (await c.query('SELECT id, stock_on_hand, stock_reserved FROM store_offers WHERE store_id = $1 AND product_id = $2 FOR UPDATE', [sid, p[0].id])).rows[0];
@@ -373,7 +392,7 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
       }
       if (!dry_run) await c.query('INSERT INTO import_jobs(store_id, created_by, total_rows, succeeded, failed, errors) VALUES ($1,$2,$3,$4,$5,$6)', [sid, req.user!.id, rows.length, ok, errors.length, JSON.stringify(errors)]);
     });
-    return reply.code(dry_run ? 200 : 201).send({ dry_run, total_rows: rows.length, succeeded: ok, failed: errors.length, errors });
+    return reply.code(dry_run ? 200 : 201).send({ dry_run, total_rows: rows.length, succeeded: ok, created, needs_review: review && created > 0, failed: errors.length, errors });
   });
   app.get<{ Params: { storeId: string } }>('/stores/:storeId/imports', async (req) => (await pool.query('SELECT id, total_rows, succeeded, failed, errors, created_at FROM import_jobs WHERE store_id = $1 ORDER BY created_at DESC LIMIT 20', [await store(req)])).rows);
 

@@ -9,6 +9,8 @@ import { norm, slugify } from '../lib/norm.js';
 import { isOurImageUrl } from '../lib/storage.js';
 import { featureOn } from '../services/features.js';
 import { vendorIdsOf } from './vendorOrders.js';
+import { rl } from '../lib/ratelimit.js';
+import { barcodeCode, lookupBarcode } from '../services/barcodeLookup.js';
 import { isCanadianPostal, normalisePostal } from '../services/pricing.js';
 
 /**
@@ -135,6 +137,16 @@ export const vendorCatalogueRoutes: FastifyPluginAsync = async (app) => {
     const r = (await pool.query(`${LIST_SQL} AND p.barcode = $2`, [sid, code])).rows[0];
     if (!r) throw notFound('No product with that barcode in your store');
     return shape(r);
+  });
+
+  // Fills in a new product from a public database when the barcode is not in the catalogue yet. Never blocks: "found: false" just means type it in.
+  app.get<{ Params: { storeId: string }; Querystring: { code?: string } }>('/stores/:storeId/barcode/suggest', rl(120, '1 hour'), async (req) => {
+    await store(req);
+    const code = barcodeCode.parse(req.query.code);
+    const mine = (await pool.query('SELECT 1 FROM products WHERE barcode = $1', [code])).rowCount;
+    if (mine) return { found: false, exists: true };
+    const s = await lookupBarcode(code);
+    return s ? { found: true, exists: false, suggestion: s } : { found: false, exists: false };
   });
 
   // Create a product and list it in this store. It waits for approval when the platform switch says so.
