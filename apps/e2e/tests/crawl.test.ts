@@ -42,11 +42,11 @@ async function visit(page: Page, url: string, size: { width: number }, prefix: s
     if (/signin|login/.test(here) && !/signin|login/.test(url)) bad.push(`bounced to ${here}`);
     const info = await page.evaluate(() => ({
       text: document.body.innerText.trim().length,
-      boundary: /something went wrong|unexpected error|cannot read prop|is not defined|undefined is not|\[object Object\]|NaN/i.test(document.body.innerText),
+      boundary: /\bNaN\b/.test(document.body.innerText) || /something went wrong|unexpected error|cannot read prop|is not defined|undefined is not|\[object Object\]/i.test(document.body.innerText),
       over: document.documentElement.scrollWidth - window.innerWidth,
     }));
     if (info.text < 20) bad.push('blank page');
-    if (info.boundary) bad.push('error text on page: ' + ((await page.evaluate(() => document.body.innerText.match(/something went wrong|unexpected error|cannot read prop\w*|\w+ is not defined|undefined is not|\[object Object\]|NaN/i)?.[0])) ?? ''));
+    if (info.boundary) bad.push('error text on page: ' + ((await page.evaluate(() => document.body.innerText.match(/\bNaN\b|something went wrong|unexpected error|cannot read prop\w*|\w+ is not defined|undefined is not|\[object Object\]/i)?.[0])) ?? ''));
     if (size.width < 600 && info.over > 2) bad.push(`sideways scroll (${info.over}px too wide)`);
     // Detail pages worth visiting next: one per kind of link.
     const links: string[] = await page.evaluate((pre) => [...document.querySelectorAll('a[href^="/"]')].map((a) => (a as HTMLAnchorElement).getAttribute('href')!).filter((h) => !pre || h.startsWith(pre + '/')), prefix);
