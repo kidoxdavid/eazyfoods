@@ -156,10 +156,12 @@ main { padding-top: 14px; }
 .slot.on { border-color: var(--green); background: var(--green-bg); box-shadow: inset 0 0 0 1px var(--green); } .slot-left { color: var(--deal-ink) !important; }
 
 /* ---------- Quick view ---------- */
-.pcard .qv { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 3; display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,.96); color: #1b2a21; border: 1px solid rgba(0,0,0,.18); border-radius: 999px; font: 700 .82rem var(--body); min-height: 34px; padding: 0 14px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.18); opacity: 0; pointer-events: none; transition: opacity .15s; white-space: nowrap; }
+.pcard .qv { position: absolute; top: 8px; left: 8px; z-index: 3; display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; background: rgba(255,255,255,.94); color: #1b2a21; border: 1px solid rgba(0,0,0,.18); border-radius: 50%; cursor: pointer; box-shadow: 0 1px 5px rgba(0,0,0,.2); opacity: 0; pointer-events: none; transition: opacity .15s; } .pcard .qv .qv-txt { display: none; }
 .pcard:hover .qv, .pcard:focus-within .qv, .pcard .qv:focus-visible { opacity: 1; pointer-events: auto; }
-/* Touch screens: just a small eye in the corner, so it hides as little of the product as possible. */
-@media (hover: none), (max-width: 699px) { .pcard .qv { opacity: 1; pointer-events: auto; left: auto; right: 6px; top: 6px; transform: none; width: 30px; height: 30px; min-height: 30px; padding: 0; justify-content: center; background: rgba(255,255,255,.82); box-shadow: 0 1px 4px rgba(0,0,0,.2); } .pcard .qv .qv-txt { display: none; } }
+/* The eye sits top-left and the heart top-right, never side by side. Deal and stock ribbons move to the bottom-left of the picture. */
+.pimg .ribbon { top: auto; bottom: 8px; }
+/* Touch screens: always visible, since there is no hover. */
+@media (hover: none), (max-width: 699px) { .pcard .qv { opacity: 1; pointer-events: auto; width: 30px; height: 30px; background: rgba(255,255,255,.88); } }
 /* Phones: a card in the middle of the screen, clear of every edge, with the rest of the page blurred behind it. Tap the blur to close. */
 .modal-backdrop.qv-modal-wrap { align-items: center; justify-content: center; padding: 20px 16px; background: rgba(10, 20, 14, .38); -webkit-backdrop-filter: blur(9px); backdrop-filter: blur(9px); }
 .modal.qv-modal { width: 100%; max-width: 420px; max-height: calc(100dvh - 56px); border-radius: 18px; padding: 14px 14px 16px; box-shadow: 0 18px 50px rgba(0,0,0,.35); } .qv-modal h2 { font-size: 1.05rem; padding-right: 8px; }
@@ -332,7 +334,7 @@ main { padding-top: 14px; }
 /* Save (heart) on product cards: top-right of the picture; on phones it sits left of the quick-view eye */
 .pcard .heart { position: absolute; z-index: 3; top: 8px; right: 8px; width: 32px; height: 32px; display: inline-grid; place-items: center; padding: 0; border-radius: 50%; border: 1px solid rgba(0,0,0,.18); background: rgba(255,255,255,.94); color: #1b2a21; cursor: pointer; box-shadow: 0 1px 5px rgba(0,0,0,.2); text-decoration: none; }
 .pcard .heart.on { color: #c0392b; border-color: #c0392b; } .pcard .heart:hover { background: #fff; }
-@media (hover: none), (max-width: 699px) { .pcard .heart { top: 6px; right: 42px; width: 30px; height: 30px; } }
+@media (hover: none), (max-width: 699px) { .pcard .heart { width: 30px; height: 30px; } }
 
 /* Wordmark: the logo is the "e", so it reads eazyfoods */
 .logo { gap: 1px; text-transform: none; } .hdr .logo .logo-mark { margin-right: -5px; }

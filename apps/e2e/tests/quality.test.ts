@@ -325,6 +325,25 @@ describe('quick view', () => {
   }
 });
 
+describe('product card corner buttons', () => {
+  for (const [label, size] of [['desktop', DESKTOP], ['phone', MOBILE]] as const) {
+    it(`the quick-view eye is an icon on the left and the heart is on the right, never side by side (${label})`, async () => {
+      const { page } = await newPage(browser, size);
+      await page.goto(base() + '/search?q=garri'); await page.waitForLoadState('networkidle');
+      const card = page.locator('article.pcard').first();
+      await card.hover();
+      const eye = (await card.getByRole('button', { name: /Quick view/ }).boundingBox())!;
+      const heart = (await card.locator('.heart').boundingBox())!;
+      const c = (await card.boundingBox())!;
+      expect(eye.x + eye.width / 2).toBeLessThan(c.x + c.width / 2);                 // eye in the left half
+      expect(heart.x + heart.width / 2).toBeGreaterThan(c.x + c.width / 2);          // heart in the right half
+      expect(eye.x + eye.width).toBeLessThan(heart.x - 20);                          // clear space between them
+      expect(eye.width).toBeLessThanOrEqual(34);                                     // an icon, not the words
+      expect(await card.locator('.qv-txt').isVisible()).toBe(false);
+    });
+  }
+});
+
 describe('mobile quick view and menu motion', () => {
   it('on a phone the quick view is a small eye (no text over the product) and its window is a compact sheet', async () => {
     const { page } = await newPage(browser, MOBILE);
