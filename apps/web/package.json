@@ -21,7 +21,8 @@
     "react-barcode": "^1.6.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.18.4",
-    "recharts": "^2.15.4"
+    "recharts": "^2.15.4",
+    "zxing-wasm": "^3.1.6"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",
