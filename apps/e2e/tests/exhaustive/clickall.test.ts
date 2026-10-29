@@ -38,6 +38,8 @@ const nameOf = (loc: ReturnType<Page['locator']>) => loc.evaluate((e) => {
   return (el.getAttribute('aria-label') || el.innerText || el.getAttribute('title') || el.value || el.getAttribute('name') || el.tagName).replace(/\s+/g, ' ').trim().slice(0, 60);
 });
 
+// A cheap fingerprint of the page, so a change of one character (a quantity going from 1 to 2) still counts as something happening.
+const SIG = `window.sig = () => { const h = document.body.innerHTML; let x = 5381; for (let i = 0; i < h.length; i++) x = ((x << 5) + x + h.charCodeAt(i)) | 0; return h.length + ':' + x + ':' + (document.activeElement?.tagName || '') + ':' + [...document.querySelectorAll('input,select,textarea')].map((i) => i.value + i.checked).join('|') }; window.__sig = 1;`
 async function clickEverything(page: Page, url: string, prefix: string, rep: Report, dev: string) {
   const where = `${dev} ${url}`;
   let hard: string[] = [], warn: string[] = [], reqs = 0;
@@ -49,6 +51,7 @@ async function clickEverything(page: Page, url: string, prefix: string, rep: Rep
   const open = async () => { await page.goto(base() + url, { waitUntil: 'networkidle', timeout: 30_000 }).catch(() => {}); await page.waitForTimeout(200); };
   const done = new Set<string>();
   try {
+    await page.addInitScript(SIG);
     await open();
     for (let step = 0; step < MAX_PER_PAGE; step++) {
       // Find the next button not yet clicked on this page (the list changes as modals open and panels expand).
@@ -66,8 +69,9 @@ async function clickEverything(page: Page, url: string, prefix: string, rep: Rep
       if (!target) break;
       done.add(target.key);
       const el = all.nth(target.i);
-      const before = await page.evaluate(() => ({ html: document.body.innerHTML.length, url: location.href, dlg: document.querySelectorAll('[role=dialog]').length }));
+      const before = await page.evaluate(() => ({ html: sig(), url: location.href, dlg: document.querySelectorAll('[role=dialog]').length }));
       const reqBefore = reqs; hard = []; warn = [];
+      await el.locator('xpath=ancestor::*[self::article or self::li or self::tr][1]').hover({ timeout: 800 }).catch(() => {});   // some buttons only appear on hover
       try { await el.click({ timeout: 3000 }); rep.clicked++; }
       catch (e: any) {
         const m = String(e.message);
@@ -75,7 +79,7 @@ async function clickEverything(page: Page, url: string, prefix: string, rep: Rep
         continue;
       }
       await page.waitForTimeout(350);
-      const after = await page.evaluate(() => ({ html: document.body.innerHTML.length, url: location.href, dlg: document.querySelectorAll('[role=dialog]').length, text: document.body.innerText, blank: document.body.innerText.trim().length < 20 }));
+      const after = await page.evaluate(() => ({ html: sig(), url: location.href, dlg: document.querySelectorAll('[role=dialog]').length, text: document.body.innerText, blank: document.body.innerText.trim().length < 20 }));
       const here = new URL(after.url);
       if (here.origin !== new URL(base()).origin) { await open(); continue; }
       if (/signin|login/.test(here.pathname) && !/signin|login/.test(url) && !/^\/(signin)?$/.test(url)) hard.push(`thrown out to ${here.pathname}`);
