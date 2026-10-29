@@ -104,7 +104,8 @@ export function orderShape(r) {
     created_at: r.placed_at || r.created_at, customer_name: r.customer_first_name || 'Customer', customer_email: '', special_instructions: r.delivery_instructions || r.gift_message || '',
     subtotal: cents(r.subtotal_cents), tax_amount: cents(r.tax_cents), shipping_amount: cents(r.delivery_cents), discount_amount: cents(r.discount_cents), total_amount: cents(r.total_cents),
     gross_sales: cents(r.subtotal_cents), commission_rate: (r.commission_bps ?? 0) / 100, commission_amount: cents(r.commission_cents), net_payout: cents(r.subtotal_cents - r.commission_cents),
-    items: (r.lines || []).map((l) => ({ id: l.id, product_name: l.name + (l.pack_label ? ` (${l.pack_label})` : ''), quantity: l.quantity, unit_price: cents(l.unit_price_cents), total_price: cents(l.unit_price_cents * l.quantity), status: l.status })),
+    items: (r.lines || []).map((l) => ({ id: l.id, product_name: l.name + (l.pack_label ? ` (${l.pack_label})` : ''), quantity: l.quantity, unit_price: cents(l.unit_price_cents), total_price: cents(l.unit_price_cents * l.quantity),
+      product_price: cents(l.unit_price_cents), subtotal: cents(l.unit_price_cents * l.quantity), status: l.status })),   // the order pages read product_price and subtotal
     scheduled_for: r.scheduled_for || null, scheduled_until: r.scheduled_until || null,
     driver_id: r.driver_id || null,
     driver: r.driver_id ? { name: r.driver_first_name, phone: r.driver_phone, vehicle_type: r.driver_vehicle } : null,
