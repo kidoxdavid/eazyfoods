@@ -83,3 +83,42 @@ for (const [name, size] of [['desktop', DESKTOP], ['phone', MOBILE]] as const) {
     });
   });
 }
+
+for (const [name, size] of [['desktop', DESKTOP], ['phone', MOBILE]] as const) {
+  describe(`labels page barcode tools (${name})`, () => {
+    it('creates, saves as a photo, replaces and deletes barcodes, and saves a label as a photo', async () => {
+      const product = `Zz Label Flex ${name}`;
+      const { ctx, page, errors } = await newPage(browser, size);
+      page.on('dialog', (d) => d.accept());
+      await signIn(page, 'owner1@example.test');
+      await page.goto(`${base()}/vendor/labels`); await page.waitForLoadState('networkidle');
+      await page.evaluate(async (n) => {
+        const h = { 'content-type': 'application/json', 'x-area': 'vendor' };
+        const stores = await (await fetch('/api/vendor/stores', { headers: h })).json();
+        await fetch(`/api/vendor/stores/${stores[0].id}/catalogue`, { method: 'POST', headers: h, body: JSON.stringify({ name: n, price: 4, stock_quantity: 2, status: 'active' }) });
+      }, product);
+      await page.reload({ waitUntil: 'networkidle' });
+      const row = page.locator('li').filter({ hasText: product });
+      await page.getByRole('button', { name: 'Create missing barcodes' }).click();
+      await seeText(page.getByRole('status'), /Made \d+ barcode/);
+      const code1 = (await row.locator('span.font-mono').innerText()).trim();
+      expect(code1).toMatch(/^\d{13}$/);
+      const [dl] = await Promise.all([page.waitForEvent('download'), row.getByRole('button', { name: /Save barcode photo/ }).click()]);
+      expect(dl.suggestedFilename()).toMatch(/\.png$/);
+      await row.getByRole('checkbox').check();
+      const [dl2] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Save labels as photos' }).click()]);
+      expect(dl2.suggestedFilename()).toMatch(/^label-.*\.png$/);
+      await row.getByRole('button', { name: /Make a new barcode/ }).click();
+      await seeText(page.getByRole('status'), /New barcode made/);
+      const code2 = (await row.locator('span.font-mono').innerText()).trim();
+      expect(code2).toMatch(/^\d{13}$/); expect(code2).not.toBe(code1);
+      await row.getByRole('button', { name: /Delete barcode/ }).click();
+      await seeText(page.getByRole('status'), /Barcode deleted/);
+      await seeText(row, /No barcode/);
+      await row.getByRole('button', { name: 'Create barcode' }).click();
+      await row.locator('span.font-mono').filter({ hasText: /^\d{13}$/ }).waitFor({ timeout: 10_000 });
+      expect(errors.filter((e) => !/status of 403/.test(e))).toEqual([]);
+      await ctx.close();
+    });
+  });
+}

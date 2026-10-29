@@ -26,3 +26,21 @@ export function downloadBarcodeSvg(code, name) {
   svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
   save(new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' }), `barcode-${safe(name)}-${code}.svg`)
 }
+
+/** Save a whole label (name, price and barcode) as a PNG photo, in the same proportions as the printed label. */
+export function downloadLabelPng(code, name, priceText, ratio = 5 / 3) {
+  const W = 900, H = Math.round(W / ratio)
+  const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H
+  const g = canvas.getContext('2d')
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H)
+  g.fillStyle = '#000'; g.textAlign = 'center'; g.textBaseline = 'top'
+  const fit = (text, size) => { g.font = `700 ${size}px sans-serif`; while (g.measureText(text).width > W - 60 && size > 18) { size -= 2; g.font = `700 ${size}px sans-serif` } return size }
+  const ns = fit(name, Math.round(H * 0.13)); g.fillText(name, W / 2, 24)
+  let top = 24 + ns + 8
+  if (priceText) { g.font = `600 ${Math.round(H * 0.11)}px sans-serif`; g.fillText(priceText, W / 2, top); top += Math.round(H * 0.11) + 8 }
+  const bar = document.createElement('canvas')
+  drawBarcode(bar, code, { width: 4, height: Math.max(60, H - top - 90), margin: 10, fontSize: 24, background: '#ffffff' })
+  const s = Math.min((W - 60) / bar.width, (H - top - 12) / bar.height, 1.6)
+  g.drawImage(bar, (W - bar.width * s) / 2, top, bar.width * s, bar.height * s)
+  return new Promise((resolve) => canvas.toBlob((b) => { save(b, `label-${safe(name)}-${code}.png`); resolve() }, 'image/png'))
+}
