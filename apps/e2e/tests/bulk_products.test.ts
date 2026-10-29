@@ -55,11 +55,9 @@ for (const [name, size] of [['desktop', DESKTOP], ['phone', MOBILE]] as const) {
         await fetch(`/api/vendor/stores/${stores[0].id}/catalogue`, { method: 'POST', headers: h, body: JSON.stringify({ name: n, price: 4, stock_quantity: 2, status: 'active' }) });
       }, product);
       await page.reload({ waitUntil: 'networkidle' });
-      await page.getByPlaceholder(/Search products/i).first().fill(product).catch(() => {});
-      const row = page.locator('tr, article, li').filter({ hasText: product }).filter({ has: page.getByTitle('Generate Barcode') }).first();
-      await row.getByTitle('Generate Barcode').click();
-      const win = page.locator('div').filter({ has: page.getByRole('button', { name: 'Save as photo (PNG)' }) }).last();
-      const svg = page.getByRole('img', { name: /./ }).or(page.locator('svg')).first();
+      await page.getByPlaceholder('Search products...').fill(product);
+      await page.waitForTimeout(500);
+      await page.getByTitle('Generate Barcode').and(page.locator(':visible')).first().click();       // the list's icon button
       await page.getByRole('button', { name: 'Save as photo (PNG)' }).waitFor({ timeout: 10_000 });
       const code1 = (await page.locator('p.font-mono').last().innerText()).trim();
       expect(code1).toMatch(/^\d{13}$/);
@@ -73,13 +71,13 @@ for (const [name, size] of [['desktop', DESKTOP], ['phone', MOBILE]] as const) {
       expect(code2).toMatch(/^\d{13}$/); expect(code2).not.toBe(code1);
       await page.getByRole('button', { name: 'Delete barcode' }).click();
       await seeText(page.getByRole('status'), /Barcode deleted/);
-      await page.getByRole('button', { name: 'Generate Barcode' }).click();
+      await page.getByRole('button', { name: 'Generate Barcode', exact: true }).and(page.locator('.fixed button')).click();   // the window's button
       await seeText(page.getByRole('status'), /Barcode made/);
       const c = await db();
       expect((await c.query(`SELECT barcode FROM products WHERE name = $1`, [product])).rows[0].barcode).toMatch(/^\d{13}$/);
       await c.end();
       expect(errors.filter((e) => !/status of 403/.test(e))).toEqual([]);
-      await ctx.close(); void win; void svg;
+      await ctx.close();
     });
   });
 }
