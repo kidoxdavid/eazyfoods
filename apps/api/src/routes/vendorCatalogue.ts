@@ -233,18 +233,31 @@ export const vendorCatalogueRoutes: FastifyPluginAsync = async (app) => {
     });
   });
 
+  // Give a product a barcode, or (regenerate) replace it with a new one. Only for products this vendor created: a shared catalogue product's barcode is the manufacturer's.
   app.post<{ Params: { storeId: string; productId: string } }>('/stores/:storeId/catalogue/:productId/barcode', async (req) => {
     const sid = await store(req); const pid = z.string().uuid().parse(req.params.productId);
+    const { regenerate } = z.object({ regenerate: z.boolean().default(false) }).parse(req.body ?? {});
     const p = await one(sid, pid);
-    if (p.barcode) return { barcode: p.barcode };
+    if (p.barcode && !regenerate) return { barcode: p.barcode };
     if (!p.owned) throw bad('not_yours', 'Only products you created can be given a new barcode.');
     for (let i = 0; i < 20; i++) {
       const base = '200' + String(randomInt(0, 1e9)).padStart(9, '0');   // 200-299 prefixes are for in-store use
       const check = (10 - (base.split('').reduce((a, d, k) => a + Number(d) * (k % 2 ? 3 : 1), 0) % 10)) % 10;
       const code = base + check;
       const r = await pool.query('UPDATE products SET barcode = $2 WHERE id = $1 AND NOT EXISTS (SELECT 1 FROM products WHERE barcode = $2) RETURNING barcode', [pid, code]);
-      if (r.rowCount) return { barcode: code };
+      if (r.rowCount) { await audit(req.user!.id, p.barcode ? 'product.barcode_regenerated' : 'product.barcode_generated', 'product', pid, { store: sid, previous: p.barcode || null }); return { barcode: code, previous: p.barcode || null }; }
     }
     throw conflict('barcode_failed', 'Could not generate a barcode. Try again.');
+  });
+
+  // Remove a product's barcode (it can be generated again, or typed in, later).
+  app.delete<{ Params: { storeId: string; productId: string } }>('/stores/:storeId/catalogue/:productId/barcode', async (req) => {
+    const sid = await store(req); const pid = z.string().uuid().parse(req.params.productId);
+    const p = await one(sid, pid);
+    if (!p.owned) throw bad('not_yours', 'Only products you created can have their barcode removed.');
+    if (!p.barcode) return { barcode: null };
+    await pool.query('UPDATE products SET barcode = NULL WHERE id = $1', [pid]);
+    await audit(req.user!.id, 'product.barcode_removed', 'product', pid, { store: sid, previous: p.barcode });
+    return { barcode: null, previous: p.barcode };
   });
 };

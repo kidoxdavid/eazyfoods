@@ -1,14 +1,13 @@
 import { useEffect, useRef } from 'react'
-import JsBarcode from 'jsbarcode'
+import { drawBarcode } from './barcodeFile'
 
-const BarcodeGenerator = ({ barcode, format = 'CODE128', displayValue = true, width = 2, height = 100 }) => {
+const BarcodeGenerator = ({ barcode, displayValue = true, width = 2, height = 100 }) => {
   const barcodeRef = useRef(null)
 
   useEffect(() => {
     if (barcode && barcodeRef.current) {
       try {
-        JsBarcode(barcodeRef.current, barcode, {
-          format: format,
+        drawBarcode(barcodeRef.current, barcode, {
           width: width,
           height: height,
           displayValue: displayValue,
@@ -20,7 +19,7 @@ const BarcodeGenerator = ({ barcode, format = 'CODE128', displayValue = true, wi
         console.error('Error generating barcode:', error)
       }
     }
-  }, [barcode, format, displayValue, width, height])
+  }, [barcode, displayValue, width, height])
 
   if (!barcode) {
     return (

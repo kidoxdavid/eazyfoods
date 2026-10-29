@@ -77,3 +77,34 @@ describe('low-stock emails', () => {
     await asVendor(owner, 'PUT', '/api/vendor/low-stock-emails', { enabled: true });
   });
 });
+
+describe('barcode: replace and delete', () => {
+  it('a vendor can make a new code, delete it and generate again, but only for products they created', async () => {
+    await openAllStores();
+    const owner = (await login('owner1@example.test')).cookie, sid = await storeId(S1);
+    const mk = await asVendor(owner, 'POST', `/api/vendor/stores/${sid}/catalogue`, { name: 'Zzz Barcode Flex', price: 5, stock_quantity: 3, status: 'active' });
+    const pid = mk.body.id;
+    const url = `/api/vendor/stores/${sid}/catalogue/${pid}/barcode`;
+    const first = (await asVendor(owner, 'POST', url)).body.barcode;
+    expect(first).toMatch(/^\d{13}$/);
+    expect((await asVendor(owner, 'POST', url)).body.barcode).toBe(first);                       // asking again keeps the same code
+    const second = (await asVendor(owner, 'POST', url, { regenerate: true })).body;
+    expect(second.barcode).toMatch(/^\d{13}$/); expect(second.barcode).not.toBe(first); expect(second.previous).toBe(first);
+    expect((await asVendor(owner, 'GET', `/api/vendor/stores/${sid}/barcode?code=${first}`)).status).toBe(404);   // the old code no longer finds it
+    expect((await asVendor(owner, 'GET', `/api/vendor/stores/${sid}/barcode?code=${second.barcode}`)).status).toBe(200);
+    expect((await asVendor(owner, 'DELETE', url)).body).toMatchObject({ barcode: null, previous: second.barcode });
+    expect((await pool.query('SELECT barcode FROM products WHERE id=$1', [pid])).rows[0].barcode).toBeNull();
+    const third = (await asVendor(owner, 'POST', url)).body.barcode;
+    expect(third).toMatch(/^\d{13}$/);
+    expect((await pool.query(`SELECT count(*)::int n FROM audit_log WHERE entity_id=$1 AND action LIKE 'product.barcode_%'`, [pid])).rows[0].n).toBe(4);
+    // A shared catalogue product's barcode belongs to the manufacturer: it can not be replaced or deleted from here.
+    const shared = (await pool.query(`SELECT p.id FROM products p JOIN store_offers o ON o.product_id=p.id WHERE o.store_id=$1 AND p.slug='garri-white'`, [sid])).rows[0].id;
+    await pool.query(`UPDATE products SET barcode='6112699910004' WHERE id=$1`, [shared]);
+    const sharedUrl = `/api/vendor/stores/${sid}/catalogue/${shared}/barcode`;
+    expect((await asVendor(owner, 'POST', sharedUrl, { regenerate: true })).status).toBe(400);
+    expect((await asVendor(owner, 'DELETE', sharedUrl)).status).toBe(400);
+    // Another vendor can not touch it either.
+    const other = (await login('owner2@example.test')).cookie;
+    expect((await asVendor(other, 'DELETE', url)).status).toBe(403);
+  });
+});

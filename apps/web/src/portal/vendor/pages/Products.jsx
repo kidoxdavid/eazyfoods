@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, Package, Search, X, Camera, Barcode, Copy } from 'l
 import { formatCurrency } from '../utils/format'
 import Pagination from '../components/Pagination'
 import BarcodeScanner from '../components/BarcodeScanner'
+import { downloadBarcodePng, downloadBarcodeSvg } from '../components/barcodeFile'
 import BarcodeGenerator from '../components/BarcodeGenerator'
 
 const Products = () => {
@@ -107,16 +108,29 @@ const Products = () => {
     }
   }
 
-  const handleGenerateBarcode = async (product) => {
+  // Make, replace or remove a product's barcode. The window stays open and shows the result, so it can be saved as a picture straight away.
+  const [barcodeBusy, setBarcodeBusy] = useState(false)
+  const [barcodeNote, setBarcodeNote] = useState('')
+  const barcodeFail = (e, fallback) => setBarcodeNote(e.response?.data?.detail || e.response?.data?.message || fallback)
+  const handleGenerateBarcode = async (product, regenerate = false) => {
+    if (regenerate && !window.confirm('Make a new barcode for this product? The old one stops working, so any labels already printed with it will no longer scan.')) return
+    setBarcodeBusy(true); setBarcodeNote('')
     try {
-      const response = await api.post('/barcode/generate', null, { params: { product_id: product.id } })
-      alert(`Barcode generated: ${response.data.barcode}`)
+      const response = await api.post('/barcode/generate', null, { params: { product_id: product.id, regenerate } })
+      setSelectedProductForBarcode({ ...product, barcode: response.data.barcode })
+      setBarcodeNote(regenerate ? 'New barcode made. Print or save it again.' : 'Barcode made.')
       fetchProducts()
-      setShowBarcodeGenerator(false)
-      setSelectedProductForBarcode(null)
-    } catch (error) {
-      alert('Failed to generate barcode')
-    }
+    } catch (e) { barcodeFail(e, 'Could not make a barcode.') } finally { setBarcodeBusy(false) }
+  }
+  const handleRemoveBarcode = async (product) => {
+    if (!window.confirm('Delete this barcode? You can make a new one afterwards.')) return
+    setBarcodeBusy(true); setBarcodeNote('')
+    try {
+      await api.delete('/barcode/remove', { params: { product_id: product.id } })
+      setSelectedProductForBarcode({ ...product, barcode: '' })
+      setBarcodeNote('Barcode deleted.')
+      fetchProducts()
+    } catch (e) { barcodeFail(e, 'Could not delete the barcode.') } finally { setBarcodeBusy(false) }
   }
 
   const handleBarcodeSearch = async () => {
@@ -377,6 +391,8 @@ const Products = () => {
                             <button
                               onClick={() => {
                                 setSelectedProductForBarcode(product)
+                                setShowBarcodeGenerator(true)
+                                setBarcodeNote('')
                                 handleGenerateBarcode(product)
                               }}
                               className="text-purple-600 hover:text-purple-900"
@@ -492,6 +508,8 @@ const Products = () => {
                         <button
                           onClick={() => {
                             setSelectedProductForBarcode(product)
+                            setShowBarcodeGenerator(true)
+                            setBarcodeNote('')
                             handleGenerateBarcode(product)
                           }}
                           className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded-lg transition-colors"
@@ -639,25 +657,29 @@ const Products = () => {
                 </div>
               )}
             </div>
-            <div className="flex gap-2">
-              {!selectedProductForBarcode.barcode && (
-                <button
-                  onClick={() => handleGenerateBarcode(selectedProductForBarcode)}
-                  className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-                >
-                  Generate Barcode
-                </button>
-              )}
-              <button
-                onClick={() => {
-                  setShowBarcodeGenerator(false)
-                  setSelectedProductForBarcode(null)
-                }}
-                className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-              >
-                Close
-              </button>
-            </div>
+            {barcodeNote && <p role="status" className="mb-2 text-xs sm:text-sm text-gray-700">{barcodeNote}</p>}
+            {(() => {
+              const sp = selectedProductForBarcode
+              const btn = 'px-3 py-2 text-xs sm:text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50'
+              return (
+                <div className="space-y-2">
+                  {!sp.barcode ? (
+                    <button disabled={barcodeBusy} onClick={() => handleGenerateBarcode(sp)} className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50">Generate Barcode</button>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button type="button" onClick={() => downloadBarcodePng(sp.barcode, sp.name)} className={btn}>Save as photo (PNG)</button>
+                        <button type="button" onClick={() => downloadBarcodeSvg(sp.barcode, sp.name)} className={btn}>Save as SVG</button>
+                        <button type="button" disabled={barcodeBusy} onClick={() => handleGenerateBarcode(sp, true)} className={btn}>Make a new code</button>
+                        <button type="button" disabled={barcodeBusy} onClick={() => handleRemoveBarcode(sp)} className={`${btn} !text-red-700 !border-red-300 hover:!bg-red-50`}>Delete barcode</button>
+                      </div>
+                      {!sp.owned && <p className="text-xs text-gray-500">This is a shared catalogue product, so its barcode can be saved but not changed. Only products you created can get a new code or have it deleted.</p>}
+                    </>
+                  )}
+                  <button onClick={() => { setShowBarcodeGenerator(false); setSelectedProductForBarcode(null); setBarcodeNote('') }} className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Close</button>
+                </div>
+              )
+            })()}
           </div>
         </div>
       )}
