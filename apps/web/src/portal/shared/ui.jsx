@@ -12,14 +12,14 @@ export const PageHeader = ({ title, sub, actions }) => (
 )
 
 export const Card = ({ title, sub, actions, children, className = '' }) => (
-  <section className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6 ${className}`}>
+  <section className={`bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-5 lg:p-6 ${className}`}>
     {(title || actions) && <div className="flex items-start justify-between gap-3 mb-3"><div>{title && <h2 className="text-base sm:text-lg font-semibold text-gray-900">{title}</h2>}{sub && <p className="text-xs sm:text-sm text-gray-600 mt-0.5">{sub}</p>}</div>{actions}</div>}
     {children}
   </section>
 )
 
 export const Stat = ({ label, value, sub, icon: Icon, tone = 'text-primary-500' }) => (
-  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5 lg:p-6">
+  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-5 lg:p-6">
     <div className="flex items-center justify-between">
       <div className="min-w-0 flex-1"><p className="text-xs sm:text-sm font-medium text-gray-600">{label}</p><p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1.5 break-words">{value}</p>{sub && <p className="text-[10px] sm:text-xs text-gray-500 mt-1">{sub}</p>}</div>
       {Icon && <Icon className={`h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0 ml-2 ${tone}`} />}
@@ -80,11 +80,20 @@ export function DataTable({ columns, rows, rowKey = (r) => r.id, empty = 'Nothin
         </table>
       </div>
       <ul className="md:hidden divide-y divide-gray-100">
-        {rows.map((r) => (
-          <li key={rowKey(r)} onClick={onRow ? () => onRow(r) : undefined} className="p-4 space-y-1.5">
-            {columns.map((c) => <div key={c.key} className="flex items-start justify-between gap-3 text-sm"><span className="text-gray-500 flex-shrink-0">{c.header}</span><span className="text-right min-w-0 break-words">{c.render ? c.render(r) : r[c.key]}</span></div>)}
-          </li>
-        ))}
+        {rows.map((r) => {
+          const cells = columns.map((c) => ({ c, v: c.render ? c.render(r) : r[c.key] }))
+          const filled = cells.filter(({ v }) => v !== null && v !== undefined && v !== '' && v !== false && v !== '—')
+          const [head, ...rest] = filled
+          const wide = rest.filter(({ c }) => !c.header || c.right)          // actions and the like: a row of their own
+          const facts = rest.filter(({ c }) => c.header && !c.right)
+          return (
+            <li key={rowKey(r)} onClick={onRow ? () => onRow(r) : undefined} className="px-3 py-2">
+              {head && <div className="text-sm font-medium text-gray-900 min-w-0 break-words">{head.v}</div>}
+              {facts.length > 0 && <dl className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">{facts.map(({ c, v }) => <div key={c.key} className="min-w-0"><dt className="text-gray-500 leading-tight">{c.header}</dt><dd className="text-gray-900 break-words leading-tight">{v}</dd></div>)}</dl>}
+              {wide.length > 0 && <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm">{wide.map(({ c, v }) => <span key={c.key}>{v}</span>)}</div>}
+            </li>
+          )
+        })}
       </ul>
     </div>
   )

@@ -231,7 +231,7 @@ const Analytics = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
               <div>
                 <h3 className="text-sm sm:text-base lg:text-lg font-medium text-gray-900 mb-2 sm:mb-3">Period 1</h3>
-                <div className="space-y-2 sm:space-y-3">
+                <div className="grid grid-cols-2 sm:grid-cols-1 gap-2 sm:gap-3">
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Start Date</label>
                     <input
@@ -254,7 +254,7 @@ const Analytics = () => {
               </div>
               <div>
                 <h3 className="text-sm sm:text-base lg:text-lg font-medium text-gray-900 mb-2 sm:mb-3">Period 2</h3>
-                <div className="space-y-2 sm:space-y-3">
+                <div className="grid grid-cols-2 sm:grid-cols-1 gap-2 sm:gap-3">
                   <div>
                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Start Date</label>
                     <input
@@ -281,7 +281,7 @@ const Analytics = () => {
           <div className="flex flex-col space-y-3 sm:space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 flex-shrink-0" />
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 flex-1">
+              <div className="grid grid-cols-2 sm:flex sm:flex-row sm:items-center gap-2 sm:gap-4 flex-1">
                 <div className="flex-1 sm:flex-initial">
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Start Date</label>
                   <input

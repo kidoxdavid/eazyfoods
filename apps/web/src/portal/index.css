@@ -17,3 +17,20 @@ body {
 /* Small text on white must reach 4.5:1 */
 .text-green-600 { color: #15803d; }
 .text-red-600 { color: #b91c1c; }
+
+/* ---------- Phones: use the width and height well ---------- */
+@media (max-width: 639px) {
+  /* Cards of numbers sit two across instead of one per row, and are tighter. */
+  .grid[class*="grid-cols-1"][class*="lg:gap-6"] { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+  .grid[class*="grid-cols-1"][class*="lg:gap-6"] > * .p-4, .grid[class*="grid-cols-1"][class*="lg:gap-6"] > .p-4 { padding: .625rem; }
+  .grid[class*="grid-cols-1"][class*="lg:gap-6"] .flex-shrink-0.ml-2 { margin-left: .25rem; }
+  .grid[class*="grid-cols-1"][class*="lg:gap-6"] .rounded-lg.flex-shrink-0 { padding: .3rem; }
+  /* Filter rows (two fields in a narrow grid) sit side by side */
+  .grid[class*="grid-cols-1"][class*="max-w-"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Content cards: less padding all round */
+  .bg-white.rounded-lg.border.p-4, .bg-white.rounded-lg.shadow-sm.p-4 { padding: .75rem; }
+  .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: .5rem; }
+  /* Page titles: smaller, with their sentence of help tucked closer */
+  main h1 { line-height: 1.2; }
+  main h1 + p { margin-top: .125rem; }
+}

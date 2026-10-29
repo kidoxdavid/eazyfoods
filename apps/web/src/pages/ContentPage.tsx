@@ -4,13 +4,16 @@ import { useApi } from '../hooks';
 import { ErrorBox, Loading, Notice } from '../ui';
 
 /** Tiny, safe renderer for our own policy pages: "## heading", "- bullet" and paragraphs. No raw HTML is ever injected. */
+/** **bold** inside a line. */
+const inline = (t: string): ReactNode => t.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? <strong key={i}>{part}</strong> : part));
+
 function render(body: string): ReactNode {
   const blocks = body.split(/\n{2,}/);
   return blocks.map((b, i) => {
     const lines = b.split('\n');
-    if (lines[0].startsWith('## ')) return <Fragment key={i}><h2>{lines[0].slice(3)}</h2>{lines.length > 1 && <p>{lines.slice(1).join(' ')}</p>}</Fragment>;
-    if (lines.every((l) => l.startsWith('- '))) return <ul key={i}>{lines.map((l, k) => <li key={k}>{l.slice(2)}</li>)}</ul>;
-    return <p key={i}>{lines.join(' ')}</p>;
+    if (lines[0].startsWith('## ')) return <Fragment key={i}><h2>{inline(lines[0].slice(3))}</h2>{lines.length > 1 && <p>{inline(lines.slice(1).join(' '))}</p>}</Fragment>;
+    if (lines.every((l) => l.startsWith('- '))) return <ul key={i}>{lines.map((l, k) => <li key={k}>{inline(l.slice(2))}</li>)}</ul>;
+    return <p key={i}>{inline(lines.join(' '))}</p>;
   });
 }
 

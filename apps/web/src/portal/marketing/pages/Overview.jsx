@@ -27,10 +27,10 @@ export function Dashboard() {
         <Stat icon={Tag} label="Coupon orders (30 days)" value={d.coupons.redemptions} sub={`${money(d.coupons.discount_cents)} in discounts given`} tone="text-purple-500" />
       </div>
       <h2 className="text-lg font-semibold text-gray-900">To do</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         {todo.map(([to, label, value, sub, Icon]) => (
-          <Link key={label} to={to} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:border-primary-500 hover:shadow-md transition">
-            <Icon className="h-5 w-5 text-primary-600 mb-2" /><p className="text-sm text-gray-600">{label}</p><p className="text-2xl font-bold text-gray-900">{value}</p>{sub && <p className="text-xs text-gray-500">{sub}</p>}
+          <Link key={label} to={to} className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 hover:border-primary-500 hover:shadow-md transition">
+            <Icon className="h-5 w-5 text-primary-600 mb-1 sm:mb-2" /><p className="text-sm text-gray-600">{label}</p><p className="text-2xl font-bold text-gray-900">{value}</p>{sub && <p className="text-xs text-gray-500">{sub}</p>}
           </Link>
         ))}
       </div>

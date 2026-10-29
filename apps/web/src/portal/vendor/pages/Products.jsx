@@ -440,119 +440,45 @@ const Products = () => {
               </table>
             </div>
 
-            {/* Mobile Cards */}
+            {/* Mobile Cards: one compact block per product */}
             <div className="lg:hidden divide-y divide-gray-200">
-              {paginatedProducts.map((product) => (
-                <div key={product.id} className="p-4 hover:bg-gray-50">
-                  <div className="flex items-start gap-3">
-                    {product.image_url ? (
-                      <img
-                        src={resolveUploadUrl(product.image_url)}
-                        alt={product.name}
-                        className="h-16 w-16 rounded-lg object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="h-16 w-16 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0">
-                        <Package className="h-6 w-6 text-gray-400" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-gray-900 truncate mb-1">{product.name}</h3>
-                      <div className="space-y-1 text-xs text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Category:</span>
-                          <span>{getCategoryName(product.category_id)}</span>
-                        </div>
-                        {product.sku && (
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">SKU:</span>
-                            <span>{product.sku}</span>
-                          </div>
-                        )}
-                        {product.barcode && (
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">Barcode:</span>
-                            <span className="font-mono text-[10px]">{product.barcode}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Price:</span>
-                          <span className="font-semibold text-gray-900">{formatCurrency(product.price)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Stock:</span>
-                          <span>{product.stock_quantity}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Expiring:</span>
-                          <span>{product.track_expiry && product.expiry_date ? new Date(product.expiry_date).toLocaleDateString() : '—'}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Status:</span>
-                          <span
-                            className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                              product.status === 'active'
-                                ? 'bg-green-100 text-green-800'
-                                : product.status === 'out_of_stock'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}
-                          >
-                            {product.status}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-center gap-2 flex-shrink-0">
-                      {!product.barcode && (
-                        <button
-                          onClick={() => {
-                            setSelectedProductForBarcode(product)
-                            setShowBarcodeGenerator(true)
-                            setBarcodeNote('')
-                            handleGenerateBarcode(product)
-                          }}
-                          className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded-lg transition-colors"
-                          title="Generate Barcode"
-                        >
-                          <Barcode className="h-5 w-5" />
-                        </button>
+              {paginatedProducts.map((product) => {
+                const ib = 'p-1.5 rounded-lg transition-colors'
+                return (
+                  <div key={product.id} className="px-3 py-2 hover:bg-gray-50">
+                    <div className="flex items-center gap-2.5">
+                      {product.image_url ? (
+                        <img src={resolveUploadUrl(product.image_url)} alt={product.name} className="h-12 w-12 rounded-lg object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="h-12 w-12 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0"><Package className="h-5 w-5 text-gray-400" /></div>
                       )}
-                      {product.barcode && (
-                        <button
-                          onClick={() => {
-                            setSelectedProductForBarcode(product)
-                            setShowBarcodeGenerator(true)
-                          }}
-                          className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded-lg transition-colors"
-                          title="View Barcode"
-                        >
-                          <Barcode className="h-5 w-5" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDuplicateProduct(product)}
-                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                        title="Duplicate"
-                      >
-                        <Copy className="h-5 w-5" />
-                      </button>
-                      <Link
-                        to={`/products/${product.id}/edit`}
-                        className="p-2 text-primary-600 hover:text-primary-900 hover:bg-primary-50 rounded-lg transition-colors"
-                      >
-                        <Edit className="h-5 w-5" />
-                      </Link>
-                      <button
-                        onClick={() => handleDelete(product.id)}
-                        className="p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-[13px] font-semibold text-gray-900 truncate leading-tight">{product.name}</h3>
+                        <p className="text-[11px] text-gray-600 truncate leading-snug">{getCategoryName(product.category_id)}</p>
+                        <p className="text-[11px] text-gray-600 leading-snug">
+                          <span className="font-semibold text-gray-900">{formatCurrency(product.price)}</span> · Stock {product.stock_quantity}
+                          {product.track_expiry && product.expiry_date ? ` · Exp ${new Date(product.expiry_date).toLocaleDateString()}` : ''}
+                        </p>
+                        <p className="text-[11px] text-gray-500 leading-snug flex flex-wrap items-center gap-x-1.5">
+                          <span className={`px-1.5 rounded-full font-medium ${product.status === 'active' ? 'bg-green-100 text-green-800' : product.status === 'out_of_stock' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>{product.status}</span>
+                          {product.sku && <span>SKU {product.sku}</span>}
+                          {product.barcode && <span className="font-mono">{product.barcode}</span>}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-0.5 flex-shrink-0">
+                        {!product.barcode ? (
+                          <button onClick={() => { setSelectedProductForBarcode(product); setShowBarcodeGenerator(true); setBarcodeNote(''); handleGenerateBarcode(product) }} className={`${ib} text-purple-600 hover:bg-purple-50`} title="Generate Barcode"><Barcode className="h-5 w-5" /></button>
+                        ) : (
+                          <button onClick={() => { setSelectedProductForBarcode(product); setShowBarcodeGenerator(true) }} className={`${ib} text-purple-600 hover:bg-purple-50`} title="View Barcode"><Barcode className="h-5 w-5" /></button>
+                        )}
+                        <button onClick={() => handleDuplicateProduct(product)} className={`${ib} text-gray-600 hover:bg-gray-100`} title="Duplicate"><Copy className="h-5 w-5" /></button>
+                        <Link to={`/products/${product.id}/edit`} className={`${ib} text-primary-600 hover:bg-primary-50`} title="Edit"><Edit className="h-5 w-5" /></Link>
+                        <button onClick={() => handleDelete(product.id)} className={`${ib} text-red-600 hover:bg-red-50`} title="Delete"><Trash2 className="h-5 w-5" /></button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </>
         )}

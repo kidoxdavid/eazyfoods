@@ -175,23 +175,23 @@ const Orders = () => {
         <p className="text-xs sm:text-sm text-gray-600 mt-1">
           {tab === TAB_PICKUP ? 'Pickup orders — same statuses until Ready, then Complete' : 'Delivery orders — status matches Driver portal (awaiting driver → accepted → picked up → in transit → delivered)'}
         </p>
-        <div className="mt-3 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-4">
+        <div className="mt-2 sm:mt-3 grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 sm:gap-4">
           <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
-            <label className="text-sm font-medium text-gray-700 shrink-0">From:</label>
+            <label className="text-xs sm:text-sm font-medium text-gray-700 shrink-0">From:</label>
             <input
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              className="flex-1 min-w-0 w-full sm:w-auto max-w-[12rem] px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="flex-1 min-w-0 w-full sm:w-auto max-w-[12rem] px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
           <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
-            <label className="text-sm font-medium text-gray-700 shrink-0">To:</label>
+            <label className="text-xs sm:text-sm font-medium text-gray-700 shrink-0">To:</label>
             <input
               type="date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
-              className="flex-1 min-w-0 w-full sm:w-auto max-w-[12rem] px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="flex-1 min-w-0 w-full sm:w-auto max-w-[12rem] px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
             />
           </div>
           {(fromDate || toDate) && (
@@ -203,7 +203,7 @@ const Orders = () => {
             type="button"
             onClick={handleExportCsv}
             disabled={ordersFiltered.length === 0}
-            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-3 py-1.5 sm:py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="h-4 w-4" />
             Export CSV

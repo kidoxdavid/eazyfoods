@@ -345,3 +345,16 @@ main { padding-top: 14px; }
 /* Logo: the e sits on the same baseline as the other letters, and closer to them */
 .logo .logo-mark { transform: translateY(-1.75px); }
 @media (max-width: 480px) { .hdr .logo .logo-mark { margin-right: -7px; transform: translateY(-2.75px); } .logo { gap: 0; } }
+
+/* ---------- Phones: more content per screen, less empty space ---------- */
+@media (max-width: 699px) {
+  .announce { padding: 4px 12px; font-size: .8rem; }
+  .hdr-row { gap: 4px 8px; padding-top: 4px; padding-bottom: 6px; }
+  .hdr-nav a { padding: 4px 10px; min-height: 36px; font-size: .88rem; }
+  h1 { font-size: 1.45rem; margin-bottom: .35rem; }
+  h2 { font-size: 1.12rem; margin-top: 1.1rem; margin-bottom: .4rem; }
+  .prose h2 { font-size: 1.1rem; margin-top: 1rem; }
+  .prose p, .prose li { font-size: .95rem; line-height: 1.5; }
+  .page-header { margin: 2px 0 8px; gap: 6px; }
+  .toolbar { margin: 2px 0 6px; gap: 6px; }
+}

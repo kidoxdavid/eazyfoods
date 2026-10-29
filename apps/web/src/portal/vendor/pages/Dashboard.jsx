@@ -285,9 +285,9 @@ const Dashboard = () => {
       <OnboardingCard variant="vendor" />
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-5 lg:p-6 border border-gray-200">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <div className="bg-white rounded-lg shadow-sm p-3 sm:p-5 lg:p-6 border border-gray-200">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
           <Link
             to="/products/new"
             className="p-3 sm:p-4 border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors"
