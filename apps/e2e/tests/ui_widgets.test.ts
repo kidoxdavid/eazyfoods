@@ -121,3 +121,21 @@ describe('store portal and kitchen portal look different', () => {
     expect(kitchen.title).toContain('Kitchen'); expect(store.title).toContain('Store');
   }, 90_000);
 });
+
+describe('home banner', () => {
+  it('slide dots are slim and a touch screen has no arrows over the banner', async () => {
+    for (const [w, h] of [[390, 844], [844, 390]]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: true, isMobile: true }); const page = await ctx.newPage();
+      await page.goto(`${base()}/`, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
+      const dots = await page.locator('.hero-dots button').evaluateAll((a) => a.map((e) => { const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }));
+      expect(dots.length).toBeGreaterThan(1);
+      for (const [dw, dh] of dots) { expect(dh).toBeLessThanOrEqual(12); expect(dw).toBeLessThanOrEqual(28); }
+      expect(await page.locator('.hero-arrow:visible').count()).toBe(0);
+      await ctx.close();
+    }
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } }); const page = await ctx.newPage();
+    await page.goto(`${base()}/`, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
+    expect(await page.locator('.hero-arrow:visible').count()).toBe(2);                              // a mouse still gets the arrows
+    await ctx.close();
+  }, 90_000);
+});
