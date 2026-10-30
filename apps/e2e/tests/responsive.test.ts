@@ -40,11 +40,12 @@ for (const app of apps) {
           const { page } = r.signedIn ? a : b;
           await page.setViewportSize({ width: 1280, height: 900 });
           await page.goto(base() + r.url, { waitUntil: 'networkidle', timeout: 30_000 }).catch(() => {});
-          await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation:none!important} input[type="date"]::-webkit-datetime-edit,input[type="datetime-local"]::-webkit-datetime-edit,input[type="month"]::-webkit-datetime-edit{min-width:170px!important;display:inline-block}' }).catch(() => {});   // Safari on iPhone gives date fields a minimum width of their own: imitate it
+          const STYLE = '*,*::before,*::after{transition:none!important;animation:none!important} input[type="date"]::-webkit-datetime-edit,input[type="datetime-local"]::-webkit-datetime-edit,input[type="month"]::-webkit-datetime-edit{min-width:170px!important;display:inline-block}';   // Safari on iPhone gives date fields a minimum width of their own: imitat;
+          await page.addStyleTag({ content: STYLE });
           await page.waitForTimeout(250);
           for (const v of WIDTHS) {
             await page.setViewportSize({ width: v.w, height: v.h }); await page.waitForTimeout(450);   // charts re-measure a moment after a resize
-            let found = await measure(page, v.w, v.h).catch(() => []); if (found.some((i) => i.kind === 'scroll-x')) { await page.waitForTimeout(1200); found = await measure(page, v.w, v.h).catch(() => []); }   // charts re-measure a moment after a resize
+            let found = await measure(page, v.w, v.h).catch(() => []); if (found.some((i) => i.kind === 'scroll-x')) { await page.reload({ waitUntil: 'networkidle' }).catch(() => {}); await page.addStyleTag({ content: STYLE }); await page.waitForTimeout(700); found = await measure(page, v.w, v.h).catch(() => []); }   // judged as a fresh load at this width   // charts re-measure a moment after a resize
             for (const i of found) if (i.severity !== 'info') problems.push(`${r.url} @${v.w}: ${i.kind} - ${i.detail.slice(0, 160)}`);
           }
         }

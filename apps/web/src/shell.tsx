@@ -177,7 +177,7 @@ export function TabBar() {
   const tab = (to: string, label: string, Icon: typeof IconHome, end = false) => <NavLink to={to} end={end} className={({ isActive }) => (isActive ? 'active' : '')}><Icon /><span>{label}</span></NavLink>;
   return (
     <nav className="tabbar" aria-label="Main">
-      {tab('/', t('Shop'), IconHome, true)}{tab('/kitchens', t('Kitchens'), IconKitchen)}
+      {tab('/', t('Shop'), IconHome, true)}<NavLink to="/search" className={({ isActive }) => (isActive ? 'active' : '')} onClick={() => setTimeout(() => { const i = document.querySelector<HTMLInputElement>('input#q'); i?.focus(); i?.scrollIntoView({ block: 'center' }); }, 60)}><IconSearch /><span>{t('Search')}</span></NavLink>{tab('/kitchens', t('Kitchens'), IconKitchen)}
       <NavLink to="/cart" className={({ isActive }) => (isActive ? 'active' : '')}><IconBasket /><span>{t('Basket')}</span>{count > 0 && <span className="count">{count}</span>}</NavLink>
       {tab('/orders', t('Orders'), IconOrders)}{tab(me ? '/account' : '/signin', me ? t('Account') : t('Sign in'), IconUser)}
     </nav>

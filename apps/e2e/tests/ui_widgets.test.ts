@@ -139,3 +139,19 @@ describe('home banner', () => {
     await ctx.close();
   }, 90_000);
 });
+
+describe('phone tab bar', () => {
+  it('has six tabs that fit at every phone width; Search opens search with the cursor ready', async () => {
+    for (const w of [320, 360, 390, 430]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: 800 }, hasTouch: true, isMobile: true }); const page = await ctx.newPage();
+      await page.goto(`${base()}/`, { waitUntil: 'networkidle' });
+      const tabs = await page.locator('nav.tabbar a').evaluateAll((a) => a.map((e) => { const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: (e.textContent ?? '').trim(), sw: e.scrollWidth, cw: e.clientWidth }; }));
+      console.log('TABS', JSON.stringify(tabs)); expect(tabs.length, `w=${w}`).toBe(6);
+      for (let i = 0; i < tabs.length; i++) { expect(tabs[i].r, tabs[i].t).toBeLessThanOrEqual(w + 1); expect(tabs[i].sw, `${tabs[i].t} text fits`).toBeLessThanOrEqual(tabs[i].cw + 1); if (i) expect(tabs[i].l).toBeGreaterThanOrEqual(tabs[i - 1].r - 1); }
+      if (w === 320) await page.screenshot({ path: '/tmp/tabs320.png', clip: { x: 0, y: 720, width: 320, height: 80 } });
+      await page.locator('nav.tabbar a', { hasText: 'Search' }).click(); await page.waitForURL(/\/search/); await page.waitForTimeout(300);
+      expect(await page.evaluate(() => document.activeElement?.tagName)).toBe('INPUT');
+      await ctx.close();
+    }
+  }, 120_000);
+});

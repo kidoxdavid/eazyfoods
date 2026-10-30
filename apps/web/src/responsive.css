@@ -111,3 +111,6 @@ form.row + *, .row.top + * { margin-top: 0; }
 @media (hover: none), (pointer: coarse) { .hero-arrow { display: none !important; } }
 .hero-car .hero-dots button { width: 10px; height: 10px; min-width: 0; min-height: 0; padding: 0; }
 .hero-car .hero-dots button.on { width: 26px; }
+
+/* 12. Six tabs share the bottom bar: labels stay on one line and are trimmed rather than pushing the bar wider. */
+.tabbar a > span:not(.count) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
