@@ -398,7 +398,7 @@ main { padding-top: 14px; }
   .order-card { padding: 8px 10px; }
   /* footer */
   .ftr { margin-top: 20px; } .ftr-cols { gap: 8px 14px; padding-top: 14px; padding-bottom: 8px; } .ftr h3 { margin-bottom: 4px; font-size: .88rem; }
-  .ftr-cols li { margin: 0; } .ftr-cols a { display: inline-block; padding: 2px 0; font-size: .82rem; line-height: 1.25; } .ftr-base { padding: 10px 0; font-size: .78rem; }
+  .ftr-cols li { margin: 0; } .ftr-cols a { display: inline-block; padding: 5px 0; font-size: .85rem; line-height: 1.25; } .ftr-base { padding: 10px 0; font-size: .78rem; }
   .totop { min-height: 34px; padding: 0; }
   /* the sticky "go to basket / checkout" bar */
   .sticky-bar { padding: 8px 10px; }
@@ -448,3 +448,7 @@ main { padding-top: 14px; }
 }
 @media (min-width: 1000px) { .pgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); } .layout .pgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (min-width: 1360px) { .pgrid { grid-template-columns: repeat(6, minmax(0, 1fr)); } .layout .pgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+
+/* Links in the top strip and the footer are comfortable to hit (24px at least, on every screen size) */
+.hdr-util a, .util-links a, .hdr-util button, .ftr-cols a { display: inline-flex; align-items: center; min-height: 28px; }
+.ftr-cols a { padding-top: 4px; padding-bottom: 4px; }

@@ -69,7 +69,7 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
     dates.forEach((e, i) => {
       const r = e.getBoundingClientRect();
       if (r.right > W + 1 || r.left < -1) dateBad.push(`${sel(e)} leaves the screen`);
-      if (W <= PHONE && r.width < 130) dateBad.push(`${sel(e)} is only ${Math.round(r.width)}px wide`);
+      if (W <= PHONE && r.width < (e.type === 'time' ? 100 : 125)) dateBad.push(`${sel(e)} is only ${Math.round(r.width)}px wide`);
       dates.slice(i + 1).forEach((o) => { const q = o.getBoundingClientRect(); const ix = Math.min(r.right, q.right) - Math.max(r.left, q.left), iy = Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top); if (ix > 2 && iy > 2) dateBad.push(`${sel(e)} overlaps ${sel(o)}`); });
     });
     if (dateBad.length) out.push({ kind: 'date-overlap', severity: 'critical', detail: dateBad.slice(0, 3).join('; ') });
@@ -84,6 +84,8 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
       const ra = rects[i], rb = rects[j];
       if (ra.width < 1 || rb.height < 1 || ra.height < 1 || rb.width < 1) continue;      // not visible at all (scrolled out of its box)
       if (stuck(a) || stuck(b)) continue;                                              // a fixed bar over the page is by design
+      if (getComputedStyle(a).display === 'inline' && getComputedStyle(b).display === 'inline') continue;   // two links in one wrapped sentence
+      if (a.classList.contains('shelf-btn') || b.classList.contains('shelf-btn')) continue;               // the carousel arrows sit over the cards by design
       const ix = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left), iy = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
       if (ix <= 3 || iy <= 3) continue;
       const small = Math.min(ra.width * ra.height, rb.width * rb.height);

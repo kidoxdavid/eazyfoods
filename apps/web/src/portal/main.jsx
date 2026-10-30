@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
+import '../responsive.css'
 import { watchAccessibility } from './a11y'
 import { LiveProvider } from '../live'
 

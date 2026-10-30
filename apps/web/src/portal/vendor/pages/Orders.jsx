@@ -175,7 +175,7 @@ const Orders = () => {
         <p className="text-xs sm:text-sm text-gray-600 mt-1">
           {tab === TAB_PICKUP ? 'Pickup orders — same statuses until Ready, then Complete' : 'Delivery orders — status matches Driver portal (awaiting driver → accepted → picked up → in transit → delivered)'}
         </p>
-        <div className="mt-2 sm:mt-3 grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 sm:gap-4">
+        <div className="mt-2 sm:mt-3 grid grid-cols-1 min-[400px]:grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 sm:gap-4">
           <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
             <label className="text-xs sm:text-sm font-medium text-gray-700 shrink-0">From:</label>
             <input
@@ -203,7 +203,7 @@ const Orders = () => {
             type="button"
             onClick={handleExportCsv}
             disabled={ordersFiltered.length === 0}
-            className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-3 py-1.5 sm:py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="min-[400px]:col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-3 py-1.5 sm:py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download className="h-4 w-4" />
             Export CSV

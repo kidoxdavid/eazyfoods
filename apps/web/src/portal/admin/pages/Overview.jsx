@@ -34,7 +34,7 @@ export function FinanceOverview() {
     <Need perm={['ledger.view', 'reports.view', 'settlements.view']} what="the financial overview">
       <PageHeader title="Financial overview" sub="Every figure comes from the ledger and order records, with its definition. Tips, tax and vendor money are never counted as EAZyfoods revenue, and costs that are not recorded are shown as such, not guessed." />
       <Card title="Filters">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 min-[420px]:grid-cols-2 lg:grid-cols-4 gap-3">
           <Field label="From" htmlFor="ff"><Input id="ff" type="date" value={f.from} onChange={set('from')} /></Field>
           <Field label="To" htmlFor="ft"><Input id="ft" type="date" value={f.to} onChange={set('to')} /></Field>
           <Field label="City" htmlFor="fc"><Select id="fc" value={f.city} onChange={set('city')}><option value="">All</option>{cities.map((c) => <option key={c}>{c}</option>)}</Select></Field>

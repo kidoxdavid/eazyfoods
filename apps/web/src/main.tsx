@@ -11,6 +11,7 @@ import '@fontsource-variable/onest/index.css';
 import { App } from './App';
 import './styles.css';
 import './store.css';
+import './responsive.css';
 
 installAreaFetch();
 registerServiceWorker();

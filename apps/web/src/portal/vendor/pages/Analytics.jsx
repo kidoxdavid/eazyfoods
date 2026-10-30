@@ -395,7 +395,7 @@ const Analytics = () => {
           {salesTrends && salesTrends.trends && salesTrends.trends.length > 0 && (
             <div className="bg-white rounded-lg shadow border border-gray-200 p-3 sm:p-4 lg:p-6 overflow-x-auto">
               <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Sales Trends</h2>
-              <div className="w-full" style={{ minWidth: '300px', height: '300px' }}>
+              <div className="w-full" style={{ minWidth: 0, height: '300px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                 <RechartsLineChart data={salesTrends.trends}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -443,7 +443,7 @@ const Analytics = () => {
           {revenueBreakdown && revenueBreakdown.breakdown && revenueBreakdown.breakdown.length > 0 && (
             <div className="bg-white rounded-lg shadow border border-gray-200 p-3 sm:p-4 lg:p-6 overflow-x-auto">
               <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Revenue by Category</h2>
-              <div className="w-full" style={{ minWidth: '300px', height: '300px' }}>
+              <div className="w-full" style={{ minWidth: 0, height: '300px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsPieChart>
                   <Pie
@@ -472,7 +472,7 @@ const Analytics = () => {
           {report.top_products && report.top_products.length > 0 && (
             <div className="bg-white rounded-lg shadow border border-gray-200 p-3 sm:p-4 lg:p-6 overflow-x-auto">
               <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Top Products</h2>
-              <div className="w-full" style={{ minWidth: '300px', height: '300px' }}>
+              <div className="w-full" style={{ minWidth: 0, height: '300px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                 <RechartsBarChart data={report.top_products}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -494,7 +494,7 @@ const Analytics = () => {
       {viewMode === 'trends' && salesTrends && salesTrends.trends && (
         <div className="bg-white rounded-lg shadow border border-gray-200 p-3 sm:p-4 lg:p-6 overflow-x-auto">
           <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Sales Trends Over Time</h2>
-          <div className="w-full" style={{ minWidth: '300px', height: '400px' }}>
+          <div className="w-full" style={{ minWidth: 0, height: '400px' }}>
             <ResponsiveContainer width="100%" height="100%">
             <RechartsLineChart data={salesTrends.trends}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -546,7 +546,7 @@ const Analytics = () => {
         <>
           <div className="bg-white rounded-lg shadow border border-gray-200 p-3 sm:p-4 lg:p-6 overflow-x-auto">
             <h2 className="text-base sm:text-lg lg:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Product Performance</h2>
-            <div className="w-full" style={{ minWidth: '300px', height: '400px' }}>
+            <div className="w-full" style={{ minWidth: 0, height: '400px' }}>
               <ResponsiveContainer width="100%" height="100%">
               <RechartsBarChart data={productPerformance.products} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" />
@@ -640,8 +640,8 @@ const Analytics = () => {
             </div>
 
             {/* Comparison Chart */}
-            <div className="w-full overflow-x-auto" style={{ minWidth: '300px' }}>
-              <div style={{ width: '100%', height: '300px', minWidth: '300px' }}>
+            <div className="w-full overflow-x-auto" style={{ minWidth: 0 }}>
+              <div style={{ width: '100%', height: '300px', minWidth: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
               <RechartsBarChart
                 data={[
@@ -714,8 +714,8 @@ const Analytics = () => {
           {fulfillmentMetrics.status_breakdown && (
             <div className="mt-4 sm:mt-6">
               <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2 sm:mb-3">Order Status Breakdown</h3>
-              <div className="w-full overflow-x-auto" style={{ minWidth: '300px' }}>
-                <div style={{ width: '100%', height: '250px', minWidth: '300px' }}>
+              <div className="w-full overflow-x-auto" style={{ minWidth: 0 }}>
+                <div style={{ width: '100%', height: '250px', minWidth: 0 }}>
                   <ResponsiveContainer width="100%" height="100%">
                 <RechartsPieChart>
                   <Pie

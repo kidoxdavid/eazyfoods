@@ -1,0 +1,17 @@
+{
+ "date": "2026-10-30",
+ "critical": 30,
+ "high": 834,
+ "info": 1352,
+ "kinds": {
+  "input-font": 395,
+  "target-small": 439,
+  "target-44": 1352,
+  "overlap": 9,
+  "beyond": 6,
+  "date-overlap": 11,
+  "h-scroll": 4
+ },
+ "routesWithIssues": 124,
+ "audited": 169
+}

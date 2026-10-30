@@ -80,7 +80,7 @@ const Analytics = () => {
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Analytics</h1>
           <p className="text-xs sm:text-sm text-gray-600 mt-1">Track your performance and engagement</p>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-col min-[420px]:flex-row gap-2 min-[420px]:items-center">
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />
           <span className="text-gray-500">to</span>
           <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm" />

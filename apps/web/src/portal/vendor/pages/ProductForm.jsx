@@ -406,7 +406,7 @@ const ProductForm = () => {
           </div>
 
           <div className="sm:col-span-2">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
               <label className="block text-xs sm:text-sm font-medium text-gray-700">Description</label>
               <button
                 type="button"
