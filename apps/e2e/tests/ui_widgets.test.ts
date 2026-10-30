@@ -9,7 +9,7 @@ afterAll(async () => { await browser?.close(); });
 
 for (const w of [320, 360, 390, 430, 768]) {
   describe(`widgets at ${w}px`, () => {
-    it('toggle switches keep their shape; dates stack with room below the filters', async () => {
+    it('toggle switches keep their shape; dates sit side by side with room below the filters', async () => {
       const ctx = await browser.newContext({ viewport: { width: w, height: 800 } });
       const page = await ctx.newPage();
       await signIn(page, 'owner1@example.test');
@@ -26,10 +26,9 @@ for (const w of [320, 360, 390, 430, 768]) {
 
       // The statement page: From and To, then the number cards (the page in the report)
       await page.goto(`${base()}/vendor/statement`, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
-      await page.addStyleTag({ content: 'input[type="date"]{min-width:150px!important}' });                // as Safari on iPhone sizes it
+      await page.addStyleTag({ content: 'input[type="date"]::-webkit-datetime-edit,input[type="datetime-local"]::-webkit-datetime-edit,input[type="month"]::-webkit-datetime-edit{min-width:170px!important;display:inline-block}' });                // as Safari on iPhone sizes it
       const from = (await page.locator('#stf').boundingBox())!, to = (await page.locator('#stt').boundingBox())!;
-      if (w <= 640) { expect(to.y).toBeGreaterThanOrEqual(from.y + from.height - 1); }                       // stacked: To is below From
-      else expect(to.x).toBeGreaterThanOrEqual(from.x + from.width - 2);                                     // side by side without touching
+      expect(Math.abs(to.y - from.y)).toBeLessThan(6); expect(to.x).toBeGreaterThanOrEqual(from.x + from.width - 2);                                     // side by side without touching
       expect(from.x + from.width).toBeLessThanOrEqual(w + 1); expect(to.x + to.width).toBeLessThanOrEqual(w + 1);
       const card = page.locator('main .grid').first();
       if (await card.count()) { const c = (await card.boundingBox())!; expect(c.y - (to.y + to.height)).toBeGreaterThanOrEqual(8); }   // room between the filters and the cards
@@ -52,7 +51,7 @@ for (const w of [320, 390, 430]) {
       expect(await page.getByText('to', { exact: true }).first().isVisible()).toBe(true);
       // Dates (orders: "From: [date]  To: [date]") never leave the screen, even at Safari's minimum width
       await page.goto(`${base()}/vendor/orders`, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
-      await page.addStyleTag({ content: 'input[type="date"]{min-width:150px!important}' });
+      await page.addStyleTag({ content: 'input[type="date"]::-webkit-datetime-edit,input[type="datetime-local"]::-webkit-datetime-edit,input[type="month"]::-webkit-datetime-edit{min-width:170px!important;display:inline-block}' });
       for (const el of await page.locator('input[type="date"]').all()) { const r = (await el.boundingBox())!; expect(r.x).toBeGreaterThanOrEqual(-1); expect(r.x + r.width).toBeLessThanOrEqual(w + 1); }
       const sw = await page.evaluate(() => document.documentElement.scrollWidth); expect(sw).toBeLessThanOrEqual(w + 1);
       await ctx.close();

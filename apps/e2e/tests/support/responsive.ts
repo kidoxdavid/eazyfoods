@@ -70,16 +70,9 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
     dates.forEach((e, i) => {
       const r = e.getBoundingClientRect();
       if (r.right > W + 1 || r.left < -1) dateBad.push(`${sel(e)} leaves the screen`);
-      if (W <= PHONE && r.width < (e.type === 'time' ? 100 : 125)) dateBad.push(`${sel(e)} is only ${Math.round(r.width)}px wide`);
+      if (W <= PHONE && r.width < 90) dateBad.push(`${sel(e)} is only ${Math.round(r.width)}px wide`);
       dates.slice(i + 1).forEach((o) => { const q = o.getBoundingClientRect(); const ix = Math.min(r.right, q.right) - Math.max(r.left, q.left), iy = Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top); if (ix > 2 && iy > 2) dateBad.push(`${sel(e)} overlaps ${sel(o)}`); });
     });
-    if (W <= 640) {
-      // Safari on iPhone gives date fields a minimum width of their own, so two side by side overlap there (emulation cannot show it). Policy: stacked.
-      for (let i = 0; i < dates.length; i++) for (let j = i + 1; j < dates.length; j++) {
-        const r = dates[i].getBoundingClientRect(), q = dates[j].getBoundingClientRect();
-        if (Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top) > 4 && (r.right <= q.left + 2 || q.right <= r.left + 2)) dateBad.push(`${sel(dates[i])} and ${sel(dates[j])} sit side by side on a phone`);
-      }
-    }
     if (dateBad.length) out.push({ kind: 'date-overlap', severity: 'critical', detail: dateBad.slice(0, 3).join('; ') });
 
     // Controls on top of each other

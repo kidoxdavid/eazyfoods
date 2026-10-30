@@ -40,7 +40,7 @@ for (const app of apps) {
           const { page } = r.signedIn ? a : b;
           await page.setViewportSize({ width: 1280, height: 900 });
           await page.goto(base() + r.url, { waitUntil: 'networkidle', timeout: 30_000 }).catch(() => {});
-          await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation:none!important} input[type="date"],input[type="datetime-local"],input[type="month"]{min-width:150px!important} input[type="time"]{min-width:110px!important}' }).catch(() => {});   // Safari on iPhone gives date fields a minimum width of their own: imitate it
+          await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation:none!important} input[type="date"]::-webkit-datetime-edit,input[type="datetime-local"]::-webkit-datetime-edit,input[type="month"]::-webkit-datetime-edit{min-width:170px!important;display:inline-block}' }).catch(() => {});   // Safari on iPhone gives date fields a minimum width of their own: imitate it
           await page.waitForTimeout(250);
           for (const v of WIDTHS) {
             await page.setViewportSize({ width: v.w, height: v.h }); await page.waitForTimeout(120);

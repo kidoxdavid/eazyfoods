@@ -77,16 +77,14 @@ dd, dt { min-width: 0; overflow-wrap: anywhere; }     /* detail lists: an email 
   main a[class*="text-primary-"]:not(p a) { display: inline-flex; align-items: center; min-height: 28px; }
 }
 
-/* 7. Two date, time or month fields in one row stack on phones. Safari on iPhone gives each of these fields a minimum width of its own that
- *    ignores the column it sits in, so side by side they overlap; one under the other they cannot. (Browser emulation cannot show this, so the
- *    rule is a policy and apps/e2e/tests/support/responsive.ts checks the policy.) */
+/* 7. Two date or month fields in one row sit side by side and share the row, the way the opening-hours times do ("From [date] to [date]").
+ *    They are 100 percent of their half and carry no minimum width of their own (see section 2), so on a phone they cannot spill out or overlap.
+ *    (separate rules: one invalid selector would drop a whole list) */
 @media (max-width: 640px) {
-  /* (separate rules: one invalid selector would drop a whole list) */
-  :is(.grid, .flex, .row):has(> input:is([type="date"], [type="datetime-local"], [type="month"]) ~ input:is([type="date"], [type="datetime-local"], [type="month"])) { display: grid; grid-template-columns: minmax(0, 1fr) !important; align-items: stretch; gap: 8px; }
-  :is(.grid, .flex, .row):has(> * > input:is([type="date"], [type="datetime-local"], [type="month"])):has(> * ~ * > input:is([type="date"], [type="datetime-local"], [type="month"])) { display: grid; grid-template-columns: minmax(0, 1fr) !important; align-items: stretch; gap: 8px; }
-  /* the little "to" between two stacked fields is not needed */
-  :is(.grid, .flex, .row):has(> input:is([type="date"], [type="datetime-local"], [type="month"]) ~ input:is([type="date"], [type="datetime-local"], [type="month"])) > *, :is(.grid, .flex, .row):has(> * > input:is([type="date"], [type="datetime-local"], [type="month"])) > * { min-width: 0; }
-  :is(.flex, .row):has(> input[type="date"] ~ input[type="date"]) > span { display: none; }
+  :is(.grid, .flex, .row):has(> input:is([type="date"], [type="datetime-local"], [type="month"]) ~ input:is([type="date"], [type="datetime-local"], [type="month"])) { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; }
+  :is(.grid, .flex, .row):has(> input:is([type="date"], [type="datetime-local"], [type="month"]) ~ input:is([type="date"], [type="datetime-local"], [type="month"])) > input { flex: 1 1 120px; width: auto !important; }
+  :is(.grid, .flex, .row):has(> * > input:is([type="date"], [type="datetime-local"], [type="month"])):has(> * ~ * > input:is([type="date"], [type="datetime-local"], [type="month"])):not(:has(> * ~ * ~ * > input:is([type="date"], [type="datetime-local"], [type="month"]))) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; align-items: end; gap: 8px; }
+  :is(.grid, .flex, .row):has(> * > input:is([type="date"], [type="datetime-local"], [type="month"])):has(> * ~ * > input:is([type="date"], [type="datetime-local"], [type="month"])):not(:has(> * ~ * ~ * > input:is([type="date"], [type="datetime-local"], [type="month"]))) > * { min-width: 0; }
 }
 
 /* 8. A toggle switch keeps the size it was designed with; its touch area is made larger by an invisible margin around it. */
