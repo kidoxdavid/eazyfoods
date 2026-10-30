@@ -104,20 +104,36 @@ function Users() {
   return (
     <Need perm={['users.view']} what="viewing users">
       {can('settings.manage') && <NewStaff onDone={() => setBump((b) => b + 1)} />}
-      <form className="flex items-end gap-2" onSubmit={(e) => { e.preventDefault(); setApplied(q.trim()) }}>
-        <Field label="Name or email" htmlFor="uq"><Input id="uq" value={q} onChange={(e) => setQ(e.target.value)} /></Field><Button type="submit">Search</Button>
+      <form className="flex items-end gap-2 max-w-xl" onSubmit={(e) => { e.preventDefault(); setApplied(q.trim()) }}>
+        <Field label="Name or email" htmlFor="uq" className="flex-1"><Input id="uq" value={q} onChange={(e) => setQ(e.target.value)} /></Field><Button type="submit">Search</Button>
       </form>
       <Alert>{act.error}</Alert>
       <Fetch path={`/admin/users?_=${bump}${applied ? `&q=${encodeURIComponent(applied)}` : ''}`}>{(rows, reload) => (
-        <DataTable rows={rows} empty="No users match." columns={[
-          { key: 'n', header: 'Person', render: (u) => <div><strong>{u.full_name}</strong>{u.disabled && <> <Badge tone="red">Disabled</Badge></>}<div className="text-xs text-gray-500">{u.email}</div></div> },
-          { key: 'r', header: 'Roles', nowrap: false, render: (u) => <div className="flex flex-wrap gap-1">{u.roles.map((r) => (
-            <Badge key={r} tone={STAFF_ROLES.includes(r) ? 'blue' : 'gray'}>{r.replace('_', ' ')}{can('settings.manage') && STAFF_ROLES.includes(r) && <button type="button" className="ml-1" aria-label={`Remove ${r} role`} onClick={() => act.run(() => del(`/admin/users/${u.id}/roles/${r}`), 'Role removed', reload)}>×</button>}</Badge>))}</div> },
-          { key: 'g', header: 'Staff access', render: (u) => (can('settings.manage') ? (
-            <div className="flex gap-1.5"><Select aria-label={`Role to grant to ${u.full_name}`} value={grant[u.id] ?? ''} onChange={(e) => setGrant((s) => ({ ...s, [u.id]: e.target.value }))}><option value="">Add role…</option>{STAFF_ROLES.filter((r) => !u.roles.includes(r)).map((r) => <option key={r} value={r}>{r}</option>)}</Select>
-              <Button size="sm" disabled={!grant[u.id]} onClick={() => act.run(() => post(`/admin/users/${u.id}/roles`, { role: grant[u.id] }), 'Role granted', reload)}>Grant</Button></div>) : null) },
-          { key: 'd', header: '', render: (u) => (can('settings.manage') && u.id !== me?.id ? <div className="flex items-center gap-3"><Switch checked={!u.disabled} label="Can sign in" onChange={(v) => act.run(() => patch(`/admin/users/${u.id}/disabled`, { disabled: !v }), v ? 'Account enabled' : 'Account disabled', reload)} /><DeleteButton what="account" name={u.email} path={`/admin/users/${u.id}`} onDone={(x) => { toast(x.note); reload() }} /></div> : null) },
-        ]} />
+        rows.length === 0 ? <p className="text-sm text-gray-500">No users match.</p> : (
+        <ul className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">{rows.map((u) => (
+          <li key={u.id} className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <span aria-hidden className="h-10 w-10 flex-none rounded-full bg-primary-50 text-primary-700 font-semibold grid place-items-center">{(u.full_name || u.email || '?').trim().charAt(0).toUpperCase()}</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1"><strong className="text-sm sm:text-base text-gray-900 break-words">{u.full_name}</strong>{u.disabled && <Badge tone="red">Disabled</Badge>}</div>
+                <div className="text-xs sm:text-sm text-gray-500 break-all">{u.email}</div>
+              </div>
+              {can('settings.manage') && u.id !== me?.id && <DeleteButton what="account" name={u.email} path={`/admin/users/${u.id}`} onDone={(x) => { toast(x.note); reload() }} />}
+            </div>
+            <div>
+              <div className="text-xs font-medium text-gray-500 mb-1">Roles</div>
+              <div className="flex flex-wrap gap-1">{u.roles.length ? u.roles.map((r) => (
+                <Badge key={r} tone={STAFF_ROLES.includes(r) ? 'blue' : 'gray'}>{r.replace('_', ' ')}{can('settings.manage') && STAFF_ROLES.includes(r) && <button type="button" className="ml-1" aria-label={`Remove ${r} role`} onClick={() => act.run(() => del(`/admin/users/${u.id}/roles/${r}`), 'Role removed', reload)}>×</button>}</Badge>)) : <span className="text-xs text-gray-400">None</span>}</div>
+            </div>
+            {can('settings.manage') && (
+              <div className="mt-auto pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Select aria-label={`Role to grant to ${u.full_name}`} value={grant[u.id] ?? ''} onChange={(e) => setGrant((s) => ({ ...s, [u.id]: e.target.value }))}><option value="">Add role…</option>{STAFF_ROLES.filter((r) => !u.roles.includes(r)).map((r) => <option key={r} value={r}>{r}</option>)}</Select>
+                  <Button size="sm" disabled={!grant[u.id]} onClick={() => act.run(() => post(`/admin/users/${u.id}/roles`, { role: grant[u.id] }), 'Role granted', reload)}>Grant</Button>
+                </div>
+                {u.id !== me?.id && <Switch checked={!u.disabled} label="Can sign in" onChange={(v) => act.run(() => patch(`/admin/users/${u.id}/disabled`, { disabled: !v }), v ? 'Account enabled' : 'Account disabled', reload)} />}
+              </div>)}
+          </li>))}</ul>)
       )}</Fetch>
     </Need>
   )

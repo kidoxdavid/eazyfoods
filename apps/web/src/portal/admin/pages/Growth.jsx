@@ -306,7 +306,7 @@ export function ProspectDetail() {
                 ['Next action', p.next_action ? `${p.next_action}${p.next_action_at ? ' · ' + fmtDateTime(p.next_action_at) : ''}` : null], ...(p.launched_at ? [['Launched', fmtDateTime(p.launched_at)]] : [])]
                 .map(([k, val]) => <div key={k} className="contents"><dt className="text-gray-500">{k}</dt><dd>{val || '—'}</dd></div>)}</dl></Card>
             <Card title="Log an activity"><div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-3">
                 <Field label="Type" htmlFor="ak"><Select id="ak" value={v.kind} onChange={f('kind')}><option value="call">Call</option><option value="visit">Visit</option><option value="email">Email</option><option value="demo">Demo</option><option value="note">Note</option></Select></Field>
                 <Field label="Next action" htmlFor="ana"><Input id="ana" value={v.next_action} onChange={f('next_action')} /></Field>
                 <Field label="When" htmlFor="anw"><Input id="anw" type="datetime-local" value={v.next_action_at} onChange={f('next_action_at')} /></Field>
