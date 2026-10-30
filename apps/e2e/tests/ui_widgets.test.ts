@@ -141,7 +141,7 @@ describe('home banner', () => {
 });
 
 describe('phone tab bar', () => {
-  it('has six tabs that fit at every phone width; Search opens search with the cursor ready', async () => {
+  it('has six tabs (no Search: it is at the top) that fit at every phone width', async () => {
     for (const w of [320, 360, 390, 430]) {
       const ctx = await browser.newContext({ viewport: { width: w, height: 800 }, hasTouch: true, isMobile: true }); const page = await ctx.newPage();
       await page.goto(`${base()}/`, { waitUntil: 'networkidle' });
@@ -149,8 +149,28 @@ describe('phone tab bar', () => {
       console.log('TABS', JSON.stringify(tabs)); expect(tabs.length, `w=${w}`).toBe(6);
       for (let i = 0; i < tabs.length; i++) { expect(tabs[i].r, tabs[i].t).toBeLessThanOrEqual(w + 1); expect(tabs[i].sw, `${tabs[i].t} text fits`).toBeLessThanOrEqual(tabs[i].cw + 1); if (i) expect(tabs[i].l).toBeGreaterThanOrEqual(tabs[i - 1].r - 1); }
       if (w === 320) await page.screenshot({ path: '/tmp/tabs320.png', clip: { x: 0, y: 720, width: 320, height: 80 } });
-      await page.locator('nav.tabbar a', { hasText: 'Search' }).click(); await page.waitForURL(/\/search/); await page.waitForTimeout(300);
-      expect(await page.evaluate(() => document.activeElement?.tagName)).toBe('INPUT');
+      expect(tabs.map((x) => x.t).join('|')).toContain('Stores'); expect(tabs.map((x) => x.t).join('|')).not.toContain('Search');
+      await ctx.close();
+    }
+  }, 120_000);
+});
+
+describe('basket button at the top right', () => {
+  it('opens a preview first; View basket and Checkout go on from there; Escape closes it', async () => {
+    for (const [w, h] of [[390, 844], [1280, 800]]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h } }); const page = await ctx.newPage();
+      await signIn(page, 'customer@example.test');
+      await page.goto(`${base()}/search?q=garri`, { waitUntil: 'networkidle' });
+      if (await page.locator('.pcard .addbtn').count()) { await page.locator('.pcard .addbtn').first().click(); await page.waitForTimeout(800); }   // (earlier tests may already have put garri in the basket)
+      await page.locator('button.hcart').click();
+      const box = page.locator('#minicart'); await box.waitFor({ state: 'visible' });
+      expect(page.url()).toContain('/search');                                             // it did not jump to the basket page
+      const r = (await box.boundingBox())!; expect(r.x).toBeGreaterThanOrEqual(0); expect(r.x + r.width).toBeLessThanOrEqual(w + 1);
+      expect(await box.locator('li').count()).toBeGreaterThan(0);
+      expect(await box.getByRole('link', { name: 'View basket' }).isVisible()).toBe(true); expect(await box.getByRole('link', { name: 'Checkout' }).isVisible()).toBe(true);
+      await page.screenshot({ path: `/tmp/minicart${w}.png` });
+      await page.keyboard.press('Escape'); expect(await box.isVisible()).toBe(false);
+      await page.locator('button.hcart').click(); await box.getByRole('link', { name: 'View basket' }).click(); await page.waitForURL(/\/cart/);
       await ctx.close();
     }
   }, 120_000);

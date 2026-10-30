@@ -7,7 +7,7 @@ import { useSiteTheme } from './theme';
 import { useAuth } from './auth';
 import { useCart } from './cart';
 import { usePlace } from './place';
-import { IconBasket, IconChevron, IconClose, IconHome, IconKitchen, IconMenu, IconOrders, IconPin, IconSearch, IconUser } from './icons';
+import { IconBasket, IconChevron, IconClose, IconHome, IconKitchen, IconMenu, IconOrders, IconPin, IconSearch, IconStore, IconUser } from './icons';
 import { Button, Field, Input, Modal, Notice } from './ui';
 import { LangSwitch, useT } from './i18n';
 import { InstallApp } from './pwa';
@@ -152,10 +152,7 @@ export function Header() {
             {me ? (<><Link to="/account"><small>{t('Hello')}, {me.full_name.split(' ')[0]}</small><b>{t('Account')}</b></Link><Link to="/orders"><small>{t('Returns &')}</small><b>{t('Orders')}</b></Link></>)
               : (<Link to="/signin"><small>{t('Hello, sign in')}</small><b>{t('Account')}</b></Link>)}
           </div>
-          <Link to="/cart" className="hcart">
-            <span className="sr-only">Basket, {count} item{count === 1 ? '' : 's'}</span><span className="hcart-ico"><IconBasket width={28} height={28} />{count > 0 && <span className="count">{count}</span>}</span>
-            <span className="hcart-txt"><small>{count ? `${count} item${count === 1 ? '' : 's'}` : t('Basket')}</small><b>{count ? money(subtotal) : t('Empty')}</b></span>
-          </Link>
+          <MiniCart />
         </div></div>
         <nav className="hdr-nav" aria-label="Shop"><div className="wrap hdr-navrow">
           <button className="alldept" onClick={openMenu} aria-expanded={menu}><IconMenu width={18} height={18} /> {t('All departments')}</button>
@@ -171,13 +168,51 @@ export function Header() {
   );
 }
 
+/** The basket button at the top right opens a small preview first (what is in it, the total, View basket / Checkout), instead of jumping to the basket page. */
+function MiniCart() {
+  const t = useT(); const loc = useLocation();
+  const { count, cart, guest } = useCart();
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => { setOpen(false); }, [loc.pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: Event) => { if (!box.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', away); document.addEventListener('touchstart', away); document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', away); document.removeEventListener('touchstart', away); document.removeEventListener('keydown', esc); };
+  }, [open]);
+  const lines = cart
+    ? cart.stores.flatMap((st) => st.items.map((i) => ({ id: i.offer_id, name: i.name, qty: i.quantity, unit: i.unit_price_cents, store: st.name, img: i.image_url ?? null })))
+    : guest.map((g) => ({ id: g.offer_id, name: g.name, qty: g.quantity, unit: g.unit_price_cents, store: g.store_name, img: null as string | null }));
+  const subtotal = cart ? cart.subtotal_cents : guest.reduce((a, g) => a + g.unit_price_cents * g.quantity, 0);
+  return (
+    <div className="hcart-wrap" ref={box}>
+      <button type="button" className="hcart" aria-haspopup="dialog" aria-expanded={open} aria-controls="minicart" onClick={() => setOpen((o) => !o)}>
+        <span className="sr-only">Basket, {count} item{count === 1 ? '' : 's'}</span><span className="hcart-ico"><IconBasket width={28} height={28} />{count > 0 && <span className="count">{count}</span>}</span>
+        <span className="hcart-txt"><small>{count ? `${count} item${count === 1 ? '' : 's'}` : t('Basket')}</small><b>{count ? money(subtotal) : t('Empty')}</b></span>
+      </button>
+      {open && (
+        <div id="minicart" className="minicart" role="dialog" aria-label={t('Basket preview')}>
+          {lines.length === 0 ? <p className="minicart-empty">{t('Your basket is empty.')}</p> : (
+            <ul className="minicart-list">{lines.map((l) => (
+              <li key={l.id}>{l.img ? <img src={l.img} alt="" loading="lazy" /> : <span className="minicart-ph" aria-hidden />}
+                <span className="minicart-name"><b>{l.name}</b><small>{l.store}</small></span>
+                <span className="minicart-amt">{l.qty} × {money(l.unit)}<b>{money(l.unit * l.qty)}</b></span></li>))}</ul>)}
+          <div className="minicart-total"><span>{t('Subtotal')}</span><b>{money(subtotal)}</b></div>
+          <div className="minicart-actions"><Link to="/cart" className="btn secondary">{t('View basket')}</Link>{lines.length > 0 && <Link to="/checkout" className="btn">{t('Checkout')}</Link>}</div>
+        </div>)}
+    </div>
+  );
+}
+
 export function TabBar() {
   const t = useT();
   const { count } = useCart(); const { me } = useAuth();
   const tab = (to: string, label: string, Icon: typeof IconHome, end = false) => <NavLink to={to} end={end} className={({ isActive }) => (isActive ? 'active' : '')}><Icon /><span>{label}</span></NavLink>;
   return (
     <nav className="tabbar" aria-label="Main">
-      {tab('/', t('Shop'), IconHome, true)}<NavLink to="/search" className={({ isActive }) => (isActive ? 'active' : '')} onClick={() => setTimeout(() => { const i = document.querySelector<HTMLInputElement>('input#q'); i?.focus(); i?.scrollIntoView({ block: 'center' }); }, 60)}><IconSearch /><span>{t('Search')}</span></NavLink>{tab('/kitchens', t('Kitchens'), IconKitchen)}
+      {tab('/', t('Shop'), IconHome, true)}{tab('/stores', t('Stores'), IconStore)}{tab('/kitchens', t('Kitchens'), IconKitchen)}
       <NavLink to="/cart" className={({ isActive }) => (isActive ? 'active' : '')}><IconBasket /><span>{t('Basket')}</span>{count > 0 && <span className="count">{count}</span>}</NavLink>
       {tab('/orders', t('Orders'), IconOrders)}{tab(me ? '/account' : '/signin', me ? t('Account') : t('Sign in'), IconUser)}
     </nav>

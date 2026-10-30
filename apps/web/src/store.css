@@ -433,15 +433,15 @@ main { padding-top: 14px; }
 
 /* ---------- Desktop: smaller product cards, so more fit on the screen ---------- */
 @media (min-width: 700px) {
-  .pimg { aspect-ratio: 4 / 3; }
-  .pbody { padding: 8px 10px 10px; gap: 2px; }
+  .pimg { aspect-ratio: 6 / 5; flex: 1 0 auto; }   /* more of the card is picture: it takes the room the details leave, so the card stays the same size */
+  .pbody { padding: 6px 10px 8px; gap: 1px; }
   .pr > span { font-size: 1.35rem; } .pr sup { font-size: .66rem; margin-top: 2px; }
   .was { font-size: .76rem; }
-  .pname { font-size: .88rem; min-height: 2.5em; }
+  .pname { font-size: .88rem; min-height: 2.3em; line-height: 1.25; }
   .pmeta, .psold { font-size: .74rem; }
-  .pact { padding-top: 5px; }
-  .pcard .addbtn { min-height: 34px; font-size: .88rem; border-width: 1.5px; }
-  .pcard .addstep, .pcard .addstep button { min-height: 34px; height: 34px; }
+  .pact { padding-top: 3px; }
+  .pcard .addbtn { min-height: 30px; font-size: .88rem; border-width: 1.5px; }
+  .pcard .addstep, .pcard .addstep button { min-height: 30px; height: 30px; }
   .pgrid { gap: 12px; }
   .shelf-row > li { flex-basis: 176px; }
   .pcard .qv, .pcard .heart { width: 30px; height: 30px; }
@@ -455,3 +455,16 @@ main { padding-top: 14px; }
 
 /* The home banner: the last row of copy never touches the dots (on a phone the dots sit 10px from the bottom). */
 @media (max-width: 699px) { .hero-copy { padding-bottom: 44px; } }
+
+/* Basket preview that drops down from the basket button at the top right */
+.hcart-wrap { grid-area: cart; position: relative; justify-self: end; } .hcart-wrap .hcart { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
+.minicart { position: absolute; right: 0; top: calc(100% + 8px); width: min(380px, calc(100vw - 24px)); background: var(--card, #fff); color: var(--ink, #1b2a21); border: 1px solid var(--line, #e4e0d6); border-radius: 14px; box-shadow: 0 14px 40px rgba(0,0,0,.22); padding: 12px; z-index: 80; text-align: left; }
+.minicart-list { list-style: none; margin: 0; padding: 0; max-height: min(52vh, 340px); overflow-y: auto; display: grid; gap: 2px; }
+.minicart-list li { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 2px; border-bottom: 1px solid var(--line, #eee); }
+.minicart-list img, .minicart-ph { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: #f1eee6; display: block; }
+.minicart-name { min-width: 0; display: grid; } .minicart-name b { font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .minicart-name small { color: var(--ink-2, #5d6b63); font-size: .74rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.minicart-amt { display: grid; text-align: right; font-size: .76rem; color: var(--ink-2, #5d6b63); } .minicart-amt b { font-size: .9rem; color: var(--ink, #1b2a21); }
+.minicart-empty { margin: 8px 2px 12px; color: var(--ink-2, #5d6b63); }
+.minicart-total { display: flex; justify-content: space-between; padding: 10px 2px 8px; font-size: 1rem; }
+.minicart-actions { display: flex; gap: 8px; } .minicart-actions .btn { flex: 1; justify-content: center; text-align: center; }
+.minicart-actions .btn:not(.secondary) { background: var(--green); color: #fff; border: 1.5px solid var(--green); } .minicart-actions .btn.secondary { background: #fff; color: var(--green); border: 1.5px solid var(--green); }
