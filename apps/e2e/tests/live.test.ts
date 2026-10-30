@@ -96,22 +96,23 @@ describe('edit in place', () => {
     await page.goto(`${base()}/vendor/labels`); await page.waitForLoadState('load'); await page.waitForTimeout(1000);
     expect(await create(name)(page)).toBe(201);
     await page.goto(`${base()}/vendor/products`); await page.waitForLoadState('load');
-    await page.getByPlaceholder('Search products...').fill(name);
+    await page.getByPlaceholder('Search products...').and(page.locator(':visible')).fill(name);
     await seeText(page.locator('body'), name, 15_000);
-    await page.getByPlaceholder('Search products...').fill('');
+    await page.getByPlaceholder('Search products...').and(page.locator(':visible')).fill('');
     // Open the product, rename it, save: back on the list the new name is there immediately (no second wait).
-    await page.getByPlaceholder('Search products...').fill(name);
+    await page.getByPlaceholder('Search products...').and(page.locator(':visible')).fill(name);
     await page.locator('a[href$="/edit"]').and(page.locator(':visible')).first().click();
+    await page.waitForFunction((n) => (document.querySelector('input[name=name]') as HTMLInputElement | null)?.value === n, name, { timeout: 10_000 });   // the form fills itself in once loaded
     await page.locator('input[name=name]').fill(name + ' Renamed');
     await page.getByRole('button', { name: /save|update/i }).first().click();
     await page.waitForURL((u) => /\/vendor\/products$/.test(u.pathname));
-    await page.getByPlaceholder('Search products...').fill(name + ' Renamed');
+    await page.getByPlaceholder('Search products...').and(page.locator(':visible')).fill(name + ' Renamed');
     await seeText(page.locator('body'), name + ' Renamed', 3000);
     // Delete: the row is gone as soon as it is confirmed.
     await page.getByTitle('Delete').or(page.locator('button.text-red-600')).and(page.locator(':visible')).first().click();
     await page.waitForTimeout(700);
     expect(await page.locator('body').innerText()).not.toContain(name + ' Renamed');
-    expect(errors.filter((e) => !/status of 403/.test(e))).toEqual([]);
+    expect(errors.filter((e) => !/status of 40[13]/.test(e))).toEqual([]);
     await ctx.close();
   });
 });

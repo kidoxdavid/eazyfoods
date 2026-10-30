@@ -38,6 +38,7 @@ export function LiveBoundary({ children }: { children: ReactNode }) {
     const started = Date.now();
     const t = window.setInterval(() => {
       const quiet = inflight.n === 0 && Date.now() - inflight.last > 350;
+      if (busy(touched.at)) return;                                           // they started typing or opened something: keep the page they are using
       if ((quiet && Date.now() - started > 500) || Date.now() - started > 8000) { window.clearInterval(t); setShown(building); setBuilding(null); }
     }, 120);
     return () => window.clearInterval(t);
@@ -50,6 +51,9 @@ export function LiveBoundary({ children }: { children: ReactNode }) {
     </>
   );
 }
+
+/** When the person last touched the page; the swap waits while they are busy, so what they typed is never lost. */
+const touched = { at: 0 };
 
 const areaNow = () => { const a = window.location.pathname.split('/')[1]; return AREAS.includes(a) ? a : 'shop'; };
 
@@ -122,7 +126,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     void connect();
 
     window.addEventListener('ez-stale', mark);                                  // a page found its remembered copy out of date
-    const touch = () => { lastTouch.current = Date.now(); };
+    const touch = () => { lastTouch.current = Date.now(); touched.at = Date.now(); };
     const visible = () => { if (!document.hidden && dirty.current) apply(); };
     const online = () => { if (ctrl) ctrl.abort(); };                           // reconnect straight away after the network comes back
     window.addEventListener('pointerdown', touch, true); window.addEventListener('keydown', touch, true);
