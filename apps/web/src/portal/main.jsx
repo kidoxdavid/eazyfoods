@@ -24,6 +24,8 @@ async function pick() {
   const load = AREA in apps ? await pick() : null
   watchAccessibility()
 watchTables()
+  if (load === apps.chef) { document.documentElement.classList.add('theme-chef'); document.title = 'EAZyfoods Kitchen portal' }
+  else if (AREA === 'vendor') document.title = 'EAZyfoods Store portal'
   if (load) {
     load().then(({ default: App }) => {
       ReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><LiveProvider><App /></LiveProvider></React.StrictMode>)

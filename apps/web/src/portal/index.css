@@ -1,6 +1,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* Colour of the portal. Stores are blue; kitchens (chef portal) are warm orange, so the two are told apart at a glance. */
+:root { --p-50: 240 249 255; --p-100: 224 242 254; --p-200: 186 230 253; --p-300: 125 211 252; --p-400: 56 189 248; --p-500: 14 165 233; --p-600: 3 105 161; --p-700: 7 89 133; --p-800: 7 89 133; --p-900: 12 74 110; }
+.theme-chef { --p-50: 255 247 237; --p-100: 255 237 213; --p-200: 254 215 170; --p-300: 253 186 116; --p-400: 251 146 60; --p-500: 249 115 22; --p-600: 194 65 12; --p-700: 154 52 18; --p-800: 154 52 18; --p-900: 124 45 18; }
 
 body {
   margin: 0;

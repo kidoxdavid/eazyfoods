@@ -44,7 +44,8 @@ for (const app of apps) {
           await page.waitForTimeout(250);
           for (const v of WIDTHS) {
             await page.setViewportSize({ width: v.w, height: v.h }); await page.waitForTimeout(450);   // charts re-measure a moment after a resize
-            for (const i of await measure(page, v.w, v.h).catch(() => [])) if (i.severity !== 'info') problems.push(`${r.url} @${v.w}: ${i.kind} - ${i.detail.slice(0, 160)}`);
+            let found = await measure(page, v.w, v.h).catch(() => []); if (found.some((i) => i.kind === 'scroll-x')) { await page.waitForTimeout(1200); found = await measure(page, v.w, v.h).catch(() => []); }   // charts re-measure a moment after a resize
+            for (const i of found) if (i.severity !== 'info') problems.push(`${r.url} @${v.w}: ${i.kind} - ${i.detail.slice(0, 160)}`);
           }
         }
         await a.ctx.close(); await b.ctx.close();

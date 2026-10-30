@@ -103,7 +103,7 @@ const Layout = ({ children }) => {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 border-b border-gray-200 bg-gradient-to-r from-primary-600 to-primary-700" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-            <h1 className="text-lg sm:text-xl font-bold text-white truncate">eazyfoods Vendor</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-white truncate">eazyfoods Store</h1>
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden text-white hover:text-gray-200 p-1 rounded-md transition-colors"
@@ -176,8 +176,9 @@ const Layout = ({ children }) => {
             <div className="flex-1" />
             <div className="flex items-center space-x-2 sm:space-x-4">
               <span className="text-xs sm:text-sm text-gray-600 truncate max-w-[120px] sm:max-w-none">
-                {user?.business_name || 'Vendor Portal'}
+                {user?.business_name || 'Store portal'}
               </span>
+              <span className="shrink-0 rounded-full bg-primary-100 text-primary-800 px-2 py-0.5 text-[11px] font-semibold">Store</span>
             </div>
           </div>
         </header>

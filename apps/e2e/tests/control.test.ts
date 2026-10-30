@@ -142,12 +142,12 @@ describe('every area keeps its own sign-in (browser)', () => {
     await signInStaff(page, 'owner1@example.test', 'dev-password-123', '/vendor');
     await signInStaff(page, 'driver@example.test', 'dev-password-123', '/driver');
     await page.goto(`${base()}/admin`); await seeText(page.locator('aside'), 'Admin');          // still signed in as admin
-    await page.goto(`${base()}/vendor`); await seeText(page.locator('aside'), 'Vendor');             // and as the vendor
+    await page.goto(`${base()}/vendor`); await seeText(page.locator('aside'), 'Store');             // and as the vendor
     await page.goto(`${base()}/driver`); await seeText(page.locator('aside'), 'Driver');
     await page.getByRole('button', { name: 'Sign out' }).click();
     await page.waitForURL(/\/driver\/signin/);
     await page.goto(`${base()}/admin`); await seeText(page.locator('aside'), 'Admin');          // the others are untouched
-    await page.goto(`${base()}/vendor`); await seeText(page.locator('aside'), 'Vendor');
+    await page.goto(`${base()}/vendor`); await seeText(page.locator('aside'), 'Store');
   });
 });
 

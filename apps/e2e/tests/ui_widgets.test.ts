@@ -103,3 +103,21 @@ describe('wide grids and tables on a phone', () => {
     await ctx.close();
   }, 180_000);
 });
+
+describe('store portal and kitchen portal look different', () => {
+  it('kitchens are orange and say Kitchen; stores are blue and say Store', async () => {
+    const colour = async (email: string) => {
+      const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } }); const page = await ctx.newPage();
+      await signIn(page, email);
+      await page.goto(`${base()}/vendor`, { waitUntil: 'networkidle' }); await page.waitForTimeout(800);
+      const r = await page.evaluate(() => ({ chef: document.documentElement.classList.contains('theme-chef'), bg: getComputedStyle(document.documentElement).getPropertyValue('--p-600').trim(), head: document.querySelector('aside h1')!.textContent, tag: document.querySelector('header')!.textContent, title: document.title }));
+      await page.screenshot({ path: `/tmp/${email.split('@')[0]}.png` }); await ctx.close(); return r;
+    };
+    const store = await colour('owner1@example.test'), kitchen = await colour('chef1@example.test');
+    expect(store.chef).toBe(false); expect(kitchen.chef).toBe(true);
+    expect(store.head).toContain('Store'); expect(kitchen.head).toContain('Kitchen');
+    expect(store.tag).toContain('Store'); expect(kitchen.tag).toContain('Kitchen');
+    expect(store.bg).not.toBe(kitchen.bg);
+    expect(kitchen.title).toContain('Kitchen'); expect(store.title).toContain('Store');
+  }, 90_000);
+});

@@ -230,7 +230,7 @@ describe('home chefs (browser)', () => {
     await page.fill('input[name=email]', 'chef1@example.test'); await page.fill('input[name=password]', 'dev-password-123');
     await page.click('button[type=submit]');
     await page.waitForURL(/\/vendor\/?$/);
-    await seeText(page.locator('aside'), 'eazyfoods Chef');
+    await seeText(page.locator('aside'), 'eazyfoods Kitchen');
   });
 });
 
