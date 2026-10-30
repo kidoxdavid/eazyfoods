@@ -39,8 +39,6 @@ dd, dt { min-width: 0; overflow-wrap: anywhere; }     /* detail lists: an email 
   /* the show/hide-password eye sits inside its field: a larger hit area without moving it */
   button.absolute[class*="right-3"] { padding: 8px; margin: -8px; box-sizing: content-box; }
   footer a, footer button { display: inline-flex; align-items: center; }
-  /* carousel dots keep their size on screen; the touch area around them grows */
-  .hero-dots button { box-sizing: content-box; padding: 7px; margin: -7px; background-clip: content-box; }
 }
 /* On the product cards, a name is always two lines tall, so a one-line name is still a comfortable thing to tap. */
 @media (max-width: 699px) { .pcard .pname { min-height: 2.4em; } }
