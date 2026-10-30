@@ -16,9 +16,12 @@ input[type="date"], input[type="datetime-local"], input[type="time"], input[type
 @media (max-width: 767px) {
   input[type="date"], input[type="datetime-local"], input[type="time"], input[type="month"] { width: 100%; min-height: 40px; }
   /* Safari on iPhone ignores width on these unless the native look is dropped; without this they run off the screen */
-  input[type="date"], input[type="datetime-local"], input[type="month"] { -webkit-appearance: none; appearance: none; display: block; max-width: 100%; min-width: 0; margin: 0; }
+  input[type="date"], input[type="datetime-local"], input[type="month"], input[type="time"] { -webkit-appearance: none; appearance: none; display: block; box-sizing: border-box; width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin: 0; contain: inline-size; overflow: hidden; }
+  .flex > input[type="time"] { display: block; }
+  input[type="date"]::-webkit-datetime-edit, input[type="datetime-local"]::-webkit-datetime-edit, input[type="month"]::-webkit-datetime-edit, input[type="time"]::-webkit-datetime-edit { min-width: 0; padding: 0; }
+  input[type="date"]::-webkit-date-and-time-value, input[type="datetime-local"]::-webkit-date-and-time-value, input[type="month"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { min-width: 0; width: 100%; }
   /* start/end times in a row ("09:00 to 17:00") sit side by side, sharing the row */
-  .flex > input[type="time"] { width: auto; flex: 1 1 0; }
+  .flex > input[type="time"] { width: auto !important; flex: 1 1 0; }
   /* iOS draws the value centred inside the box; keep it on the left like every other field */
   input[type="date"]::-webkit-date-and-time-value, input[type="datetime-local"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value, input[type="month"]::-webkit-date-and-time-value { text-align: left; min-height: 1.2em; }
 }
