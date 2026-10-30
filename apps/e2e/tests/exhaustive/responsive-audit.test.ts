@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, it } from 'vitest';
 import type { Browser, BrowserContext } from 'playwright-core';
 import { base, launch, newPage, signIn } from '../helpers.js';
 import { measure, VIEWPORTS, type Issue } from '../support/responsive.js';
+import { seedSamples } from '../support/seed.js';
 
 /**
  * The full responsive audit: every route of every app, at every width, with the page's own measurements.
@@ -17,7 +18,8 @@ const routes: Route[] = JSON.parse(readFileSync(resolve(QA, 'routes.json'), 'utf
 type Row = { app: string; route: string; url: string; status: 'audited' | 'unresolved' | 'redirected'; landed?: string; issues: Record<string, Issue[]>; load: string[] };
 const rows: Row[] = [];
 let browser: Browser;
-beforeAll(async () => { browser = await launch(); mkdirSync(SHOTS, { recursive: true }); });
+let samples: Record<string, string> = {};
+beforeAll(async () => { browser = await launch(); mkdirSync(SHOTS, { recursive: true }); samples = await seedSamples(); console.log('SEEDED', Object.keys(samples).length, 'sample records'); }, 120_000);
 afterAll(async () => { await browser?.close(); writeFileSync(resolve(QA, 'results.json'), JSON.stringify(rows, null, 1)); });
 
 const apps = [...new Set(routes.map((r) => r.app))];
@@ -46,7 +48,7 @@ for (const app of apps) {
       await probe.ctx.close();
       for (const r of mine.filter((x) => x.dynamic)) {
         const re = new RegExp('^' + r.url.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/:[A-Za-z]+/g, '[^/]+') + '$');
-        const hit = [...seen].find((h) => re.test(h));
+        const hit = samples[r.url] ?? [...seen].find((h) => re.test(h));
         if (hit) concrete.push({ r, url: hit }); else rows.push({ app, route: r.route, url: r.url, status: 'unresolved', issues: {}, load: ['no sample data to open this page with'] });
       }
 
