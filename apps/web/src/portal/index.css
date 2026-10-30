@@ -34,3 +34,7 @@ body {
   main h1 { line-height: 1.2; }
   main h1 + p { margin-top: .125rem; }
 }
+
+/* Page spinners wait a moment before appearing, so a quick load shows no flash at all. */
+@keyframes ez-delay-in { from { opacity: 0; } to { opacity: 1; } }
+.animate-spin.rounded-full { animation: spin 1s linear infinite, ez-delay-in .2s ease .4s both; }

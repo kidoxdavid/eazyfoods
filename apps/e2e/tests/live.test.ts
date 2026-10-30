@@ -61,3 +61,27 @@ describe('live updates', () => {
     await ctx.close(); await other.ctx.close();
   });
 });
+
+describe('no flicker', () => {
+  it('a live update swaps in quietly: no spinner or blank page is ever shown, and the scroll position stays', async () => {
+    const desk = await newPage(browser, DESKTOP); const phone = await newPage(browser, MOBILE);
+    for (const p of [desk.page, phone.page]) await p.addInitScript(() => localStorage.setItem('ez_live', '1'));
+    await signIn(desk.page, 'owner1@example.test'); await signIn(phone.page, 'owner1@example.test');
+    await desk.page.goto(`${base()}/vendor/labels`); await desk.page.waitForLoadState('load'); await desk.page.waitForTimeout(1500);
+    await phone.page.goto(`${base()}/vendor/labels`); await phone.page.waitForLoadState('load'); await phone.page.waitForTimeout(800);
+    await desk.page.evaluate(() => {
+      (window as any).__flash = [];
+      setInterval(() => {
+        const spinner = [...document.querySelectorAll('.animate-spin.rounded-full, [aria-label="Loading"]')].some((e) => { const r = (e as HTMLElement).getBoundingClientRect(); return r.height > 0 && getComputedStyle(e).visibility !== 'hidden' && getComputedStyle(e).opacity !== '0'; });
+        const blank = document.body.innerText.trim().length < 50;
+        if (spinner || blank) (window as any).__flash.push(spinner ? 'spinner' : 'blank');
+      }, 25);
+    });
+    const name = 'Zz Quiet ' + Date.now();
+    await create(name)(phone.page);
+    await seeText(desk.page.locator('body'), name, 15_000);
+    await desk.page.waitForTimeout(800);
+    expect(await desk.page.evaluate(() => (window as any).__flash)).toEqual([]);
+    await desk.ctx.close(); await phone.ctx.close();
+  });
+});

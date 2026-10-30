@@ -10,10 +10,45 @@ const Version = createContext(0);
 /** Changes whenever the page should reload its data. Providers that hold their own copy (the basket, the signed-in person) depend on it. */
 export const useLiveVersion = () => useContext(Version);
 
-/** Wrap the page area. When the version changes everything inside starts over and loads fresh data; the scroll position is kept. */
+/** How many requests are in flight, so the page being prepared out of sight knows when it has finished loading. The live stream itself is not counted. */
+const inflight = { n: 0, last: 0 };
+if (typeof window !== 'undefined' && !(window as any).__ezFetchTracked) {
+  const orig = window.fetch.bind(window);
+  window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    if (url.includes('/api/live')) return orig(input, init);
+    inflight.n++; inflight.last = Date.now();
+    return orig(input, init).finally(() => { inflight.n--; inflight.last = Date.now(); });
+  }) as typeof window.fetch;
+  (window as any).__ezFetchTracked = true;
+}
+
+/**
+ * Wrap the page area. When the version changes a fresh copy of the page is built out of sight and loads its data while the old copy stays on
+ * screen untouched; when the new copy has finished loading it replaces the old one in a single step. Nothing blanks, no spinner shows, the scroll
+ * position does not move.
+ */
 export function LiveBoundary({ children }: { children: ReactNode }) {
   const v = useContext(Version);
-  return <Fragment key={v}>{children}</Fragment>;
+  const [shown, setShown] = useState(v);
+  const [building, setBuilding] = useState<number | null>(null);
+  useEffect(() => { if (v !== shown) setBuilding(v); }, [v]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (building === null) return;
+    const started = Date.now();
+    const t = window.setInterval(() => {
+      const quiet = inflight.n === 0 && Date.now() - inflight.last > 350;
+      if ((quiet && Date.now() - started > 500) || Date.now() - started > 8000) { window.clearInterval(t); setShown(building); setBuilding(null); }
+    }, 120);
+    return () => window.clearInterval(t);
+  }, [building]);
+  const out = { position: 'fixed', top: 0, left: 0, width: '100%', height: 0, overflow: 'hidden', visibility: 'hidden', pointerEvents: 'none' } as const;
+  return (
+    <>
+      <div key={shown} style={{ display: 'contents' }}>{children}</div>
+      {building !== null && building !== shown && <div key={building} aria-hidden="true" {...({ inert: '' } as object)} style={out}>{children}</div>}
+    </>
+  );
 }
 
 const areaNow = () => { const a = window.location.pathname.split('/')[1]; return AREAS.includes(a) ? a : 'shop'; };
