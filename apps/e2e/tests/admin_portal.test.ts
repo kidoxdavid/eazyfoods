@@ -108,6 +108,7 @@ describe('admin portal (browser)', () => {
     // open the proposed delivery rule, break a band, and see the plain-language problem
     await page.getByText('Proposed Calgary distance bands').first().click();
     const dialog = page.getByRole('dialog').first();
+    await dialog.getByText('Add a band').waitFor(); await page.waitForLoadState('networkidle');   // the editor finishes loading the rule first, or its late answer would overwrite what is typed
     await dialog.getByLabel('Up to (km)').fill('9');                                                            // first band now ends after the second (5 km)
     await dialog.getByRole('button', { name: 'Save draft' }).click();
     await seeText(dialog, 'overlap');
