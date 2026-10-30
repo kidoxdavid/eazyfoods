@@ -32,15 +32,28 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
     // Something inside a box that scrolls sideways on purpose (a table, a row of chips) may be wider than the screen.
     const inScroller = (e: Element) => { for (let n = e.parentElement; n && n !== document.body; n = n.parentElement) { const cs = getComputedStyle(n); if (/(auto|scroll)/.test(cs.overflowX) && n.scrollWidth > n.clientWidth) { const r = n.getBoundingClientRect(); if (r.right <= W + 1 && r.left >= -1) return true; } if (/(hidden|clip)/.test(cs.overflowX)) { const r = n.getBoundingClientRect(); if (r.right <= W + 1 && r.left >= -1) return true; } } return false; };
 
+    // The part of an element people can actually see: its box cut down by every ancestor that clips or scrolls.
+    const seenRect = (e: Element) => {
+      const r = e.getBoundingClientRect(); let L = r.left, T = r.top, R = r.right, B = r.bottom;
+      for (let n = e.parentElement; n && n !== document.documentElement; n = n.parentElement) {
+        const cs = getComputedStyle(n); const q = n.getBoundingClientRect();
+        if (/(auto|scroll|hidden|clip)/.test(cs.overflowX)) { L = Math.max(L, q.left); R = Math.min(R, q.right); }
+        if (/(auto|scroll|hidden|clip)/.test(cs.overflowY)) { T = Math.max(T, q.top); B = Math.min(B, q.bottom); }
+      }
+      return { left: L, top: T, right: R, bottom: B, width: Math.max(0, R - L), height: Math.max(0, B - T) };
+    };
+    const stuck = (e: Element) => { for (let n: Element | null = e; n && n !== document.body; n = n.parentElement) { const p = getComputedStyle(n).position; if (p === 'fixed' || p === 'sticky') return true; } return false; };
+    const decorative = (e: Element) => e.classList.contains('skip') || e.classList.contains('sr-only') || !!e.closest('.skip, .sr-only');
+
     const doc = document.documentElement;
     const over = Math.max(doc.scrollWidth, document.body.scrollWidth) - W;
     if (over > 1) out.push({ kind: 'h-scroll', severity: 'critical', detail: `page is ${over}px wider than the screen` });
 
     const beyond: string[] = [];
     document.querySelectorAll('body *').forEach((e) => {
-      if (beyond.length >= 4 || !shown(e) || e.closest('svg') && e.tagName.toLowerCase() !== 'svg') return;
-      const r = e.getBoundingClientRect();
-      if ((r.right > W + 1 || r.left < -1) && !parked(e) && !inScroller(e) && getComputedStyle(e).position !== 'fixed') beyond.push(`${sel(e)} (${Math.round(r.left)}..${Math.round(r.right)})`);
+      if (beyond.length >= 4 || !shown(e) || decorative(e) || e.closest('svg') && e.tagName.toLowerCase() !== 'svg') return;
+      const r = seenRect(e);
+      if (r.width > 0 && (r.right > W + 1 || r.left < -1) && !parked(e) && !inScroller(e) && getComputedStyle(e).position !== 'fixed') beyond.push(`${sel(e)} (${Math.round(r.left)}..${Math.round(r.right)})`);
     });
     if (beyond.length) out.push({ kind: 'beyond', severity: 'critical', detail: beyond.join('; ') });
 
@@ -62,13 +75,15 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
     if (dateBad.length) out.push({ kind: 'date-overlap', severity: 'critical', detail: dateBad.slice(0, 3).join('; ') });
 
     // Controls on top of each other
-    const controls = [...document.querySelectorAll('a[href], button, input, select, textarea, [role="button"]')].filter((e) => shown(e) && !parked(e) && getComputedStyle(e).position !== 'fixed' && !e.classList.contains('skip') && !(e as HTMLInputElement).disabled) as HTMLElement[];
-    const rects = controls.map((e) => e.getBoundingClientRect());
+    const controls = [...document.querySelectorAll('a[href], button, input, select, textarea, [role="button"]')].filter((e) => shown(e) && !parked(e) && !decorative(e) && !(e as HTMLInputElement).disabled) as HTMLElement[];
+    const rects = controls.map((e) => seenRect(e));
     const clash: string[] = [];
     for (let i = 0; i < controls.length && clash.length < 3; i++) for (let j = i + 1; j < controls.length && clash.length < 3; j++) {
       const a = controls[i], b = controls[j];
       if (a.contains(b) || b.contains(a)) continue;
       const ra = rects[i], rb = rects[j];
+      if (ra.width < 1 || rb.height < 1 || ra.height < 1 || rb.width < 1) continue;      // not visible at all (scrolled out of its box)
+      if (stuck(a) || stuck(b)) continue;                                              // a fixed bar over the page is by design
       const ix = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left), iy = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
       if (ix <= 3 || iy <= 3) continue;
       const small = Math.min(ra.width * ra.height, rb.width * rb.height);
@@ -96,13 +111,13 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
     if (W <= 1024) {
       const tiny: string[] = []; let under44 = 0;
       controls.forEach((e, i) => {
-        const r = rects[i];
+        const r = rects[i]; if (r.width < 1 || r.height < 1) return;
         if (e.tagName === 'A' && getComputedStyle(e).display === 'inline') return;                       // a link inside a sentence
         if ((e as HTMLInputElement).type === 'checkbox' || (e as HTMLInputElement).type === 'radio') { const lab = e.closest('label'); if (lab) { const lr = lab.getBoundingClientRect(); if (lr.height >= 24 && lr.width >= 24) return; } }
         if (r.width < 24 || r.height < 24) tiny.push(`${sel(e)} ${Math.round(r.width)}x${Math.round(r.height)}`);
         else if (r.width < 44 || r.height < 44) under44++;
       });
-      if (tiny.length) out.push({ kind: 'target-small', severity: 'high', detail: `${tiny.length} under 24px, e.g. ${tiny.slice(0, 2).join(', ')}` });
+      if (tiny.length) out.push({ kind: 'target-small', severity: 'high', detail: `${tiny.length} under 24px: ${[...new Set(tiny)].slice(0, 6).join(', ')}` });
       if (under44) out.push({ kind: 'target-44', severity: 'info', detail: `${under44} control(s) between 24 and 44px` });
     }
     return out;

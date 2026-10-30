@@ -62,6 +62,7 @@ for (const app of apps) {
           page.on('response', onResp); page.on('pageerror', onErr);
           await page.setViewportSize({ width: 1280, height: 900 });
           await page.goto(base() + url, { waitUntil: 'networkidle', timeout: 30_000 }).catch((e) => load.push('did not load: ' + String(e.message).slice(0, 60)));
+          await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation:none!important}' }).catch(() => {});   // measure the settled layout, not a menu mid-slide
           await page.waitForTimeout(250);
           page.off('response', onResp); page.off('pageerror', onErr);
           const landed = new URL(page.url()).pathname;
