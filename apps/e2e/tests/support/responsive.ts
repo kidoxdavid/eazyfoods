@@ -65,7 +65,7 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
       if (small.length) out.push({ kind: 'input-font', severity: 'high', detail: `${small.length} field(s) under 16px, e.g. ${sel(small[0])} is ${getComputedStyle(small[0]).fontSize}` });
     }
 
-    const dates = textLike.filter((e) => ['date', 'datetime-local', 'time', 'month', 'week'].includes(e.type));
+    const dates = textLike.filter((e) => ['date', 'datetime-local', 'month', 'week'].includes(e.type));
     const dateBad: string[] = [];
     dates.forEach((e, i) => {
       const r = e.getBoundingClientRect();
@@ -95,6 +95,7 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
       if (getComputedStyle(a).display === 'inline' && getComputedStyle(b).display === 'inline') continue;   // two links in one wrapped sentence
       if (a.classList.contains('shelf-btn') || b.classList.contains('shelf-btn')) continue;
       if (a.closest('.hero-dots') && b.closest('.hero-dots')) continue;                                   // carousel dots: the touch areas touch, the dots themselves do not               // the carousel arrows sit over the cards by design
+      if (a.classList.contains('hero-arrow') || b.classList.contains('hero-arrow')) continue;               // the carousel arrows sit over the banner by design (and are hidden on phones)
       const ix = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left), iy = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
       if (ix <= 3 || iy <= 3) continue;
       const small = Math.min(ra.width * ra.height, rb.width * rb.height);

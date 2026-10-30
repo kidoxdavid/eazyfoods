@@ -79,8 +79,8 @@ dd, dt { min-width: 0; overflow-wrap: anywhere; }     /* detail lists: an email 
  *    rule is a policy and apps/e2e/tests/support/responsive.ts checks the policy.) */
 @media (max-width: 640px) {
   /* (separate rules: one invalid selector would drop a whole list) */
-  :is(.grid, .flex, .row):has(> input:is([type="date"], [type="datetime-local"], [type="month"]) ~ input:is([type="date"], [type="datetime-local"], [type="month"])) { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 8px; }
-  :is(.grid, .flex, .row):has(> * > input:is([type="date"], [type="datetime-local"], [type="month"])):has(> * ~ * > input:is([type="date"], [type="datetime-local"], [type="month"])) { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 8px; }
+  :is(.grid, .flex, .row):has(> input:is([type="date"], [type="datetime-local"], [type="month"]) ~ input:is([type="date"], [type="datetime-local"], [type="month"])) { display: grid; grid-template-columns: minmax(0, 1fr) !important; align-items: stretch; gap: 8px; }
+  :is(.grid, .flex, .row):has(> * > input:is([type="date"], [type="datetime-local"], [type="month"])):has(> * ~ * > input:is([type="date"], [type="datetime-local"], [type="month"])) { display: grid; grid-template-columns: minmax(0, 1fr) !important; align-items: stretch; gap: 8px; }
   /* the little "to" between two stacked fields is not needed */
   :is(.grid, .flex, .row):has(> input:is([type="date"], [type="datetime-local"], [type="month"]) ~ input:is([type="date"], [type="datetime-local"], [type="month"])) > *, :is(.grid, .flex, .row):has(> * > input:is([type="date"], [type="datetime-local"], [type="month"])) > * { min-width: 0; }
   :is(.flex, .row):has(> input[type="date"] ~ input[type="date"]) > span { display: none; }
