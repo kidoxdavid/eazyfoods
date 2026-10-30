@@ -118,6 +118,7 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
     const cramped: string[] = [];
     for (const f of fields) {
       if (cramped.length >= 3) break;
+      if (f.type === 'checkbox' || f.type === 'radio') continue;                                   // a tick box sits inside its own label row
       const a = f.getBoundingClientRect();
       for (const c of cards) {
         if (c.contains(f) || f.contains(c)) continue;
