@@ -33,7 +33,7 @@ export default function App() {
         <Route path="/login" element={<Navigate to="/signin" replace />} />
         <Route path="/*" element={
           <StaffShell brand="eazyfoods Marketing" nav={NAV} badgesPath="/marketing/badges">
-<LiveBoundary>
+<LiveBoundary className="space-y-3 sm:space-y-4 lg:space-y-6">
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/analytics" element={<Analytics />} />

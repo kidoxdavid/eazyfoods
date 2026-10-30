@@ -73,6 +73,13 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
       if (W <= PHONE && r.width < (e.type === 'time' ? 100 : 125)) dateBad.push(`${sel(e)} is only ${Math.round(r.width)}px wide`);
       dates.slice(i + 1).forEach((o) => { const q = o.getBoundingClientRect(); const ix = Math.min(r.right, q.right) - Math.max(r.left, q.left), iy = Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top); if (ix > 2 && iy > 2) dateBad.push(`${sel(e)} overlaps ${sel(o)}`); });
     });
+    if (W <= 640) {
+      // Safari on iPhone gives date fields a minimum width of their own, so two side by side overlap there (emulation cannot show it). Policy: stacked.
+      for (let i = 0; i < dates.length; i++) for (let j = i + 1; j < dates.length; j++) {
+        const r = dates[i].getBoundingClientRect(), q = dates[j].getBoundingClientRect();
+        if (Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top) > 4 && (r.right <= q.left + 2 || q.right <= r.left + 2)) dateBad.push(`${sel(dates[i])} and ${sel(dates[j])} sit side by side on a phone`);
+      }
+    }
     if (dateBad.length) out.push({ kind: 'date-overlap', severity: 'critical', detail: dateBad.slice(0, 3).join('; ') });
 
     // Controls on top of each other
@@ -100,6 +107,26 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
     }
     if (clash.length) out.push({ kind: 'overlap', severity: 'critical', detail: clash.join('; ') });
 
+    // A field or card sitting right on top of the next card with no gap (a lost margin)
+    const cards = [...document.querySelectorAll('section, article, div, form, ul, table')].filter((e) => {
+      if (!shown(e) || parked(e)) return false;
+      const cs = getComputedStyle(e); const r = e.getBoundingClientRect();
+      const boxed = (parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== 'none') || cs.boxShadow !== 'none';
+      return boxed && parseFloat(cs.borderTopLeftRadius) >= 6 && r.width > 120 && r.height > 36;
+    }) as HTMLElement[];
+    const cramped: string[] = [];
+    for (const f of fields) {
+      if (cramped.length >= 3) break;
+      const a = f.getBoundingClientRect();
+      for (const c of cards) {
+        if (c.contains(f) || f.contains(c)) continue;
+        const b = c.getBoundingClientRect();
+        const gap = b.top - a.bottom; const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        if (gap >= -1 && gap < 4 && ox > Math.min(a.width, b.width) * 0.3 && !stuck(f)) { cramped.push(`${sel(f)} touches the card below it (${Math.round(gap)}px gap)`); break; }
+      }
+    }
+    if (cramped.length) out.push({ kind: 'no-gap', severity: 'high', detail: cramped.join('; ') });
+
     // Text cut off with no ellipsis
     const clipped: string[] = [];
     document.querySelectorAll('body *').forEach((e) => {
@@ -118,6 +145,7 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
         const r = e.getBoundingClientRect(); if (r.width < 1 || r.height < 1 || rects[i].width < 1) return;   // the whole control, even when a row of them scrolls
         const edge = seenRect(e); if (edge.width < r.width - 1) return;                                    // half scrolled out of a row: not judged on the sliver
         if (e.tagName === 'A' && getComputedStyle(e).display === 'inline') return;                       // a link inside a sentence
+        if ((e as HTMLElement).getAttribute('role') === 'switch') return;                                  // toggle switches keep their designed size; an invisible margin enlarges the touch area
         if (e.closest('.hero-dots')) return;                                                              // banner dots: the banner is deliberately left as designed, and it advances by itself and by swipe (WCAG 2.5.8 equivalent-control exception)
         if ((e as HTMLInputElement).type === 'checkbox' || (e as HTMLInputElement).type === 'radio') { const lab = e.closest('label'); if (lab) { const lr = lab.getBoundingClientRect(); if (lr.height >= 24 && lr.width >= 24) return; } }
         if (r.width < 24 || r.height < 24) tiny.push(`${sel(e)} ${Math.round(r.width)}x${Math.round(r.height)}`);

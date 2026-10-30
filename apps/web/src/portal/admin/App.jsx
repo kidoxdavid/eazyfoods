@@ -79,7 +79,7 @@ export default function App() {
         <Route path="/login" element={<Navigate to="/signin" replace />} />
         <Route path="/*" element={
           <StaffShell brand="eazyfoods Admin" nav={NAV} badgesPath="/admin/badges" canSee={canSee} titleOf={(u) => (u.roles ?? []).filter((r) => STAFF_ROLES.includes(r.role)).map((r) => r.role).join(', ') || u.full_name}>
-<LiveBoundary>
+<LiveBoundary className="space-y-3 sm:space-y-4 lg:space-y-6">
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/orders" element={<Orders />} /><Route path="/orders/:id" element={<OrderDetail />} />

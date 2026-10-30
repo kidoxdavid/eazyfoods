@@ -56,7 +56,7 @@ export default function App() {
           <Route path="/*" element={
             <Guard>
               <Layout>
-<LiveBoundary>
+<LiveBoundary className="space-y-3 sm:space-y-4 lg:space-y-6">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/products" element={<Products />} />

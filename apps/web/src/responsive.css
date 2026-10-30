@@ -30,7 +30,7 @@ dd, dt { min-width: 0; overflow-wrap: anywhere; }     /* detail lists: an email 
 
 /* 5. Small icon-only controls and link-styled buttons get a hit area of at least 28px (the WCAG 2.2 minimum is 24px) on phones and tablets. */
 @media (max-width: 1024px) {
-  main button, main [role="button"], main a.inline-flex, main a.flex, footer a, footer button, .hdr-util a, .hdr-util button, .lang button {
+  main button:not([role="switch"]), main [role="button"], main a.inline-flex, main a.flex, footer a, footer button, .hdr-util a, .hdr-util button, .lang button {
     min-height: 28px;
   }
   main button:has(> svg:only-child), main a:has(> svg:only-child) {
@@ -69,3 +69,22 @@ dd, dt { min-width: 0; overflow-wrap: anywhere; }     /* detail lists: an email 
   /* links that stand on their own (not inside a sentence) have a 28px hit area */
   main a[class*="text-primary-"]:not(p a) { display: inline-flex; align-items: center; min-height: 28px; }
 }
+
+/* 7. Two date, time or month fields in one row stack on phones. Safari on iPhone gives each of these fields a minimum width of its own that
+ *    ignores the column it sits in, so side by side they overlap; one under the other they cannot. (Browser emulation cannot show this, so the
+ *    rule is a policy and apps/e2e/tests/support/responsive.ts checks the policy.) */
+@media (max-width: 640px) {
+  /* (separate rules: one invalid selector would drop a whole list) */
+  :is(.grid, .flex, .row):has(> input:is([type="date"], [type="datetime-local"], [type="time"], [type="month"]) ~ input:is([type="date"], [type="datetime-local"], [type="time"], [type="month"])) { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 8px; }
+  :is(.grid, .flex, .row):has(> :first-child > input:is([type="date"], [type="datetime-local"], [type="time"], [type="month"])):has(> :first-child ~ * > input:is([type="date"], [type="datetime-local"], [type="time"], [type="month"])) { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 8px; }
+  /* the little "to" between two stacked fields is not needed */
+  :is(.flex, .row):has(> input[type="date"] ~ input[type="date"]) > span { display: none; }
+}
+
+/* 8. A toggle switch keeps the size it was designed with; its touch area is made larger by an invisible margin around it. */
+button[role="switch"] { position: relative; }
+button[role="switch"]::after { content: ""; position: absolute; inset: -8px -6px; }
+
+/* 9. A form directly above what follows it always has room below it. */
+form.row, .row.top { margin-bottom: 12px; }
+form.row + *, .row.top + * { margin-top: 0; }

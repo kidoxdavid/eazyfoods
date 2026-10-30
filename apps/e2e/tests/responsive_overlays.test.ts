@@ -40,7 +40,7 @@ for (const c of CASES) {
       for (const s of SIZES) {
         await page.setViewportSize({ width: s.w, height: s.h });
         await page.goto(base() + c.url, { waitUntil: 'networkidle', timeout: 30_000 }).catch(() => {});
-        await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation:none!important}' }).catch(() => {});
+        await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation:none!important} input[type="date"],input[type="datetime-local"],input[type="month"]{min-width:150px!important} input[type="time"]{min-width:110px!important}' }).catch(() => {});   // imitate the minimum width Safari on iPhone gives date fields
         await page.waitForTimeout(250);
         try { await c.open(page); } catch (e: any) { problems.push(`@${s.w}x${s.h}: could not open (${String(e.message).replace(/\s+/g, ' ').slice(0, 400)})`); continue; }
         await page.waitForTimeout(350);

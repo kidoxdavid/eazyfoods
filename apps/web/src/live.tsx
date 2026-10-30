@@ -28,7 +28,7 @@ if (typeof window !== 'undefined' && !(window as any).__ezFetchTracked) {
  * screen untouched; when the new copy has finished loading it replaces the old one in a single step. Nothing blanks, no spinner shows, the scroll
  * position does not move.
  */
-export function LiveBoundary({ children }: { children: ReactNode }) {
+export function LiveBoundary({ children, className }: { children: ReactNode; className?: string }) {
   const v = useContext(Version);
   const [shown, setShown] = useState(v);
   const [building, setBuilding] = useState<number | null>(null);
@@ -46,8 +46,8 @@ export function LiveBoundary({ children }: { children: ReactNode }) {
   const out = { position: 'fixed', top: 0, left: 0, width: '100%', height: 0, overflow: 'hidden', visibility: 'hidden', pointerEvents: 'none' } as const;
   return (
     <>
-      <div key={shown} style={{ display: 'contents' }}>{children}</div>
-      {building !== null && building !== shown && <div key={building} aria-hidden="true" {...({ inert: '' } as object)} style={out}>{children}</div>}
+      <div key={shown} className={className} style={className ? undefined : { display: 'contents' }}>{children}</div>
+      {building !== null && building !== shown && <div key={building} className={className} aria-hidden="true" {...({ inert: '' } as object)} style={out}>{children}</div>}
     </>
   );
 }

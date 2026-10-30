@@ -174,7 +174,7 @@ const Layout = () => {
           </div>
         )}
         <main className="p-3 sm:p-4 lg:p-6 max-w-full min-w-0 overflow-x-auto">
-          <LiveBoundary><Outlet /></LiveBoundary>
+          <LiveBoundary className="space-y-3 sm:space-y-4 lg:space-y-6"><Outlet /></LiveBoundary>
         </main>
       </div>
     </div>

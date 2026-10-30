@@ -43,7 +43,7 @@ export default function App() {
         <Route path="/login" element={<Navigate to="/signin" replace />} />
         <Route path="/*" element={
           <StaffShell brand="eazyfoods Finance" nav={NAV} badgesPath="/admin/badges" canSee={canSee} titleOf={(u) => u.full_name}>
-<LiveBoundary>
+<LiveBoundary className="space-y-3 sm:space-y-4 lg:space-y-6">
             <Routes>
               <Route path="/" element={<FinanceOverview />} /><Route path="/balances" element={<Finance />} />
               <Route path="/refunds" element={<Refunds />} /><Route path="/settlements" element={<Settlements />} /><Route path="/reconciliation" element={<Reconciliation />} />
