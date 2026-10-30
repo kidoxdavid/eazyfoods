@@ -49,3 +49,18 @@ dd, dt { min-width: 0; overflow-wrap: anywhere; }     /* detail lists: an email 
 @media (max-width: 767px) {
   select:not(#ez-fs), textarea:not(#ez-fs) { font-size: 16px; }
 }
+
+/* Text links that sit on a line of their own (section "see all" links, flyer product names) are tall enough to tap on phones and tablets. */
+@media (max-width: 1024px) {
+  .seeall, .flyer-item > a, .flyer-store h2 a, .shead-body .row a, .pname { display: inline-flex; align-items: center; min-height: 28px; }
+  .pname { display: -webkit-box; }
+}
+
+/* 6. Phones held sideways: a header and a tab bar that stay put would take more than half of a 390px-high screen.
+ *    The header scrolls away with the page, and the tab bar becomes a slim row of icon and label side by side. */
+@media (max-height: 520px) and (orientation: landscape) {
+  :root { --tab-h: 44px; }
+  .hdr { position: static; }
+  .tabbar a { flex-direction: row; gap: 6px; font-size: .78rem; }
+  main { padding-top: 8px; }
+}

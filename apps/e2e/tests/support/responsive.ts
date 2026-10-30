@@ -26,7 +26,8 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
   return page.evaluate(([W, H, PHONE]) => {
     const out: { kind: string; severity: 'critical' | 'high' | 'info'; detail: string }[] = [];
     const sel = (e: Element) => { const c = (e.getAttribute('class') || '').trim().split(/\s+/).filter(Boolean).slice(0, 3).join('.'); const t = (e.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 24); return `${e.tagName.toLowerCase()}${c ? '.' + c : ''}${t ? ` "${t}"` : ''}`; };
-    const shown = (e: Element) => { const r = e.getBoundingClientRect(); if (r.width < 1 || r.height < 1) return false; const cs = getComputedStyle(e); return cs.visibility !== 'hidden' && cs.display !== 'none' && cs.opacity !== '0'; };
+    const shown = (e: Element) => { const r = e.getBoundingClientRect(); if (r.width < 1 || r.height < 1) return false;
+      const closed = e.closest('details:not([open])'); if (closed && !e.closest('summary')) return false; /* the inside of a closed details box is not on screen */ const cs = getComputedStyle(e); return cs.visibility !== 'hidden' && cs.display !== 'none' && cs.opacity !== '0'; };
     // A drawer that is closed (parked off screen), or anything hidden from people, is not a problem.
     const parked = (e: Element) => { for (let n: Element | null = e; n && n !== document.body; n = n.parentElement) { const cs = getComputedStyle(n); if (cs.position === 'fixed') { const r = n.getBoundingClientRect(); if (r.right <= 1 || r.left >= W - 1 || r.bottom <= 1 || r.top >= H - 1) return true; } if (n.hasAttribute('inert') || n.getAttribute('aria-hidden') === 'true') return true; } return false; };
     // Something inside a box that scrolls sideways on purpose (a table, a row of chips) may be wider than the screen.
@@ -85,7 +86,8 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
       if (ra.width < 1 || rb.height < 1 || ra.height < 1 || rb.width < 1) continue;      // not visible at all (scrolled out of its box)
       if (stuck(a) || stuck(b)) continue;                                              // a fixed bar over the page is by design
       if (getComputedStyle(a).display === 'inline' && getComputedStyle(b).display === 'inline') continue;   // two links in one wrapped sentence
-      if (a.classList.contains('shelf-btn') || b.classList.contains('shelf-btn')) continue;               // the carousel arrows sit over the cards by design
+      if (a.classList.contains('shelf-btn') || b.classList.contains('shelf-btn')) continue;
+      if (a.closest('.hero-dots') && b.closest('.hero-dots')) continue;                                   // carousel dots: the touch areas touch, the dots themselves do not               // the carousel arrows sit over the cards by design
       const ix = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left), iy = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
       if (ix <= 3 || iy <= 3) continue;
       const small = Math.min(ra.width * ra.height, rb.width * rb.height);

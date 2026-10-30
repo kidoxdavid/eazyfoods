@@ -241,7 +241,7 @@ export function PaymentStep({ order, cfg, onPaid, kind = 'order' }: { order: { i
           <div className="stack"><Button size="lg" busy={busy} onClick={() => simulate('succeeded')}>Simulate successful payment</Button><Button variant="secondary" busy={busy} onClick={() => simulate('failed')}>Simulate declined card</Button></div>
         </div>
       ) : <StripePay order={order} publishableKey={cfg.stripe_publishable_key} onSubmitted={onPaid} returnPath={kind === 'gift' ? `/gift-cards/${order.id}` : `/orders/${order.id}`} />}
-      {kind === 'order' && <p className="row" style={{ marginTop: 14 }}><Link to={`/orders/${order.id}`}>View this order</Link></p>}
+      {kind === 'order' && <p className="row" style={{ marginTop: 14 }}><Link className="btn secondary sm" to={`/orders/${order.id}`}>View this order</Link></p>}
     </div>
   );
 }

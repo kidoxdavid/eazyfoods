@@ -34,9 +34,9 @@ export default function Hub() {
         <div className="mx-auto max-w-5xl px-4 sm:px-6 h-14 flex items-center justify-between gap-4 overflow-x-auto">
           <a href="#top" className="text-xl font-bold text-green-400 whitespace-nowrap">eazyfoods</a>
           <nav aria-label="Sections" className="flex items-center gap-4 sm:gap-6 text-sm text-gray-300 whitespace-nowrap">
-            <a className="hover:text-white" href="#portals">Portals</a><a className="hover:text-white" href="#about">About</a>
-            <a className="hover:text-white inline-flex items-center gap-1.5" href="#careers"><Briefcase className="h-4 w-4" aria-hidden="true" />Careers</a>
-            <a className="hover:text-white inline-flex items-center gap-1.5" href="#contact"><Mail className="h-4 w-4" aria-hidden="true" />Contact</a>
+            <a className="hover:text-white inline-flex items-center min-h-[28px]" href="#portals">Portals</a><a className="hover:text-white inline-flex items-center min-h-[28px]" href="#about">About</a>
+            <a className="hover:text-white inline-flex items-center gap-1.5 min-h-[28px]" href="#careers"><Briefcase className="h-4 w-4" aria-hidden="true" />Careers</a>
+            <a className="hover:text-white inline-flex items-center gap-1.5 min-h-[28px]" href="#contact"><Mail className="h-4 w-4" aria-hidden="true" />Contact</a>
           </nav>
         </div>
       </header>
