@@ -16,7 +16,7 @@ input[type="date"], input[type="datetime-local"], input[type="time"], input[type
 @media (max-width: 767px) {
   input[type="date"], input[type="datetime-local"], input[type="time"], input[type="month"] { width: 100%; min-height: 40px; }
   /* Safari on iPhone ignores width on these unless the native look is dropped; without this they run off the screen */
-  input[type="date"], input[type="datetime-local"], input[type="month"], input[type="time"] { -webkit-appearance: none; appearance: none; display: block; box-sizing: border-box; width: 100% !important; max-width: 100% !important; min-width: 0 !important; margin: 0; contain: inline-size; overflow: hidden; }
+  input[type="date"], input[type="datetime-local"], input[type="month"], input[type="time"] { -webkit-appearance: none; appearance: none; display: block; box-sizing: border-box; width: 100% !important; max-width: 100% !important; min-width: 90px !important; margin: 0; contain: inline-size; overflow: hidden; }
   .flex > input[type="time"] { display: block; }
   input[type="date"]::-webkit-datetime-edit, input[type="datetime-local"]::-webkit-datetime-edit, input[type="month"]::-webkit-datetime-edit, input[type="time"]::-webkit-datetime-edit { min-width: 0; padding: 0; }
   input[type="date"]::-webkit-date-and-time-value, input[type="datetime-local"]::-webkit-date-and-time-value, input[type="month"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { min-width: 0; width: 100%; }
@@ -80,7 +80,7 @@ dd, dt { min-width: 0; overflow-wrap: anywhere; }     /* detail lists: an email 
 /* 7. Two date or month fields in one row sit side by side and share the row, the way the opening-hours times do ("From [date] to [date]").
  *    They are 100 percent of their half and carry no minimum width of their own (see section 2), so on a phone they cannot spill out or overlap.
  *    (separate rules: one invalid selector would drop a whole list) */
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   :is(.grid, .flex, .row):has(> input:is([type="date"], [type="datetime-local"], [type="month"]) ~ input:is([type="date"], [type="datetime-local"], [type="month"])) { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; }
   :is(.grid, .flex, .row):has(> input:is([type="date"], [type="datetime-local"], [type="month"]) ~ input:is([type="date"], [type="datetime-local"], [type="month"])) > input { flex: 1 1 120px; width: auto !important; }
   :is(.grid, .flex, .row):has(> * > input:is([type="date"], [type="datetime-local"], [type="month"])):has(> * ~ * > input:is([type="date"], [type="datetime-local"], [type="month"])):not(:has(> * ~ * ~ * > input:is([type="date"], [type="datetime-local"], [type="month"]))) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; align-items: end; gap: 8px; }
