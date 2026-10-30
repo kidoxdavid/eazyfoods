@@ -1,0 +1,1490 @@
+[
+ {
+  "app": "customer",
+  "route": "/",
+  "url": "/",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/search",
+  "url": "/search",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/deals",
+  "url": "/deals",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/flyer",
+  "url": "/flyer",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/credit",
+  "url": "/credit",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/help",
+  "url": "/help",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/gift-cards",
+  "url": "/gift-cards",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/gift-cards/:id",
+  "url": "/gift-cards/:id",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/new",
+  "url": "/new",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/new-arrivals",
+  "url": "/new-arrivals",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/stores",
+  "url": "/stores",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/s/:slug",
+  "url": "/s/:slug",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/kitchens",
+  "url": "/kitchens",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/k/:slug",
+  "url": "/k/:slug",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/c/:slug",
+  "url": "/c/:slug",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/p/:slug",
+  "url": "/p/:slug",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/recipes",
+  "url": "/recipes",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/recipes/:slug",
+  "url": "/recipes/:slug",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/cart",
+  "url": "/cart",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/checkout",
+  "url": "/checkout",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/orders",
+  "url": "/orders",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/orders/:id",
+  "url": "/orders/:id",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/account",
+  "url": "/account",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/lists",
+  "url": "/lists",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/lists/:id",
+  "url": "/lists/:id",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/l/:token",
+  "url": "/l/:token",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/alerts",
+  "url": "/alerts",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/signin",
+  "url": "/signin",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/register",
+  "url": "/register",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/forgot",
+  "url": "/forgot",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/reset",
+  "url": "/reset",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/verify",
+  "url": "/verify",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/pages/:slug",
+  "url": "/pages/:slug",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
+  "route": "/unsubscribe/:token",
+  "url": "/unsubscribe/:token",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/signin",
+  "url": "/vendor/signin",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/signup",
+  "url": "/vendor/signup",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/login",
+  "url": "/vendor/login",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/",
+  "url": "/vendor",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/products",
+  "url": "/vendor/products",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/products/new",
+  "url": "/vendor/products/new",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/products/:id/edit",
+  "url": "/vendor/products/:id/edit",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/orders",
+  "url": "/vendor/orders",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/orders/:id",
+  "url": "/vendor/orders/:id",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/deliveries",
+  "url": "/vendor/deliveries",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/inventory",
+  "url": "/vendor/inventory",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/promotions",
+  "url": "/vendor/promotions",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/reviews",
+  "url": "/vendor/reviews",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/analytics",
+  "url": "/vendor/analytics",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/payouts",
+  "url": "/vendor/payouts",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/support",
+  "url": "/vendor/support",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/chat",
+  "url": "/vendor/chat",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/staff",
+  "url": "/vendor/staff",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/profile",
+  "url": "/vendor/profile",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/documentation",
+  "url": "/vendor/documentation",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/ads",
+  "url": "/vendor/ads",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/ads/new",
+  "url": "/vendor/ads/new",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/ads/:id/edit",
+  "url": "/vendor/ads/:id/edit",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/stores",
+  "url": "/vendor/stores",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/storefront",
+  "url": "/vendor/storefront",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/questions",
+  "url": "/vendor/questions",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/reports",
+  "url": "/vendor/reports",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/statement",
+  "url": "/vendor/statement",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/import",
+  "url": "/vendor/import",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/inventory/scan",
+  "url": "/vendor/inventory/scan",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/labels",
+  "url": "/vendor/labels",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/messages",
+  "url": "/vendor/messages",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/store",
+  "url": "/vendor/store",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/menu",
+  "url": "/vendor/menu",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/insights",
+  "url": "/vendor/insights",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/",
+  "url": "/vendor",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/profile",
+  "url": "/vendor/profile",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/gallery",
+  "url": "/vendor/gallery",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/reviews",
+  "url": "/vendor/reviews",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/ads",
+  "url": "/vendor/ads",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/ads/new",
+  "url": "/vendor/ads/new",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/ads/:id/edit",
+  "url": "/vendor/ads/:id/edit",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/analytics",
+  "url": "/vendor/analytics",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/chat",
+  "url": "/vendor/chat",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/support",
+  "url": "/vendor/support",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/cuisines",
+  "url": "/vendor/cuisines",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/cuisines/new",
+  "url": "/vendor/cuisines/new",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/cuisines/:id/edit",
+  "url": "/vendor/cuisines/:id/edit",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/documentation",
+  "url": "/vendor/documentation",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/orders",
+  "url": "/vendor/orders",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/orders/:id",
+  "url": "/vendor/orders/:id",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/promotions",
+  "url": "/vendor/promotions",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/payouts",
+  "url": "/vendor/payouts",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/settings",
+  "url": "/vendor/settings",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/storefront",
+  "url": "/vendor/storefront",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/questions",
+  "url": "/vendor/questions",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/reports",
+  "url": "/vendor/reports",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/statement",
+  "url": "/vendor/statement",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/menu",
+  "url": "/vendor/menu",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/store",
+  "url": "/vendor/store",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "chef",
+  "route": "/messages",
+  "url": "/vendor/messages",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "chef1@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/signin",
+  "url": "/driver/signin",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/signup",
+  "url": "/driver/signup",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/login",
+  "url": "/driver/login",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/",
+  "url": "/driver",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/available-deliveries",
+  "url": "/driver/available-deliveries",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/available",
+  "url": "/driver/available",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/my-deliveries",
+  "url": "/driver/my-deliveries",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/deliveries/:deliveryId/track",
+  "url": "/driver/deliveries/:deliveryId/track",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/delivery-history",
+  "url": "/driver/delivery-history",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/earnings",
+  "url": "/driver/earnings",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/statement",
+  "url": "/driver/statement",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/performance",
+  "url": "/driver/performance",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/ratings",
+  "url": "/driver/ratings",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/support",
+  "url": "/driver/support",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/chat",
+  "url": "/driver/chat",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/profile",
+  "url": "/driver/profile",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/documentation",
+  "url": "/driver/documentation",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "driver",
+  "route": "/settings",
+  "url": "/driver/settings",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "driver@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/signin",
+  "url": "/marketing/signin",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/login",
+  "url": "/marketing/login",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/",
+  "url": "/marketing",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/analytics",
+  "url": "/marketing/analytics",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/campaigns",
+  "url": "/marketing/campaigns",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/emails",
+  "url": "/marketing/emails",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/emails/:id",
+  "url": "/marketing/emails/:id",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/email-templates",
+  "url": "/marketing/email-templates",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/templates",
+  "url": "/marketing/templates",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/audiences",
+  "url": "/marketing/audiences",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/automations",
+  "url": "/marketing/automations",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/social",
+  "url": "/marketing/social",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/budget",
+  "url": "/marketing/budget",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/calendar",
+  "url": "/marketing/calendar",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/library",
+  "url": "/marketing/library",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/coupons",
+  "url": "/marketing/coupons",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/studio",
+  "url": "/marketing/studio",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/rewards",
+  "url": "/marketing/rewards",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
+  "route": "/settings",
+  "url": "/marketing/settings",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "finance",
+  "route": "/signin",
+  "url": "/finance/signin",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "finance@example.test"
+ },
+ {
+  "app": "finance",
+  "route": "/login",
+  "url": "/finance/login",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "finance@example.test"
+ },
+ {
+  "app": "finance",
+  "route": "/",
+  "url": "/finance",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "finance@example.test"
+ },
+ {
+  "app": "finance",
+  "route": "/balances",
+  "url": "/finance/balances",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "finance@example.test"
+ },
+ {
+  "app": "finance",
+  "route": "/refunds",
+  "url": "/finance/refunds",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "finance@example.test"
+ },
+ {
+  "app": "finance",
+  "route": "/settlements",
+  "url": "/finance/settlements",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "finance@example.test"
+ },
+ {
+  "app": "finance",
+  "route": "/reconciliation",
+  "url": "/finance/reconciliation",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "finance@example.test"
+ },
+ {
+  "app": "finance",
+  "route": "/gift-cards",
+  "url": "/finance/gift-cards",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "finance@example.test"
+ },
+ {
+  "app": "finance",
+  "route": "/pricing",
+  "url": "/finance/pricing",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "finance@example.test"
+ },
+ {
+  "app": "finance",
+  "route": "/insights",
+  "url": "/finance/insights",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "finance@example.test"
+ },
+ {
+  "app": "finance",
+  "route": "/reports",
+  "url": "/finance/reports",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "finance@example.test"
+ },
+ {
+  "app": "finance",
+  "route": "/orders",
+  "url": "/finance/orders",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "finance@example.test"
+ },
+ {
+  "app": "finance",
+  "route": "/orders/:id",
+  "url": "/finance/orders/:id",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "finance@example.test"
+ },
+ {
+  "app": "finance",
+  "route": "/system",
+  "url": "/finance/system",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "finance@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/signin",
+  "url": "/admin/signin",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/login",
+  "url": "/admin/login",
+  "dynamic": false,
+  "signedIn": false,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/",
+  "url": "/admin",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/orders",
+  "url": "/admin/orders",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/orders/:id",
+  "url": "/admin/orders/:id",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/dispatch",
+  "url": "/admin/dispatch",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/drivers",
+  "url": "/admin/drivers",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/support",
+  "url": "/admin/support",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/support/:id",
+  "url": "/admin/support/:id",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/refunds",
+  "url": "/admin/refunds",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/customers",
+  "url": "/admin/customers",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/customers/:id",
+  "url": "/admin/customers/:id",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/reviews",
+  "url": "/admin/reviews",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/pricing",
+  "url": "/admin/pricing",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/overview",
+  "url": "/admin/overview",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/settlements",
+  "url": "/admin/settlements",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/reconciliation",
+  "url": "/admin/reconciliation",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/gift-cards",
+  "url": "/admin/gift-cards",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/vendors",
+  "url": "/admin/vendors",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/vendors/:id",
+  "url": "/admin/vendors/:id",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/messages",
+  "url": "/admin/messages",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/stores",
+  "url": "/admin/stores",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/catalogue",
+  "url": "/admin/catalogue",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/catalogue/:id",
+  "url": "/admin/catalogue/:id",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/dishes",
+  "url": "/admin/dishes",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/taxonomy",
+  "url": "/admin/taxonomy",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/zones",
+  "url": "/admin/zones",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/promotions",
+  "url": "/admin/promotions",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/ads",
+  "url": "/admin/ads",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/studio",
+  "url": "/admin/studio",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/content",
+  "url": "/admin/content",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/crm",
+  "url": "/admin/crm",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/crm/:id",
+  "url": "/admin/crm/:id",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/finance",
+  "url": "/admin/finance",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/insights",
+  "url": "/admin/insights",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/reports",
+  "url": "/admin/reports",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/control",
+  "url": "/admin/control",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/settings",
+  "url": "/admin/settings",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "admin",
+  "route": "/system",
+  "url": "/admin/system",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "admin@example.test"
+ },
+ {
+  "app": "hub",
+  "route": "/",
+  "url": "/portals",
+  "dynamic": false,
+  "signedIn": false,
+  "email": null
+ }
+]
