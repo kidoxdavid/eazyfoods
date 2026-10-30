@@ -114,13 +114,14 @@ export function LiveProvider({ children }: { children: ReactNode }) {
           if (done) break;
           buf += dec.decode(value, { stream: true });
           let i: number;
-          while ((i = buf.indexOf('\n\n')) >= 0) { const chunk = buf.slice(0, i); buf = buf.slice(i + 2); if (/^data:/m.test(chunk)) mark(); }
+          while ((i = buf.indexOf('\n\n')) >= 0) { const chunk = buf.slice(0, i); buf = buf.slice(i + 2); if (/^data:/m.test(chunk)) { window.dispatchEvent(new Event('ez-live')); mark(); } }
         }
       } catch { /* dropped or aborted */ }
       if (!stop) retry = window.setTimeout(connect, 3000);
     };
     void connect();
 
+    window.addEventListener('ez-stale', mark);                                  // a page found its remembered copy out of date
     const touch = () => { lastTouch.current = Date.now(); };
     const visible = () => { if (!document.hidden && dirty.current) apply(); };
     const online = () => { if (ctrl) ctrl.abort(); };                           // reconnect straight away after the network comes back
@@ -129,7 +130,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     return () => {
       stop = true; ctrl?.abort(); if (retry) window.clearTimeout(retry); if (timer.current) window.clearTimeout(timer.current);
       window.removeEventListener('pointerdown', touch, true); window.removeEventListener('keydown', touch, true);
-      document.removeEventListener('visibilitychange', visible); window.removeEventListener('online', online);
+      document.removeEventListener('visibilitychange', visible); window.removeEventListener('online', online); window.removeEventListener('ez-stale', mark);
     };
   }, []);
 

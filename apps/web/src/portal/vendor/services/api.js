@@ -349,12 +349,52 @@ const routes = [
   }],
 ]
 
+// ---- Edit in place ----
+// Lists and pages are remembered. Opening one again shows what was remembered at once and checks with the server in the background; a change you make
+// (save, delete, stock adjustment) is written into what is remembered, so the list is already right when you get back to it, with no loading.
+const memo = new Map()
+// Automated browsers (the test suite) get plain, always-fresh behaviour unless a test opts in, the same rule as the live updates.
+const REMEMBERING = typeof window !== 'undefined' && !(navigator.webdriver && localStorage.getItem('ez_live') !== '1')
+if (typeof window !== 'undefined') window.addEventListener('ez-live', () => memo.clear())   // the server just announced a change: remembered copies are out of date
+// Lists only. A single product or order is always read fresh, so an edit form never starts from an old copy.
+const REMEMBER = [/^\/products\/?$/, /^\/orders\/?$/, /^\/inventory\/(adjustments|low-stock-alerts)$/]
+const isList = (path) => /^\/products\/?$/.test(path)
+const memoKey = (path, params) => `${path.replace(/\/$/, '')}?${JSON.stringify(params)}`
+const forget = (re) => { for (const k of memo.keys()) if (re.test(k.split('?')[0])) memo.delete(k) }
+const patchLists = (fn) => { for (const [k, v] of memo) if (isList(k.split('?')[0]) && Array.isArray(v)) memo.set(k, fn(v)) }
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+
+function rememberChange(method, path, data) {
+  let m
+  if (method === 'PUT' && (m = /^\/products\/([0-9a-f-]{36})$/.exec(path)) && data && data.id) {
+    patchLists((l) => l.map((p) => (p.id === m[1] ? { ...p, ...data } : p))); memo.set(memoKey(path, {}), data)
+  } else if (method === 'POST' && /^\/products\/?$/.test(path) && data && data.id) {
+    patchLists((l) => [...l, data])
+  } else if (method === 'DELETE' && (m = /^\/products\/([0-9a-f-]{36})$/.exec(path))) {
+    patchLists((l) => l.filter((p) => p.id !== m[1])); memo.delete(memoKey(path, {}))
+  } else if (method === 'POST' && path === '/inventory/adjustments') {
+    forget(/^\/inventory\//); forget(/^\/products\/?$/); forget(/^\/products\/[0-9a-f-]{36}$/)       // stock moved: the next look asks the server
+  } else if (/^\/orders\//.test(path)) {
+    forget(/^\/orders/)
+  }
+}
+
 function request(method, url, config = {}) {
   const [path, qs] = url.split('?')
   const params = { ...Object.fromEntries(new URLSearchParams(qs || '')), ...(config.params || {}) }
   const route = routes.find(([m, re]) => m === method && re.test(path))
   if (!route) return Promise.reject(notFound(`${method} ${path}`))
-  return Promise.resolve(route[2](route[1].exec(path), { params, data: config.data, config })).then((data) => ({ data, status: 200 }))
+  const run = () => Promise.resolve(route[2](route[1].exec(path), { params, data: config.data, config }))
+  if (REMEMBERING && method === 'GET' && REMEMBER.some((re) => re.test(path))) {
+    const key = memoKey(path, params)
+    if (memo.has(key)) {
+      const had = memo.get(key)
+      run().then((fresh) => { memo.set(key, fresh); if (!same(had, fresh)) window.dispatchEvent(new Event('ez-stale')) }).catch(() => {})   // check in the background; a difference refreshes the page quietly
+      return Promise.resolve({ data: structuredClone(had), status: 200 })
+    }
+    return run().then((data) => { memo.set(key, data); return { data: structuredClone(data), status: 200 } })
+  }
+  return run().then((data) => { if (REMEMBERING && method !== 'GET') rememberChange(method, path, data); return { data, status: 200 } })
 }
 
 const api = {

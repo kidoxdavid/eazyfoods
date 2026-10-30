@@ -85,3 +85,33 @@ describe('no flicker', () => {
     await desk.ctx.close(); await phone.ctx.close();
   });
 });
+
+describe('edit in place', () => {
+  it('after saving a product the list shows the change at once with no loading, and a deleted row goes straight away', async () => {
+    const { page, ctx, errors } = await newPage(browser, DESKTOP);
+    page.on('dialog', (d) => d.accept());
+    await page.addInitScript(() => localStorage.setItem('ez_live', '1'));
+    await signIn(page, 'owner1@example.test');
+    const name = 'Zz Inplace ' + Date.now();
+    await page.goto(`${base()}/vendor/labels`); await page.waitForLoadState('load'); await page.waitForTimeout(1000);
+    expect(await create(name)(page)).toBe(201);
+    await page.goto(`${base()}/vendor/products`); await page.waitForLoadState('load');
+    await page.getByPlaceholder('Search products...').fill(name);
+    await seeText(page.locator('body'), name, 15_000);
+    await page.getByPlaceholder('Search products...').fill('');
+    // Open the product, rename it, save: back on the list the new name is there immediately (no second wait).
+    await page.getByPlaceholder('Search products...').fill(name);
+    await page.locator('a[href$="/edit"]').and(page.locator(':visible')).first().click();
+    await page.locator('input[name=name]').fill(name + ' Renamed');
+    await page.getByRole('button', { name: /save|update/i }).first().click();
+    await page.waitForURL((u) => /\/vendor\/products$/.test(u.pathname));
+    await page.getByPlaceholder('Search products...').fill(name + ' Renamed');
+    await seeText(page.locator('body'), name + ' Renamed', 3000);
+    // Delete: the row is gone as soon as it is confirmed.
+    await page.getByTitle('Delete').or(page.locator('button.text-red-600')).and(page.locator(':visible')).first().click();
+    await page.waitForTimeout(700);
+    expect(await page.locator('body').innerText()).not.toContain(name + ' Renamed');
+    expect(errors.filter((e) => !/status of 403/.test(e))).toEqual([]);
+    await ctx.close();
+  });
+});

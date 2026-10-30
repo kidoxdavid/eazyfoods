@@ -90,10 +90,14 @@ const Products = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return
 
+    // The row goes at once; if the server says no it comes back.
+    const before = { all: allProducts, shown: products }
+    setAllProducts((l) => l.filter((p) => p.id !== id)); setProducts((l) => l.filter((p) => p.id !== id))
     try {
       await api.delete(`/products/${id}`)
       fetchProducts()
     } catch (error) {
+      setAllProducts(before.all); setProducts(before.shown)
       alert('Failed to delete product')
     }
   }
