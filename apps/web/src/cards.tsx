@@ -84,7 +84,7 @@ export function ProductCard({ p }: { p: Card }) {
         <span className="pmeta">{[p.brand, packLabel(p)].filter(Boolean).join(' · ')}</span>
         {p.matched_alias && <Badge>Also known as “{p.matched_alias}”</Badge>}
         <Stars value={p.rating_avg} count={p.rating_count} />
-        {p.store_name && <span className="psold">at {p.store_name}</span>}
+        {p.store_name && <span className="psold">{(p.store_count ?? 1) > 1 && <span className="from-m">lowest of {p.store_count} · </span>}at {p.store_name}</span>}
         <div className="pact"><QuickAdd p={p} /></div>
       </div>
     </article>
