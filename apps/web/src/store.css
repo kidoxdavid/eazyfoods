@@ -424,3 +424,21 @@ main { padding-top: 14px; }
   .pname { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .pmeta, .psold { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
+
+/* ---------- Desktop: smaller product cards, so more fit on the screen ---------- */
+@media (min-width: 700px) {
+  .pimg { aspect-ratio: 4 / 3; }
+  .pbody { padding: 8px 10px 10px; gap: 2px; }
+  .pr > span { font-size: 1.35rem; } .pr sup { font-size: .66rem; margin-top: 2px; }
+  .was { font-size: .76rem; }
+  .pname { font-size: .88rem; min-height: 2.5em; }
+  .pmeta, .psold { font-size: .74rem; }
+  .pact { padding-top: 5px; }
+  .pcard .addbtn { min-height: 34px; font-size: .88rem; border-width: 1.5px; }
+  .pcard .addstep, .pcard .addstep button { min-height: 34px; height: 34px; }
+  .pgrid { gap: 12px; }
+  .shelf-row > li { flex-basis: 176px; }
+  .pcard .qv, .pcard .heart { width: 30px; height: 30px; }
+}
+@media (min-width: 1000px) { .pgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); } .layout .pgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (min-width: 1360px) { .pgrid { grid-template-columns: repeat(6, minmax(0, 1fr)); } .layout .pgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
