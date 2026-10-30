@@ -452,3 +452,6 @@ main { padding-top: 14px; }
 /* Links in the top strip and the footer are comfortable to hit (24px at least, on every screen size) */
 .hdr-util a, .util-links a, .hdr-util button, .ftr-cols a { display: inline-flex; align-items: center; min-height: 28px; }
 .ftr-cols a { padding-top: 4px; padding-bottom: 4px; }
+
+/* The home banner: the last row of copy never touches the dots (on a phone the dots sit 10px from the bottom). */
+@media (max-width: 699px) { .hero-copy { padding-bottom: 44px; } }

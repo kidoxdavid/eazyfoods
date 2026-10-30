@@ -46,6 +46,8 @@ export async function seedSamples(): Promise<Record<string, string>> {
     const list = (await c.query(`INSERT INTO shopping_lists(user_id, name, share_token) VALUES ($1,'Audit list','audit-share-token') RETURNING id, share_token`, [cust])).rows[0];
     out['/lists/:id'] = `/lists/${list.id}`; out['/l/:token'] = `/l/${list.share_token}`;
     out['/unsubscribe/:token'] = '/unsubscribe/audit-sample-token';          // an unknown token: the page that explains it
+    const gift = (await c.query(`INSERT INTO gift_purchases(buyer_id, amount_cents, status, idempotency_key) VALUES ($1, 5000, 'pending_payment', $2) RETURNING id`, [cust, `audit-gift-${Date.now()}`])).rows[0].id;
+    out['/gift-cards/:id'] = `/gift-cards/${gift}`;
     const vendor = (await c.query(`SELECT id FROM vendors ORDER BY created_at LIMIT 1`)).rows[0].id;
     out['/admin/vendors/:id'] = `/admin/vendors/${vendor}`;
     const product = (await c.query(`SELECT id FROM products WHERE status='published' ORDER BY name LIMIT 1`)).rows[0].id;

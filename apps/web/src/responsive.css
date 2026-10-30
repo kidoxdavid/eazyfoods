@@ -62,3 +62,10 @@ dd, dt { min-width: 0; overflow-wrap: anywhere; }     /* detail lists: an email 
   .tabbar a { flex-direction: row; gap: 6px; font-size: .78rem; }
   main { padding-top: 8px; }
 }
+
+/* Fields and selects are never shorter than 32px on phones and tablets (a bare select in the shop was 21px). */
+@media (max-width: 1024px) {
+  main select, main input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]) { min-height: 32px; }
+  /* links that stand on their own (not inside a sentence) have a 28px hit area */
+  main a[class*="text-primary-"]:not(p a) { display: inline-flex; align-items: center; min-height: 28px; }
+}
