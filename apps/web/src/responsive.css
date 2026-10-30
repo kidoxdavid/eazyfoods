@@ -52,7 +52,7 @@ dd, dt { min-width: 0; overflow-wrap: anywhere; }     /* detail lists: an email 
 
 /* Text links that sit on a line of their own (section "see all" links, flyer product names) are tall enough to tap on phones and tablets. */
 @media (max-width: 1024px) {
-  .seeall, .flyer-item > a, .flyer-store h2 a, .shead-body .row a, .pname { display: inline-flex; align-items: center; min-height: 28px; }
+  .seeall, .flyer-item > a, .flyer-store h2 a, .shead-body .row a, .compare td a, .pname { display: inline-flex; align-items: center; min-height: 28px; }
   .pname { display: -webkit-box; }
 }
 
