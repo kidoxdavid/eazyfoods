@@ -7,7 +7,7 @@ import { useSiteTheme } from './theme';
 import { useAuth } from './auth';
 import { useCart } from './cart';
 import { usePlace } from './place';
-import { IconBasket, IconChevron, IconClose, IconHome, IconKitchen, IconMenu, IconOrders, IconPin, IconSearch, IconStore, IconUser } from './icons';
+import { IconBasket, IconChevron, IconClose, IconHome, IconKitchen, IconMenu, IconOrders, IconPin, IconProducts, IconSearch, IconUser } from './icons';
 import { Button, Field, Input, Modal, Notice } from './ui';
 import { LangSwitch, useT } from './i18n';
 import { InstallApp } from './pwa';
@@ -212,7 +212,7 @@ export function TabBar() {
   const tab = (to: string, label: string, Icon: typeof IconHome, end = false) => <NavLink to={to} end={end} className={({ isActive }) => (isActive ? 'active' : '')}><Icon /><span>{label}</span></NavLink>;
   return (
     <nav className="tabbar" aria-label="Main">
-      {tab('/', t('Shop'), IconHome, true)}{tab('/stores', t('Stores'), IconStore)}{tab('/kitchens', t('Kitchens'), IconKitchen)}
+      {tab('/', t('Shop'), IconHome, true)}{tab('/search', t('Products'), IconProducts)}{tab('/kitchens', t('Kitchens'), IconKitchen)}
       <NavLink to="/cart" className={({ isActive }) => (isActive ? 'active' : '')}><IconBasket /><span>{t('Basket')}</span>{count > 0 && <span className="count">{count}</span>}</NavLink>
       {tab('/orders', t('Orders'), IconOrders)}{tab(me ? '/account' : '/signin', me ? t('Account') : t('Sign in'), IconUser)}
     </nav>

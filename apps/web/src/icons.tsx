@@ -14,6 +14,7 @@ export const IconPlus = P('M12 5v14M5 12h14');
 export const IconMinus = P('M5 12h14');
 export const IconCheck = P('M5 12l5 5L20 7');
 export const IconClose = P('M6 6l12 12M18 6L6 18');
+export const IconProducts = P('M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z');
 export const IconStore = P('M4 9l1-5h14l1 5M4 9v11h16V9M4 9a3 3 0 006 0 3 3 0 006 0 3 3 0 004 0M10 20v-5h4v5');
 export const IconTruck = P('M2 6h11v10H2zM13 9h4l3 3v4h-7M6 19a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM17 19a1.5 1.5 0 100-3 1.5 1.5 0 000 3z');
 export const IconChevron = P('M9 6l6 6-6 6');

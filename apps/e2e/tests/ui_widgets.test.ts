@@ -141,7 +141,7 @@ describe('home banner', () => {
 });
 
 describe('phone tab bar', () => {
-  it('has six tabs (no Search: it is at the top) that fit at every phone width', async () => {
+  it('has six tabs (Products, not Search: search is at the top) that fit at every phone width', async () => {
     for (const w of [320, 360, 390, 430]) {
       const ctx = await browser.newContext({ viewport: { width: w, height: 800 }, hasTouch: true, isMobile: true }); const page = await ctx.newPage();
       await page.goto(`${base()}/`, { waitUntil: 'networkidle' });
@@ -149,7 +149,7 @@ describe('phone tab bar', () => {
       console.log('TABS', JSON.stringify(tabs)); expect(tabs.length, `w=${w}`).toBe(6);
       for (let i = 0; i < tabs.length; i++) { expect(tabs[i].r, tabs[i].t).toBeLessThanOrEqual(w + 1); expect(tabs[i].sw, `${tabs[i].t} text fits`).toBeLessThanOrEqual(tabs[i].cw + 1); if (i) expect(tabs[i].l).toBeGreaterThanOrEqual(tabs[i - 1].r - 1); }
       if (w === 320) await page.screenshot({ path: '/tmp/tabs320.png', clip: { x: 0, y: 720, width: 320, height: 80 } });
-      expect(tabs.map((x) => x.t).join('|')).toContain('Stores'); expect(tabs.map((x) => x.t).join('|')).not.toContain('Search');
+      expect(tabs.map((x) => x.t).join('|')).toContain('Products'); expect(tabs.map((x) => x.t).join('|')).not.toContain('Search');
       await ctx.close();
     }
   }, 120_000);
