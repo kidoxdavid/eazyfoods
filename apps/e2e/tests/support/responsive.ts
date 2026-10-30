@@ -113,7 +113,8 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
     if (W <= 1024) {
       const tiny: string[] = []; let under44 = 0;
       controls.forEach((e, i) => {
-        const r = rects[i]; if (r.width < 1 || r.height < 1) return;
+        const r = e.getBoundingClientRect(); if (r.width < 1 || r.height < 1 || rects[i].width < 1) return;   // the whole control, even when a row of them scrolls
+        const edge = seenRect(e); if (edge.width < r.width - 1) return;                                    // half scrolled out of a row: not judged on the sliver
         if (e.tagName === 'A' && getComputedStyle(e).display === 'inline') return;                       // a link inside a sentence
         if ((e as HTMLInputElement).type === 'checkbox' || (e as HTMLInputElement).type === 'radio') { const lab = e.closest('label'); if (lab) { const lr = lab.getBoundingClientRect(); if (lr.height >= 24 && lr.width >= 24) return; } }
         if (r.width < 24 || r.height < 24) tiny.push(`${sel(e)} ${Math.round(r.width)}x${Math.round(r.height)}`);
