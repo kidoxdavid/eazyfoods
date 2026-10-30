@@ -43,7 +43,7 @@ for (const app of apps) {
           await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation:none!important} input[type="date"]::-webkit-datetime-edit,input[type="datetime-local"]::-webkit-datetime-edit,input[type="month"]::-webkit-datetime-edit{min-width:170px!important;display:inline-block}' }).catch(() => {});   // Safari on iPhone gives date fields a minimum width of their own: imitate it
           await page.waitForTimeout(250);
           for (const v of WIDTHS) {
-            await page.setViewportSize({ width: v.w, height: v.h }); await page.waitForTimeout(120);
+            await page.setViewportSize({ width: v.w, height: v.h }); await page.waitForTimeout(450);   // charts re-measure a moment after a resize
             for (const i of await measure(page, v.w, v.h).catch(() => [])) if (i.severity !== 'info') problems.push(`${r.url} @${v.w}: ${i.kind} - ${i.detail.slice(0, 160)}`);
           }
         }

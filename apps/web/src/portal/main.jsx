@@ -4,6 +4,7 @@ import './index.css'
 import '../responsive.css'
 import { watchAccessibility } from './a11y'
 import { LiveProvider } from '../live'
+import { watchTables } from './phoneTables'
 
 // Each staff area is its own app, like the original EAZyfoods portals. The first part of the path says which one.
 const AREA = window.location.pathname.split('/')[1]
@@ -22,6 +23,7 @@ async function pick() {
 ;(async () => {
   const load = AREA in apps ? await pick() : null
   watchAccessibility()
+watchTables()
   if (load) {
     load().then(({ default: App }) => {
       ReactDOM.createRoot(document.getElementById('root')).render(<React.StrictMode><LiveProvider><App /></LiveProvider></React.StrictMode>)

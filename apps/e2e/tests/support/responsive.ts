@@ -49,6 +49,17 @@ export async function measure(page: Page, vw: number, vh: number): Promise<Issue
     const doc = document.documentElement;
     const over = Math.max(doc.scrollWidth, document.body.scrollWidth) - W;
     if (over > 1) out.push({ kind: 'h-scroll', severity: 'critical', detail: `page is ${over}px wider than the screen` });
+    // A box inside the page that scrolls sideways on a phone (a wide table or grid). Chip and tab strips are made to swipe, so they are fine.
+    if (W <= PHONE) {
+      const wide = [...document.querySelectorAll('main *, [role="main"] *')].filter((e) => {
+        if (!shown(e) || parked(e)) return false;
+        const cs = getComputedStyle(e);
+        if (!/(auto|scroll)/.test(cs.overflowX) || e.scrollWidth <= e.clientWidth + 4) return false;
+        if (e.closest('[role="tablist"], .scrollbar-hide, .hscroll, .hero-car, .chips, .catchips, .shelf-row, .depts, nav')) return false;
+        return true;
+      });
+      if (wide.length) out.push({ kind: 'scroll-x', severity: 'high', detail: wide.slice(0, 3).map((e) => `${sel(e)} scrolls sideways (${e.scrollWidth}px in ${e.clientWidth}px)`).join('; ') });
+    }
 
     const beyond: string[] = [];
     document.querySelectorAll('body *').forEach((e) => {

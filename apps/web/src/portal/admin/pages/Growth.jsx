@@ -246,10 +246,10 @@ export function Crm() {
       <PageHeader title="Vendor pipeline" sub="Internal only. Contact details here are personal information: keep it to what you need." actions={<Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" /> Add prospect</Button>} />
       <Fetch path="/admin/crm/prospects">{(rows, reload) => (
         <>
-          <div className="flex gap-3 overflow-x-auto pb-2" tabIndex={0} role="region" aria-label="Pipeline stages">{STAGES.map((s) => {
+          <div className="flex flex-col md:flex-row gap-3 md:overflow-x-auto pb-2" tabIndex={0} role="region" aria-label="Pipeline stages">{STAGES.map((s) => {
             const items = rows.filter((r) => r.stage === s)
             return (
-              <div key={s} className="w-64 flex-shrink-0 bg-gray-100 rounded-lg p-2.5 space-y-2">
+              <div key={s} className="w-full md:w-64 md:flex-shrink-0 bg-gray-100 rounded-lg p-2.5 space-y-2">
                 <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">{s[0].toUpperCase() + s.slice(1)} <Badge>{items.length}</Badge></h3>
                 {items.map((r) => (
                   <Link key={r.id} to={`/crm/${r.id}`} className={`block bg-white rounded-lg border p-3 text-sm hover:shadow ${r.overdue ? 'border-red-300' : 'border-gray-200'}`}>

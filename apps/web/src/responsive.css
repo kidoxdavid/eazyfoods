@@ -94,3 +94,15 @@ button[role="switch"]::after { content: ""; position: absolute; inset: -8px -6px
 /* 9. A form directly above what follows it always has room below it. */
 form.row, .row.top { margin-bottom: 12px; }
 form.row + *, .row.top + * { margin-top: 0; }
+
+/* 10. Tables on a phone: every row is a card (the column name sits beside each value), so nothing scrolls sideways. portal/phoneTables.js adds the data-label. */
+@media (max-width: 767px) {
+  table.ez-cards, table.ez-cards > tbody, table.ez-cards > tbody > tr, table.ez-cards > tbody > tr > td { display: block; width: 100%; box-sizing: border-box; }
+  table.ez-cards { min-width: 0 !important; border: 0; }
+  table.ez-cards > thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  table.ez-cards > tbody > tr { border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; margin: 0 0 8px; padding: 6px 12px; }
+  table.ez-cards > tbody > tr > td { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 4px 0 !important; text-align: right; white-space: normal !important; border: 0; overflow-wrap: anywhere; }
+  table.ez-cards > tbody > tr > td[data-label]::before { content: attr(data-label); flex: none; max-width: 45%; text-align: left; font-size: .75rem; font-weight: 500; color: #6b7280; }
+  table.ez-cards > tbody > tr > td[colspan] { display: block; text-align: center; }
+  table.ez-cards > tbody > tr > td:empty { display: none; }
+}

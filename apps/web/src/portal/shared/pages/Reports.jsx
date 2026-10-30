@@ -34,7 +34,22 @@ export default function Reports() {
             ))}
           </div>
           <details className={card}><summary className="cursor-pointer text-sm font-medium">Definitions</summary><dl className="mt-2 text-sm space-y-1">{Object.entries(data.definitions || {}).map(([k, v]) => <div key={k}><dt className="inline font-medium capitalize">{k.replace(/_/g, ' ')}: </dt><dd className="inline text-gray-600">{v}</dd></div>)}</dl></details>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+          {/* Phones and tablets: one card per order, so nothing scrolls sideways. */}
+          <div className="lg:hidden space-y-2">
+            {data.rows.length === 0 ? <p className="bg-white rounded-lg border border-gray-200 px-4 py-8 text-center text-sm text-gray-500">No orders in this period.</p> : data.rows.map((r) => (
+              <div key={r.order_number} className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 text-sm">
+                <div className="flex items-start justify-between gap-2"><div className="min-w-0"><strong>#{r.order_number}</strong><div className="text-xs text-gray-500">{fmt(r.placed_at)}</div></div><span className="text-xs text-gray-600 text-right">{r.status}</span></div>
+                <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                  <div><dt className="text-gray-500">Gross</dt><dd>{money(r.gross_cents)}</dd></div>
+                  <div><dt className="text-gray-500">Commission</dt><dd>{money(r.commission_cents)}</dd></div>
+                  <div><dt className="text-gray-500">Refunds</dt><dd>{money(r.refunds_charged_cents)}</dd></div>
+                  <div><dt className="text-gray-500">Net</dt><dd className="font-semibold">{money(r.net_settlement_cents)}</dd></div>
+                  <div className="col-span-2"><dt className="text-gray-500">Payout</dt><dd>{r.payout_state}</dd></div>
+                </dl>
+              </div>
+            ))}
+          </div>
+          <div className="hidden lg:block bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50"><tr>{['Order', 'Placed', 'Status', 'Gross', 'Commission', 'Refunds', 'Net', 'Payout'].map((h) => <th key={h} scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr></thead>
               <tbody className="divide-y divide-gray-100">

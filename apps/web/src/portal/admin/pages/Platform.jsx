@@ -250,7 +250,25 @@ function VendorPerms() {
         <>
           <Alert tone="info">The first row is the rule for <strong>every</strong> vendor. Below it, a vendor can be allowed or blocked individually (highlighted cells are overrides). “Reset” returns a vendor to the rule for everyone.</Alert>
           <div className="max-w-xs"><Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter vendors" aria-label="Filter vendors" /></div>
-          <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
+          {/* Phones and tablets: one card per vendor, each permission on its own row with its switch. */}
+          <div className="lg:hidden space-y-3">
+            <div className="bg-primary-50 rounded-lg border border-primary-100 p-3">
+              <strong className="text-sm">Everyone (default)</strong>
+              <ul className="mt-2 divide-y divide-primary-100">{keys.map((k) => (
+                <li key={k} className="py-2"><Switch label={data.caps[k]} checked={data.defaults[k] !== false} onChange={(on) => setDefault(k, on)} /></li>))}</ul>
+            </div>
+            {rows.map((v) => (
+              <div key={v.id} className="bg-white rounded-lg border border-gray-200 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0"><strong className="text-sm break-words">{v.name}</strong><div className="text-xs text-gray-500">{v.kind === 'chef' ? 'chef' : 'store'} · {v.status}</div></div>
+                  {Object.keys(v.capabilities).length > 0 && <Button size="sm" variant="ghost" onClick={() => Promise.all(Object.keys(v.capabilities).map((k) => setVendor(v.id, k, null)))}>Reset</Button>}
+                </div>
+                <ul className="mt-2 divide-y divide-gray-100">{keys.map((k) => (
+                  <li key={k} className={`py-2 ${k in v.capabilities ? 'bg-amber-50 -mx-3 px-3' : ''}`}><Switch label={data.caps[k]} checked={v.effective[k]} onChange={(on) => setVendor(v.id, k, on)} /></li>))}</ul>
+              </div>))}
+            {rows.length === 0 && <p className="text-sm text-gray-500">No vendors match.</p>}
+          </div>
+          <div className="hidden lg:block bg-white rounded-lg border border-gray-200 overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead className="bg-gray-50"><tr><th scope="col" className="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase">Vendor</th>{keys.map((k) => <th scope="col" key={k} title={data.caps[k]} className="px-3 py-2 text-xs font-medium text-gray-500 uppercase text-left min-w-[7rem]">{data.caps[k]}</th>)}<th scope="col"><span className="sr-only">Reset</span></th></tr></thead>
               <tbody className="divide-y divide-gray-100">

@@ -77,3 +77,29 @@ describe('admin users and roles', () => {
     }
   }, 120_000);
 });
+
+describe('wide grids and tables on a phone', () => {
+  it('vendor permissions and the report tables never scroll sideways', async () => {
+    for (const w of [320, 390, 430, 768]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: 844 } });
+      const page = await ctx.newPage();
+      await signInStaff(page, 'admin@example.test', 'dev-password-123', '/admin');
+      await page.goto(`${base()}/admin/control`, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
+      await page.getByRole('tab', { name: /vendor/i }).first().click(); await page.waitForTimeout(900);
+      const sideways = await page.evaluate(() => [...document.querySelectorAll('main *')].filter((e) => { const c = getComputedStyle(e); const r = e.getBoundingClientRect(); return !e.closest('[role="tablist"]') && /(auto|scroll)/.test(c.overflowX) && e.scrollWidth > e.clientWidth + 4 && r.width > 0; }).map((e) => e.className));
+      expect(sideways, `w=${w}`).toEqual([]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(w + 1);
+      if (w === 390) await page.screenshot({ path: '/tmp/perms390.png' });
+      await ctx.close();
+    }
+    // A made-up wide table (as the driver, chef and report pages have once there is data) turns into cards
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } }); const page = await ctx.newPage();
+    await signInStaff(page, 'admin@example.test', 'dev-password-123', '/admin');
+    await page.goto(`${base()}/admin/overview`, { waitUntil: 'networkidle' });
+    await page.evaluate(() => { const m = document.querySelector('main')!; const d = document.createElement('div'); d.style.overflowX = 'auto'; d.innerHTML = '<table id="tt" class="min-w-full"><thead><tr>' + ['Order', 'Placed', 'Status', 'Gross', 'Commission', 'Refunds', 'Net', 'Payout'].map((h) => `<th>${h}</th>`).join('') + '</tr></thead><tbody><tr>' + ['#1001', 'Oct 30, 2026 10:33', 'delivered', '$120.00', '$12.00', '$0.00', '$108.00', 'pending'].map((c) => `<td style="white-space:nowrap;padding:12px 24px">${c}</td>`).join('') + '</tr></tbody></table>'; m.prepend(d); });
+    await page.waitForTimeout(400);
+    expect(await page.evaluate(() => { const t = document.getElementById('tt')!.parentElement!; return t.scrollWidth <= t.clientWidth + 2; })).toBe(true);
+    expect(await page.locator('#tt td[data-label="Net"]').count()).toBe(1);
+    await ctx.close();
+  }, 180_000);
+});
