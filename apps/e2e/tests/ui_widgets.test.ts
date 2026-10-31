@@ -182,6 +182,13 @@ describe('the kitchen site', () => {
     // the shop's "Cook with us" leads there
     await page.goto(`${base()}/`, { waitUntil: 'networkidle' });
     expect(await page.locator('a', { hasText: 'Cook with us' }).first().getAttribute('href')).toBe('/kitchen');
+    for (const where of ['footer']) {                         // clicking it (not typing the address) must open the kitchen site, not "page not found"
+      await page.goto(`${base()}/`, { waitUntil: 'networkidle' });
+      await page.locator(`${where} a`, { hasText: 'Cook with us' }).first().click({ force: true }); await page.waitForURL(/\/kitchen\/signin/);
+      expect(await page.locator('body').innerText()).toContain('Kitchen Portal');
+    }
+    await page.goto(`${base()}/portals`, { waitUntil: 'networkidle' });
+    await page.getByRole('link', { name: /^Chef/ }).first().click(); await page.waitForURL(/\/kitchen\/signin/);
     await page.goto(`${base()}/kitchen`, { waitUntil: 'networkidle' });
     await page.waitForURL(/\/kitchen\/signin/);
     expect(await page.locator('body').innerText()).toContain('Kitchen Portal');

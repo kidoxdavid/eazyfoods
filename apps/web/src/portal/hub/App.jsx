@@ -6,7 +6,7 @@ import { ArrowRight, Briefcase, ChefHat, Heart, Mail, MapPin, ShieldCheck, Shopp
 const PORTALS = [
   { name: 'Customer', desc: 'Shop groceries, place orders, track delivery.', href: '/', icon: ShoppingBag, tone: 'text-green-400 bg-green-500/10' },
   { name: 'Vendor', desc: 'Manage your store, products, and orders.', href: '/vendor/signin', icon: Store, tone: 'text-blue-400 bg-blue-500/10' },
-  { name: 'Chef', desc: 'Run your kitchen: dishes, portions, and meal orders.', href: '/vendor/signin', icon: ChefHat, tone: 'text-amber-400 bg-amber-500/10' },
+  { name: 'Chef', desc: 'Run your kitchen: dishes, portions, and meal orders.', href: '/kitchen/signin', icon: ChefHat, tone: 'text-amber-400 bg-amber-500/10' },
   { name: 'Delivery', desc: 'Accept and fulfill delivery assignments.', href: '/driver/signin', icon: Truck, tone: 'text-emerald-400 bg-emerald-500/10' },
 ]
 const STAFF = [
