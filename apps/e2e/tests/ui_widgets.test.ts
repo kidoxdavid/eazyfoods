@@ -175,3 +175,30 @@ describe('basket button at the top right', () => {
     }
   }, 120_000);
 });
+
+describe('the kitchen site', () => {
+  it('chefs and restaurants have their own sign-in and registration address', async () => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } }); const page = await ctx.newPage();
+    // the shop's "Cook with us" leads there
+    await page.goto(`${base()}/`, { waitUntil: 'networkidle' });
+    expect(await page.locator('a', { hasText: 'Cook with us' }).first().getAttribute('href')).toBe('/kitchen');
+    await page.goto(`${base()}/kitchen`, { waitUntil: 'networkidle' });
+    await page.waitForURL(/\/kitchen\/signin/);
+    expect(await page.locator('body').innerText()).toContain('Kitchen Portal');
+    expect(await page.evaluate(() => document.documentElement.classList.contains('theme-chef'))).toBe(true);
+    await page.screenshot({ path: '/tmp/kitchen-signin.png' });
+    // a store account is turned away with a pointer to the store site
+    await page.fill('input[name=email]', 'owner1@example.test'); await page.fill('input[name=password]', 'dev-password-123'); await page.click('button[type=submit]');
+    await page.getByRole('alert').waitFor(); expect(await page.getByRole('alert').innerText()).toContain('store account');
+    // a kitchen account goes in to the Kitchen portal
+    await page.fill('input[name=email]', 'chef1@example.test'); await page.fill('input[name=password]', 'dev-password-123'); await page.click('button[type=submit]');
+    await page.waitForURL(/\/vendor\/?$/); await page.locator('aside').getByText('eazyfoods Kitchen').first().waitFor();
+    // signing out comes back to the kitchen sign-in, not the store one
+    await page.setViewportSize({ width: 1280, height: 800 }); await page.getByRole('button', { name: /sign out/i }).first().click();
+    await page.waitForURL(/\/kitchen\/signin/);
+    // registration lives here too
+    await page.getByRole('link', { name: /Register your kitchen/ }).click(); await page.waitForURL(/\/kitchen\/signup/);
+    await page.getByText('Chef Registration').waitFor();
+    await ctx.close();
+  }, 120_000);
+});

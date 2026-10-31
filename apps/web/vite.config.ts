@@ -16,7 +16,7 @@ const bootData = (): Plugin => ({
 });
 
 /** Staff areas are their own app (portal.html, Tailwind, no customer styles). In development this serves it for those paths, like the API does in production. */
-const PORTAL_AREAS = ['vendor', 'driver', 'marketing', 'admin', 'finance', 'portals'];   // grows as each area is rebuilt
+const PORTAL_AREAS = ['kitchen', 'vendor', 'driver', 'marketing', 'admin', 'finance', 'portals'];   // grows as each area is rebuilt
 const portalRoutes = (): Plugin => ({
   name: 'portal-routes',
   apply: 'serve',

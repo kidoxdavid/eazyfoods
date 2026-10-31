@@ -23,6 +23,6 @@ export const AuthProvider = ({ children }) => {
     } catch { setUser(null) } finally { setLoading(false) }
   }, [])
   useEffect(() => { load() }, [load])
-  const logout = async () => { await raw('POST', '/auth/logout', {}).catch(() => {}); window.location.href = '/vendor/signin' }
+  const logout = async () => { await raw('POST', '/auth/logout', {}).catch(() => {}); window.location.href = '/kitchen/signin' }
   return <AuthContext.Provider value={{ user, token: user ? 'session' : null, loading, isAuthenticated: !!user, reload: load, logout }}>{children}</AuthContext.Provider>
 }

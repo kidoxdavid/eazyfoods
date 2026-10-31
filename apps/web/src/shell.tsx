@@ -79,7 +79,7 @@ function Mega({ onClose, closing }: { onClose: () => void; closing: boolean }) {
           </Acc>
           <div className="mega-more">
             <Acc id="partner" title={t('Partner with us')} open={openSec === 'partner'} onToggle={setOpenSec}>
-              <ul role="list"><li><Link to="/vendor">{t('Sell on EAZyfoods')}</Link></li><li><Link to="/vendor?kind=chef">{t('Cook with us')}</Link></li><li><Link to="/driver">{t('Drive with us')}</Link></li></ul>
+              <ul role="list"><li><Link to="/vendor">{t('Sell on EAZyfoods')}</Link></li><li><Link to="/kitchen">{t('Cook with us')}</Link></li><li><Link to="/driver">{t('Drive with us')}</Link></li></ul>
             </Acc>
             {on('shop.help_centre') && <h3 className="mega-help"><Link to="/help">{t('Help centre')}</Link></h3>}
           </div>
@@ -133,7 +133,7 @@ export function Header() {
       <header className={`hdr${away && !menu ? ' away' : ''}`}>
         <div className="hdr-util"><div className="wrap">
           <span>{t('Calgary, Alberta · African groceries from local stores')}</span>
-          <span className="util-links"><Link to="/vendor">{t('Sell on EAZyfoods')}</Link><Link to="/vendor?kind=chef">{t('Cook with us')}</Link><Link to="/driver">{t('Drive with us')}</Link><Link to="/pages/how-it-works">{t('How it works')}</Link>{on('shop.help_centre') && <Link to="/help">{t('Help')}</Link>}{on('shop.language_switch') && <LangSwitch />}</span>
+          <span className="util-links"><Link to="/vendor">{t('Sell on EAZyfoods')}</Link><Link to="/kitchen">{t('Cook with us')}</Link><Link to="/driver">{t('Drive with us')}</Link><Link to="/pages/how-it-works">{t('How it works')}</Link>{on('shop.help_centre') && <Link to="/help">{t('Help')}</Link>}{on('shop.language_switch') && <LangSwitch />}</span>
         </div></div>
         <div className="hdr-main"><div className="wrap hdr-row">
           <button className="icon-btn menu-btn" aria-label={t('Open all departments')} aria-expanded={menu} onClick={openMenu}><IconMenu /></button>
@@ -230,7 +230,7 @@ export function Footer() {
       <div className="wrap ftr-cols">
         <div><h3>{t('Shop')}</h3><ul role="list">{regions.data?.map((r) => <li key={r.slug}><Link to={`/search?region=${r.slug}`}>{r.name}</Link></li>)}<li><Link to="/deals">{t('Weekly deals')}</Link></li>{on('shop.flyer') && <li><Link to="/flyer">{t('Weekly flyer')}</Link></li>}{on('shop.gift_cards') && <li><Link to="/gift-cards">{t('Gift cards')}</Link></li>}<li><Link to="/new">{t('New arrivals')}</Link></li><li><Link to="/stores">{t('Stores')}</Link></li></ul></div>
         <div><h3>{t('Help')}</h3><ul role="list">{pages.data?.filter((p) => ['how-it-works', 'delivery-policy', 'refund-policy', 'our-guarantee', 'faq'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}{on('shop.help_centre') && <li><Link to="/help">{t('Help centre')}</Link></li>}<li><Link to="/orders">{t('Your orders')}</Link></li>{on('shop.install_app') && <li><InstallApp /></li>}</ul></div>
-        <div><h3>{t('Work with us')}</h3><ul role="list"><li><Link to="/vendor">{t('Sell on EAZyfoods')}</Link></li><li><Link to="/vendor?kind=chef">{t('Cook with us')}</Link></li><li><Link to="/driver">{t('Drive with us')}</Link></li><li><Link to="/portals">{t('All portals')}</Link></li></ul></div>
+        <div><h3>{t('Work with us')}</h3><ul role="list"><li><Link to="/vendor">{t('Sell on EAZyfoods')}</Link></li><li><Link to="/kitchen">{t('Cook with us')}</Link></li><li><Link to="/driver">{t('Drive with us')}</Link></li><li><Link to="/portals">{t('All portals')}</Link></li></ul></div>
         <div><h3>{t('Legal')}</h3><ul role="list">{pages.data?.filter((p) => ['privacy', 'terms'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}</ul></div>
       </div>
       <div className="ftr-base"><div className="wrap"><strong className="logo"><img className="logo-mark" src="/logo-192.png" alt="" width={28} height={28} /><b className="wm">azy<span>foods</span></b></strong><span>African groceries from local stores, starting in Calgary, Alberta. Prices and availability are set by each store.</span></div></div>

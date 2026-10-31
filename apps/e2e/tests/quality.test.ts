@@ -225,8 +225,8 @@ describe('home chefs (browser)', () => {
 
   it('a cook signs in with the cook account and lands in the chef portal', async () => {
     const { page } = await newPage(browser, MOBILE);
-    await page.goto(base() + '/vendor?kind=chef');
-    await page.waitForURL(/\/signin/);
+    await page.goto(base() + '/kitchen');
+    await page.waitForURL(/\/kitchen\/signin/);
     await page.fill('input[name=email]', 'chef1@example.test'); await page.fill('input[name=password]', 'dev-password-123');
     await page.click('button[type=submit]');
     await page.waitForURL(/\/vendor\/?$/);

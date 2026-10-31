@@ -30,11 +30,11 @@ const Spinner = () => (
   </div>
 )
 
-/** Signed in, or sent to the vendor window's sign-in. */
+/** Signed in, or sent to the kitchen site's sign-in. */
 function Guard({ children }) {
   const { user, loading } = useAuth()
   if (loading) return <Spinner />
-  if (!user) { window.location.href = '/vendor/signin'; return <Spinner /> }
+  if (!user) { window.location.href = '/kitchen/signin'; return <Spinner /> }
   return children
 }
 

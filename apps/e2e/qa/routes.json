@@ -1480,6 +1480,30 @@
   "email": "admin@example.test"
  },
  {
+  "app": "kitchen",
+  "route": "/signin",
+  "url": "/kitchen/signin",
+  "dynamic": false,
+  "signedIn": false,
+  "email": null
+ },
+ {
+  "app": "kitchen",
+  "route": "/signup",
+  "url": "/kitchen/signup",
+  "dynamic": false,
+  "signedIn": false,
+  "email": null
+ },
+ {
+  "app": "kitchen",
+  "route": "/login",
+  "url": "/kitchen/login",
+  "dynamic": false,
+  "signedIn": false,
+  "email": null
+ },
+ {
   "app": "hub",
   "route": "/",
   "url": "/portals",

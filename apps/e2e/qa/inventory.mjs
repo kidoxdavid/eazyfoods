@@ -13,9 +13,10 @@ const APPS = [
   { app: 'marketing', file: 'portal/marketing/App.jsx', prefix: '/marketing', email: 'marketing@example.test' },
   { app: 'finance', file: 'portal/finance/App.jsx', prefix: '/finance', email: 'finance@example.test' },
   { app: 'admin', file: 'portal/admin/App.jsx', prefix: '/admin', email: 'admin@example.test' },
+  { app: 'kitchen', file: 'portal/kitchen/App.jsx', prefix: '/kitchen', email: null },
   { app: 'hub', file: 'portal/hub/App.jsx', prefix: '/portals', email: null },
 ];
-const SKIP = new Set(['*', '/*', '/admin/*', '/marketing/*', '/vendor/*', '/driver/*', '/finance/*', '/portals']);   // wildcards and hand-offs between apps
+const SKIP = new Set(['*', '/*', '/admin/*', '/marketing/*', '/vendor/*', '/driver/*', '/finance/*', '/kitchen/*', '/portals']);   // wildcards and hand-offs between apps
 const PUBLIC_AUTH = /^\/(signin|signup|login|register|forgot|reset|verify)$/;
 const out = [];
 for (const a of APPS) {
