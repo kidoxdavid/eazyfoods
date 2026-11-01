@@ -115,22 +115,23 @@ form.row + *, .row.top + * { margin-top: 0; }
 /* 12. Six tabs share the bottom bar: labels stay on one line and are trimmed rather than pushing the bar wider. */
 .tabbar a > span:not(.count) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* 13. Phone tab bar: a floating, frosted pill that sits clear of the screen edges, with a soft bubble behind the tab you are on.
- *     --tab-h is the room the page leaves at the bottom (the pill plus the gap under it), so everything that clears the bar still does. */
+/* 13. Phone tab bar: a floating, frosted, fully rounded pill that hovers clear of the screen edges and the home indicator, with a soft bubble
+ *     behind the tab you are on. --tab-h is the room the page leaves at the bottom (the pill plus the gap under it), so everything that clears
+ *     the bar still does. Position and size are pinned (!important) so a home-screen app cannot stretch it edge to edge. */
 @media (max-width: 899px) {
-  :root { --tab-h: 76px; --tab-pill: 58px; --tab-gap: 10px; }
+  :root { --tab-h: 88px; --tab-pill: 62px; --tab-lift: calc(14px + env(safe-area-inset-bottom) * .5); }
   .tabbar {
-    left: 10px; right: 10px; bottom: calc(var(--tab-gap) + env(safe-area-inset-bottom)); height: var(--tab-pill); padding-bottom: 0;
-    border: 1px solid color-mix(in srgb, #fff 70%, transparent); border-radius: 30px;
-    background: color-mix(in srgb, var(--card) 93%, transparent); -webkit-backdrop-filter: saturate(1.6) blur(16px); backdrop-filter: saturate(1.6) blur(16px);
-    box-shadow: 0 10px 30px rgba(20, 40, 30, .2), 0 1px 0 rgba(255, 255, 255, .6) inset; padding: 4px;
+    position: fixed !important; left: 0 !important; right: 0 !important; margin: 0 auto !important; width: min(calc(100% - 32px), 460px) !important;
+    bottom: var(--tab-lift) !important; height: var(--tab-pill) !important; min-height: 0 !important; padding: 5px !important; box-sizing: border-box;
+    border: 1px solid color-mix(in srgb, #fff 55%, transparent); border-radius: 999px;
+    background: color-mix(in srgb, var(--card) 58%, transparent); -webkit-backdrop-filter: saturate(1.8) blur(22px); backdrop-filter: saturate(1.8) blur(22px);
+    box-shadow: 0 14px 34px rgba(20, 40, 30, .24), 0 1px 0 rgba(255, 255, 255, .55) inset;
   }
-  .tabbar a { padding: 0; border-radius: 24px; margin: 0 1px; transition: background-color .2s, color .2s; }
-  .tabbar a.active { color: var(--green-2); background: color-mix(in srgb, var(--green) 11%, transparent); }
-  .tabbar .count { top: 3px; }
+  .tabbar a { padding: 0; border-radius: 999px; margin: 0 1px; color: var(--ink); transition: background-color .2s, color .2s; }
+  .tabbar a.active { color: var(--green-2); background: color-mix(in srgb, var(--green) 14%, var(--card)); }
+  .tabbar .count { top: 4px; }
 }
 @media (max-width: 899px) and (max-height: 520px) and (orientation: landscape) {
-  :root { --tab-h: 54px; --tab-pill: 40px; --tab-gap: 8px; }
-  .tabbar { border-radius: 22px; } .tabbar a { border-radius: 18px; }
+  :root { --tab-h: 58px; --tab-pill: 42px; --tab-lift: 8px; }
 }
 @media (prefers-reduced-transparency: reduce) { .tabbar { background: var(--card); -webkit-backdrop-filter: none; backdrop-filter: none; } }
