@@ -148,6 +148,12 @@ describe('phone tab bar', () => {
       const tabs = await page.locator('nav.tabbar a').evaluateAll((a) => a.map((e) => { const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: (e.textContent ?? '').trim(), sw: e.scrollWidth, cw: e.clientWidth }; }));
       console.log('TABS', JSON.stringify(tabs)); expect(tabs.length, `w=${w}`).toBe(6);
       for (let i = 0; i < tabs.length; i++) { expect(tabs[i].r, tabs[i].t).toBeLessThanOrEqual(w + 1); expect(tabs[i].sw, `${tabs[i].t} text fits`).toBeLessThanOrEqual(tabs[i].cw + 1); if (i) expect(tabs[i].l).toBeGreaterThanOrEqual(tabs[i - 1].r - 1); }
+      const bar = await page.locator('nav.tabbar').evaluate((e) => { const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, b: innerHeight - r.bottom, rad: parseFloat(getComputedStyle(e).borderTopLeftRadius), blur: getComputedStyle(e).backdropFilter }; });
+      expect(bar.l, 'floats clear of the left edge').toBeGreaterThanOrEqual(6); expect(w - bar.r, 'and the right').toBeGreaterThanOrEqual(6); expect(bar.b, 'and the bottom').toBeGreaterThanOrEqual(6); expect(bar.rad).toBeGreaterThanOrEqual(20); expect(bar.blur).toContain('blur');
+      await page.locator('footer a').last().scrollIntoViewIfNeeded(); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(200);
+      const lastBottom = await page.evaluate(() => { const f = [...document.querySelectorAll('footer a, footer button, footer p')].filter((e) => (e as HTMLElement).offsetParent).map((e) => e.getBoundingClientRect()).sort((a, b) => b.bottom - a.bottom)[0]; const t = document.querySelector('nav.tabbar')!.getBoundingClientRect(); return t.top - f.bottom; });
+      expect(lastBottom, 'the end of the page is not hidden behind the bar').toBeGreaterThanOrEqual(-1);
+      if (w === 390) await page.screenshot({ path: '/tmp/pill390.png' });
       if (w === 320) await page.screenshot({ path: '/tmp/tabs320.png', clip: { x: 0, y: 720, width: 320, height: 80 } });
       expect(tabs.map((x) => x.t).join('|')).toContain('Products'); expect(tabs.map((x) => x.t).join('|')).not.toContain('Search');
       await ctx.close();

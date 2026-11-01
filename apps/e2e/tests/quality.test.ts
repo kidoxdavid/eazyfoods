@@ -127,7 +127,12 @@ describe('festival and season themes', () => {
     } finally { await c.query(`UPDATE themes SET status = 'auto' WHERE slug = 'diwali'`); await c.end(); }
     const { page } = await newPage(browser, DESKTOP);
     await page.goto(base()); await page.waitForLoadState('networkidle');
-    expect(await page.locator('.hero-slide').first().innerText()).not.toContain('Diwali');
+    // Back on "auto" the theme follows its dates: normal outside its window, festive inside it (the test must not depend on the day it is run)
+    const q = await db(); const t = (await q.query(`SELECT starts_on::text AS s, ends_on::text AS e, repeats_yearly AS y FROM themes WHERE slug = 'diwali'`)).rows[0]; await q.end();
+    const now = new Date(); const yr = now.getUTCFullYear(); const at = (d: string) => new Date(`${t.y ? yr : d.slice(0, 4)}${d.slice(4)}T00:00:00Z`).getTime();
+    const inWindow = now.getTime() >= at(t.s) && now.getTime() <= at(t.e) + 86_400_000;
+    const hero = await page.locator('.hero-slide').first().innerText();
+    if (inWindow) expect(hero).toContain('Diwali'); else expect(hero).not.toContain('Diwali');
   });
 
   for (const scheme of ['light', 'dark'] as const) {
