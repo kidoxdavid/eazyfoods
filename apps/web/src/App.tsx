@@ -21,6 +21,7 @@ import { CreditPage } from './pages/Credit';
 import { HelpPage } from './pages/Help';
 import { GiftCardDonePage, GiftCardPage } from './pages/GiftCards';
 import { CartPage } from './pages/Cart';
+import { GroupOrderPage } from './pages/GroupOrder';
 import { CheckoutPage } from './pages/Checkout';
 import { OrdersPage, OrderPage } from './pages/Orders';
 import { AccountPage } from './pages/Account';
@@ -77,7 +78,7 @@ export function App() {
                     <Route path="/p/:slug" element={<ProductPage />} />
                     <Route path="/recipes" element={<RecipesPage />} />
                     <Route path="/recipes/:slug" element={<RecipePage />} />
-                    <Route path="/cart" element={<CartPage />} />
+                    <Route path="/cart" element={<CartPage />} /><Route path="/group/:token" element={<RequireAuth><GroupOrderPage /></RequireAuth>} />
                     <Route path="/checkout" element={<RequireAuth><CheckoutPage /></RequireAuth>} />
                     <Route path="/orders" element={<RequireAuth><OrdersPage /></RequireAuth>} />
                     <Route path="/orders/:id" element={<RequireAuth><OrderPage /></RequireAuth>} />

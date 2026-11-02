@@ -45,6 +45,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cartRoutes } from './routes/cart.js';
+import { groupOrderRoutes } from './routes/groupOrders.js';
 import { accountRoutes } from './routes/account.js';
 import { orderRoutes } from './routes/orders.js';
 import { paymentRoutes, webhookRoutes } from './routes/payments.js';
@@ -134,6 +135,7 @@ export async function buildApp() {
   await app.register(marketingPublicRoutes, { prefix: '/api' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(cartRoutes, { prefix: '/api' });
+  await app.register(groupOrderRoutes, { prefix: '/api' });
   await app.register(accountRoutes, { prefix: '/api' });
   await app.register(orderRoutes, { prefix: '/api' });
   await app.register(paymentRoutes, { prefix: '/api' });

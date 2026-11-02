@@ -3,12 +3,34 @@ import { SkelRows } from '../skeletons';
 import { useFeatures } from '../features';
 import { useT } from '../i18n';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useApi } from '../hooks';
 import { money, packLabel, post, put } from '../api';
 import { useCart } from '../cart';
 import { useAuth } from '../auth';
 import { useToast } from '../toast';
 import { Badge, Button, Empty, Loading, Notice, Stepper } from '../ui';
 import { ProductArt, SafeImg } from '../art';
+
+/** Ordering with family or friends: start a shared basket and send them the link. */
+function GroupStart() {
+  const nav = useNavigate(); const toast = useToast();
+  const open = useApi<{ token: string; name: string; item_count: number }[]>('/group-orders');
+  const [name, setName] = useState(''); const [busy, setBusy] = useState(false);
+  const start = async (e: React.FormEvent) => {
+    e.preventDefault(); if (!name.trim()) return; setBusy(true);
+    try { const g = await post<{ token: string }>('/group-orders', { name: name.trim() }); nav(`/group/${g.token}`); } catch (err: any) { toast(err.message ?? 'Could not start it.', 'error'); } finally { setBusy(false); }
+  };
+  return (
+    <details className="panel" style={{ marginTop: 14 }}>
+      <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Ordering with others? Start a group order</summary>
+      <p className="small muted">Share a link, everyone adds what they want, then you check out once.</p>
+      <form className="row" onSubmit={start}><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name it, e.g. Sunday cookout" maxLength={60} aria-label="Group order name" /><Button type="submit" busy={busy}>Start</Button></form>
+      {!!open.data?.length && <p className="small" style={{ marginBottom: 0 }}>Open now: {open.data.map((g, k) => <span key={g.token}>{k ? ', ' : ''}<Link to={`/group/${g.token}`}>{g.name}</Link> ({g.item_count})</span>)}</p>}
+    </details>
+  );
+}
 
 export function CartPage() {
   const on = useFeatures();
@@ -40,7 +62,7 @@ export function CartPage() {
   }
 
   if (loading && !cart) return <><h1>{t('Your basket')}</h1><SkelRows n={3} label="Loading your basket" /></>;
-  if (!cart || !cart.stores.length) return <Empty title={t('Your basket is empty')}><p>{t('Find something you love.')}</p><Link to="/search" className="btn primary">{t('Browse products')}</Link></Empty>;
+  if (!cart || !cart.stores.length) return <><Empty title={t('Your basket is empty')}><p>{t('Find something you love.')}</p><Link to="/search" className="btn primary">{t('Browse products')}</Link></Empty><GroupStart /></>;
 
   const priceChanged = cart.stores.some((s) => s.items.some((i) => i.price_changed));
   const blockers = cart.stores.flatMap((s) => s.items.filter((i) => i.unavailable || i.short));
@@ -102,6 +124,7 @@ export function CartPage() {
         <div style={{ marginTop: 8 }}><Button variant="ghost" size="sm" onClick={async () => { replace(await (await import('../api')).del('/cart')); toast('Basket cleared'); }}>{t('Clear basket')}</Button></div>
       </aside>
       </div>
+      <GroupStart />
     </>
   );
 }
