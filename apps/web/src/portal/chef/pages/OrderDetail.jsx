@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import OrderChat from '../../shared/OrderChat'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { ArrowLeft, CheckCircle, XCircle, MapPin, Clock, User, Mail, Phone } from 'lucide-react'
@@ -244,6 +245,7 @@ const OrderDetail = () => {
           )}
         </div>
       </div>
+      <OrderChat suborderId={id} />
     </div>
   )
 }

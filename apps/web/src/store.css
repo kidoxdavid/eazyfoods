@@ -499,3 +499,10 @@ main { padding-top: 14px; }
 .gline-step { display: inline-flex; align-items: center; gap: 8px; } .gline-step button { width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--green); background: #fff; color: var(--green); font: 700 1.1rem var(--body); cursor: pointer; line-height: 1; } .gline-step button:disabled { opacity: .4; cursor: default; } .gline-step b { min-width: 1.4em; text-align: center; }
 .gline-amt { color: var(--ink-2); font-size: .85rem; white-space: nowrap; }
 .gperson h3 { margin: 12px 0 0; font-size: .95rem; color: var(--green); }
+
+/* Order chat (customer, and the same look in the vendor portal) */
+.ochat { margin: 10px 0; border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; background: var(--card); } .ochat > summary { cursor: pointer; font-weight: 700; min-height: 32px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.ochat-list { display: grid; gap: 6px; max-height: 280px; overflow-y: auto; padding: 8px 0; }
+.ochat-msg { max-width: 85%; padding: 7px 11px; border-radius: 14px; display: grid; gap: 2px; font-size: .92rem; overflow-wrap: anywhere; } .ochat-msg small { font-size: .7rem; opacity: .75; }
+.ochat-msg.customer { justify-self: end; background: var(--green); color: #fff; border-bottom-right-radius: 4px; } .ochat-msg.store { justify-self: start; background: var(--tint); color: var(--ink); border-bottom-left-radius: 4px; }
+.ochat-form { margin-top: 6px; } .ochat-form .input { flex: 1; min-width: 0; }

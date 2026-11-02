@@ -1,3 +1,4 @@
+import { OrderChat } from './OrderChat';
 import { slotText } from '../slots';
 import { SkelRows } from '../skeletons';
 import { useFeatures } from '../features';
@@ -102,6 +103,7 @@ export function OrderPage() {
             )}
             {s.status === 'out_for_delivery' && <p className="small"><strong>{s.driver_first_name ? `${s.driver_first_name} is on the way` : 'Your driver is on the way'}.</strong> {s.promised_at ? `Estimated arrival around ${fmtDate(s.promised_at, { timeStyle: 'short' })}.` : ''}</p>}
             {s.driver_location && <DriverMap loc={s.driver_location} reload={reload} />}
+            {s.status !== 'awaiting_payment' && <OrderChat suborderId={s.id} storeName={s.store_name} />}
             {(s.can_rate_driver || s.driver_rating) && <RateDriver orderId={id!} sid={s.id} rated={s.driver_rating} onDone={reload} />}
             {s.status === 'ready' && s.fulfilment_method === 'delivery' && <p className="small">{s.driver_first_name ? `${s.driver_first_name} is picking this up.` : 'Waiting for a driver to pick this up.'}</p>}
             {!failed && s.status !== 'awaiting_payment' && (
