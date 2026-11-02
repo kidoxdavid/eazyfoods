@@ -1,7 +1,6 @@
 import { useRef } from 'react';
 import { SkelShelf } from '../skeletons';
-import { useFeature, useFeatures } from '../features';
-import { IconBuyAgain, IconChef, IconDeals, IconFlyer, IconNew, IconRecipes } from '../faveIcons';
+import { useFeature } from '../features';
 import { Link } from 'react-router-dom';
 import { recentSlugs, type Region, type StoreCard } from '../api';
 import { useAuth } from '../auth';
@@ -52,25 +51,6 @@ function CollectionShelf({ slug }: { slug: string }) {
   const { data } = useApi<{ collection: { title: string; subtitle: string }; products: Card[] }>(`/collections/${slug}`);
   if (!data?.products.length) return null;
   return <Shelf title={data.collection.title} subtitle={data.collection.subtitle} to={`/c/${slug}`} items={data.products} />;
-}
-
-/** Six quick ways in, as small tiles under the banner. */
-function Faves() {
-  const on = useFeatures();
-  const t = [
-    { to: '/buy-again', Icon: IconBuyAgain, l: 'Buy again', k: 'green', show: true },
-    { to: '/deals', Icon: IconDeals, l: 'Weekly deals', k: 'gold', show: true },
-    { to: '/flyer', Icon: IconFlyer, l: 'Weekly flyer', k: 'coral', show: on('shop.flyer') },
-    { to: '/new', Icon: IconNew, l: 'New arrivals', k: 'blue', show: true },
-    { to: '/recipes', Icon: IconRecipes, l: 'Recipes', k: 'violet', show: true },
-    { to: '/kitchens', Icon: IconChef, l: 'Home chefs', k: 'peach', show: true },
-  ].filter((x) => x.show);
-  return (
-    <section className="faves" aria-label="Your EAZY faves">
-      <h2>Your EAZY faves</h2>
-      <div className="faves-grid">{t.map(({ to, Icon, l, k }) => <Link key={to} to={to} className="fave"><span className={`fv-${k}`}><Icon /></span>{l}</Link>)}</div>
-    </section>
-  );
 }
 
 /** Personal shelves: what you buy often, and what you looked at lately. Both stay empty (and invisible) for new visitors. */
@@ -162,7 +142,6 @@ export function Home() {
     <>
       {slides.length ? <HeroCarousel slides={slides} /> : <div className="hero-skel" aria-hidden="true" />}
       {stores.data?.some((s) => s.is_test_data) && <Notice tone="warn"><strong>Development data.</strong> Stores marked “Demo store” are invented for testing and are not real businesses. Product pictures are illustrations until stores upload photos.</Notice>}
-      <Faves />
       <Personal />
       {shape.data && order.some((x) => x.id === 'new' && x.enabled) && parts.new}
       <HomeBanner />
