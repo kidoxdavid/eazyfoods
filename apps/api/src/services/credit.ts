@@ -3,6 +3,7 @@ import type { Queryable } from '../lib/db-types.js';
 import { bps } from '../lib/money.js';
 import { getSetting } from '../lib/settings.js';
 import { post } from './ledger.js';
+import { pointsFor } from './membership.js';
 
 import { randomBytes } from 'node:crypto';
 
@@ -50,6 +51,9 @@ export async function awardOrderRewards(c: PoolClient, orderId: string) {
     `SELECT COALESCE(sum(s.subtotal_cents - s.discount_cents), 0)::int - COALESCE((SELECT sum(r.merchandise_cents - r.discount_cents) FROM refunds r WHERE r.order_id = $1 AND r.status = 'succeeded'), 0)::int AS net
        FROM suborders s WHERE s.order_id = $1 AND s.status IN ('delivered','collected')`, [orderId])).rows[0].net as number;
   if (base <= 0) return;
+
+  const pts = await pointsFor(c, o.user_id, base);                      // EAZY Rewards points for this order (once)
+  if (pts > 0) await c.query(`INSERT INTO reward_points(user_id, delta, reason, order_id, note) VALUES ($1,$2,'earn',$3,'Points on your order') ON CONFLICT DO NOTHING`, [o.user_id, pts, orderId]);
 
   const cb = await getSetting<number>('rewards.cashback_bps', c);
   if (cb > 0) {

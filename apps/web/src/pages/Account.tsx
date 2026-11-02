@@ -9,7 +9,49 @@ import { useToast } from '../toast';
 import { Badge, Button, Confirm, Empty, ErrorBox, Field, Input, Loading, Notice, Tabs, StatusBadge } from '../ui';
 import { ProductGrid } from '../cards';
 import { AddressForm } from './Checkout';
-import { fmtDate } from '../api';
+import { fmtDate, money } from '../api';
+
+type Summary = {
+  rewards: { points: number; value_cents: number; can_redeem: boolean; step: number; step_value_cents: number; to_next: number; next_at: number; next_reward_cents: number; progress: number } | null;
+  membership: { member: { status: string; ends_at: string; active: boolean } | null; can_try: boolean; trial_days: number; free_delivery_min_cents: number; points_multiplier: number } | null;
+  buy_again: number; saved: number; group_orders: number; unread_messages: number;
+};
+
+/** The top of the account page: points, the EAZY+ offer, and one tidy list of the things people come here for. */
+function AccountHome() {
+  const toast = useToast();
+  const sum = useApi<Summary>('/me/summary');
+  const [busy, setBusy] = useState(false);
+  const s = sum.data; if (!s) return null;
+  const redeem = async () => { setBusy(true); try { await post('/rewards/redeem', { points: s.rewards!.step }); toast(`Done: ${money(s.rewards!.step_value_cents)} added to your store credit.`); sum.reload(); } catch (e: any) { toast(e.message ?? 'Could not redeem.', 'error'); } finally { setBusy(false); } };
+  const trial = async () => { setBusy(true); try { await post('/membership/trial'); toast('Welcome to EAZY+! Your free trial has started.'); sum.reload(); } catch (e: any) { toast(e.message ?? 'Could not start it.', 'error'); } finally { setBusy(false); } };
+  const r = s.rewards, m = s.membership;
+  return (
+    <div className="acct-home">
+      {r && (
+        <section className="rw-card" aria-label="EAZY Rewards">
+          <small>EAZY Rewards</small>
+          <b>{r.points.toLocaleString()} pts</b>
+          <span>= {money(r.value_cents)} in store credit · {r.to_next.toLocaleString()} pts to your next {money(r.next_reward_cents)} reward</span>
+          <i role="progressbar" aria-valuenow={r.progress} aria-valuemin={0} aria-valuemax={100} aria-label="Progress to your next reward"><em style={{ width: `${r.progress}%` }} /></i>
+          {r.can_redeem && <button className="rw-redeem" onClick={redeem} disabled={busy}>Redeem {r.step} pts for {money(r.step_value_cents)}</button>}
+        </section>)}
+      {m && (
+        <section className="plus-card" aria-label="EAZY+">
+          {m.member?.active
+            ? <div><b>EAZY+ member</b><small>Free delivery over {money(m.free_delivery_min_cents)} · {m.points_multiplier}× points · until {fmtDate(m.member.ends_at)}</small></div>
+            : <><div><b>EAZY+ · free for {m.trial_days} days</b><small>Free delivery over {money(m.free_delivery_min_cents)} · {m.points_multiplier}× points{m.member ? ' · your trial has ended' : ''}</small></div>
+              {m.can_try && <button onClick={trial} disabled={busy}>Try free</button>}</>}
+        </section>)}
+      <nav className="acct-list" aria-label="Your things">
+        <Link to="/buy-again">🧺 Buy again <small>{s.buy_again} item{s.buy_again === 1 ? '' : 's'} ›</small></Link>
+        <Link to="/saved">♡ Saved items <small>{s.saved} ›</small></Link>
+        <Link to="/cart">👥 Group orders <small>{s.group_orders ? `${s.group_orders} open ›` : 'Start one ›'}</small></Link>
+        <Link to="/orders">💬 Messages <small>{s.unread_messages ? `${s.unread_messages} new ›` : '›'}</small></Link>
+      </nav>
+    </div>
+  );
+}
 
 export function AccountPage() {
   const on = useFeatures();
@@ -19,8 +61,9 @@ export function AccountPage() {
     <>
       <h1>Your account</h1>
       <p className="muted">{me?.email}</p>
+      <AccountHome />
       <div className="row wrap">{isVendor && <Link to="/vendor" className="btn secondary sm">Vendor portal</Link>}{has('driver') && <Link to="/driver" className="btn secondary sm">Driver portal</Link>}{isStaff && <Link to="/admin" className="btn secondary sm">Admin</Link>}</div>
-      <div className="row wrap"><Link to="/saved" className="btn secondary sm">Saved items</Link>{on('shop.lists') && <Link to="/lists" className="btn secondary sm">Shopping lists</Link>}{on('shop.alerts') && <Link to="/alerts" className="btn secondary sm">Alerts</Link>}{on('shop.store_credit') && <Link to="/credit" className="btn secondary sm">Store credit</Link>}</div>
+      <div className="row wrap">{on('shop.lists') && <Link to="/lists" className="btn secondary sm">Shopping lists</Link>}{on('shop.alerts') && <Link to="/alerts" className="btn secondary sm">Alerts</Link>}{on('shop.store_credit') && <Link to="/credit" className="btn secondary sm">Store credit</Link>}</div>
       <Tabs value={tab} onChange={setTab} tabs={[{ id: 'profile', label: 'Profile' }, { id: 'addresses', label: 'Addresses' }, { id: 'favourites', label: 'Saved' }, { id: 'support', label: 'Help requests' }, { id: 'privacy', label: 'Privacy & security' }]} />
       {tab === 'profile' && <Profile />}{tab === 'addresses' && <Addresses />}{tab === 'favourites' && <Favourites />}{tab === 'support' && <Tickets />}{tab === 'privacy' && <Privacy />}
       <hr /><Button variant="ghost" onClick={logout}>Sign out</Button>

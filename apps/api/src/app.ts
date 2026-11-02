@@ -47,6 +47,7 @@ import { fileURLToPath } from 'node:url';
 import { cartRoutes } from './routes/cart.js';
 import { groupOrderRoutes } from './routes/groupOrders.js';
 import { orderChatRoutes } from './routes/orderChat.js';
+import { rewardsRoutes } from './routes/rewards.js';
 import { accountRoutes } from './routes/account.js';
 import { orderRoutes } from './routes/orders.js';
 import { paymentRoutes, webhookRoutes } from './routes/payments.js';
@@ -138,6 +139,7 @@ export async function buildApp() {
   await app.register(cartRoutes, { prefix: '/api' });
   await app.register(groupOrderRoutes, { prefix: '/api' });
   await app.register(orderChatRoutes, { prefix: '/api' });
+  await app.register(rewardsRoutes, { prefix: '/api' });
   await app.register(accountRoutes, { prefix: '/api' });
   await app.register(orderRoutes, { prefix: '/api' });
   await app.register(paymentRoutes, { prefix: '/api' });

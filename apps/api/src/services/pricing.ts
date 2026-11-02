@@ -4,6 +4,7 @@ import { allocate, bps } from '../lib/money.js';
 import { getSetting } from '../lib/settings.js';
 import { findSlot } from './slots.js';
 import { creditBalance } from './credit.js';
+import { isMember } from './membership.js';
 import { deliveryFee, haversineKm, resolveRule } from './financeRules.js';
 import { routeDistanceKm } from './geo.js';
 
@@ -99,6 +100,7 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
   const commissionRules = new Map<string, Awaited<ReturnType<typeof resolveRule<'commission'>>>>();
   const storeGeo = new Map<string, { lat: number; lng: number } | null>();
   const stdRate = taxRates.standard ?? 0;
+  const memberFree = await isMember(c, userId); const memberMin = memberFree ? await getSetting<number>('membership.free_delivery_min_cents', c) : 0;
   for (const [storeId, rows] of groups) {
     const f = rows[0];
     let slot: { start: string; end: string } | null = null;
@@ -193,6 +195,8 @@ export async function buildQuote(c: Queryable, userId: string, opts: Opts): Prom
         s.delivery_cents = zone.free_over_cents && s.subtotal_cents >= zone.free_over_cents ? 0 : zone.fee_cents;
         (s.pricing as any).delivery = { source: 'zone_fee', zone_id: zone.id, fee_cents: s.delivery_cents };
       }
+      // EAZY+ members get free delivery from a store once their items there reach the minimum
+      if (s.delivery_cents > 0 && memberFree && s.subtotal_cents - s.discount_cents >= memberMin) { s.delivery_cents = 0; (s.pricing as any).delivery = { ...(s.pricing as any).delivery, waived: 'membership' }; }
       s.delivery_tax_cents = bps(s.delivery_cents, stdRate);
     }
     s.total_cents = s.subtotal_cents - s.discount_cents + s.delivery_cents + s.delivery_tax_cents + s.tax_cents;
