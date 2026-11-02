@@ -194,15 +194,19 @@ export function RecentStrip({ items }: { items: Card[] }) {
 export function StoreTile({ s }: { s: StoreCard }) {
   return (
     <Link to={`/s/${s.slug}`} className="stile">
-      <div className="stile-cover"><span className="stile-rate"><Stars value={s.rating_avg} count={s.rating_count} compact /></span>{s.cover_url ? <SafeImg src={s.cover_url} loading="lazy" fallback={<StoreBanner name={s.name} />} /> : <StoreBanner name={s.name} />}</div>
-      <div className="stile-body">
-        {s.logo_url ? <img src={s.logo_url} alt="" width={44} height={44} style={{ borderRadius: '50%', objectFit: 'cover' }} /> : <StoreMark name={s.name} size={44} />}
-        <div><h3>{s.name}</h3><span className="muted small">{s.city}{s.min_order_cents ? ` · $${(s.min_order_cents / 100).toFixed(0)} minimum` : ''}</span></div>
-      </div>
-      <div className="row wrap" style={{ padding: '0 14px 14px' }}>
-        <Badge tone={s.is_open ? 'ok' : 'warn'}>{s.is_open ? 'Open now' : 'Closed now'}</Badge>
-        {s.regions.slice(0, 2).map((r) => <Badge key={r.slug}>{r.name}</Badge>)}
-        {s.is_test_data && <Badge tone="demo">Demo store</Badge>}
+      <div className="stile-cover">{s.cover_url ? <SafeImg src={s.cover_url} loading="lazy" fallback={<StoreBanner name={s.name} />} /> : <StoreBanner name={s.name} />}
+        <span className="stile-rate"><Stars value={s.rating_avg} count={s.rating_count} compact /></span>
+        <div className="stile-over">
+          <div className="stile-id">
+            {s.logo_url ? <img src={s.logo_url} alt="" width={34} height={34} /> : <StoreMark name={s.name} size={34} />}
+            <div><h3>{s.name}</h3><span>{s.city}{s.min_order_cents ? ` · $${(s.min_order_cents / 100).toFixed(0)} minimum` : ''}</span></div>
+          </div>
+          <div className="stile-tags">
+            <Badge tone={s.is_open ? 'ok' : 'warn'}>{s.is_open ? 'Open now' : 'Closed now'}</Badge>
+            {s.regions.slice(0, 2).map((r) => <Badge key={r.slug}>{r.name}</Badge>)}
+            {s.is_test_data && <Badge tone="demo">Demo store</Badge>}
+          </div>
+        </div>
       </div>
     </Link>
   );

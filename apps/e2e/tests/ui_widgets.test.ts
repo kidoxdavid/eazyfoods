@@ -269,3 +269,24 @@ describe('store and kitchen ratings', () => {
     }
   }, 120_000);
 });
+
+describe('store tile is one picture', () => {
+  it('logo, name, details and tags all sit inside the cover picture, and nothing is cut off', async () => {
+    for (const w of [320, 390, 768, 1280]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: 900 } }); const page = await ctx.newPage();
+      for (const path of ['/stores', '/kitchens']) {
+        await page.goto(`${base()}${path}`, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+        const r = await page.evaluate(() => [...document.querySelectorAll('.stile')].map((t) => {
+          const tile = t.getBoundingClientRect(), cover = t.querySelector('.stile-cover')!.getBoundingClientRect();
+          const inside = [...t.querySelectorAll('.stile-id img, .stile-id .store-mark, .stile-id h3, .stile-id span, .stile-tags > *, .stile-rate')].filter((e) => (e as HTMLElement).offsetParent).map((e) => { const b = e.getBoundingClientRect(); return b.left >= cover.left - 0.5 && b.right <= cover.right + 0.5 && b.top >= cover.top - 0.5 && b.bottom <= cover.bottom + 0.5; });
+          const logo = (t.querySelector('.stile-id img, .stile-id .store-mark') as HTMLElement).getBoundingClientRect();
+          const mark = t.querySelector('.stile-id .store-mark') as HTMLElement | null;
+          return { same: Math.abs(tile.height - cover.height) < 3, allInside: inside.every(Boolean), logo: Math.round(logo.width), centred: !mark || getComputedStyle(mark).display.includes('grid') };
+        }));
+        expect(r.length, path).toBeGreaterThan(0);
+        for (const t of r) { expect(t.same, `${path} @${w}: the tile is just the picture`).toBe(true); expect(t.allInside, `${path} @${w}: everything is inside the picture`).toBe(true); expect(t.logo).toBeLessThanOrEqual(36); expect(t.centred).toBe(true); }
+      }
+      await ctx.close();
+    }
+  }, 120_000);
+});

@@ -22,16 +22,20 @@ type K = Omit<KCard, 'dish_count' | 'from_cents'> & { postal_code?: string | nul
 function KitchenTile({ k }: { k: KCard }) {
   return (
     <Link to={`/k/${k.slug}`} className="stile">
-      <div className="stile-cover"><span className="stile-rate"><Stars value={k.rating_avg} count={k.rating_count} compact /></span>{k.cover_url ? <SafeImg src={k.cover_url} loading="lazy" fallback={<StoreBanner name={k.name} />} /> : <StoreBanner name={k.name} />}</div>
-      <div className="stile-body">
-        {k.logo_url ? <img src={k.logo_url} alt="" width={44} height={44} style={{ borderRadius: '50%', objectFit: 'cover' }} /> : <StoreMark name={k.name} size={44} />}
-        <div><h3>{k.name}</h3><span className="muted small">{k.kitchen_type === 'restaurant' && k.address_line ? `${k.address_line}, ${k.city}` : k.area ? `${k.city} · ${k.area}` : k.city}{k.from_cents ? ` · dishes from ${money(k.from_cents)}` : ''}</span></div>
-      </div>
-      <div className="row wrap" style={{ padding: '0 14px 14px' }}>
-        <Badge tone={k.is_open ? 'ok' : 'warn'}>{k.is_open ? 'Open now' : 'Closed now'}</Badge>
-        {k.kitchen_type === 'restaurant' && <Badge tone="info">Restaurant</Badge>}
-        {k.cuisines.slice(0, 2).map((c) => <Badge key={c}>{c}</Badge>)}
-        {k.is_test_data && <Badge tone="demo">Demo cook</Badge>}
+      <div className="stile-cover">{k.cover_url ? <SafeImg src={k.cover_url} loading="lazy" fallback={<StoreBanner name={k.name} />} /> : <StoreBanner name={k.name} />}
+        <span className="stile-rate"><Stars value={k.rating_avg} count={k.rating_count} compact /></span>
+        <div className="stile-over">
+          <div className="stile-id">
+            {k.logo_url ? <img src={k.logo_url} alt="" width={34} height={34} /> : <StoreMark name={k.name} size={34} />}
+            <div><h3>{k.name}</h3><span>{k.kitchen_type === 'restaurant' && k.address_line ? `${k.address_line}, ${k.city}` : k.area ? `${k.city} · ${k.area}` : k.city}{k.from_cents ? ` · dishes from ${money(k.from_cents)}` : ''}</span></div>
+          </div>
+          <div className="stile-tags">
+            <Badge tone={k.is_open ? 'ok' : 'warn'}>{k.is_open ? 'Open now' : 'Closed now'}</Badge>
+            {k.kitchen_type === 'restaurant' && <Badge tone="info">Restaurant</Badge>}
+            {k.cuisines.slice(0, 2).map((c) => <Badge key={c}>{c}</Badge>)}
+            {k.is_test_data && <Badge tone="demo">Demo cook</Badge>}
+          </div>
+        </div>
       </div>
     </Link>
   );
