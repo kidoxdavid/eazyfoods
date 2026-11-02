@@ -1,3 +1,4 @@
+import { DIET_LABELS, type Nutrition } from '../diet';
 import { useEffect, useState } from 'react';
 import { SkelPdp } from '../skeletons';
 import { useFeatures } from '../features';
@@ -17,7 +18,7 @@ import { DishRedirect } from './Kitchens';
 
 type Offer = { store_slug: string; store_name: string; is_open: boolean; is_test_data: boolean; offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; in_stock: boolean; available: number; tiers: { min_qty: number; unit_price_cents: number }[] };
 type P = {
-  dietary?: Record<string, boolean>;
+  dietary?: Record<string, boolean>; nutrition?: Nutrition | null;
   name: string; brand: string | null; category: string | null; category_slug: string | null; description: string | null; pack_size: string | null; pack_unit: string | null; sold_by: string; ingredients: string | null; allergens: string[] | null;
   storage_info: string | null; manufacturer: string | null; countries: { name: string; kind: string }[]; aliases: string[]; images: { url: string; alt: string }[]; offers: Offer[];
 };
@@ -118,10 +119,11 @@ export function ProductPage() {
             {made.length > 0 && <><dt>Made in</dt><dd>{made.join(', ')}</dd></>}
             {p.manufacturer && <><dt>Manufacturer</dt><dd>{p.manufacturer}</dd></>}
             {p.ingredients && <><dt>{t('Ingredients')}</dt><dd>{p.ingredients}</dd></>}
-            {Object.entries(p.dietary ?? {}).some(([, v]) => v) && <><dt>Dietary</dt><dd>{Object.entries(p.dietary!).filter(([, v]) => v).map(([k]) => ({ vegan: 'Vegan', vegetarian: 'Vegetarian', gluten_free: 'Gluten-free', dairy_free: 'Dairy-free' } as Record<string, string>)[k] ?? k).join(', ')} <span className="muted small">(checked by our catalogue team)</span></dd></>}
+            {Object.entries(p.dietary ?? {}).some(([, v]) => v) && <><dt>Dietary</dt><dd>{Object.entries(p.dietary!).filter(([, v]) => v).map(([k]) => DIET_LABELS[k] ?? k).join(', ')} <span className="muted small">(checked by our catalogue team)</span></dd></>}
             <dt>{t('Allergens')}</dt><dd>{p.allergens === null ? 'Not supplied. Check the package if you have allergies.' : p.allergens.length ? `Contains: ${p.allergens.join(', ')}` : 'None declared'}</dd>
             {p.storage_info && <><dt>{t('Storage')}</dt><dd>{p.storage_info}</dd></>}
           </dl>
+          {p.nutrition && Object.keys(p.nutrition).length > 0 && <NutritionPanel n={p.nutrition} />}
         </div>
 
         <aside className="buybox" aria-label="Buy">
@@ -165,5 +167,22 @@ export function ProductPage() {
       <Shelf title={t('You might also like')} items={related.data ?? []} />
       <BasketBar />
     </article>
+  );
+}
+
+/** A Nutrition Facts panel, per serving, exactly as the catalogue team entered it from the pack. Only the rows that were supplied are shown. */
+function NutritionPanel({ n }: { n: Nutrition }) {
+  const row = (label: string, v: number | undefined, unit: string, indent = false) => v == null ? null : <tr className={indent ? 'sub' : ''}><th scope="row">{label}</th><td>{v} {unit}</td></tr>;
+  return (
+    <table className="nutrition" aria-label="Nutrition facts">
+      <caption>Nutrition facts</caption>
+      <tbody>
+        {n.serving && <tr className="serving"><th scope="row">Serving size</th><td>{n.serving}</td></tr>}
+        {n.calories != null && <tr className="cal"><th scope="row">Calories</th><td>{n.calories}</td></tr>}
+        {row('Fat', n.fat_g, 'g')}{row('Saturated fat', n.sat_fat_g, 'g', true)}{row('Trans fat', n.trans_fat_g, 'g', true)}
+        {row('Carbohydrate', n.carbs_g, 'g')}{row('Fibre', n.fibre_g, 'g', true)}{row('Sugars', n.sugars_g, 'g', true)}
+        {row('Protein', n.protein_g, 'g')}{row('Sodium', n.sodium_mg, 'mg')}
+      </tbody>
+    </table>
   );
 }

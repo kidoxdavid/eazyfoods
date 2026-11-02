@@ -5,7 +5,8 @@ import { norm } from '../lib/norm.js';
 import { LIVE_ADS } from './ads.js';
 import { UNIT_BASIS, UNIT_QTY } from '../lib/listing.js';
 
-export const DIET_KEYS = ['vegan', 'vegetarian', 'gluten_free', 'dairy_free'] as const;
+/** Shopper filters. A flag is set only after the catalogue team checks the pack; it is never guessed. */
+export const DIET_KEYS = ['vegan', 'vegetarian', 'gluten_free', 'dairy_free', 'nut_free', 'egg_free', 'soy_free', 'halal', 'kosher', 'organic', 'no_added_sugar', 'low_sodium'] as const;
 
 const query = z.object({
   q: z.string().max(100).default(''),

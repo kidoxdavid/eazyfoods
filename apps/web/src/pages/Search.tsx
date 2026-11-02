@@ -1,3 +1,4 @@
+import { DIET_LABELS } from '../diet';
 import { Link, useSearchParams } from 'react-router-dom';
 import { SkelGrid } from '../skeletons';
 import { money, type Region } from '../api';
@@ -7,7 +8,7 @@ import { ProductGrid, type Card } from '../cards';
 
 type Facet = { slug: string; name: string; n: number };
 type Result = { total: number; page: number; page_size: number; results: Card[]; suggestions?: { message: string; regions: { slug: string; name: string }[] }; facets?: { dietary?: { key: string; n: number }[]; categories: Facet[]; regions: Facet[]; stores: Facet[]; price: { min: number; max: number } } };
-const DIET: Record<string, string> = { vegan: 'Vegan', vegetarian: 'Vegetarian', gluten_free: 'Gluten-free', dairy_free: 'Dairy-free' };
+const DIET = DIET_LABELS;
 const PRICE_BANDS: [string, number | null, number | null][] = [['Under $5', null, 499], ['$5 to $10', 500, 1000], ['$10 to $20', 1000, 2000], ['$20 & above', 2000, null]];
 
 export function SearchPage() {

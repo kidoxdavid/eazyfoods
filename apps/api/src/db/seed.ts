@@ -200,6 +200,11 @@ async function seedAll(log: (m: string) => void) {
     await c.query(`UPDATE products SET dietary = '{"vegan": true, "vegetarian": true, "dairy_free": true}' WHERE dietary = '{}' AND (name ILIKE '%garri%' OR name ILIKE '%rice%' OR name ILIKE '%plantain%' OR name ILIKE '%beans%' OR name ILIKE '%hibiscus%' OR name ILIKE '%okra%' OR name ILIKE '%yam%')`);
     await c.query(`UPDATE products SET dietary = dietary || '{"gluten_free": true}' WHERE (name ILIKE '%garri%' OR name ILIKE '%rice%' OR name ILIKE '%beans%' OR name ILIKE '%yam%' OR name ILIKE '%okra%') AND dietary ? 'vegan'`);
 
+    // More invented demo labels and one demo nutrition panel (development only; real ones are entered from the pack by the catalogue team).
+    await c.query(`UPDATE products SET dietary = dietary || '{"nut_free": true, "egg_free": true, "soy_free": true}' WHERE dietary ? 'vegan'`);
+    await c.query(`UPDATE products SET dietary = dietary || '{"halal": true}' WHERE name ILIKE '%goat%' OR name ILIKE '%beef%' OR name ILIKE '%chicken%' OR name ILIKE '%lamb%'`);
+    await c.query(`UPDATE products SET nutrition = '{"serving": "1/4 cup (45 g)", "calories": 160, "fat_g": 0.5, "sat_fat_g": 0, "trans_fat_g": 0, "carbs_g": 37, "fibre_g": 1, "sugars_g": 0, "protein_g": 1, "sodium_mg": 5}' WHERE slug = 'garri-white'`);
+
     // Starter recipes. Written as drafts (ai_generated = true, reviewed = false): they are labelled as such in the UI
     // and must be reviewed by a person before the label is removed.
     const R: { title: string; summary: string; region: string; country: string; servings: number; prep: number; cook: number; steps: string[]; safety?: string;

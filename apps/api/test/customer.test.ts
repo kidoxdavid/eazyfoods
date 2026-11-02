@@ -25,10 +25,10 @@ describe('unit prices and dietary filters', () => {
     const both = (await call(null, 'GET', '/api/search?diet=vegan,gluten_free')).body;
     expect(both.total).toBeLessThanOrEqual(vegan.total);
     expect((await call(null, 'GET', '/api/search')).body.facets.dietary.find((d: any) => d.key === 'vegan').n).toBeGreaterThan(0);
-    expect((await call(null, 'GET', '/api/search?diet=halal')).body.total).toBe((await call(null, 'GET', '/api/search')).body.total);  // unknown labels are ignored, never guessed
+    expect((await call(null, 'GET', '/api/search?diet=keto')).body.total).toBe((await call(null, 'GET', '/api/search')).body.total);  // unknown labels are ignored, never guessed
     const admin = (await (await import('./helpers.js')).login('admin@example.test')).cookie;
     const pid = (await pool.query(`SELECT id FROM products WHERE slug = 'garri-white'`)).rows[0].id;
-    expect((await call(admin, 'PATCH', `/api/admin/products/${pid}`, { dietary: { vegan: true, gluten_free: false, halal: true } })).status).toBe(400);   // only known labels
+    expect((await call(admin, 'PATCH', `/api/admin/products/${pid}`, { dietary: { vegan: true, gluten_free: false, keto: true } })).status).toBe(400);   // only known labels
     expect((await call(admin, 'PATCH', `/api/admin/products/${pid}`, { dietary: { vegan: true, gluten_free: true } })).status).toBe(200);
   });
 });

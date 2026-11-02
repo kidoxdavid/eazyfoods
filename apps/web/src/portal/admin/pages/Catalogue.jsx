@@ -43,6 +43,9 @@ function NewProduct({ onClose }) {
   )
 }
 
+const DIET = [['vegan', 'Vegan'], ['vegetarian', 'Vegetarian'], ['gluten_free', 'Gluten-free'], ['dairy_free', 'Dairy-free'], ['nut_free', 'Nut-free'], ['egg_free', 'Egg-free'], ['soy_free', 'Soy-free'], ['halal', 'Halal'], ['kosher', 'Kosher'], ['organic', 'Organic'], ['no_added_sugar', 'No added sugar'], ['low_sodium', 'Low sodium']]
+const NUTRITION = [['serving', 'Serving size', ''], ['calories', 'Calories', ''], ['fat_g', 'Fat', 'g'], ['sat_fat_g', 'Saturated fat', 'g'], ['trans_fat_g', 'Trans fat', 'g'], ['carbs_g', 'Carbohydrate', 'g'], ['fibre_g', 'Fibre', 'g'], ['sugars_g', 'Sugars', 'g'], ['protein_g', 'Protein', 'g'], ['sodium_mg', 'Sodium', 'mg']]
+
 export function ProductEditor() {
   const { id } = useParams()
   return <Need perm={['catalog.manage']} what="managing the catalogue"><Fetch path={`/admin/products/${id}`}>{(p, reload) => <Editor p={p} reload={reload} />}</Fetch></Need>
@@ -56,6 +59,13 @@ function Editor({ p, reload }) {
     ingredients: p.ingredients ?? '', storage_info: p.storage_info ?? '', manufacturer: p.manufacturer ?? '', tax_class: p.tax_class, status: p.status, seo_title: p.seo_title ?? '', seo_description: p.seo_description ?? '', allergen_mode: mode, allergens: (p.allergens ?? []).join(', '),
   })
   const s = (k) => (e) => setV({ ...v, [k]: e.target.value })
+  const [diet, setDiet] = useState(() => ({ ...(p.dietary || {}) }))
+  const [nutr, setNutr] = useState(() => Object.fromEntries(NUTRITION.map(([k]) => [k, p.nutrition?.[k] ?? ''])))
+  const nutritionOut = () => {
+    const out = {}
+    for (const [k] of NUTRITION) { const x = nutr[k]; if (x === '' || x == null) continue; out[k] = k === 'serving' ? String(x) : Number(x) }
+    return Object.keys(out).length ? out : null
+  }
   const [culinary, setCulinary] = useState(p.countries.filter((c) => c.kind === 'culinary').map((c) => c.slug))
   const [made, setMade] = useState(p.countries.filter((c) => c.kind === 'manufacturing').map((c) => c.slug))
   const [alias, setAlias] = useState(''); const [imgUrl, setImgUrl] = useState(null); const [alt, setAlt] = useState('')
@@ -63,7 +73,7 @@ function Editor({ p, reload }) {
   const save = useAction(async () => {
     const allergens = v.allergen_mode === 'unknown' ? null : v.allergen_mode === 'none' ? [] : v.allergens.split(',').map((x) => x.trim()).filter(Boolean)
     await patch(`/admin/products/${p.id}`, { name: v.name, brand: v.brand || null, category_slug: v.category_slug || null, description: v.description || null, sku: v.sku || null, barcode: v.barcode || null, sold_by: v.sold_by,
-      pack_size: v.pack_size === '' ? null : Number(v.pack_size), pack_unit: v.pack_unit || null, ingredients: v.ingredients || null, allergens, storage_info: v.storage_info || null, manufacturer: v.manufacturer || null, tax_class: v.tax_class, status: v.status, seo_title: v.seo_title || null, seo_description: v.seo_description || null })
+      pack_size: v.pack_size === '' ? null : Number(v.pack_size), pack_unit: v.pack_unit || null, ingredients: v.ingredients || null, allergens, storage_info: v.storage_info || null, manufacturer: v.manufacturer || null, tax_class: v.tax_class, status: v.status, seo_title: v.seo_title || null, seo_description: v.seo_description || null, dietary: diet, nutrition: nutritionOut() })
     await put(`/admin/products/${p.id}/countries`, { culinary, manufacturing: made })
     toast('Product saved'); reload()
   })
@@ -105,6 +115,15 @@ function Editor({ p, reload }) {
           <Field label="Allergen information" htmlFor="al"><Select id="al" value={v.allergen_mode} onChange={s('allergen_mode')}><option value="unknown">Not supplied (unknown)</option><option value="none">None declared</option><option value="list">Contains…</option></Select></Field>
           {v.allergen_mode === 'list' && <Field label="Allergens (comma separated)" htmlFor="al2" hint="e.g. fish, crustaceans, peanuts"><Input id="al2" value={v.allergens} onChange={s('allergens')} /></Field>}
         </div>
+      </Card>
+      <Card title="Dietary labels and nutrition" sub="Tick a label only after checking it on the pack. Shoppers filter on these, so they are never guessed. Nutrition is per serving, exactly as printed.">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-w-2xl">
+          {DIET.map(([k, label]) => <label key={k} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!diet[k]} onChange={(e) => setDiet({ ...diet, [k]: e.target.checked })} /> {label}</label>)}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-2xl mt-4">
+          {NUTRITION.map(([k, label, unit]) => <Field key={k} label={`${label}${unit ? ` (${unit})` : ''}`} htmlFor={`nu-${k}`}><Input id={`nu-${k}`} type={k === 'serving' ? 'text' : 'number'} min={0} step="any" value={nutr[k]} onChange={(e) => setNutr({ ...nutr, [k]: e.target.value })} /></Field>)}
+        </div>
+        <p className="text-xs text-gray-500 mt-2">Leave a box empty if the pack does not say. Saved with the “Save changes” button above.</p>
       </Card>
       <Card title="Countries" sub="Culinary tradition (where the dish or ingredient belongs) is not the same as where it was made. Don’t assume they match.">
         {tax.loading ? <Spinner className="h-20" /> : <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><div><p className="font-medium text-sm mb-1">Culinary tradition</p><CheckList options={countries} value={culinary} onChange={setCulinary} /></div><div><p className="font-medium text-sm mb-1">Made in</p><CheckList options={countries} value={made} onChange={setMade} /></div></div>}

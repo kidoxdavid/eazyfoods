@@ -6,6 +6,7 @@ import { requirePerm } from '../lib/permissions.js';
 import { bad, conflict, notFound } from '../lib/errors.js';
 import { norm, slugify } from '../lib/norm.js';
 import { isOurImageUrl } from '../lib/storage.js';
+import { DIET_KEYS } from './search.js';
 
 const uuid = z.string().uuid();
 const slugs = z.array(z.string().max(80)).max(60);
@@ -17,7 +18,11 @@ const productBody = z.object({
   tax_class: z.enum(['zero_rated', 'standard']).optional(), status: z.enum(['draft', 'pending', 'published', 'archived']).optional(),
   seo_title: z.string().max(120).nullable().optional(), seo_description: z.string().max(300).nullable().optional(),
   // Only what the catalogue team has checked on the pack. Shoppers filter on these, so they are never guessed.
-  dietary: z.object({ vegan: z.boolean(), vegetarian: z.boolean(), gluten_free: z.boolean(), dairy_free: z.boolean() }).partial().strict().optional(),
+  dietary: z.object(Object.fromEntries(DIET_KEYS.map((k) => [k, z.boolean()])) as Record<(typeof DIET_KEYS)[number], z.ZodBoolean>).partial().strict().optional(),
+  nutrition: z.object({
+    serving: z.string().trim().max(60), calories: z.number().min(0).max(5000), fat_g: z.number().min(0).max(500), sat_fat_g: z.number().min(0).max(500), trans_fat_g: z.number().min(0).max(500),
+    carbs_g: z.number().min(0).max(1000), fibre_g: z.number().min(0).max(500), sugars_g: z.number().min(0).max(1000), protein_g: z.number().min(0).max(500), sodium_mg: z.number().min(0).max(20000),
+  }).partial().strict().nullable().optional(),
 });
 
 export const adminCatalogRoutes: FastifyPluginAsync = async (app) => {
@@ -76,6 +81,7 @@ export const adminCatalogRoutes: FastifyPluginAsync = async (app) => {
       const set: Record<string, unknown> = {};
       for (const k of ['description', 'sku', 'barcode', 'sold_by', 'pack_size', 'pack_unit', 'ingredients', 'allergens', 'storage_info', 'manufacturer', 'tax_class', 'status', 'seo_title', 'seo_description'] as const)
         if (b[k] !== undefined) set[k] = b[k];
+      if (b.nutrition !== undefined) set.nutrition = b.nutrition === null || !Object.keys(b.nutrition).length ? null : JSON.stringify(b.nutrition);
       if (b.dietary !== undefined) set.dietary = JSON.stringify(Object.fromEntries(Object.entries(b.dietary).filter(([, v]) => v === true)));
       if (b.name) { set.name = b.name; set.name_norm = norm(b.name); }
       if (b.brand !== undefined) set.brand_id = await upsertBrand(c, b.brand);

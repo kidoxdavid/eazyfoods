@@ -513,3 +513,9 @@ main { padding-top: 14px; }
 .shop-ing input { margin-top: 3px; flex: none; }
 .shop-ing small { display: inline; }
 .shop-ings-bar { position: sticky; bottom: calc(var(--tab-h) + env(safe-area-inset-bottom) + 6px); z-index: 5; }
+
+/* Nutrition facts panel on a product page */
+.nutrition { border: 2px solid var(--ink); border-radius: 6px; padding: 4px 10px; margin: 14px 0; width: 100%; max-width: 320px; border-collapse: collapse; background: var(--card); font-size: .9rem; }
+.nutrition caption { caption-side: top; text-align: left; font: 800 1.35rem var(--display, var(--body)); padding: 4px 0 2px; border-bottom: 8px solid var(--ink); }
+.nutrition th, .nutrition td { padding: 3px 0; border-bottom: 1px solid var(--line-2); text-align: left; font-weight: 600; } .nutrition td { text-align: right; font-weight: 400; }
+.nutrition .sub th { padding-left: 14px; font-weight: 400; } .nutrition .cal th { font-size: 1.05rem; } .nutrition .cal td { font-size: 1.3rem; font-weight: 800; } .nutrition .serving th, .nutrition .serving td { border-bottom: 4px solid var(--ink); }
