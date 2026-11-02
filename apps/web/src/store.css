@@ -529,6 +529,13 @@ main { padding-top: 14px; }
 .sugg-all { color: var(--green, #1f5b3a); font-weight: 600; border-top: 1px solid var(--line, #eee); border-radius: 0 0 10px 10px; margin-top: 2px; }
 .sugg-ph svg { width: 100%; height: 100%; display: block; border-radius: 8px; }
 
+/* Home: small shortcut tiles under the banner */
+.faves { margin: 2px 0 12px; } .faves h2 { font-size: 1.05rem; margin: 0 0 6px; }
+.faves-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.fave { display: grid; justify-items: center; gap: 3px; text-align: center; font-weight: 700; font-size: .72rem; line-height: 1.15; color: var(--ink); text-decoration: none; }
+.fave span { display: grid; place-items: center; width: 100%; height: 46px; border-radius: 14px; font-size: 21px; }
+@media (min-width: 700px) { .faves-grid { grid-template-columns: repeat(6, 1fr); max-width: 760px; } .fave span { height: 52px; font-size: 24px; } }
+
 /* Card chips: they live in the line that used to read "at <store>", so the card is exactly the size it was. */
 .pcard .psold { display: flex; gap: 4px; flex-wrap: nowrap; overflow: hidden; align-items: center; min-height: 1.25em; }   /* as tall as the one line of text it replaces */
 .pchip { display: inline-block; font-size: .68rem; line-height: 1.25; font-weight: 800; padding: 0 7px; border-radius: 6px; background: #eee; color: #3a3f3c; white-space: nowrap; flex: none; }
@@ -562,3 +569,12 @@ main { padding-top: 14px; }
 
 /* Time slots: two dropdowns (day, time) instead of a grid of buttons, to save space */
 .slot-selects { display: grid; grid-template-columns: 1fr 1.3fr; gap: 8px; margin: 6px 0; } .slot-selects select { width: 100%; }
+
+/* EAZY faves: bright gradient tiles with illustrated icons that pop out of the tile */
+.fave span { position: relative; overflow: visible; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .07), 0 2px 6px rgba(20, 40, 30, .08); transition: transform .15s; }
+.fave:hover span, .fave:focus-visible span { transform: translateY(-2px); } .fave:active span { transform: scale(.96); }
+.fave span .fave-ico { width: 42px; height: 42px; margin-top: -8px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .18)); }
+.fv-green { background: linear-gradient(135deg, #d9f3e1, #9fdcb4); } .fv-gold { background: linear-gradient(135deg, #fff0b8, #ffcd4f); } .fv-coral { background: linear-gradient(135deg, #ffe0d7, #ff9f8c); }
+.fv-blue { background: linear-gradient(135deg, #dce9ff, #9dbdff); } .fv-violet { background: linear-gradient(135deg, #f0e0fb, #cba5ec); } .fv-peach { background: linear-gradient(135deg, #ffe6c9, #ffb978); }
+@media (prefers-reduced-motion: reduce) { .fave span { transition: none; } }
+@media (min-width: 700px) { .fave span .fave-ico { width: 46px; height: 46px; } }
