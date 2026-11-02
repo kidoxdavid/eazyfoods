@@ -3,6 +3,7 @@ import { isOurImageUrl } from '../lib/storage.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool } from '../db/pool.js';
+import { CARD_FROM, CARD_SELECT } from '../lib/listing.js';
 import { requireLogin } from '../lib/permissions.js';
 import { conflict, notFound } from '../lib/errors.js';
 import { rl } from '../lib/ratelimit.js';
@@ -33,14 +34,15 @@ export const engagementRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // ---- Favourites ----
-  app.get('/favourites', { preHandler: requireLogin }, async (req) =>
-    (await pool.query(
-      `SELECT p.slug, p.name, b.name AS brand, p.pack_size, p.pack_unit, off.min_price, COALESCE(off.in_stock, false) AS in_stock
-         FROM favourites f JOIN products p ON p.id = f.product_id AND p.status = 'published' LEFT JOIN brands b ON b.id = p.brand_id
-         LEFT JOIN LATERAL (SELECT COALESCE(min(o.price_cents) FILTER (WHERE o.stock_on_hand - o.stock_reserved > 0), min(o.price_cents)) AS min_price,
-                                   bool_or(o.stock_on_hand - o.stock_reserved > 0) AS in_stock
-                              FROM offers_live o JOIN storefronts s ON s.id = o.store_id AND s.orderable WHERE o.product_id = p.id AND o.is_active) off ON true
-        WHERE f.user_id = $1 ORDER BY f.created_at DESC`, [req.user!.id])).rows);
+  // Saved items are shown as the same product cards as everywhere else (picture, price, sale, stock, rating, add button).
+  // A saved product that no store has right now is still listed (marked out of stock), so it is not lost.
+  app.get('/favourites', { preHandler: requireLogin }, async (req) => {
+    const from = CARD_FROM.replace('JOIN LATERAL (', 'LEFT JOIN LATERAL (').replace('ON off.store_count > 0', 'ON true');
+    const { rows } = await pool.query(
+      `SELECT ${CARD_SELECT} FROM ${from} JOIN favourites f ON f.product_id = p.id AND f.user_id = $1
+        WHERE p.status = 'published' ORDER BY f.created_at DESC`, [req.user!.id]);
+    return rows.map(({ id: _id, created_at: _c, ...r }) => ({ ...r, in_stock: !!r.in_stock, on_sale: !!r.on_sale, store_count: r.store_count ?? 0 }));
+  });
 
   app.put<{ Params: { slug: string } }>('/favourites/:slug', { preHandler: requireLogin }, async (req) => {
     const p = (await pool.query(`SELECT id FROM products WHERE slug = $1 AND status = 'published'`, [req.params.slug])).rows[0];
