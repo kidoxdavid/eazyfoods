@@ -153,6 +153,14 @@
  },
  {
   "app": "customer",
+  "route": "/group/:token",
+  "url": "/group/:token",
+  "dynamic": true,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
   "route": "/checkout",
   "url": "/checkout",
   "dynamic": false,
@@ -515,6 +523,14 @@
   "app": "vendor",
   "route": "/labels",
   "url": "/vendor/labels",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "owner1@example.test"
+ },
+ {
+  "app": "vendor",
+  "route": "/slots",
+  "url": "/vendor/slots",
   "dynamic": false,
   "signedIn": true,
   "email": "owner1@example.test"

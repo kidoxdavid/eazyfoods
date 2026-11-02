@@ -16,6 +16,7 @@ describe('order chat (browser)', () => {
     // a paid order for the customer, made through the API so the test stays about the chat
     orderId = await cp.evaluate(async () => {
       const j = async (m: string, u: string, b?: unknown, h: Record<string, string> = {}) => (await fetch(u, { method: m, credentials: 'include', headers: { 'content-type': 'application/json', ...h }, body: b ? JSON.stringify(b) : undefined })).json();
+      await j('DELETE', '/api/cart');                                   // other tests may have left things in this customer's basket
       const addr = await j('POST', '/api/addresses', { recipient_name: 'Test Buyer', phone: '5875550100', line1: '1 Test St', city: 'Calgary', postal_code: 'T2A0A1' });
       const hit = (await j('GET', '/api/stores/demo-calgary-west-african-market')).products.find((p: any) => p.slug === 'garri-white');
       await j('PUT', `/api/cart/items/${hit.offer_id}`, { quantity: 3 });
