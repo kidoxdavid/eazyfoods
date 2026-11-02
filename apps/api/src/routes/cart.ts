@@ -56,9 +56,10 @@ export const cartRoutes: FastifyPluginAsync = async (app) => {
       if (!o || !o.is_active || !o.orderable) throw notFound('That product is not available from this store.');
       if (quantity > o.available) throw conflict('insufficient_stock', o.available > 0 ? `Only ${o.available} available.` : 'Out of stock.', { available: Math.max(0, o.available) });
       await c.query(
-        `INSERT INTO cart_items(cart_id, offer_id, quantity, added_price_cents) VALUES ($1,$2,$3,$4)
+        `INSERT INTO cart_items(cart_id, offer_id, quantity, added_price_cents, sub_pref)
+         VALUES ($1,$2,$3,$4, COALESCE((SELECT d.sub_pref FROM substitution_defaults d JOIN store_offers so ON so.product_id = d.product_id WHERE d.user_id = $5 AND so.id = $2), 'ask'))
          ON CONFLICT (cart_id, offer_id) DO UPDATE SET quantity = $3, added_price_cents = CASE WHEN cart_items.quantity = $3 THEN cart_items.added_price_cents ELSE $4 END`,
-        [cid, offerId, quantity, o.price_cents]);
+        [cid, offerId, quantity, o.price_cents, req.user!.id]);
       await c.query(`INSERT INTO analytics_events(type, user_id, store_id) SELECT 'add_to_cart', $1, store_id FROM store_offers WHERE id = $2`, [req.user!.id, offerId]);
     });
     return cartView(req.user!.id);
@@ -71,6 +72,9 @@ export const cartRoutes: FastifyPluginAsync = async (app) => {
     const { sub_pref } = z.object({ sub_pref: z.enum(['closest', 'ask', 'refund']) }).parse(req.body);
     const r = await pool.query('UPDATE cart_items ci SET sub_pref = $3 FROM carts ct WHERE ct.id = ci.cart_id AND ct.user_id = $1 AND ci.offer_id = $2', [req.user!.id, offerId, sub_pref]);
     if (!r.rowCount) throw notFound('That item is not in your basket.');
+    // Remembered for this product, so it is already chosen the next time it goes in the basket (any store).
+    await pool.query(`INSERT INTO substitution_defaults(user_id, product_id, sub_pref) SELECT $1, so.product_id, $3 FROM store_offers so WHERE so.id = $2
+                      ON CONFLICT (user_id, product_id) DO UPDATE SET sub_pref = $3, updated_at = now()`, [req.user!.id, offerId, sub_pref]);
     return cartView(req.user!.id);
   });
 

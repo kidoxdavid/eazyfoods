@@ -117,6 +117,17 @@ describe('substitution preferences', () => {
       void order; void garri;
     }
   });
+  it('is remembered per product: the next time it goes in the basket it starts with the same choice', async () => {
+    const u = await newCustomer();
+    const offer = await setOffer(S1, 'garri-white', 2000, 50);
+    await addToCart(u.cookie, offer, 1);
+    expect((await call(u.cookie, 'GET', '/api/cart')).body.stores[0].items[0].sub_pref).toBe('ask');          // nothing chosen yet
+    await call(u.cookie, 'PUT', `/api/cart/items/${offer}/preference`, { sub_pref: 'closest' });
+    await call(u.cookie, 'PUT', `/api/cart/items/${offer}`, { quantity: 0 });                                      // taken out again
+    expect((await addToCart(u.cookie, offer, 2)).body.stores[0].items[0].sub_pref).toBe('closest');            // remembered
+    const other = await newCustomer();
+    expect((await addToCart(other.cookie, offer, 1)).body.stores[0].items[0].sub_pref).toBe('ask');            // only for the person who chose
+  });
   it('is chosen per item in the basket and copied to the order', async () => {
     const u = await newCustomer();
     const offer = await setOffer(S1, 'garri-white', 2000, 50);

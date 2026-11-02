@@ -74,7 +74,7 @@ export function CartPage() {
                   <label className="small sub-pref">{t('If unavailable:')}{' '}
                     <select value={i.sub_pref} aria-label={`If ${i.name} is unavailable`} onChange={async (e) => replace(await put('/cart/items/' + i.offer_id + '/preference', { sub_pref: e.target.value }))}>
                       <option value="ask">{t('Ask me first')}</option><option value="closest">{t('Swap for the closest match')}</option><option value="refund">{t('Just refund it')}</option>
-                    </select>
+                    </select>{' '}<span className="muted">{t('(remembered for next time)')}</span>
                   </label>)}
                 {i.unavailable && <div className="small warnc">Not available from this store. <button className="link" onClick={() => setQty({ offer_id: i.offer_id, slug: i.slug, name: i.name, unit_price_cents: i.unit_price_cents, store_name: s.name, store_slug: s.slug, pack: '' }, 0)}>Remove</button></div>}
                 {i.short && <div className="small warnc">Only {i.available} left. <button className="link" onClick={() => setQty({ offer_id: i.offer_id, slug: i.slug, name: i.name, unit_price_cents: i.unit_price_cents, store_name: s.name, store_slug: s.slug, pack: '' }, i.available)}>Reduce to {i.available}</button></div>}
