@@ -65,7 +65,7 @@ function Mega({ onClose, closing }: { onClose: () => void; closing: boolean }) {
       <div className="mega" role="dialog" aria-label={t('All departments')}>
         <div className="mega-head"><strong>{t('Shop EAZyfoods')}</strong><button className="icon-btn" onClick={onClose} aria-label={t('Close menu')}><IconClose /></button></div>
         <div className="mega-quick" aria-label={t('Quick links')}>
-          <Link to="/deals" className="hot">{t('Weekly deals')}</Link>{on('shop.flyer') && <Link to="/flyer">{t('Weekly flyer')}</Link>}<Link to="/new">{t('New arrivals')}</Link><Link to="/recipes">{t('Recipes')}</Link><Link to="/kitchens">{t('Home chefs')}</Link><Link to="/stores">{t('All stores')}</Link>
+          <Link to="/deals" className="hot">{t('Weekly deals')}</Link>{on('shop.flyer') && <Link to="/flyer">{t('Weekly flyer')}</Link>}<Link to="/new">{t('New arrivals')}</Link><Link to="/recipes">{t('Recipes')}</Link><Link to="/kitchens">{t('Home chefs')}</Link><Link to="/stores">{t('All stores')}</Link><Link to="/saved">{t('Saved items')}</Link>
         </div>
         <div className="mega-cols">
           <Acc id="region" title={t('By region')} open={openSec === 'region'} onToggle={setOpenSec}>
@@ -184,7 +184,7 @@ export function Header() {
             </ul>)}
           </div>
           <div className="hacct desktop-only">
-            {me ? (<><Link to="/account"><small>{t('Hello')}, {me.full_name.split(' ')[0]}</small><b>{t('Account')}</b></Link><Link to="/orders"><small>{t('Returns &')}</small><b>{t('Orders')}</b></Link></>)
+            {me ? (<><Link to="/account"><small>{t('Hello')}, {me.full_name.split(' ')[0]}</small><b>{t('Account')}</b></Link><Link to="/orders"><small>{t('Returns &')}</small><b>{t('Orders')}</b></Link><Link to="/saved"><small>{t('Your')}</small><b>{t('Saved')}</b></Link></>)
               : (<Link to="/signin"><small>{t('Hello, sign in')}</small><b>{t('Account')}</b></Link>)}
           </div>
           <MiniCart />
@@ -264,7 +264,7 @@ export function Footer() {
       <button className="totop" onClick={() => window.scrollTo({ top: 0 })}>{t('Back to top')}</button>
       <div className="wrap ftr-cols">
         <div><h3>{t('Shop')}</h3><ul role="list">{regions.data?.map((r) => <li key={r.slug}><Link to={`/search?region=${r.slug}`}>{r.name}</Link></li>)}<li><Link to="/deals">{t('Weekly deals')}</Link></li>{on('shop.flyer') && <li><Link to="/flyer">{t('Weekly flyer')}</Link></li>}{on('shop.gift_cards') && <li><Link to="/gift-cards">{t('Gift cards')}</Link></li>}<li><Link to="/new">{t('New arrivals')}</Link></li><li><Link to="/stores">{t('Stores')}</Link></li></ul></div>
-        <div><h3>{t('Help')}</h3><ul role="list">{pages.data?.filter((p) => ['how-it-works', 'delivery-policy', 'refund-policy', 'our-guarantee', 'faq'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}{on('shop.help_centre') && <li><Link to="/help">{t('Help centre')}</Link></li>}<li><Link to="/orders">{t('Your orders')}</Link></li>{on('shop.install_app') && <li><InstallApp /></li>}</ul></div>
+        <div><h3>{t('Help')}</h3><ul role="list">{pages.data?.filter((p) => ['how-it-works', 'delivery-policy', 'refund-policy', 'our-guarantee', 'faq'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}{on('shop.help_centre') && <li><Link to="/help">{t('Help centre')}</Link></li>}<li><Link to="/orders">{t('Your orders')}</Link></li><li><Link to="/saved">{t('Saved items')}</Link></li>{on('shop.install_app') && <li><InstallApp /></li>}</ul></div>
         <div><h3>{t('Work with us')}</h3><ul role="list"><li><Link to="/vendor">{t('Sell on EAZyfoods')}</Link></li><li><Link to="/kitchen">{t('Cook with us')}</Link></li><li><Link to="/driver">{t('Drive with us')}</Link></li><li><Link to="/portals">{t('All portals')}</Link></li></ul></div>
         <div><h3>{t('Legal')}</h3><ul role="list">{pages.data?.filter((p) => ['privacy', 'terms'].includes(p.slug)).map((p) => <li key={p.slug}><Link to={`/pages/${p.slug}`}>{p.title}</Link></li>)}</ul></div>
       </div>

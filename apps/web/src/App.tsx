@@ -24,7 +24,7 @@ import { CartPage } from './pages/Cart';
 import { GroupOrderPage } from './pages/GroupOrder';
 import { CheckoutPage } from './pages/Checkout';
 import { OrdersPage, OrderPage } from './pages/Orders';
-import { AccountPage } from './pages/Account';
+import { AccountPage, SavedPage } from './pages/Account';
 import { SignIn, Register, Forgot, Reset, Verify } from './pages/Auth';
 import { RecipesPage, RecipePage } from './pages/Recipes';
 import { ContentPage } from './pages/ContentPage';
@@ -82,7 +82,7 @@ export function App() {
                     <Route path="/checkout" element={<RequireAuth><CheckoutPage /></RequireAuth>} />
                     <Route path="/orders" element={<RequireAuth><OrdersPage /></RequireAuth>} />
                     <Route path="/orders/:id" element={<RequireAuth><OrderPage /></RequireAuth>} />
-                    <Route path="/account" element={<RequireAuth><AccountPage /></RequireAuth>} />
+                    <Route path="/account" element={<RequireAuth><AccountPage /></RequireAuth>} /><Route path="/saved" element={<RequireAuth><SavedPage /></RequireAuth>} />
                     <Route path="/lists" element={<RequireAuth><ListsPage /></RequireAuth>} /><Route path="/lists/:id" element={<RequireAuth><ListPage /></RequireAuth>} /><Route path="/l/:token" element={<SharedListPage />} /><Route path="/alerts" element={<RequireAuth><AlertsPage /></RequireAuth>} />
                     <Route path="/signin" element={<SignIn />} />
                     <Route path="/register" element={<Register />} />
