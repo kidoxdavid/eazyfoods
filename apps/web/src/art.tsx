@@ -195,13 +195,14 @@ export function StoreBanner({ name, className = '' }: { name: string; className?
   );
 }
 
-export function Stars({ value, count }: { value: number | null | undefined; count?: number }) {
-  if (value == null) return null;
-  const pct = Math.max(0, Math.min(100, (value / 5) * 100));
+/** Five stars filled to the average rating. In a card (compact) an unrated item shows empty stars, so the row looks the same on every card. */
+export function Stars({ value, count, compact = false }: { value: number | null | undefined; count?: number; compact?: boolean }) {
+  if (value == null && !compact) return null;
+  const pct = value == null ? 0 : Math.max(0, Math.min(100, (value / 5) * 100));
   return (
-    <span className="stars" role="img" aria-label={`${value} out of 5 stars${count ? `, ${count} reviews` : ''}`}>
+    <span className={`stars${compact ? ' compact' : ''}${value == null ? ' none' : ''}`} role="img" aria-label={value == null ? 'Not rated yet' : `${value} out of 5 stars${count ? `, ${count} reviews` : ''}`}>
       <span className="stars-bg" aria-hidden="true">★★★★★</span><span className="stars-fg" style={{ width: `${pct}%` }} aria-hidden="true">★★★★★</span>
-      {count != null && <span className="stars-n">({count})</span>}
+      {count != null && count > 0 && <span className="stars-n">({count})</span>}
     </span>
   );
 }

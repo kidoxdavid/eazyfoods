@@ -215,3 +215,30 @@ describe('the kitchen site', () => {
     await ctx.close();
   }, 120_000);
 });
+
+describe('star ratings on cards', () => {
+  it('every card has a star row inside the details; rated items fill the stars; the card and picture sizes do not change', async () => {
+    for (const w of [390, 1280]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: 900 } }); const page = await ctx.newPage();
+      await page.route('**/api/search?*', async (route) => {            // give some results ratings, as real reviews would
+        const res = await route.fetch(); const j = await res.json();
+        (j.results ?? []).forEach((r: any, i: number) => { if (i % 3 === 0) { r.rating_avg = 4.3; r.rating_count = 12; } else if (i % 3 === 1) { r.rating_avg = 2.5; r.rating_count = 4; } });
+        await route.fulfill({ response: res, json: j });
+      });
+      await page.goto(`${base()}/search?q=a`, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
+      const info = await page.evaluate(() => [...document.querySelectorAll('.pgrid .pcard')].map((c) => {
+        const st = c.querySelector('.pmrow .stars') as HTMLElement | null; const card = c.getBoundingClientRect(), img = c.querySelector('.pimg')!.getBoundingClientRect(), body = c.querySelector('.pbody')!.getBoundingClientRect();
+        const r = st?.getBoundingClientRect(); return { has: !!st, label: st?.getAttribute('aria-label') ?? '', inside: !!r && r.left >= card.left && r.right <= card.right + 0.5 && r.top >= img.bottom - 0.5 && r.bottom <= body.bottom + 0.5, h: Math.round(card.height), ih: Math.round(img.height), w: r ? r.width : 0 };
+      }));
+      expect(info.length).toBeGreaterThan(5);
+      for (const c of info) { expect(c.has).toBe(true); expect(c.inside, `${c.label} sits in the details, below the picture`).toBe(true); expect(c.w).toBeGreaterThan(40); }
+      expect(info.some((c) => /4\.3 out of 5/.test(c.label))).toBe(true); expect(info.some((c) => /Not rated yet/.test(c.label))).toBe(true);
+      await page.addStyleTag({ content: '.pmrow .stars { display: none !important }' }); await page.waitForTimeout(100);
+      const without = await page.evaluate(() => [...document.querySelectorAll('.pgrid .pcard')].map((c) => `${Math.round(c.getBoundingClientRect().height)}/${Math.round(c.querySelector('.pimg')!.getBoundingClientRect().height)}`));
+      expect(info.map((c) => `${c.h}/${c.ih}`), 'adding the stars changes no card or picture size').toEqual(without);
+      await page.addStyleTag({ content: '.pmrow .stars { display: inline-flex !important }' }); await page.waitForTimeout(100);
+      await page.screenshot({ path: `/tmp/stars${w}.png`, clip: { x: 0, y: 150, width: Math.min(w, 760), height: 520 } });
+      await ctx.close();
+    }
+  }, 120_000);
+});

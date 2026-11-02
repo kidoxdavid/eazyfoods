@@ -81,9 +81,8 @@ export function ProductCard({ p }: { p: Card }) {
         </div>
         {p.multibuy && mbOn && <span className="multibuy">Buy {p.multibuy.min_qty}+: {money(p.multibuy.unit_price_cents)} each</span>}
         <Link to={`/p/${p.slug}`} className="pname" onClick={click}>{p.name}</Link>
-        <span className="pmeta">{[p.brand, packLabel(p)].filter(Boolean).join(' · ')}</span>
+        <div className="pmrow"><span className="pmeta">{[p.brand, packLabel(p)].filter(Boolean).join(' · ')}</span><Stars value={p.rating_avg} count={p.rating_count} compact /></div>
         {p.matched_alias && <Badge>Also known as “{p.matched_alias}”</Badge>}
-        <Stars value={p.rating_avg} count={p.rating_count} />
         {p.store_name && <span className="psold">{(p.store_count ?? 1) > 1 && <span className="from-m">lowest of {p.store_count} · </span>}at {p.store_name}</span>}
         <div className="pact"><QuickAdd p={p} /></div>
       </div>

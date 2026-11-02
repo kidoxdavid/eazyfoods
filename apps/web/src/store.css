@@ -468,3 +468,12 @@ main { padding-top: 14px; }
 .minicart-total { display: flex; justify-content: space-between; padding: 10px 2px 8px; font-size: 1rem; }
 .minicart-actions { display: flex; gap: 8px; } .minicart-actions .btn { flex: 1; justify-content: center; text-align: center; }
 .minicart-actions .btn:not(.secondary) { background: var(--green); color: #fff; border: 1.5px solid var(--green); } .minicart-actions .btn.secondary { background: #fff; color: var(--green); border: 1.5px solid var(--green); }
+
+/* Stars on a card share the line with brand and size, so the card and its picture stay exactly the size they were. */
+.pmrow { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
+.pmrow .pmeta { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pmrow .stars.compact { flex: none; font-size: .74rem; line-height: .8; height: .8em; display: inline-flex; align-items: center; }   /* never taller than the line it shares */
+.pmrow .stars.compact .stars-bg, .pmrow .stars.compact .stars-fg { letter-spacing: 0; }
+.pmrow .stars.compact .stars-fg { top: 50%; transform: translateY(-50%); }
+.pmrow .stars.none .stars-bg { opacity: .55; }
+.pmrow .stars-n { display: none; }   /* the number of reviews is on the product page; the card has room for the stars only */
