@@ -27,6 +27,8 @@ export const kitchenRoutes: FastifyPluginAsync = async (app) => {
     const restaurants = await featureOn('shop.restaurants');
     return (await pool.query(
       `SELECT s.slug, s.name, s.description, s.city, left(s.postal_code, 3) AS area, ks.kitchen_type, CASE WHEN ks.kitchen_type = 'restaurant' THEN s.address_line END AS address_line, s.is_open, s.min_order_cents, s.is_test_data, s.logo_url, s.cover_url, s.cuisines, s.ordering_paused,
+              (SELECT CASE WHEN count(*) >= 1 THEN round(avg(rv.rating)::numeric, 1)::float END FROM reviews rv WHERE rv.store_id = s.id AND rv.product_id IS NULL AND NOT rv.is_hidden) AS rating_avg,
+              (SELECT count(*)::int FROM reviews rv WHERE rv.store_id = s.id AND rv.product_id IS NULL AND NOT rv.is_hidden) AS rating_count,
               (SELECT count(*)::int FROM store_offers o JOIN products p ON p.id = o.product_id AND p.status = 'dish_live' WHERE o.store_id = s.id AND o.is_active) AS dish_count,
               (SELECT min(o.price_cents)::int FROM offers_live o JOIN products p ON p.id = o.product_id AND p.status = 'dish_live' WHERE o.store_id = s.id AND o.is_active) AS from_cents
          FROM storefronts s JOIN stores ks ON ks.id = s.id
@@ -72,8 +74,9 @@ export const kitchenRoutes: FastifyPluginAsync = async (app) => {
       pool.query('SELECT accent, tagline, story, announcement, website, instagram, facebook FROM store_branding WHERE store_id = $1', [s.id]),
     ]);
     const br = branding.rows[0];
+    const rt = (await pool.query(`SELECT CASE WHEN count(*) >= 1 THEN round(avg(rating)::numeric, 1)::float END AS rating_avg, count(*)::int AS rating_count FROM reviews WHERE store_id = $1 AND product_id IS NULL AND NOT is_hidden`, [s.id])).rows[0];
     return {
-      gallery: ext.gallery, slug: s.slug, name: s.name, description: s.description, city: s.city, area: (s.postal_code ?? '').slice(0, 3), kitchen_type: ext.kitchen_type, address_line: restaurant ? ext.address_line : null, postal_code: restaurant ? s.postal_code : null, phone: restaurant ? ext.phone : null, video_url: showVideo ? ext.video_url : null, is_open: s.is_open, min_order_cents: s.min_order_cents,
+      rating_avg: rt.rating_avg, rating_count: rt.rating_count, gallery: ext.gallery, slug: s.slug, name: s.name, description: s.description, city: s.city, area: (s.postal_code ?? '').slice(0, 3), kitchen_type: ext.kitchen_type, address_line: restaurant ? ext.address_line : null, postal_code: restaurant ? s.postal_code : null, phone: restaurant ? ext.phone : null, video_url: showVideo ? ext.video_url : null, is_open: s.is_open, min_order_cents: s.min_order_cents,
       is_test_data: s.is_test_data, logo_url: s.logo_url, cover_url: s.cover_url, policies: s.policies, offers_delivery: s.offers_delivery, offers_pickup: s.offers_pickup, ordering_paused: s.ordering_paused,
       cuisines: s.cuisines, preorders_enabled: s.preorders_enabled, hours: hours.rows, dishes: dishes.rows.map((d) => (showVideo ? d : { ...d, video_url: null })),
       branding: br ? { ...br, accent: br.accent && ACCENTS[br.accent] ? { primary: ACCENTS[br.accent].primary, deep: ACCENTS[br.accent].deep, tint: ACCENTS[br.accent].tint, glow: ACCENTS[br.accent].glow } : null } : null,

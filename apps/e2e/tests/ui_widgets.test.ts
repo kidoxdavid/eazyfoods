@@ -242,3 +242,30 @@ describe('star ratings on cards', () => {
     }
   }, 120_000);
 });
+
+describe('store and kitchen ratings', () => {
+  it('store and kitchen tiles carry a rating chip on the picture, the store page shows stars, and tile sizes do not change', async () => {
+    for (const w of [390, 1280]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: 900 } }); const page = await ctx.newPage();
+      const rate = (list: any[]) => list.forEach((r, i) => { if (i % 2 === 0) { r.rating_avg = 4.6; r.rating_count = 18; } });
+      await page.route(/\/api\/(stores|kitchens)(\?.*)?$/, async (route) => { const res = await route.fetch(); const j = await res.json(); if (Array.isArray(j)) rate(j); await route.fulfill({ response: res, json: j }); });
+      await page.route(/\/api\/stores\/[^/]+$/, async (route) => { const res = await route.fetch(); const j = await res.json(); j.rating_avg = 4.2; j.rating_count = 7; await route.fulfill({ response: res, json: j }); });
+      for (const path of ['/stores', '/kitchens']) {
+        await page.goto(`${base()}${path}`, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+        const tiles = await page.evaluate(() => [...document.querySelectorAll('.stile')].map((t) => { const c = t.querySelector('.stile-cover')!.getBoundingClientRect(), r = t.querySelector('.stile-rate')!.getBoundingClientRect(), s = t.querySelector('.stile-rate .stars') as HTMLElement; return { inside: r.left >= c.left && r.right <= c.right && r.top >= c.top && r.bottom <= c.bottom + 0.5, label: s.getAttribute('aria-label'), h: Math.round(t.getBoundingClientRect().height) }; }));
+        expect(tiles.length, path).toBeGreaterThan(0);
+        for (const t of tiles) expect(t.inside, `${path} chip sits on the picture`).toBe(true);
+        expect(tiles.some((t) => /4\.6 out of 5/.test(t.label ?? ''))).toBe(true);
+        await page.addStyleTag({ content: '.stile-rate { display: none !important }' }); await page.waitForTimeout(100);
+        const without = await page.evaluate(() => [...document.querySelectorAll('.stile')].map((t) => Math.round(t.getBoundingClientRect().height)));
+        expect(tiles.map((t) => t.h), `${path}: the chip changes no tile size`).toEqual(without);
+        if (w === 390 && path === '/stores') { await page.addStyleTag({ content: '.stile-rate { display: inline-flex !important }' }); await page.screenshot({ path: '/tmp/storetile.png', clip: { x: 0, y: 120, width: 390, height: 420 } }); }
+      }
+      const link = await (async () => { await page.goto(`${base()}/stores`, { waitUntil: 'networkidle' }); return page.locator('a.stile').first().getAttribute('href'); })();
+      await page.goto(`${base()}${link}`, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+      expect(await page.locator('.shead-body [aria-label*="4.2 out of 5"]').count()).toBe(1);
+      if (w === 390) await page.screenshot({ path: '/tmp/storehead.png', clip: { x: 0, y: 100, width: 390, height: 460 } });
+      await ctx.close();
+    }
+  }, 120_000);
+});

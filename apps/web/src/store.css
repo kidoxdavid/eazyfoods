@@ -477,3 +477,12 @@ main { padding-top: 14px; }
 .pmrow .stars.compact .stars-fg { top: 50%; transform: translateY(-50%); }
 .pmrow .stars.none .stars-bg { opacity: .55; }
 .pmrow .stars-n { display: none; }   /* the number of reviews is on the product page; the card has room for the stars only */
+
+/* Store and kitchen rating: a small chip on the picture of a store tile (adds no height), and stars in the store's own header. */
+.stile-cover { position: relative; }
+.stile-rate { position: absolute; right: 8px; bottom: 8px; z-index: 2; display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 999px; background: rgba(255, 255, 255, .92); box-shadow: 0 1px 4px rgba(0, 0, 0, .18); }
+.stile-rate .stars.compact { font-size: .78rem; line-height: 1; display: inline-flex; align-items: center; }
+.stile-rate .stars.compact .stars-bg, .stile-rate .stars.compact .stars-fg { letter-spacing: 0; } .stile-rate .stars.compact .stars-fg { top: 50%; transform: translateY(-50%); }
+.stile-rate .stars-n { display: inline-block; margin-left: 4px; font-size: .72rem; color: #3b4a42; }
+.stile-rate .stars.none .stars-bg { opacity: .7; }
+.shead-body .stars { font-size: 1rem; }

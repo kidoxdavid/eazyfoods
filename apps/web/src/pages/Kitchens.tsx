@@ -3,7 +3,7 @@ import { SkelGrid, SkelStore } from '../skeletons';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { money } from '../api';
 import { useApi } from '../hooks';
-import { ProductArt, SafeImg, StoreBanner, StoreMark } from '../art';
+import { ProductArt, SafeImg, StoreBanner, StoreMark, Stars } from '../art';
 import { AddToBasket, BasketBar } from '../cards';
 import { paletteCss } from '../theme';
 import { Badge, ErrorBox, Loading, Notice } from '../ui';
@@ -13,7 +13,7 @@ const ALLERGENS: [string, string][] = [['peanuts', 'Peanuts'], ['tree_nuts', 'Tr
 const label = (k: string) => ALLERGENS.find(([a]) => a === k)?.[1] ?? k.replace(/_/g, ' ');
 const TAGS: Record<string, string> = { halal: 'Halal', vegan: 'Vegan', vegetarian: 'Vegetarian', pescatarian: 'Pescatarian', gluten_free: 'Gluten-free', dairy_free: 'Dairy-free' };
 
-type KCard = { kitchen_type?: 'home' | 'restaurant'; address_line?: string | null; slug: string; name: string; description: string | null; city: string; area: string; is_open: boolean; min_order_cents: number | null; is_test_data: boolean; logo_url: string | null; cover_url: string | null; cuisines: string[]; ordering_paused: boolean; dish_count: number; from_cents: number | null };
+type KCard = { rating_avg?: number | null; rating_count?: number; kitchen_type?: 'home' | 'restaurant'; address_line?: string | null; slug: string; name: string; description: string | null; city: string; area: string; is_open: boolean; min_order_cents: number | null; is_test_data: boolean; logo_url: string | null; cover_url: string | null; cuisines: string[]; ordering_paused: boolean; dish_count: number; from_cents: number | null };
 type Dish = { slug: string; name: string; description: string | null; cuisine: string | null; spice_level: number | null; serves: string | null; prep_minutes: number | null; allergens: string[] | null; ingredients: string | null; dish_tags: string[];
   offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; available: number; image_url: string | null; menu_section?: string | null; video_url?: string | null };
 type K = Omit<KCard, 'dish_count' | 'from_cents'> & { postal_code?: string | null; phone?: string | null; video_url?: string | null; gallery?: string[]; preorders_enabled?: boolean; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; hours: { dow: number; opens: string; closes: string }[]; dishes: Dish[]; allergen_notice: string;
@@ -22,7 +22,7 @@ type K = Omit<KCard, 'dish_count' | 'from_cents'> & { postal_code?: string | nul
 function KitchenTile({ k }: { k: KCard }) {
   return (
     <Link to={`/k/${k.slug}`} className="stile">
-      <div className="stile-cover">{k.cover_url ? <SafeImg src={k.cover_url} loading="lazy" fallback={<StoreBanner name={k.name} />} /> : <StoreBanner name={k.name} />}</div>
+      <div className="stile-cover"><span className="stile-rate"><Stars value={k.rating_avg} count={k.rating_count} compact /></span>{k.cover_url ? <SafeImg src={k.cover_url} loading="lazy" fallback={<StoreBanner name={k.name} />} /> : <StoreBanner name={k.name} />}</div>
       <div className="stile-body">
         {k.logo_url ? <img src={k.logo_url} alt="" width={44} height={44} style={{ borderRadius: '50%', objectFit: 'cover' }} /> : <StoreMark name={k.name} size={44} />}
         <div><h3>{k.name}</h3><span className="muted small">{k.kitchen_type === 'restaurant' && k.address_line ? `${k.address_line}, ${k.city}` : k.area ? `${k.city} · ${k.area}` : k.city}{k.from_cents ? ` · dishes from ${money(k.from_cents)}` : ''}</span></div>
@@ -118,7 +118,7 @@ export function KitchenPage() {
           <div className="shead-body">
             {k.logo_url ? <img className="logo-img" src={k.logo_url} alt="" width={64} height={64} style={{ borderRadius: '50%', objectFit: 'cover' }} /> : <StoreMark name={k.name} size={64} />}
             <div className="grow"><h1>{k.name}</h1>{br?.tagline && <p className="tagline">{br.tagline}</p>}
-              <div className="row wrap"><Badge tone={k.is_open ? 'ok' : 'warn'}>{k.is_open ? 'Open now' : 'Closed now'}</Badge>{k.cuisines.map((c) => <Badge key={c}>{c}</Badge>)}{k.offers_pickup && <Badge tone="info">Pickup available</Badge>}{k.preorders_enabled && <Badge tone="info">Pre-orders welcome</Badge>}{k.is_test_data && <Badge tone="demo">Demo cook</Badge>}</div></div>
+              <div className="row wrap">{k.rating_avg != null ? <Stars value={k.rating_avg} count={k.rating_count} /> : <span className="muted small">No ratings yet</span>}<Badge tone={k.is_open ? 'ok' : 'warn'}>{k.is_open ? 'Open now' : 'Closed now'}</Badge>{k.cuisines.map((c) => <Badge key={c}>{c}</Badge>)}{k.offers_pickup && <Badge tone="info">Pickup available</Badge>}{k.preorders_enabled && <Badge tone="info">Pre-orders welcome</Badge>}{k.is_test_data && <Badge tone="demo">Demo cook</Badge>}</div></div>
           </div>
           <div className="shead-meta small muted">{k.kitchen_type === 'restaurant' ? <>Restaurant · {[k.address_line, k.city, k.postal_code].filter(Boolean).join(', ')}{k.phone ? ` · ${k.phone}` : ''}.</> : <>Home kitchen in {k.city}{k.area ? ` (${k.area})` : ''}. The cook’s address is shared only for pickup orders.</>}{k.min_order_cents ? ` · Minimum order ${money(k.min_order_cents)}` : ''}</div>
         </div>

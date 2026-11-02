@@ -5,7 +5,7 @@ import { Link, useParams } from 'react-router-dom';
 import { money, type StoreCard } from '../api';
 import { useApi } from '../hooks';
 import { usePlace } from '../place';
-import { StoreBanner, StoreMark } from '../art';
+import { StoreBanner, StoreMark, Stars } from '../art';
 import { Badge, ErrorBox, Loading, Notice } from '../ui';
 import { BasketBar, ProductGrid, StoreList, type Card } from '../cards';
 import { IconPin } from '../icons';
@@ -15,6 +15,7 @@ import { ClipPlayer, KitchenRedirect } from './Kitchens';
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 type SP = Card & { offer_id: string; price_cents: number; compare_at_cents: number | null; on_promotion: boolean; available: number; category: string | null; category_slug: string | null };
 type S = {
+  rating_avg?: number | null; rating_count?: number;
   name: string; description: string; address_line: string | null; city: string; province: string; postal_code: string | null; phone: string | null; is_open: boolean; min_order_cents: number | null; is_test_data: boolean;
   video_url?: string | null; logo_url: string | null; cover_url: string | null; policies: string | null; offers_delivery: boolean; offers_pickup: boolean; ordering_paused: boolean;
   branding: { accent: { primary: string; deep: string; tint: string; glow: string } | null; tagline: string | null; story: string | null; announcement: string | null; featured_slugs: string[]; website: string | null; instagram: string | null; facebook: string | null } | null;
@@ -72,7 +73,7 @@ export function StorePage() {
         <div className="shead-body">
           {s.logo_url ? <img className="logo-img" src={s.logo_url} alt="" width={64} height={64} style={{ borderRadius: '50%', objectFit: 'cover' }} /> : <StoreMark name={s.name} size={64} />}
           <div className="grow"><h1>{s.name}</h1>{br?.tagline && <p className="tagline">{br.tagline}</p>}
-            <div className="row wrap"><Badge tone={s.is_open ? 'ok' : 'warn'}>{s.is_open ? 'Open now' : 'Closed now'}</Badge>{s.regions.map((r) => <Link key={r.slug} to={`/search?region=${r.slug}&store=${slug}`}><Badge>{r.name}</Badge></Link>)}{s.offers_pickup && <Badge tone="info">Pickup available</Badge>}{rev.data?.average != null && <Badge tone="info">★ {rev.data.average} ({rev.data.count})</Badge>}{s.is_test_data && <Badge tone="demo">Demo store</Badge>}</div></div>
+            <div className="row wrap">{s.rating_avg != null ? <Stars value={s.rating_avg} count={s.rating_count} /> : <span className="muted small">No ratings yet</span>}<Badge tone={s.is_open ? 'ok' : 'warn'}>{s.is_open ? 'Open now' : 'Closed now'}</Badge>{s.regions.map((r) => <Link key={r.slug} to={`/search?region=${r.slug}&store=${slug}`}><Badge>{r.name}</Badge></Link>)}{s.offers_pickup && <Badge tone="info">Pickup available</Badge>}{rev.data?.average != null && <Badge tone="info">★ {rev.data.average} ({rev.data.count})</Badge>}{s.is_test_data && <Badge tone="demo">Demo store</Badge>}</div></div>
         </div>
         <div className="shead-meta small muted"><IconPin width={16} height={16} style={{ verticalAlign: -3 }} /> {[s.address_line, s.city, s.province, s.postal_code].filter(Boolean).join(', ')}{s.phone ? ` · ${s.phone}` : ''}{s.min_order_cents ? ` · Minimum order ${money(s.min_order_cents)}` : ''}</div>
       </div>

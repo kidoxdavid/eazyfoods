@@ -8,7 +8,9 @@ export const storeRoutes: FastifyPluginAsync = async (app) => {
   app.get<{ Querystring: { region?: string } }>('/stores', async (req) => {
     const { rows } = await pool.query(
       `SELECT s.slug, s.name, s.description, s.city, s.is_open, s.min_order_cents, s.is_test_data, s.logo_url, s.cover_url,
-              COALESCE(json_agg(DISTINCT jsonb_build_object('slug', r.slug, 'name', r.name)) FILTER (WHERE r.id IS NOT NULL), '[]') AS regions
+              COALESCE(json_agg(DISTINCT jsonb_build_object('slug', r.slug, 'name', r.name)) FILTER (WHERE r.id IS NOT NULL), '[]') AS regions,
+              (SELECT CASE WHEN count(*) >= 1 THEN round(avg(rv.rating)::numeric, 1)::float END FROM reviews rv WHERE rv.store_id = s.id AND rv.product_id IS NULL AND NOT rv.is_hidden) AS rating_avg,
+              (SELECT count(*)::int FROM reviews rv WHERE rv.store_id = s.id AND rv.product_id IS NULL AND NOT rv.is_hidden) AS rating_count
          FROM storefronts s
          LEFT JOIN store_regions sr ON sr.store_id = s.id LEFT JOIN regions r ON r.id = sr.region_id
         WHERE s.orderable AND s.kind = 'grocery' AND ($1::text IS NULL OR EXISTS (SELECT 1 FROM store_regions x JOIN regions rr ON rr.id = x.region_id WHERE x.store_id = s.id AND rr.slug = $1))
@@ -28,7 +30,8 @@ export const storeRoutes: FastifyPluginAsync = async (app) => {
     if (!z) return { fsa, serviceable: false, stores: [] };
     const stores = (await pool.query(
       `SELECT s.slug, s.name, s.is_open, s.min_order_cents, s.offers_delivery, s.offers_pickup, s.is_test_data,
-              (SELECT CASE WHEN count(*) >= 3 THEN round(avg(r.rating)::numeric, 1)::float END FROM reviews r WHERE r.store_id = s.id AND r.product_id IS NULL AND NOT r.is_hidden) AS rating_avg,
+              (SELECT CASE WHEN count(*) >= 1 THEN round(avg(r.rating)::numeric, 1)::float END FROM reviews r WHERE r.store_id = s.id AND r.product_id IS NULL AND NOT r.is_hidden) AS rating_avg,
+              (SELECT count(*)::int FROM reviews r WHERE r.store_id = s.id AND r.product_id IS NULL AND NOT r.is_hidden) AS rating_count,
               (SELECT count(*)::int FROM store_offers o WHERE o.store_id = s.id AND o.is_active AND o.stock_on_hand > o.stock_reserved) AS items_in_stock
          FROM storefronts s JOIN store_delivery_zones sz ON sz.store_id = s.id AND sz.zone_id = $1
         WHERE s.orderable AND s.kind = 'grocery' AND s.offers_delivery ORDER BY s.is_open DESC, s.name`, [z.id])).rows;
@@ -51,9 +54,10 @@ export const storeRoutes: FastifyPluginAsync = async (app) => {
       pool.query('SELECT accent, tagline, story, announcement, featured_slugs, website, instagram, facebook FROM store_branding WHERE store_id = $1', [s.id]),
     ]);
     const br = branding.rows[0];
+    const rt = (await pool.query(`SELECT CASE WHEN count(*) >= 1 THEN round(avg(rating)::numeric, 1)::float END AS rating_avg, count(*)::int AS rating_count FROM reviews WHERE store_id = $1 AND product_id IS NULL AND NOT is_hidden`, [s.id])).rows[0];
     const video_url = (await featureOn('shop.vendor_videos')) ? (await pool.query('SELECT video_url FROM stores WHERE id = $1', [s.id])).rows[0]?.video_url ?? null : null;
     return {
-      video_url,
+      video_url, rating_avg: rt.rating_avg, rating_count: rt.rating_count,
       slug: s.slug, name: s.name, description: s.description, address_line: s.address_line, city: s.city, province: s.province,
       postal_code: s.postal_code, phone: s.phone, is_open: s.is_open, min_order_cents: s.min_order_cents, is_test_data: s.is_test_data,
       logo_url: s.logo_url, cover_url: s.cover_url, policies: s.policies, offers_delivery: s.offers_delivery, offers_pickup: s.offers_pickup, ordering_paused: s.ordering_paused,
