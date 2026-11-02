@@ -36,6 +36,14 @@ export const SETTING_SCHEMAS: Record<string, z.ZodTypeAny> = {
   'finance.notifications': z.object({ payout_needs_approval: z.boolean(), payout_failed: z.boolean(), pricing_rule_pending: z.boolean(), reconciliation_difference: z.boolean(), payout_hold_placed: z.boolean() }),
   'finance.processing_assumption_bps': int(0, 1000),
   'finance.processing_assumption_fixed_cents': int(0, 200),
+  // EAZY Rewards points and the EAZY+ membership
+  'rewards.points_per_dollar': int(0, 100),
+  'rewards.points_per_credit_dollar': int(10, 10000),
+  'rewards.redeem_step_points': int(10, 100000),
+  'membership.trial_days': int(1, 365),
+  'membership.free_delivery_min_cents': int(0, 100000),
+  'membership.points_multiplier': int(1, 10),
+  'membership.price_cents': int(0, 100000),
 };
 
 export const adminSystemRoutes: FastifyPluginAsync = async (app) => {

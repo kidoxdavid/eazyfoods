@@ -70,7 +70,7 @@ function Commercial() {
     <Fetch path="/admin/settings">{(rows, reload) => (
       <>
         {!can('settings.manage') && <Alert tone="info">You can view these settings. Only an admin can change them.</Alert>}
-        <DataTable rows={rows} rowKey={(r) => r.key} empty="No settings." columns={[
+        <DataTable rows={rows.filter((r) => !RW_KEYS.includes(r.key))} rowKey={(r) => r.key} empty="No settings." columns={[
           { key: 'l', header: 'Setting', nowrap: false, render: (r) => <div><strong>{META[r.key]?.label ?? r.key}</strong><div className="text-xs text-gray-500">{META[r.key]?.help}</div></div> },
           { key: 'v', header: 'Value', nowrap: false, render: (r) => (META[r.key]?.kind === 'toggles' ? <div className="space-y-1.5">{Object.entries(r.value).map(([k, on]) => <Switch key={k} checked={!!on} disabled={!can('settings.manage')} label={ALERT_LABEL[k] ?? k} onChange={(v) => flip(r.key, { ...r.value, [k]: v }, reload)} />)}</div> : META[r.key]?.kind === 'bool' && can('settings.manage') ? <Switch checked={!!r.value} label={META[r.key].label} onChange={(v) => flip(r.key, v, reload)} /> : <strong>{show(r.key, r.value)}</strong>) },
           { key: 'u', header: 'Changed', render: (r) => fmtDateTime(r.updated_at) },
@@ -180,14 +180,85 @@ function RolesRef() {
   )
 }
 
+const RW_KEYS = ['rewards.points_per_dollar', 'rewards.points_per_credit_dollar', 'rewards.redeem_step_points', 'membership.trial_days', 'membership.free_delivery_min_cents', 'membership.points_multiplier', 'membership.price_cents']
+
+/** One place for the EAZY Rewards points and EAZY+ membership numbers, with a plain-words preview of what they mean. */
+function RewardsSettings() {
+  const can = useCan()
+  const flags = useApi('/admin/control/features')
+  const [busy, setBusy] = useState(null)
+  const flip = async (k, enabled) => { setBusy(k); try { await put(`/admin/control/features/${k}`, { enabled }); await flags.reload(); toast(enabled ? 'Switched on.' : 'Switched off.') } catch (e) { toast(errText(e), 'error') } finally { setBusy(null) } }
+  return (
+    <Fetch path="/admin/settings">{(rows, reload) => <RewardsForm rows={rows} reload={reload} can={can('settings.manage')} flags={flags.data} busy={busy} flip={flip} />}</Fetch>
+  )
+}
+
+function RewardsForm({ rows, reload, can, flags, busy, flip }) {
+  const val = (k) => rows.find((r) => r.key === k)?.value
+  const init = () => ({
+    ppd: String(val('rewards.points_per_dollar') ?? 1), pcd: String(val('rewards.points_per_credit_dollar') ?? 100), step: String(val('rewards.redeem_step_points') ?? 500),
+    trial: String(val('membership.trial_days') ?? 30), minFree: ((val('membership.free_delivery_min_cents') ?? 3000) / 100).toFixed(2), mult: String(val('membership.points_multiplier') ?? 2), price: ((val('membership.price_cents') ?? 799) / 100).toFixed(2),
+  })
+  const [f, setF] = useState(init)
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
+  const n = (x) => Number(x)
+  const stepValue = n(f.pcd) > 0 ? n(f.step) / n(f.pcd) : 0
+  const orderPts = Math.floor(50 * n(f.ppd)), backPct = n(f.pcd) > 0 ? (n(f.ppd) / n(f.pcd)) * 100 : 0
+  const save = useAction(async () => {
+    const check = (label, x, lo, hi) => { if (Number.isNaN(x) || x < lo || x > hi) throw new Error(`${label}: enter a number between ${lo} and ${hi}.`) }
+    check('Points per dollar', n(f.ppd), 0, 100); check('Points worth $1', n(f.pcd), 10, 10000); check('Redeem step', n(f.step), 10, 100000)
+    check('Trial days', n(f.trial), 1, 365); check('Free delivery minimum', n(f.minFree), 0, 1000); check('Points multiplier', n(f.mult), 1, 10); check('Price', n(f.price), 0, 1000)
+    const body = {
+      'rewards.points_per_dollar': Math.round(n(f.ppd)), 'rewards.points_per_credit_dollar': Math.round(n(f.pcd)), 'rewards.redeem_step_points': Math.round(n(f.step)),
+      'membership.trial_days': Math.round(n(f.trial)), 'membership.free_delivery_min_cents': Math.round(n(f.minFree) * 100), 'membership.points_multiplier': Math.round(n(f.mult)), 'membership.price_cents': Math.round(n(f.price) * 100),
+    }
+    for (const [k, v] of Object.entries(body)) if (JSON.stringify(val(k)) !== JSON.stringify(v)) await put(`/admin/settings/${k}`, { value: v })
+    toast('Saved and recorded in the audit log'); reload()
+  })
+  const flag = (k) => flags?.find((x) => x.key === k)
+  return (
+    <div className="space-y-4">
+      {!can && <Alert tone="info">You can view these numbers. Only an admin can change them.</Alert>}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <Card title="EAZY Rewards points" sub="Customers earn points on delivered orders and redeem them for store credit.">
+          <div className="space-y-3">
+            {flag('shop.points') && <Switch label="Points are on" hint="Turn off to stop earning and redeeming." checked={flag('shop.points').enabled} disabled={!can || busy === 'shop.points'} onChange={(v) => flip('shop.points', v)} />}
+            <Field label="Points earned per $1 spent" hint="Counted on what was delivered, after refunds. 0 stops new points." htmlFor="rw1"><Input id="rw1" inputMode="numeric" value={f.ppd} disabled={!can} onChange={set('ppd')} /></Field>
+            <Field label="Points that are worth $1 of credit" hint="Higher means points are worth less." htmlFor="rw2"><Input id="rw2" inputMode="numeric" value={f.pcd} disabled={!can} onChange={set('pcd')} /></Field>
+            <Field label="Redeem in steps of (points)" hint="Customers redeem a whole step at a time." htmlFor="rw3"><Input id="rw3" inputMode="numeric" value={f.step} disabled={!can} onChange={set('step')} /></Field>
+          </div>
+        </Card>
+        <Card title="EAZY+ membership" sub="A membership with free delivery over a minimum and bonus points. For now it is a free trial: nothing is charged.">
+          <div className="space-y-3">
+            {flag('shop.membership') && <Switch label="EAZY+ is on" hint="Turn off to hide it and stop the benefits." checked={flag('shop.membership').enabled} disabled={!can || busy === 'shop.membership'} onChange={(v) => flip('shop.membership', v)} />}
+            <Field label="Free trial length (days)" htmlFor="mb1"><Input id="mb1" inputMode="numeric" value={f.trial} disabled={!can} onChange={set('trial')} /></Field>
+            <Field label="Free delivery from a store once items there reach ($)" hint="Delivery is waived per store, for members only." htmlFor="mb2"><Input id="mb2" inputMode="decimal" value={f.minFree} disabled={!can} onChange={set('minFree')} /></Field>
+            <Field label="Points multiplier for members (×)" htmlFor="mb3"><Input id="mb3" inputMode="numeric" value={f.mult} disabled={!can} onChange={set('mult')} /></Field>
+            <Field label="Price after the trial ($ per month)" hint="Shown for planning only. Paid billing is not switched on yet." htmlFor="mb4"><Input id="mb4" inputMode="decimal" value={f.price} disabled={!can} onChange={set('price')} /></Field>
+          </div>
+        </Card>
+      </div>
+      <Card title="What this means">
+        <ul className="text-sm space-y-1.5 text-gray-700 list-disc pl-5">
+          <li>A <strong>$50</strong> delivered order earns <strong>{orderPts} points</strong>{n(f.mult) > 1 ? <>, or <strong>{orderPts * n(f.mult)}</strong> for an EAZY+ member</> : ''}.</li>
+          <li>{n(f.step)} points redeem for <strong>${stepValue.toFixed(2)}</strong> of store credit. That is about <strong>{backPct.toFixed(1)}%</strong> back on what a customer spends{n(f.mult) > 1 ? <> (<strong>{(backPct * n(f.mult)).toFixed(1)}%</strong> for members)</> : ''}.</li>
+          <li>Members get <strong>free delivery</strong> from a store once their items there reach <strong>${n(f.minFree).toFixed(2)}</strong>.</li>
+          <li>Redeemed points become store credit that the company pays for, so it is booked as an expense in the finance records.</li>
+        </ul>
+      </Card>
+      {can && <div><Alert>{save.error}</Alert><Button busy={save.busy} onClick={() => save.run()}>Save changes</Button></div>}
+    </div>
+  )
+}
+
 export function Settings() {
   const can = useCan()
   const [tab, setTab] = useState(can('settings.view') ? 'settings' : 'users')
   return (
     <>
       <PageHeader title="Settings & access" sub="Commercial rules and who can do what. Every change is recorded in the audit log." />
-      <Tabs value={tab} onChange={setTab} tabs={[...(can('settings.view') ? [{ id: 'settings', label: 'Commercial settings' }] : []), { id: 'users', label: 'Users & roles' }, { id: 'roles', label: 'Role reference' }]} />
-      <div className="mt-4 space-y-4">{tab === 'settings' ? <Need perm={['settings.view']}><Commercial /></Need> : tab === 'users' ? <Users /> : <RolesRef />}</div>
+      <Tabs value={tab} onChange={setTab} tabs={[...(can('settings.view') ? [{ id: 'settings', label: 'Commercial settings' }] : []), { id: 'rewards', label: 'Rewards & EAZY+' }, { id: 'users', label: 'Users & roles' }, { id: 'roles', label: 'Role reference' }]} />
+      <div className="mt-4 space-y-4">{tab === 'settings' ? <Need perm={['settings.view']}><Commercial /></Need> : tab === 'rewards' ? <Need perm={['settings.view']}><RewardsSettings /></Need> : tab === 'users' ? <Users /> : <RolesRef />}</div>
     </>
   )
 }
