@@ -16,7 +16,7 @@ describe('home: your EAZY faves', () => {
       const boxes = await page.evaluate(() => [...document.querySelectorAll('.faves .fave span')].map((e) => { const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }));
       for (const [bw, bh] of boxes) { expect(bh, `tile height at ${w}px`).toBeLessThanOrEqual(54); expect(bw).toBeGreaterThan(40); }
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(w + 1);
-      if (w === 390) { await page.screenshot({ path: '/tmp/faves390.png' }); await tiles.filter({ hasText: 'Weekly deals' }).click(); await page.waitForURL(/\/deals/); await page.goBack(); await tiles.filter({ hasText: 'Buy again' }).click(); await page.waitForURL(/\/buy-again/); await page.getByRole('heading', { name: 'Buy again', exact: true }).waitFor(); }
+      if (w === 390) { await page.locator('.faves').screenshot({ path: '/tmp/faves390.png' }); await tiles.filter({ hasText: 'Weekly deals' }).click(); await page.waitForURL(/\/deals/); await page.goBack(); await tiles.filter({ hasText: 'Buy again' }).click(); await page.waitForURL(/\/buy-again/); await page.getByRole('heading', { name: 'Buy again', exact: true }).waitFor(); }
       await ctx.close();
     }
   }, 120_000);

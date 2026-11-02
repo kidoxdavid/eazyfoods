@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { SkelShelf } from '../skeletons';
 import { useFeature, useFeatures } from '../features';
+import { IconBuyAgain, IconChef, IconDeals, IconFlyer, IconNew, IconRecipes } from '../faveIcons';
 import { Link } from 'react-router-dom';
 import { recentSlugs, type Region, type StoreCard } from '../api';
 import { useAuth } from '../auth';
@@ -57,17 +58,17 @@ function CollectionShelf({ slug }: { slug: string }) {
 function Faves() {
   const on = useFeatures();
   const t = [
-    { to: '/buy-again', e: '🛒', l: 'Buy again', bg: '#e1efe5', show: true },
-    { to: '/deals', e: '🏷️', l: 'Weekly deals', bg: '#fde9b5', show: true },
-    { to: '/flyer', e: '📰', l: 'Weekly flyer', bg: '#f4d6cf', show: on('shop.flyer') },
-    { to: '/new', e: '✨', l: 'New arrivals', bg: '#dce8f6', show: true },
-    { to: '/recipes', e: '🍲', l: 'Recipes', bg: '#efe0f2', show: true },
-    { to: '/kitchens', e: '👩‍🍳', l: 'Home chefs', bg: '#f6e3cc', show: true },
+    { to: '/buy-again', Icon: IconBuyAgain, l: 'Buy again', k: 'green', show: true },
+    { to: '/deals', Icon: IconDeals, l: 'Weekly deals', k: 'gold', show: true },
+    { to: '/flyer', Icon: IconFlyer, l: 'Weekly flyer', k: 'coral', show: on('shop.flyer') },
+    { to: '/new', Icon: IconNew, l: 'New arrivals', k: 'blue', show: true },
+    { to: '/recipes', Icon: IconRecipes, l: 'Recipes', k: 'violet', show: true },
+    { to: '/kitchens', Icon: IconChef, l: 'Home chefs', k: 'peach', show: true },
   ].filter((x) => x.show);
   return (
     <section className="faves" aria-label="Your EAZY faves">
       <h2>Your EAZY faves</h2>
-      <div className="faves-grid">{t.map((x) => <Link key={x.to} to={x.to} className="fave"><span style={{ background: x.bg }} aria-hidden>{x.e}</span>{x.l}</Link>)}</div>
+      <div className="faves-grid">{t.map(({ to, Icon, l, k }) => <Link key={to} to={to} className="fave"><span className={`fv-${k}`}><Icon /></span>{l}</Link>)}</div>
     </section>
   );
 }

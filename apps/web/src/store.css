@@ -569,3 +569,12 @@ main { padding-top: 14px; }
 
 /* Time slots: two dropdowns (day, time) instead of a grid of buttons, to save space */
 .slot-selects { display: grid; grid-template-columns: 1fr 1.3fr; gap: 8px; margin: 6px 0; } .slot-selects select { width: 100%; }
+
+/* EAZY faves: bright gradient tiles with illustrated icons that pop out of the tile */
+.fave span { position: relative; overflow: visible; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .07), 0 2px 6px rgba(20, 40, 30, .08); transition: transform .15s; }
+.fave:hover span, .fave:focus-visible span { transform: translateY(-2px); } .fave:active span { transform: scale(.96); }
+.fave span .fave-ico { width: 42px; height: 42px; margin-top: -8px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .18)); }
+.fv-green { background: linear-gradient(135deg, #d9f3e1, #9fdcb4); } .fv-gold { background: linear-gradient(135deg, #fff0b8, #ffcd4f); } .fv-coral { background: linear-gradient(135deg, #ffe0d7, #ff9f8c); }
+.fv-blue { background: linear-gradient(135deg, #dce9ff, #9dbdff); } .fv-violet { background: linear-gradient(135deg, #f0e0fb, #cba5ec); } .fv-peach { background: linear-gradient(135deg, #ffe6c9, #ffb978); }
+@media (prefers-reduced-motion: reduce) { .fave span { transition: none; } }
+@media (min-width: 700px) { .fave span .fave-ico { width: 46px; height: 46px; } }
