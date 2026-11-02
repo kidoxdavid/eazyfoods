@@ -545,3 +545,14 @@ main { padding-top: 14px; }
 /* Basket: time picker and the savings line */
 .basket-times { border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 10px; } .basket-times h2 { font-size: 1.05rem; margin: 0 0 6px; }
 .summary-row.saving { color: var(--green); font-weight: 700; }
+
+/* Product page: the buy bar that follows you (phones and tablets; on a laptop the buy box is already beside the picture) */
+.sticky-buy { display: none; }
+@media (max-width: 899px) {
+  .sticky-buy { display: flex; position: fixed; left: 10px; right: 10px; bottom: calc(var(--tab-h) + 4px); z-index: 60; align-items: center; justify-content: space-between; gap: 12px;
+    background: color-mix(in srgb, var(--card) 86%, transparent); -webkit-backdrop-filter: saturate(1.6) blur(14px); backdrop-filter: saturate(1.6) blur(14px); border: 1px solid var(--line);
+    border-radius: 999px; box-shadow: 0 12px 30px rgba(20, 40, 30, .22); padding: 6px 8px 6px 18px; }
+  .sb-price { display: grid; line-height: 1.1; } .sb-price b { font-size: 1.2rem; } .sb-price small { font-size: .7rem; color: var(--ink-2); }
+  .sb-add { flex: 0 1 220px; min-width: 150px; } .sb-add .btn, .sb-add .addbtn, .sb-add .addstep { width: 100%; }
+  body:has(.sticky-buy) .sticky-bar { display: none; }
+}

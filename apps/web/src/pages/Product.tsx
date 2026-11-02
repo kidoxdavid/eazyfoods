@@ -138,7 +138,7 @@ export function ProductPage() {
             {!cur.is_open && <Notice tone="warn">{cur.store_name} is closed now. You can add it, but you can only check out while it is open.</Notice>}
             {on('shop.multibuy') && cur.tiers.length > 0 && <ul className="tiers" aria-label="Multi-buy prices">{cur.tiers.map((t) => <li key={t.min_qty}>Buy {t.min_qty}+ <strong>{money(t.unit_price_cents)}</strong> each <span className="muted">· save {Math.round((1 - t.unit_price_cents / cur.price_cents) * 100)}%</span></li>)}</ul>}
             {unitText(unitPrice(cur.price_cents, p.pack_size, p.pack_unit)) && <div className="unit">{unitText(unitPrice(cur.price_cents, p.pack_size, p.pack_unit))}</div>}
-            <AddToBasket cta size="lg" offer={mk(cur)} />
+            <div className="buy-main"><AddToBasket cta size="lg" offer={mk(cur)} /></div>
             <div className="bb-actions">{on('shop.alerts') && <AlertButton slug={slug!} inStock={p.offers.some((o) => o.in_stock)} />}<SaveToList slug={slug!} /></div>
             <div className="small muted"><IconShield width={16} height={16} style={{ verticalAlign: -3 }} /> Pay securely. We never see your card number. <Link to="/pages/refund-policy">{t('Refund policy')}</Link></div>
             {cur.is_test_data && <Badge tone="demo">Demo store</Badge>}
@@ -166,6 +166,7 @@ export function ProductPage() {
       {on('shop.questions') && <Questions slug={slug!} />}
       <Shelf title={t('You might also like')} items={related.data ?? []} />
       <BasketBar />
+      {cur && cur.in_stock && <StickyBuy price={cur.price_cents} unit={unitText(unitPrice(cur.price_cents, p.pack_size, p.pack_unit))} offer={mk(cur)} />}
     </article>
   );
 }
@@ -184,5 +185,22 @@ function NutritionPanel({ n }: { n: Nutrition }) {
         {row('Protein', n.protein_g, 'g')}{row('Sodium', n.sodium_mg, 'mg')}
       </tbody>
     </table>
+  );
+}
+
+/** A buy bar that follows you down the page on a phone once the main Add button has scrolled out of view. */
+function StickyBuy({ price, unit, offer }: { price: number; unit: string | null; offer: Parameters<typeof AddToBasket>[0]['offer'] }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const el = document.querySelector('.buy-main'); if (!el || !('IntersectionObserver' in window)) return;
+    const io = new IntersectionObserver(([e]) => setShow(!e.isIntersecting && e.boundingClientRect.bottom < 0), { threshold: 0 });
+    io.observe(el); return () => io.disconnect();
+  }, [offer.offer_id]);
+  if (!show) return null;
+  return (
+    <div className="sticky-buy" role="region" aria-label="Add to basket">
+      <div className="sb-price"><b>{money(price)}</b>{unit && <small>{unit}</small>}</div>
+      <div className="sb-add"><AddToBasket size="lg" offer={offer} /></div>
+    </div>
   );
 }
