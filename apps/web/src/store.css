@@ -519,3 +519,12 @@ main { padding-top: 14px; }
 .nutrition caption { caption-side: top; text-align: left; font: 800 1.35rem var(--display, var(--body)); padding: 4px 0 2px; border-bottom: 8px solid var(--ink); }
 .nutrition th, .nutrition td { padding: 3px 0; border-bottom: 1px solid var(--line-2); text-align: left; font-weight: 600; } .nutrition td { text-align: right; font-weight: 400; }
 .nutrition .sub th { padding-left: 14px; font-weight: 400; } .nutrition .cal th { font-size: 1.05rem; } .nutrition .cal td { font-size: 1.3rem; font-weight: 800; } .nutrition .serving th, .nutrition .serving td { border-bottom: 4px solid var(--ink); }
+
+/* Search suggestions */
+.hsearch-wrap { grid-area: search; position: relative; min-width: 0; } .hsearch-wrap .hsearch { grid-area: auto; }
+.sugg { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 90; margin: 0; padding: 6px; list-style: none; background: var(--card, #fff); color: var(--ink, #1b2a21); border: 1px solid var(--line, #e4e0d6); border-radius: 14px; box-shadow: 0 16px 40px rgba(0, 0, 0, .25); max-height: min(70vh, 460px); overflow-y: auto; }
+.sugg li { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 10px; cursor: pointer; min-height: 48px; } .sugg li.on { background: var(--tint, #f1eee6); }
+.sugg img, .sugg-ph { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; flex: none; background: var(--tint, #f1eee6); display: grid; place-items: center; font-size: 1.1rem; }
+.sugg-t { min-width: 0; display: grid; } .sugg-t b { font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .sugg-t small { color: var(--ink-2, #5d6b63); font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sugg-all { color: var(--green, #1f5b3a); font-weight: 600; border-top: 1px solid var(--line, #eee); border-radius: 0 0 10px 10px; margin-top: 2px; }
+.sugg-ph svg { width: 100%; height: 100%; display: block; border-radius: 8px; }

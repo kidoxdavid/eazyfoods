@@ -144,20 +144,25 @@ export const searchRoutes: FastifyPluginAsync = async (app) => {
     return { query: a.q, total, page: a.page, page_size: PAGE, results, suggestions, facets };
   });
 
+  // As-you-type suggestions: products (with a picture and the lowest price), products found through a verified alternative name, and stores.
   app.get('/search/suggest', async (req) => {
     const t = norm(z.object({ q: z.string().max(100) }).parse(req.query).q);
     if (t.length < 2) return [];
     const { rows } = await pool.query(
-      `(SELECT 'product' AS type, p.name AS label, p.slug, NULL AS via
-          FROM products p WHERE p.status = 'published' AND (p.name_norm LIKE $1 || '%' OR p.name_norm LIKE '% ' || $1 || '%')
-          AND EXISTS (SELECT 1 FROM offers_live o JOIN storefronts s ON s.id = o.store_id AND s.orderable WHERE o.product_id = p.id AND o.is_active)
-          ORDER BY p.name LIMIT 5)
+      `WITH hit AS (
+         (SELECT p.id, NULL::text AS via, 0 AS rank, (p.name_norm LIKE $1 || '%') AS starts FROM products p WHERE p.status = 'published' AND (p.name_norm LIKE $1 || '%' OR p.name_norm LIKE '% ' || $1 || '%')
+            AND EXISTS (SELECT 1 FROM offers_live o JOIN storefronts s ON s.id = o.store_id AND s.orderable WHERE o.product_id = p.id AND o.is_active)
+            ORDER BY (p.name_norm LIKE $1 || '%') DESC, p.name LIMIT 6)
+         UNION ALL
+         (SELECT p.id, a.alias, 1, false FROM product_aliases a JOIN products p ON p.id = a.product_id AND p.status = 'published'
+           WHERE a.verified AND a.alias_norm LIKE $1 || '%' AND p.name_norm NOT LIKE $1 || '%' LIMIT 3))
+       SELECT 'product' AS type, p.name AS label, p.slug, h.via,
+              (SELECT url FROM product_images WHERE product_id = p.id ORDER BY sort_order LIMIT 1) AS image_url,
+              (SELECT min(o.price_cents) FROM offers_live o JOIN storefronts s ON s.id = o.store_id AND s.orderable WHERE o.product_id = p.id AND o.is_active AND o.stock_on_hand > o.stock_reserved)::int AS from_cents,
+              (SELECT b.name FROM brands b WHERE b.id = p.brand_id) AS brand
+         FROM hit h JOIN products p ON p.id = h.id
        UNION ALL
-       (SELECT 'product', p.name, p.slug, a.alias
-          FROM product_aliases a JOIN products p ON p.id = a.product_id AND p.status = 'published'
-         WHERE a.verified AND a.alias_norm LIKE $1 || '%' AND p.name_norm NOT LIKE $1 || '%' LIMIT 3)
-       UNION ALL
-       (SELECT 'store', s.name, s.slug, NULL FROM storefronts s WHERE s.orderable AND lower(s.name) LIKE '%' || $1 || '%' LIMIT 3)`,
+       (SELECT 'store', s.name, s.slug, NULL, s.logo_url, NULL, NULL FROM storefronts s WHERE s.orderable AND lower(s.name) LIKE '%' || $1 || '%' LIMIT 3)`,
       [t],
     );
     return rows;

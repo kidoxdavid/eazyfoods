@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useFeatures } from './features';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { money, type Region } from './api';
+import { api, money, type Region } from './api';
 import { useApi } from './hooks';
 import { useSiteTheme } from './theme';
 import { useAuth } from './auth';
@@ -11,6 +11,7 @@ import { IconBasket, IconChevron, IconClose, IconHome, IconKitchen, IconMenu, Ic
 import { Button, Field, Input, Modal, Notice } from './ui';
 import { LangSwitch, useT } from './i18n';
 import { InstallApp } from './pwa';
+import { ProductArt } from './art';
 
 function PlaceModal() {
   const { place, check, clear, open, setOpen } = usePlace();
@@ -106,7 +107,27 @@ export function Header() {
   const ann = content.data?.announcement;
   const subtotal = cart ? cart.subtotal_cents : guest.reduce((a, g) => a + g.unit_price_cents * g.quantity, 0);
   const submit = (e: FormEvent) => { e.preventDefault(); const p = new URLSearchParams(); if (q.trim()) p.set('q', q.trim()); if (dept) p.set('category', dept); nav(`/search?${p}`); };
-  // On phones the header slides away while reading down the page and returns as soon as you scroll up, so the screen is for content.
+
+  // As-you-type suggestions under the search box (products with a picture and price, stores), with arrow keys, Enter and Escape.
+  type Sug = { type: 'product' | 'store'; label: string; slug: string; via: string | null; image_url: string | null; from_cents: number | null; brand: string | null };
+  const [sugg, setSugg] = useState<Sug[]>([]); const [hi, setHi] = useState(-1); const [showS, setShowS] = useState(false);
+  useEffect(() => {
+    const t = q.trim(); if (t.length < 2) { setSugg([]); return; }
+    let live = true;
+    const id = setTimeout(async () => { try { const r = await api<Sug[]>(`/search/suggest?q=${encodeURIComponent(t)}`); if (live) { setSugg(r); setHi(-1); } } catch { if (live) setSugg([]); } }, 160);
+    return () => { live = false; clearTimeout(id); };
+  }, [q]);
+  useEffect(() => { setShowS(false); }, [loc.pathname, loc.search]);
+  const listOpen = showS && q.trim().length >= 2 && sugg.length > 0;
+  const rows = listOpen ? sugg.length + 1 : 0;                       // the last row is "see all results"
+  const go = (k: number) => { setShowS(false); if (k >= sugg.length) { const p = new URLSearchParams(); p.set('q', q.trim()); if (dept) p.set('category', dept); nav(`/search?${p}`); } else nav(sugg[k].type === 'store' ? `/s/${sugg[k].slug}` : `/p/${sugg[k].slug}`); };
+  const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') { setShowS(false); return; }
+    if (!rows) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setHi((h) => (h + 1) % rows); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setHi((h) => (h <= 0 ? rows - 1 : h - 1)); }
+    else if (e.key === 'Enter' && hi >= 0) { e.preventDefault(); go(hi); }
+  };  // On phones the header slides away while reading down the page and returns as soon as you scroll up, so the screen is for content.
   const [away, setAway] = useState(false);
   useEffect(() => {
     let last = window.scrollY, ticking = false;
@@ -141,13 +162,27 @@ export function Header() {
           <button className="deliver" onClick={() => setOpen(true)}>
             <IconPin width={22} height={22} /><span><small>{t('Deliver to')}</small><b>{place ? `${place.fsa} ${place.serviceable ? '' : '(not yet)'}` : t('Choose location')}</b></span>
           </button>
+          <div className="hsearch-wrap" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setShowS(false); }}>
           <form onSubmit={submit} role="search" className="hsearch">
             <label className="sr-only" htmlFor="dept">{t('Department')}</label>
             <select id="dept" value={dept} onChange={(e) => setDept(e.target.value)}><option value="">{t('All')}</option>{cats.data?.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</select>
             <label className="sr-only" htmlFor="q">{t('Search products, brands and stores')}</label>
-            <input id="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Search garri, shito, berbere, pondu…')} autoComplete="off" enterKeyHint="search" />
+            <input id="q" value={q} onChange={(e) => { setQ(e.target.value); setShowS(true); }} onFocus={() => setShowS(true)} onKeyDown={onKey} placeholder={t('Search garri, shito, berbere, pondu…')} autoComplete="off" enterKeyHint="search"
+              role="combobox" aria-expanded={listOpen} aria-controls="sugg-list" aria-autocomplete="list" aria-activedescendant={hi >= 0 ? `sugg-${hi}` : undefined} />
             <button type="submit" aria-label={t('Search')}><IconSearch /></button>
           </form>
+          {listOpen && (
+            <ul id="sugg-list" className="sugg" role="listbox" aria-label={t('Suggestions')} onMouseDown={(e) => e.preventDefault()}>
+              {sugg.map((x, k) => (
+                <li key={x.type + x.slug + k} id={`sugg-${k}`} role="option" aria-selected={hi === k} className={hi === k ? 'on' : ''} onMouseEnter={() => setHi(k)} onClick={() => go(k)}>
+                  {x.image_url ? <img src={x.image_url} alt="" width={36} height={36} loading="lazy" /> : <span className="sugg-ph" aria-hidden>{x.type === 'store' ? '🏪' : <ProductArt name={x.label} />}</span>}
+                  <span className="sugg-t"><b>{x.label}</b><small>{x.type === 'store' ? t('Store') : [x.via ? `${t('Also known as')} ${x.via}` : null, x.brand, x.from_cents != null ? `${t('from')} ${money(x.from_cents)}` : null].filter(Boolean).join(' · ')}</small></span>
+                </li>))}
+              <li id={`sugg-${sugg.length}`} role="option" aria-selected={hi === sugg.length} className={`sugg-all${hi === sugg.length ? ' on' : ''}`} onMouseEnter={() => setHi(sugg.length)} onClick={() => go(sugg.length)}>
+                <IconSearch width={18} height={18} /><span>{t('See all results for')} <b>“{q.trim()}”</b></span>
+              </li>
+            </ul>)}
+          </div>
           <div className="hacct desktop-only">
             {me ? (<><Link to="/account"><small>{t('Hello')}, {me.full_name.split(' ')[0]}</small><b>{t('Account')}</b></Link><Link to="/orders"><small>{t('Returns &')}</small><b>{t('Orders')}</b></Link></>)
               : (<Link to="/signin"><small>{t('Hello, sign in')}</small><b>{t('Account')}</b></Link>)}
