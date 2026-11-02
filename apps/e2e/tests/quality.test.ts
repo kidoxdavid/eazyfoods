@@ -249,10 +249,9 @@ describe('pre-order slots (browser)', () => {
     await page.goto(base() + '/checkout'); await page.waitForLoadState('networkidle');
     await page.getByRole('heading', { name: /When\?/ }).waitFor();
     await page.getByRole('radio', { name: /Choose a time/ }).check();
-    const first = page.locator('.slot-grid .slot').first();
-    await first.waitFor();
-    const label = (await first.innerText()).split('–')[0].trim();
-    await first.click();
+    const timeSelect = page.getByRole('combobox', { name: 'Time' }); await timeSelect.waitFor();
+    await timeSelect.selectOption({ index: 1 });                                       // the first real time (index 0 is "Choose a time")
+    const label = ((await timeSelect.locator('option:checked').innerText()).split('–')[0] ?? '').trim();
     await page.getByText(/scheduled for/i).first().waitFor();
     await page.getByRole('button', { name: /Continue to payment/ }).click();
     await page.getByRole('button', { name: 'Simulate successful payment' }).click();

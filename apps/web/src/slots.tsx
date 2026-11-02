@@ -26,13 +26,16 @@ export function SlotPicker({ slug, value, onChange }: { slug: string; value?: st
   const list = days.find(([k]) => k === active)?.[1] ?? [];
   return (
     <div className="slotpick">
-      <div className="catchips" role="group" aria-label="Day">{days.map(([k, s]) => <button type="button" key={k} className={k === active ? 'on' : ''} aria-pressed={k === active} onClick={() => setDay(k)}>{dayLabel(s[0].start)}</button>)}</div>
-      <div className="slot-grid" role="group" aria-label="Time">
-        {list.map((s) => (
-          <button type="button" key={s.start} className={`slot ${value === s.start ? 'on' : ''}`} aria-pressed={value === s.start} onClick={() => onChange(value === s.start ? undefined : s.start)}>
-            {time(s.start)}<span className="small"> – {time(s.end)}</span>{s.remaining <= 1 && <span className="small slot-left"> · last place</span>}
-          </button>
-        ))}
+      <div className="slot-selects">
+        <label><span className="sr-only">Day</span>
+          <select className="input" aria-label="Day" value={active} onChange={(e) => { setDay(e.target.value); onChange(undefined); }}>
+            {days.map(([k, s]) => <option key={k} value={k}>{dayLabel(s[0].start)}</option>)}
+          </select></label>
+        <label><span className="sr-only">Time</span>
+          <select className="input" aria-label="Time" value={value && list.some((s) => s.start === value) ? value : ''} onChange={(e) => onChange(e.target.value || undefined)}>
+            <option value="">Choose a time</option>
+            {list.map((s) => <option key={s.start} value={s.start}>{time(s.start)} – {time(s.end)}{s.remaining <= 1 ? ' · last place' : ''}</option>)}
+          </select></label>
       </div>
       <p className="small muted">Times are Calgary time. Your order is confirmed by the store, and ready within the window you pick.</p>
     </div>

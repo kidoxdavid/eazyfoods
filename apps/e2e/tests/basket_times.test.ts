@@ -22,14 +22,15 @@ describe('basket: time picker and savings', () => {
     await page.goto(`${base()}/cart`, { waitUntil: 'networkidle' });
     await page.getByRole('heading', { name: /When do you want it\?/ }).waitFor({ timeout: 8000 }).catch(async () => { console.log('DBG', JSON.stringify({ cart: await page.evaluate(async () => (await (await fetch('/api/cart')).json()).stores.map((s: any) => s.slug)), txt: (await page.locator('main').innerText()).slice(0, 300) })); throw new Error('no picker'); });
     expect(await page.locator('.summary-row.saving').innerText()).toMatch(/You.re saving[\s\S]*−\$15\.00/);        // 3 × ($25.00 − $20.00)
-    const first = page.locator('.basket-times .slot').first(); await first.waitFor(); const label = (await first.innerText()).trim(); await first.click();
+    const timeSelect = page.locator('.basket-times').getByRole('combobox', { name: 'Time' }); await timeSelect.waitFor();
+    await timeSelect.selectOption({ index: 1 }); const label = (await timeSelect.locator('option:checked').innerText()).trim();
     await page.getByText(/is saved\. You confirm it at checkout/).waitFor();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(391);
     await page.screenshot({ path: '/tmp/basket390.png', fullPage: true });
     // at checkout the same time is already chosen
     await page.getByRole('link', { name: /Proceed to checkout/ }).click(); await page.waitForURL(/\/checkout/);
     await page.getByText('Choose a time').first().waitFor();
-    expect(await page.locator('.slot.on').first().innerText()).toContain(label.split(' ')[0]);
+    expect((await page.getByRole('combobox', { name: 'Time' }).first().locator('option:checked').innerText()).trim()).toBe(label);   // the same time is already chosen
     await ctx.close();
     const c2 = await db(); await c2.query(`UPDATE stores SET preorders_enabled = false WHERE slug = 'demo-calgary-west-african-market'`); await c2.query(`UPDATE store_offers SET compare_at_cents = NULL WHERE id = $1`, [offer]); await c2.end();
   }, 150_000);

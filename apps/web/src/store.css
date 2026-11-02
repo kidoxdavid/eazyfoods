@@ -566,3 +566,6 @@ main { padding-top: 14px; }
 .plus-card button { background: var(--green); color: #fff; border: 0; border-radius: 999px; font: 800 .8rem var(--body); padding: 8px 14px; cursor: pointer; white-space: nowrap; } .plus-card button:disabled { opacity: .6; }
 .acct-list { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 2px 12px; display: grid; }
 .acct-list a { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); font-weight: 600; text-decoration: none; color: var(--ink); min-height: 44px; } .acct-list a:last-child { border-bottom: 0; } .acct-list small { color: var(--ink-2); font-weight: 500; }
+
+/* Time slots: two dropdowns (day, time) instead of a grid of buttons, to save space */
+.slot-selects { display: grid; grid-template-columns: 1fr 1.3fr; gap: 8px; margin: 6px 0; } .slot-selects select { width: 100%; }
