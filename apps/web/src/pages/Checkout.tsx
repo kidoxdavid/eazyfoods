@@ -7,7 +7,7 @@ import { ApiError, api, money, post } from '../api';
 import { useCart } from '../cart';
 import { useAuth } from '../auth';
 import { useAction, useApi } from '../hooks';
-import { SlotPicker, slotText } from '../slots';
+import { SlotPicker, clearSlots, savedSlots, slotText } from '../slots';
 import { Badge, Button, ErrorBox, Field, Input, Loading, Notice, Select, Textarea } from '../ui';
 
 type Address = { id: string; label: string | null; recipient_name: string; phone: string; line1: string; line2: string | null; city: string; province: string; postal_code: string; instructions: string | null; is_default: boolean; serviceable: boolean; zone: string | null };
@@ -59,8 +59,8 @@ export function CheckoutPage() {
   const [gift, setGift] = useState(false);
   const [giftMessage, setGiftMessage] = useState('');
   const [adding, setAdding] = useState(false);
-  const [slots, setSlots] = useState<Record<string, string>>({});
-  const [later, setLater] = useState<Record<string, boolean>>({});
+  const [slots, setSlots] = useState<Record<string, string>>(() => savedSlots());   // times already picked in the basket
+  const [later, setLater] = useState<Record<string, boolean>>(() => Object.fromEntries(Object.keys(savedSlots()).map((k) => [k, true])));
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteErr, setQuoteErr] = useState<string>();
   const [order, setOrder] = useState<{ id: string; order_number: string; total_cents: number; pay_cents?: number; client_secret: string | null } | null>(null);
@@ -92,7 +92,7 @@ export function CheckoutPage() {
   });
 
   if (!me) return null;
-  if (order) return <PaymentStep order={order} cfg={cfg.data} onPaid={() => { refresh(); nav(`/orders/${order.id}`); }} />;
+  if (order) return <PaymentStep order={order} cfg={cfg.data} onPaid={() => { clearSlots(); refresh(); nav(`/orders/${order.id}`); }} />;
   if (!cart) return <><h1>{t('Checkout')}</h1><SkelRows n={3} label="Loading checkout" /></>;
   if (!cart.item_count) return <Notice>Your basket is empty. <Link to="/search">Find something to buy</Link>.</Notice>;
 

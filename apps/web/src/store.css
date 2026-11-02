@@ -528,3 +528,20 @@ main { padding-top: 14px; }
 .sugg-t { min-width: 0; display: grid; } .sugg-t b { font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .sugg-t small { color: var(--ink-2, #5d6b63); font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sugg-all { color: var(--green, #1f5b3a); font-weight: 600; border-top: 1px solid var(--line, #eee); border-radius: 0 0 10px 10px; margin-top: 2px; }
 .sugg-ph svg { width: 100%; height: 100%; display: block; border-radius: 8px; }
+
+/* Home: small shortcut tiles under the banner */
+.faves { margin: 2px 0 12px; } .faves h2 { font-size: 1.05rem; margin: 0 0 6px; }
+.faves-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.fave { display: grid; justify-items: center; gap: 3px; text-align: center; font-weight: 700; font-size: .72rem; line-height: 1.15; color: var(--ink); text-decoration: none; }
+.fave span { display: grid; place-items: center; width: 100%; height: 46px; border-radius: 14px; font-size: 21px; }
+@media (min-width: 700px) { .faves-grid { grid-template-columns: repeat(6, 1fr); max-width: 760px; } .fave span { height: 52px; font-size: 24px; } }
+
+/* Card chips: they live in the line that used to read "at <store>", so the card is exactly the size it was. */
+.pcard .psold { display: flex; gap: 4px; flex-wrap: nowrap; overflow: hidden; align-items: center; min-height: 1.25em; }   /* as tall as the one line of text it replaces */
+.pchip { display: inline-block; font-size: .68rem; line-height: 1.25; font-weight: 800; padding: 0 7px; border-radius: 6px; background: #eee; color: #3a3f3c; white-space: nowrap; flex: none; }
+.pchip.g { background: #e1efe5; color: #15412a; } .pchip.y { background: #fde9b5; color: #7a4a05; }
+@media (min-width: 700px) { .pcard .psold { min-height: calc(1.5em + 1px); } }
+
+/* Basket: time picker and the savings line */
+.basket-times { border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 10px; } .basket-times h2 { font-size: 1.05rem; margin: 0 0 6px; }
+.summary-row.saving { color: var(--green); font-weight: 700; }

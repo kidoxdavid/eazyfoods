@@ -1,3 +1,4 @@
+import { DIET_LABELS } from './diet';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { SkelRows } from './skeletons';
 import { useFeature } from './features';
@@ -17,7 +18,19 @@ export type Card = {
   min_price: number; was_price?: number | null; in_stock: boolean; on_sale?: boolean; store_count?: number; matched_alias?: string | null;
   unit_price_cents?: number | null; unit_basis?: '100g' | '100ml' | null; multibuy?: { min_qty: number; unit_price_cents: number } | null; dietary?: Record<string, boolean> | null;
   offer_id?: string | null; store_name?: string | null; store_slug?: string | null; available?: number | null; rating_avg?: number | null; rating_count?: number; sponsored_campaign_id?: string | null;
+  store_open?: boolean | null; offers_delivery?: boolean | null; offers_pickup?: boolean | null;
 };
+
+/** Up to two small facts on a card, in the line that used to say which store: when it can come, how few are left, or a diet label. */
+function cardChips(p: Card) {
+  const chips: { t: string; k: string }[] = [];
+  if (p.store_open && p.offers_delivery) chips.push({ t: '🚚 Today', k: 'g' });
+  else if (p.store_open && p.offers_pickup) chips.push({ t: '🏬 Pickup today', k: 'g' });
+  else if (p.store_open === false) chips.push({ t: 'Opens later', k: '' });
+  if (p.available != null && p.available > 0 && p.available <= 5) chips.push({ t: `Only ${p.available} left`, k: 'y' });
+  else { const d = Object.entries(p.dietary ?? {}).find(([, v]) => v); if (d) chips.push({ t: DIET_LABELS[d[0]] ?? d[0], k: '' }); }
+  return chips.slice(0, 2).map((c) => <span key={c.t} className={`pchip ${c.k}`}>{c.t}</span>);
+}
 
 /** $12.99 shown retail-style: small dollar sign and cents, large dollars. */
 export function Price({ cents, className = '' }: { cents: number; className?: string }) {
@@ -60,8 +73,8 @@ export function ProductCard({ p }: { p: Card }) {
     <article className="pcard">
       <Link to={`/p/${p.slug}`} className="pimg" onClick={click} tabIndex={-1} aria-hidden="true">
         {p.image_url ? <SafeImg src={p.image_url} loading="lazy" decoding="async" fallback={<ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />} /> : <ProductArt name={p.name} brand={p.brand} category={p.category_slug ?? p.category} size={packLabel(p)} />}
-        {p.on_sale && off > 0 && <span className="ribbon">{off}% off</span>}
-        {p.on_sale && off <= 0 && <span className="ribbon">Deal</span>}
+        {p.on_sale && was && was > p.min_price && <span className="ribbon">Save {money(was - p.min_price)}</span>}
+        {p.on_sale && !was && <span className="ribbon">Deal</span>}
         {!p.in_stock && <span className="ribbon grey">{t('Out of stock')}</span>}
       </Link>
       {fav.me
@@ -83,7 +96,7 @@ export function ProductCard({ p }: { p: Card }) {
         <Link to={`/p/${p.slug}`} className="pname" onClick={click}>{p.name}</Link>
         <div className="pmrow"><span className="pmeta">{[p.brand, packLabel(p)].filter(Boolean).join(' · ')}</span><Stars value={p.rating_avg} count={p.rating_count} compact /></div>
         {p.matched_alias && <Badge>Also known as “{p.matched_alias}”</Badge>}
-        {p.store_name && <span className="psold">{(p.store_count ?? 1) > 1 && <span className="from-m">lowest of {p.store_count} · </span>}at {p.store_name}</span>}
+        {p.store_name && <span className="psold" title={`${(p.store_count ?? 1) > 1 ? `Lowest of ${p.store_count} stores · ` : ''}at ${p.store_name}`}><span className="sr-only">{(p.store_count ?? 1) > 1 ? `Lowest of ${p.store_count} stores, ` : ''}at {p.store_name}. </span>{cardChips(p)}</span>}
         <div className="pact"><QuickAdd p={p} /></div>
       </div>
     </article>

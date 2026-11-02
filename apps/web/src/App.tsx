@@ -29,7 +29,7 @@ import { SignIn, Register, Forgot, Reset, Verify } from './pages/Auth';
 import { RecipesPage, RecipePage } from './pages/Recipes';
 import { ContentPage } from './pages/ContentPage';
 import { Unsubscribe } from './pages/Unsubscribe';
-import { AlertsPage, ListPage, ListsPage, SharedListPage } from './pages/Lists';
+import { AlertsPage, BuyAgainPage, ListPage, ListsPage, SharedListPage } from './pages/Lists';
 
 
 /** The staff areas are their own apps (portal.html); reaching one from inside the shop is a full page load. */
@@ -82,7 +82,7 @@ export function App() {
                     <Route path="/checkout" element={<RequireAuth><CheckoutPage /></RequireAuth>} />
                     <Route path="/orders" element={<RequireAuth><OrdersPage /></RequireAuth>} />
                     <Route path="/orders/:id" element={<RequireAuth><OrderPage /></RequireAuth>} />
-                    <Route path="/account" element={<RequireAuth><AccountPage /></RequireAuth>} /><Route path="/saved" element={<RequireAuth><SavedPage /></RequireAuth>} />
+                    <Route path="/account" element={<RequireAuth><AccountPage /></RequireAuth>} /><Route path="/saved" element={<RequireAuth><SavedPage /></RequireAuth>} /><Route path="/buy-again" element={<RequireAuth><BuyAgainPage /></RequireAuth>} />
                     <Route path="/lists" element={<RequireAuth><ListsPage /></RequireAuth>} /><Route path="/lists/:id" element={<RequireAuth><ListPage /></RequireAuth>} /><Route path="/l/:token" element={<SharedListPage />} /><Route path="/alerts" element={<RequireAuth><AlertsPage /></RequireAuth>} />
                     <Route path="/signin" element={<SignIn />} />
                     <Route path="/register" element={<Register />} />

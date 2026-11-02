@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SkelRows } from '../skeletons';
+import { SkelGrid, SkelRows } from '../skeletons';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { del, post, put } from '../api';
 import { useAuth } from '../auth';
@@ -116,6 +116,17 @@ export function AlertsPage() {
       <ul className="list-items" role="list">{data?.map((a) => (
         <li key={a.id} className="panel row between wrap"><div><Link to={`/p/${a.slug}`}><strong>{a.name}</strong></Link><div className="muted small">{a.kind === 'back_in_stock' ? 'Tell me when it is back in stock' : `Tell me if the price drops below ${money(a.price_at_creation_cents ?? 0)}`}</div></div>
           <Button variant="ghost" size="sm" onClick={() => remove.run(a.id)}>Remove</Button></li>))}</ul>
+    </>
+  );
+}
+
+/** Everything the customer has ordered before, most-bought first (linked from "Buy again" on the home page). */
+export function BuyAgainPage() {
+  const f = useApi<any[]>('/me/buy-again');
+  return (
+    <>
+      <h1>Buy again</h1><p className="muted">Things you have ordered before, most bought first.</p>
+      {f.loading ? <SkelGrid n={4} /> : !f.data?.length ? <Empty title="Nothing to buy again yet"><p>After your first delivered order, your usual items show up here.</p><Link to="/search" className="btn primary">Browse products</Link></Empty> : <ProductGrid products={f.data} />}
     </>
   );
 }

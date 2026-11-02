@@ -15,7 +15,7 @@ export const CARD_SELECT = `
   (SELECT url FROM product_images WHERE product_id = p.id ORDER BY sort_order LIMIT 1) AS image_url,
   ${UNIT_BASIS()} AS unit_basis, round(off.min_price / NULLIF(${UNIT_QTY()}, 0))::int AS unit_price_cents,
   (SELECT jsonb_build_object('min_qty', t.min_qty, 'unit_price_cents', t.unit_price_cents) FROM offer_tiers t WHERE t.offer_id = off.offer_id ORDER BY t.min_qty LIMIT 1) AS multibuy,
-  off.min_price, off.was_price, off.in_stock, off.on_sale, off.store_count, off.offer_id, off.store_name, off.store_slug, off.available,
+  p.dietary, off.min_price, off.was_price, off.in_stock, off.on_sale, off.store_count, off.offer_id, off.store_name, off.store_slug, off.available, off.store_open, off.offers_delivery, off.offers_pickup,
   (SELECT CASE WHEN count(*) >= 1 THEN round(avg(r.rating)::numeric, 1)::float END FROM reviews r WHERE r.product_id = p.id AND NOT r.is_hidden) AS rating_avg,
   (SELECT count(*)::int FROM reviews r WHERE r.product_id = p.id AND NOT r.is_hidden) AS rating_count`;
 
@@ -32,7 +32,10 @@ export const CARD_FROM = `
            (array_agg(o.id ORDER BY o.price_cents) FILTER (WHERE o.stock_on_hand - o.stock_reserved > 0))[1] AS offer_id,
            (array_agg(s.name ORDER BY o.price_cents) FILTER (WHERE o.stock_on_hand - o.stock_reserved > 0))[1] AS store_name,
            (array_agg(s.slug ORDER BY o.price_cents) FILTER (WHERE o.stock_on_hand - o.stock_reserved > 0))[1] AS store_slug,
-           (array_agg(o.stock_on_hand - o.stock_reserved ORDER BY o.price_cents) FILTER (WHERE o.stock_on_hand - o.stock_reserved > 0))[1] AS available
+           (array_agg(o.stock_on_hand - o.stock_reserved ORDER BY o.price_cents) FILTER (WHERE o.stock_on_hand - o.stock_reserved > 0))[1] AS available,
+           (array_agg(s.is_open ORDER BY o.price_cents) FILTER (WHERE o.stock_on_hand - o.stock_reserved > 0))[1] AS store_open,
+           (array_agg(s.offers_delivery ORDER BY o.price_cents) FILTER (WHERE o.stock_on_hand - o.stock_reserved > 0))[1] AS offers_delivery,
+           (array_agg(s.offers_pickup ORDER BY o.price_cents) FILTER (WHERE o.stock_on_hand - o.stock_reserved > 0))[1] AS offers_pickup
       FROM offers_live o JOIN storefronts s ON s.id = o.store_id AND s.orderable
      WHERE o.product_id = p.id AND o.is_active) off ON off.store_count > 0`;
 

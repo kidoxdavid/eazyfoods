@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks';
 import { money, packLabel, post, put } from '../api';
 import { useCart } from '../cart';
+import { BasketTimes } from '../slots';
 import { useAuth } from '../auth';
 import { useToast } from '../toast';
 import { Badge, Button, Empty, Loading, Notice, Stepper } from '../ui';
@@ -66,6 +67,7 @@ export function CartPage() {
 
   const priceChanged = cart.stores.some((s) => s.items.some((i) => i.price_changed));
   const blockers = cart.stores.flatMap((s) => s.items.filter((i) => i.unavailable || i.short));
+  const saving = cart.stores.flatMap((s) => s.items).reduce((a, i) => a + (i.compare_at_cents && i.compare_at_cents > i.unit_price_cents ? (i.compare_at_cents - i.unit_price_cents) * i.quantity : 0), 0);
   return (
     <>
       <h1>{t('Your basket')}</h1>
@@ -118,6 +120,8 @@ export function CartPage() {
       ))}
       </div>
       <aside className="panel">
+        <BasketTimes stores={cart.stores.map((s) => ({ slug: s.slug, name: s.name }))} />
+        {saving > 0 && <div className="summary-row saving"><span>🎉 You’re saving</span><span>−{money(saving)}</span></div>}
         <div className="summary-row total"><span>Subtotal ({count} item{count === 1 ? '' : 's'})</span><span>{money(cart.subtotal_cents)}</span></div>
         <p className="small muted">Delivery fees, GST and any discount code are shown at checkout, per store, before you pay.</p>
         <Link to="/checkout" className={`btn cta lg wide ${blockers.length ? 'disabled' : ''}`} aria-disabled={blockers.length > 0} onClick={(e) => blockers.length && e.preventDefault()}>{t('Proceed to checkout')}</Link>

@@ -201,6 +201,14 @@
  },
  {
   "app": "customer",
+  "route": "/buy-again",
+  "url": "/buy-again",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "customer@example.test"
+ },
+ {
+  "app": "customer",
   "route": "/lists",
   "url": "/lists",
   "dynamic": false,
