@@ -137,3 +137,7 @@ form.row + *, .row.top + * { margin-top: 0; }
   :root { --tab-h: 58px; --tab-pill: 42px; --tab-lift: 8px; }
 }
 @media (prefers-reduced-transparency: reduce) { .tabbar { background: var(--card); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+
+/* Landing page: more room between the brown header/region bar and the big carousel */
+main:has(> .hero-car), main:has(> .hero-skel) { padding-top: 20px; }
+@media (min-width: 900px) { main:has(> .hero-car), main:has(> .hero-skel) { padding-top: 28px; } }
