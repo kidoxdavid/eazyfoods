@@ -3,6 +3,7 @@ import { Link, useLocation, Navigate } from 'react-router-dom'
 import { Menu, X, User } from 'lucide-react'
 import { call, getArea } from './client'
 import { Spinner, Toasts } from './ui'
+import { PushToggle } from '../../push'
 
 export const UserContext = createContext(null)
 export const useUser = () => useContext(UserContext)
@@ -72,6 +73,7 @@ export default function StaffShell({ brand, nav, badgesPath, children, titleOf, 
               <div className="flex-1 min-w-0 ml-2 sm:ml-3"><p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{user.full_name}</p><p className="text-[10px] sm:text-xs text-gray-500 truncate">{user.email}</p></div>
             </div>
             <a href="/" className="block px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-600 hover:text-primary-700">← Back to the shop</a>
+<PushToggle variant="portal" />
             <button onClick={logout} className="w-full text-left px-3 sm:px-4 py-2 text-xs sm:text-sm text-red-700 hover:bg-red-50 rounded-lg">Sign out</button>
           </div>
         </div>

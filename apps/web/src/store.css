@@ -595,3 +595,4 @@ main { padding-top: 14px; }
 @media (min-width: 900px) { .depts > li { flex-basis: 120px; } }
 @media (max-width: 599px) { .depts > li { flex-basis: 80px; } .dept .dept-tile { width: 76px; height: 76px; } .dept .dept-ico { width: 70px; height: 70px; } }
 @media (max-width: 599px) { .hero-skel { margin-top: 10px; } }
+.acct-push { margin: 14px 0; } .acct-push h2 { margin: 0 0 4px; font-size: 1.05rem; } .acct-push p { margin: 0 0 8px; } .push-toggle { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

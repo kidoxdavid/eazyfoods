@@ -8,6 +8,8 @@ import { watchTables } from './phoneTables'
 
 // Each staff area is its own app, like the original EAZyfoods portals. The first part of the path says which one.
 const AREA = window.location.pathname.split('/')[1]
+// The service worker is what lets a saved app show notifications and start quickly (the real site only, like the shop).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}) })
 const apps = { kitchen: () => import('./kitchen/App.jsx'), vendor: () => import('./vendor/App.jsx'), chef: () => import('./chef/App.jsx'), driver: () => import('./driver/App.jsx'), marketing: () => import('./marketing/App.jsx'), admin: () => import('./admin/App.jsx'), finance: () => import('./finance/App.jsx'), portals: () => import('./hub/App.jsx') }
 
 /** The vendor window serves two portals: stores get the vendor portal, kitchens (home chefs and restaurants) get the chef portal. */

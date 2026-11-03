@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { pushToPerm } from './push.js';
 import { pool, tx, type After } from '../db/pool.js';
 import { bad, conflict, notFound } from '../lib/errors.js';
 import { prorate } from '../lib/money.js';
@@ -53,6 +54,7 @@ export async function createRefund(c: PoolClient, a: CreateArgs) {
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17, gen_random_uuid()::text) RETURNING *`,
     [sub.order_id, a.suborderId, pay.id, a.reason, JSON.stringify(a.lines), a.includeDelivery, amt.merchandise, amt.discount, amt.tax, amt.delivery, amt.commission, amt.amount,
      a.vendorFunded, a.requestedBy, a.ticketId ?? null, !!a.includeTip, amt.tip ?? 0]);
+  setTimeout(() => { void pushToPerm('refunds.approve', { title: 'Refund requested', body: 'A refund is waiting for approval.', url: '/admin/refunds', tag: 'refund-requested' }, { admin: '/admin/refunds', finance: '/finance' }); }, 250);
   return r.rows[0];
 }
 

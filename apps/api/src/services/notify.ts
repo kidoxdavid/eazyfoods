@@ -1,6 +1,7 @@
 import { config } from '../config.js';
 import type { Queryable } from '../lib/db-types.js';
 import { pool } from '../db/pool.js';
+import { pushForTemplate, pushToUsers } from './push.js';
 
 const render = (t: string, vars: Record<string, unknown>) => t.replace(/\{\{(\w+)\}\}/g, (_, k) => String(vars[k] ?? ''));
 
@@ -12,6 +13,11 @@ export async function notify(c: Queryable, a: { userId?: string | null; email: s
   await c.query(
     `INSERT INTO notifications(user_id, to_email, template, vars, subject, body, transactional) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
     [a.userId ?? null, a.email, a.template, vars, render(t.subject, vars), render(t.body, vars), a.transactional ?? true]);
+  // The same event, as a notification on the person's phone when they turned that on. Slightly deferred so a rolled-back transaction has gone before we speak.
+  if (a.userId) {
+    const p = pushForTemplate(a.template, render(t.subject, vars), render(t.body, vars));
+    if (p) setTimeout(() => { void pushToUsers([a.userId!], p.msg, { areas: p.areas }); }, 250);
+  }
 }
 
 import { ROLE_PERMS } from '../lib/permissions.js';
@@ -34,6 +40,7 @@ export async function notifyStaff(c: Queryable, a: { event: string; perm: string
     const r = await c.query(`INSERT INTO notifications(user_id, to_email, template, vars, subject, body, transactional, dedupe_key) VALUES ($1,$2,$3,$4,$5,$6,true,$7) ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING`,
       [u.id, u.email, a.template, vars, render(t.subject, vars), render(t.body, vars), a.key]);
     n += r.rowCount ?? 0;
+    if (r.rowCount) { const p = pushForTemplate(a.template, render(t.subject, vars), render(t.body, vars)); if (p) setTimeout(() => { void pushToUsers([u.id], p.msg, { areas: p.areas }); }, 250); }
   }
   return n;
 }

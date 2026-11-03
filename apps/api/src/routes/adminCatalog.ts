@@ -1,4 +1,5 @@
 import { AD_STATUS } from './ads.js';
+import { pushToVendor } from '../services/push.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
@@ -294,6 +295,8 @@ export const adminCatalogRoutes: FastifyPluginAsync = async (app) => {
     const r = await pool.query('UPDATE ad_campaigns SET status=$2, review_note=$3, reviewed_by=$4 WHERE id=$1 RETURNING id', [id, b.status, b.note ?? null, req.user!.id]);
     if (!r.rowCount) throw notFound('Campaign not found');
     await audit(req.user!.id, `ad.${b.status}`, 'ad_campaign', req.params.id, b);
+    const ad = (await pool.query('SELECT vendor_id, title FROM ad_campaigns WHERE id = $1', [id])).rows[0];
+    if (ad && b.status !== 'paused') void pushToVendor(ad.vendor_id, b.status === 'approved' ? { title: 'Your ad is approved', body: `“${ad.title}” is now live.`, url: '/vendor/ads', tag: 'ad-decision' } : { title: 'Your ad was not approved', body: b.note ? `“${ad.title}”: ${b.note}`.slice(0, 140) : `“${ad.title}” needs changes.`, url: '/vendor/ads', tag: 'ad-decision' });
     return { ok: true };
   });
 

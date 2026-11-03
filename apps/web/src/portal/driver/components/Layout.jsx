@@ -5,6 +5,7 @@ import { useNotifications } from '../hooks/useNotifications'
 import { LayoutDashboard, Package, MapPin, User, Menu, X, ToggleLeft, ToggleRight, DollarSign, BarChart3, Star, MessageSquare, MessageCircle, History, Settings, FileText, Receipt } from 'lucide-react'
 import { useState } from 'react'
 import api from '../services/api'
+import { PushToggle } from '../../../push'
 
 const Layout = () => {
   const location = useLocation()
@@ -99,6 +100,7 @@ const Layout = () => {
               </div>
             </div>
             <a href="/" className="block px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-600 hover:text-primary-700">← Back to the shop</a>
+<PushToggle variant="portal" />
             <button onClick={logout} className="w-full text-left px-3 sm:px-4 py-2 text-xs sm:text-sm text-red-700 hover:bg-red-50 rounded-lg">Sign out</button>
           </div>
         </div>

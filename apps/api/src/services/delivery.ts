@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { pushToAvailableDrivers } from './push.js';
 import { handoverCode } from '../lib/ids.js';
 import { getSetting } from '../lib/settings.js';
 import { driverPay, resolveRule } from './financeRules.js';
@@ -26,5 +27,8 @@ export async function createDelivery(c: PoolClient, suborderId: string) {
     `INSERT INTO deliveries(suborder_id, handover_code, pickup, dropoff, instructions, earning_cents, pay_breakdown) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (suborder_id) DO NOTHING RETURNING id`,
     [suborderId, handoverCode(), { store_name: s.store_name, address_line: s.address_line, city: s.city, postal_code: s.postal_code, phone: s.phone },
      { ...s.address, recipient_name: s.customer_name, phone: s.customer_phone }, s.delivery_instructions, earning, JSON.stringify(breakdown)]);
-  if (r.rows[0]) await c.query(`INSERT INTO delivery_events(delivery_id, type) VALUES ($1,'created')`, [r.rows[0].id]);
+  if (r.rows[0]) {
+    await c.query(`INSERT INTO delivery_events(delivery_id, type) VALUES ($1,'created')`, [r.rows[0].id]);
+    setTimeout(() => { void pushToAvailableDrivers({ title: 'New delivery available', body: `${s.store_name} to ${s.address?.city ?? 'the customer'}. Open the app to take it.`, url: '/driver', tag: 'delivery-new' }); }, 250);
+  }
 }

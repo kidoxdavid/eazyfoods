@@ -38,6 +38,7 @@ import { vendorReviewRoutes } from './routes/vendorReviews.js';
 import { vendorCatalogueRoutes } from './routes/vendorCatalogue.js';
 import { badgeRoutes } from './routes/badges.js';
 import { uploadRoutes } from './routes/uploads.js';
+import { pushRoutes } from './routes/push.js';
 import multipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import { mimeOf, readStored } from './lib/storage.js';
@@ -151,6 +152,7 @@ export async function buildApp() {
   await app.register(recipeRoutes, { prefix: '/api' });
   await app.register(adRoutes, { prefix: '/api' });
   await app.register(uploadRoutes, { prefix: '/api' });
+  await app.register(pushRoutes, { prefix: '/api' });
   await app.register(badgeRoutes, { prefix: '/api' });
 
   // Kitchens (home chefs and restaurants) get the chef portal inside the same vendor window; the page asks which one to open.

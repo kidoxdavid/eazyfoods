@@ -1,4 +1,5 @@
 import { eraseDriver } from '../services/erase.js';
+import { pushToDriver } from '../services/push.js';
 import { createDriverPayout } from '../services/settlements.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
@@ -39,6 +40,7 @@ export const adminOpsRoutes: FastifyPluginAsync = async (app) => {
     const { body } = z.object({ body: z.string().trim().min(1).max(2000) }).parse(req.body);
     if (!(await pool.query('SELECT 1 FROM drivers WHERE id = $1', [id])).rowCount) throw notFound('Driver not found');
     const r = await pool.query('INSERT INTO driver_messages(driver_id, from_staff, author_user_id, body) VALUES ($1,true,$2,$3) RETURNING id, from_staff, body, created_at', [id, req.user!.id, body]);
+    void pushToDriver(id, { title: 'Message from EAZyfoods', body: body.slice(0, 140), url: '/driver', tag: 'driver-message' });
     return reply.code(201).send(r.rows[0]);
   });
 
@@ -85,6 +87,7 @@ export const adminOpsRoutes: FastifyPluginAsync = async (app) => {
       await c.query(`UPDATE deliveries SET driver_id=$2, status='assigned', assigned_at=now() WHERE id=$1`, [id, driver_id]);
       await c.query(`INSERT INTO delivery_events(delivery_id, type, actor_user_id) VALUES ($1,'assigned',$2)`, [id, req.user!.id]);
       await audit(req.user!.id, 'delivery.assigned', 'delivery', id, { driver_id }, c);
+      setTimeout(() => { void pushToDriver(driver_id, { title: 'New delivery assigned', body: 'Open the app to see the pickup and drop-off.', url: '/driver', tag: `delivery-${id}` }); }, 250);
       return { id, status: 'assigned', driver_id };
     });
   });

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { PushToggle } from '../../../push'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { makeHttp } from '../../http'
 import { useAuth } from '../contexts/AuthContext'
@@ -158,6 +159,7 @@ const Layout = ({ children }) => {
               </div>
             </div>
             <a href="/" className="block px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-600 hover:text-primary-700">← Back to the shop</a>
+<PushToggle variant="portal" />
             <button onClick={logout} className="w-full text-left px-3 sm:px-4 py-2 text-xs sm:text-sm text-red-600 hover:bg-red-50 rounded-lg">Sign out</button>
           </div>
         </div>

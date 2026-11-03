@@ -1,4 +1,5 @@
 import { vendorStatement } from '../services/settlements.js';
+import { pushToPerm } from '../services/push.js';
 import { assertVendorCan, featureOn, vendorOfStore } from '../services/features.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
@@ -88,6 +89,8 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
       await c.query(`UPDATE stores SET status='pending' WHERE vendor_id=$1 AND status='draft'`, [vid]);
       await audit(req.user!.id, 'vendor.submitted', 'vendor', vid, {}, c);
     });
+    const vn = (await pool.query('SELECT name FROM vendors WHERE id = $1', [vid])).rows[0]?.name ?? 'A new business';
+    void pushToPerm('vendors.manage', { title: 'New vendor application', body: `${vn} submitted its application for review.`, url: '/admin/vendors', tag: 'vendor-submitted' }, { admin: '/admin/vendors' });
     return { ok: true, status: 'submitted' };
   });
 
@@ -494,6 +497,7 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
     const regionId = b.region_slug ? (await pool.query('SELECT id FROM regions WHERE slug = $1', [b.region_slug])).rows[0]?.id ?? null : null;
     const r = await pool.query(`INSERT INTO ad_campaigns(vendor_id, store_id, product_id, placement, region_id, title, body, image_url, cpc_cents, budget_cents, starts_at, ends_at, video_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id, status`,
       [vid, b.store_id, productId, b.placement, regionId, b.title, b.body ?? null, b.image_url ?? null, b.cpc_cents, b.budget_cents, b.starts_at, b.ends_at, b.video_url ?? null]);
+    void pushToPerm('ads.manage', { title: 'Ad waiting for approval', body: b.title, url: '/admin/ads', tag: 'ad-pending' }, { admin: '/admin/ads', marketing: '/marketing/ads' });
     return reply.code(201).send(r.rows[0]);   // starts as 'pending': an admin must approve the creative
   });
 };

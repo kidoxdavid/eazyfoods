@@ -1,3 +1,4 @@
+import { PushToggle } from '../push';
 import { useState } from 'react';
 import { SkelRows, SkelGrid } from '../skeletons';
 import { useFeature, useFeatures } from '../features';
@@ -62,6 +63,7 @@ export function AccountPage() {
       <h1>Your account</h1>
       <p className="muted">{me?.email}</p>
       <AccountHome />
+      <section className="acct-push" aria-label="Notifications"><h2 className="h3">Notifications</h2><p className="muted small">Get order updates and messages on this device, even when the app is closed.</p><PushToggle /></section>
       <div className="row wrap">{isVendor && <Link to="/vendor" className="btn secondary sm">Vendor portal</Link>}{has('driver') && <Link to="/driver" className="btn secondary sm">Driver portal</Link>}{isStaff && <Link to="/admin" className="btn secondary sm">Admin</Link>}</div>
       <div className="row wrap">{on('shop.lists') && <Link to="/lists" className="btn secondary sm">Shopping lists</Link>}{on('shop.alerts') && <Link to="/alerts" className="btn secondary sm">Alerts</Link>}{on('shop.store_credit') && <Link to="/credit" className="btn secondary sm">Store credit</Link>}</div>
       <Tabs value={tab} onChange={setTab} tabs={[{ id: 'profile', label: 'Profile' }, { id: 'addresses', label: 'Addresses' }, { id: 'favourites', label: 'Saved' }, { id: 'support', label: 'Help requests' }, { id: 'privacy', label: 'Privacy & security' }]} />
