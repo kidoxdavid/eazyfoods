@@ -146,15 +146,15 @@ const AdDesigner = () => {
     if (!file) return
 
     // Validate file type
-    const allowedTypes = ['video/mp4', 'video/webm']
-    if (!allowedTypes.includes(file.type)) {
-      alert('Please choose an MP4 or WebM video.')
+    // Phones record MOV/HEVC and other formats: let anything that looks like a video through; the server converts it.
+    if (!file.type.startsWith('video/') && !/\.(mp4|mov|m4v|3gp|webm|mkv|avi|hevc)$/i.test(file.name)) {
+      alert('Please choose a video file.')
       return
     }
 
-    // Validate file size (25MB max)
-    if (file.size > 25 * 1024 * 1024) {
-      alert('The video must be 25 MB or smaller. Use a shorter clip or a lower resolution.')
+    // The server shrinks it to a web-friendly size, but very large files take too long to send.
+    if (file.size > 100 * 1024 * 1024) {
+      alert('That video is over 100 MB. Trim it to under about a minute and try again.')
       return
     }
 
@@ -394,11 +394,11 @@ const AdDesigner = () => {
                         <span className="text-xs sm:text-sm text-gray-600">
                           {uploadingVideo ? 'Uploading...' : 'Upload Video'}
                         </span>
-                        <span className="text-[10px] sm:text-xs text-gray-500 mt-1">MP4 or WebM (max 25MB)</span>
+                        <span className="text-[10px] sm:text-xs text-gray-500 mt-1">Any phone video (up to 100MB, converted for you)</span>
                       </div>
                       <input
                         type="file"
-                        accept="video/mp4,video/webm"
+                        accept="video/*,.mov,.mp4,.m4v,.3gp,.webm,.mkv"
                         onChange={handleVideoUpload}
                         disabled={uploadingVideo}
                         className="hidden"

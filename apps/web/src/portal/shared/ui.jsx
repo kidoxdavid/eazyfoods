@@ -147,7 +147,7 @@ export function ImageUpload({ value, onChange, label = 'Picture' }) {
   )
 }
 
-/** Short silent video (MP4 or WebM, up to 25 MB), stored on our side. */
+/** Short silent video (any phone format up to 100 MB, converted to MP4), stored on our side. */
 export function VideoUpload({ value, onChange, label = 'Video' }) {
   const [busy, setBusy] = _useState(false)
   const [err, setErr] = _useState('')
@@ -160,7 +160,7 @@ export function VideoUpload({ value, onChange, label = 'Video' }) {
   return (
     <div className="flex items-center gap-3">
       <label className="inline-flex items-center px-3 py-2 text-sm border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">{busy ? 'Uploading…' : value ? 'Replace video' : 'Add video'}
-        <input type="file" accept="video/mp4,video/webm" className="hidden" aria-label={label} onChange={pick} /></label>
+        <input type="file" accept="video/*,.mov,.mp4,.m4v,.3gp,.webm,.mkv" className="hidden" aria-label={label} onChange={pick} /></label>
       {value && <><video src={value} muted className="h-16 rounded" aria-label={`${label} preview`} /><button type="button" onClick={() => onChange(null)} className="text-xs text-red-700 hover:underline">Remove</button></>}
       {err && <p role="alert" className="text-xs text-red-700">{err}</p>}
     </div>

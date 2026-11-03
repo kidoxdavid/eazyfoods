@@ -7,6 +7,7 @@ import { bad, forbidden } from '../lib/errors.js';
 import { openPrivate, save, sniff } from '../lib/storage.js';
 import { vendorIdsOf } from './vendorOrders.js';
 import { rl } from '../lib/ratelimit.js';
+import { toWebMp4 } from '../services/video.js';
 
 async function readFile(req: any) {
   const part = await req.file({ limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
@@ -44,11 +45,19 @@ export const uploadRoutes: FastifyPluginAsync = async (app) => {
       if (!vid) throw forbidden();
       await assertVendorCan(vid, 'videos');
     }
-    const part = await (req as any).file({ limits: { fileSize: 25 * 1024 * 1024, files: 1 } });
+    // Phone videos are big and often MOV/HEVC: accept up to 100 MB in, and store a small web-friendly MP4 (25 MB at most).
+    const part = await (req as any).file({ limits: { fileSize: 100 * 1024 * 1024, files: 1 } });
     if (!part) throw bad('no_file', 'No file received.');
-    const buf = await part.toBuffer();
-    if (part.file.truncated) throw bad('too_large', 'Video is too large (25 MB maximum). Use a shorter clip or lower resolution.');
-    const t = sniff(buf, ['mp4', 'webm']);
+    let buf: Buffer = await part.toBuffer();
+    if (part.file.truncated) throw bad('too_large', 'That video is over 100 MB. Trim it to under about a minute and try again.');
+    let t = sniff(buf, ['mp4', 'webm']);   // MP4, MOV, 3GP (all 'ftyp') and WebM/MKV are recognised by their bytes, whatever the file is called
+    if (t.ext !== 'webm' || buf.length > 25 * 1024 * 1024) {
+      let out: Buffer | null;
+      try { out = await toWebMp4(buf, 25 * 1024 * 1024); } catch { if (buf.length <= 25 * 1024 * 1024) out = null; else throw bad('unreadable_video', 'We could not read that video. Try a different clip or re-export it as MP4.'); }
+      if (out && out.length === 0) throw bad('too_large', 'That video is still over 25 MB after compressing. Use a shorter clip (under about a minute).');
+      if (out) { buf = out; t = sniff(buf, ['mp4']); }
+      else if (buf.length > 25 * 1024 * 1024) throw bad('too_large', 'Video is too large (25 MB maximum). Use a shorter clip or lower resolution.');
+    }
     return await save(buf, t.ext, 'public');
   });
 

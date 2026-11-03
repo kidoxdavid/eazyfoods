@@ -149,13 +149,13 @@ export function VideoUpload({ value, onChange, label = 'Video' }: { value?: stri
       {value ? <video src={value} muted playsInline controls preload="metadata" style={{ width: 160, maxHeight: 100, background: '#000' }} aria-label={`${label} preview`} /> : <div className="image-empty">No video</div>}
       <div className="stack">
         <label className="btn secondary sm">{busy ? 'Uploading…' : value ? `Change ${label.toLowerCase()}` : `Upload ${label.toLowerCase()}`}
-          <input type="file" accept="video/mp4,video/webm" hidden disabled={busy} onChange={async (e) => {
+          <input type="file" accept="video/*,.mov,.mp4,.m4v,.3gp,.webm,.mkv" hidden disabled={busy} onChange={async (e) => {
             const f = e.target.files?.[0]; if (!f) return; setBusy(true);
             try { onChange((await upload('/uploads/video', f)).url); } catch (err: any) { toast(err.message, 'error'); } finally { setBusy(false); e.target.value = ''; }
           }} />
         </label>
         {value && <button type="button" className="link" onClick={() => onChange(null)}>Remove</button>}
-        <span className="hint">MP4 (H.264) or WebM, up to 25 MB. Keep it short. Banners play muted on a loop; store and dish videos have play controls.</span>
+        <span className="hint">Any phone video (MOV, MP4, WebM…), up to 100 MB; we convert it for you. Keep it short. Banners play muted on a loop; store and dish videos have play controls.</span>
       </div>
     </div>
   );

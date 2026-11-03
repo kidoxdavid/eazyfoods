@@ -19,6 +19,11 @@ describe('vendor ad designer: video upload', () => {
     await input.waitFor({ state: 'attached', timeout: 20_000 });
     await input.setInputFiles({ name: 'promo.mp4', mimeType: 'video/mp4', buffer: MP4 });
     await expect.poll(() => alerts.join('|'), { timeout: 15_000 }).toMatch(/Video uploaded successfully/);
+    alerts.length = 0;
+    // a phone recording: .mov, QuickTime type (the picker used to refuse it)
+    expect(await input.getAttribute('accept')).toMatch(/video\/\*/);
+    await input.setInputFiles({ name: 'IMG_0412.MOV', mimeType: 'video/quicktime', buffer: MP4 });
+    await expect.poll(() => alerts.join('|'), { timeout: 15_000 }).toMatch(/Video uploaded successfully/);
     expect(alerts.join('|')).not.toMatch(/Failed/);
   }, 90_000);
 });

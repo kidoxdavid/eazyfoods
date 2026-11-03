@@ -1,5 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { app, call, login, openAllStores } from './helpers.js';
 import { pool } from '../src/db/pool.js';
 
@@ -29,5 +33,25 @@ describe('ads can carry a video', () => {
     const feed = await app.inject({ url: '/api/ads?placement=home_banner' });
     expect(feed.json().find((a: any) => a.id === ad.body.id)?.video_url).toBe(v.body.url);
     await pool.query('DELETE FROM ad_campaigns WHERE id = $1', [ad.body.id]);
+  });
+});
+
+describe('phone videos', () => {
+  it('a big .mov (over 25 MB) is accepted and stored as a small web MP4 that really plays', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ez-mov-')), mov = join(dir, 'phone.mov');
+    execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=1920x1080:rate=30', '-f', 'lavfi', '-i', 'sine=frequency=440', '-t', '25', '-c:v', 'libx264', '-b:v', '16M', '-c:a', 'aac', '-f', 'mov', mov]);
+    const bytes = readFileSync(mov); expect(bytes.length).toBeGreaterThan(25 * 1024 * 1024);
+    const owner = await who('owner1@example.test');
+    const r = await up(owner, '/api/uploads/video', bytes, 'video/quicktime', 'IMG_0001.MOV');
+    expect(r.status).toBe(200); expect(r.body.url).toMatch(/\.mp4$/);
+    const got = await app.inject({ url: r.body.url });
+    expect(got.rawPayload.length).toBeLessThan(25 * 1024 * 1024);
+    const out = join(dir, 'out.mp4'); execFileSync('sh', ['-c', `cat > ${out}`], { input: got.rawPayload });
+    const info = execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=codec_name,height', '-of', 'csv=p=0', out]).toString().trim();
+    expect(info).toBe('h264,720');
+  }, 240_000);
+  it('something that is not a video is still refused', async () => {
+    const owner = await who('owner1@example.test');
+    expect((await up(owner, '/api/uploads/video', Buffer.from('hello world, not a video at all'), 'video/mp4', 'x.mp4')).status).toBe(400);
   });
 });
