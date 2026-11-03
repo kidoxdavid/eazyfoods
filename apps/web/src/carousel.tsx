@@ -20,12 +20,25 @@ function SlideVideo({ src, poster, active }: { src: string; poster?: string | nu
   const [failed, setFailed] = useState(false);
   const calm = typeof matchMedia !== 'undefined' && (matchMedia('(prefers-reduced-motion: reduce)').matches || !!(navigator as any).connection?.saveData);
   const [paused, setPaused] = useState(calm);
-  useEffect(() => { const v = ref.current; if (!v) return; if (active && !paused) v.play().catch(() => setPaused(true)); else v.pause(); }, [active, paused]);
+  // Some phones (iPhone Low Power Mode, data savers) refuse autoplay until the person touches the page. That is not "paused":
+  // we keep wanting to play and start on the first tap or swipe, so the video never waits for the play button.
+  const [blocked, setBlocked] = useState(false);
+  useEffect(() => {
+    const v = ref.current; if (!v) return;
+    if (active && !paused) v.play().then(() => setBlocked(false)).catch(() => setBlocked(true)); else v.pause();
+  }, [active, paused]);
+  useEffect(() => {
+    if (!blocked || !active || paused) return;
+    const retry = () => { ref.current?.play().then(() => setBlocked(false)).catch(() => {}); };
+    const evs = ['touchend', 'pointerup', 'click', 'keydown'] as const;
+    evs.forEach((e) => window.addEventListener(e, retry, { passive: true }));
+    return () => evs.forEach((e) => window.removeEventListener(e, retry));
+  }, [blocked, active, paused]);
   if (failed) return null;
   return (
     <>
       <video ref={ref} className="hero-video" src={src} poster={poster ?? undefined} muted loop playsInline preload={calm ? 'none' : 'metadata'} aria-hidden="true" tabIndex={-1} onError={() => setFailed(true)} />
-      <button type="button" className="hero-vctl" onClick={() => setPaused((p) => !p)} aria-label={paused ? 'Play background video' : 'Pause background video'} tabIndex={active ? 0 : -1}>{paused ? <IconPlay width={16} height={16} /> : <IconPause width={16} height={16} />}</button>
+      <button type="button" className="hero-vctl" onClick={() => { if (blocked) { ref.current?.play().then(() => setBlocked(false)).catch(() => {}); } else setPaused((p) => !p); }} aria-label={paused || blocked ? 'Play background video' : 'Pause background video'} tabIndex={active ? 0 : -1}>{paused || blocked ? <IconPlay width={16} height={16} /> : <IconPause width={16} height={16} />}</button>
     </>
   );
 }

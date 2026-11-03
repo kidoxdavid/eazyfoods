@@ -33,6 +33,7 @@ export const badgeRoutes: FastifyPluginAsync = async (app) => {
     const out: Record<string, number> = {};
     if (can(req.user!, 'marketing.manage')) {
       out['/marketing/emails'] = await n(`SELECT count(*)::int n FROM email_campaigns WHERE status = 'draft'`);
+      out['/marketing/ads'] = can(req.user!, 'ads.manage') ? await n(`SELECT count(*)::int n FROM ad_campaigns WHERE status = 'pending'`) : 0;
       out['/marketing/social'] = await n(`SELECT count(*)::int n FROM social_posts WHERE status = 'scheduled' AND scheduled_for < now() + interval '3 days'`);
     }
     return out;

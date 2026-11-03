@@ -5,7 +5,7 @@ export const ROLE_PERMS = {
   finance: ['orders.view', 'refunds.approve', 'payouts.manage', 'reports.view', 'ledger.view', 'settings.view', 'audit.view', 'pricing.view', 'pricing.edit', 'settlements.view'],
   dispatcher: ['dispatch.manage', 'orders.view', 'orders.manage', 'drivers.manage'],
   catalog: ['catalog.manage'],
-  marketing: ['marketing.manage', 'content.manage', 'promotions.manage'],
+  marketing: ['marketing.manage', 'content.manage', 'promotions.manage', 'ads.manage'],
 }
 export const STAFF_ROLES = ['admin', 'support', 'finance', 'dispatcher', 'catalog', 'marketing']
 export const permsOf = (roles = []) => roles.flatMap((r) => ROLE_PERMS[r.role] ?? [])

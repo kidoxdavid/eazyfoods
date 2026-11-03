@@ -6,6 +6,7 @@ import StaffShell from '../shared/StaffShell'
 import StaffLogin from '../shared/StaffLogin'
 import Coupons from '../shared/pages/Coupons'
 import Rewards from '../shared/pages/Rewards'
+import Ads from '../shared/pages/Ads'
 import Studio from '../shared/pages/Studio'
 import { Dashboard, Analytics } from './pages/Overview'
 import { EmailList, EmailEditor, Templates } from './pages/Emails'
@@ -21,7 +22,7 @@ const NAV = [
   { name: 'Campaigns', href: '/campaigns', icon: Megaphone, group: 'Reach' }, { name: 'Email Campaigns', href: '/emails', icon: Mail, badge: '/marketing/emails' }, { name: 'Email Templates', href: '/email-templates', icon: FileText },
   { name: 'Audiences', href: '/audiences', icon: Users }, { name: 'Automation', href: '/automations', icon: Workflow }, { name: 'Social Media', href: '/social', icon: Share2, badge: '/marketing/social' },
   { name: 'Budget', href: '/budget', icon: DollarSign, group: 'Plan' }, { name: 'Cultural Occasions', href: '/calendar', icon: Sparkles }, { name: 'Content Library', href: '/library', icon: Image },
-  { name: 'Coupons', href: '/coupons', icon: Tag, group: 'Offers' }, { name: 'Storefront Studio', href: '/studio', icon: Palette }, { name: 'Rewards & Credit', href: '/rewards', icon: Gift },
+  { name: 'Coupons', href: '/coupons', icon: Tag, group: 'Offers' }, { name: 'Ad Approvals', href: '/ads', icon: Megaphone, badge: '/marketing/ads' }, { name: 'Storefront Studio', href: '/studio', icon: Palette }, { name: 'Rewards & Credit', href: '/rewards', icon: Gift },
   { name: 'Settings', href: '/settings', icon: SettingsIcon, group: 'Setup' },
 ]
 
@@ -49,6 +50,7 @@ export default function App() {
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/library" element={<Library />} />
               <Route path="/coupons" element={<Coupons />} />
+              <Route path="/ads" element={<Ads />} />
               <Route path="/studio" element={<Studio />} />
               <Route path="/rewards" element={<Rewards />} />
               <Route path="/settings" element={<Settings />} />
