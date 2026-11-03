@@ -6,8 +6,13 @@ import type { Card } from './cards';
 import { packLabel } from './api';
 import { Motif, type SiteTheme } from './theme';
 import { IconPause, IconPlay } from './icons';
+import { post } from './api';
+import { useAdImpression } from './cards';
 
-export type Slide = { id: string; from: string; to: string; eyebrow: string; title: string; text: string; cta: { to: string; label: string }; art: Card[]; light?: boolean; image?: string | null; video?: string | null; motif?: SiteTheme['motif'] };
+/** Counts a sponsored slide as seen only while it is the one showing. */
+function AdSeen({ id, active }: { id: string; active: boolean }) { useAdImpression(active ? id : null); return null; }
+
+export type Slide = { id: string; from: string; to: string; eyebrow: string; title: string; text: string; cta: { to: string; label: string }; art: Card[]; light?: boolean; image?: string | null; video?: string | null; motif?: SiteTheme['motif']; adId?: string };
 
 /** Looping muted banner video. It only plays while its slide is showing, never for people who asked for less motion or less data, and always has a pause button. */
 function SlideVideo({ src, poster, active }: { src: string; poster?: string | null; active: boolean }) {
@@ -42,13 +47,14 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
       <ul className="hero-track" ref={ref} onScroll={onScroll} role="list">
         {slides.map((s, k) => (
           <li key={s.id} className={`hero-slide ${s.light ? 'light' : ''} ${s.video ? 'has-video' : ''}`} style={{ background: `linear-gradient(115deg, ${s.from}, ${s.to})` }} aria-roledescription="slide" aria-label={`${k + 1} of ${slides.length}`} aria-hidden={k !== i}>
+            {s.adId && <AdSeen id={s.adId} active={k === i} />}
             {s.video && <SlideVideo src={s.video} poster={s.image} active={k === i} />}
             {s.motif && <Motif kind={s.motif} />}
             <div className="hero-copy">
               <span className="hero-eyebrow">{s.eyebrow}</span>
               <h2>{s.title}</h2>
               <p>{s.text}</p>
-              <Link to={s.cta.to} className="btn cta lg" tabIndex={k === i ? 0 : -1}>{s.cta.label}</Link>
+              <Link to={s.cta.to} className="btn cta lg" tabIndex={k === i ? 0 : -1} onClick={s.adId ? () => { post(`/ads/${s.adId}/event`, { type: 'click' }).catch(() => {}); } : undefined}>{s.cta.label}</Link>
             </div>
             <div className="hero-art" aria-hidden="true">
               <span className="blob b1" /><span className="blob b2" />

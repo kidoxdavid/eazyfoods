@@ -13,7 +13,6 @@ import { HeroCarousel, type Slide } from '../carousel';
 import { ErrorBox, Loading, Notice } from '../ui';
 import { IconShield, IconStore, IconSwap, IconTruck, IconBook } from '../icons';
 import { post } from '../api';
-import { useAdImpression } from '../cards';
 import { useSiteTheme } from '../theme';
 import { KitchenList } from './Kitchens';
 
@@ -32,19 +31,6 @@ function RegionQuad({ r }: { r: { slug: string; name: string } }) {
       <h3>Shop {r.name} groceries</h3>
       <div className="quad-art"><RegionArt slug={r.slug} /></div>
       <span className="go">See all {r.name.split(' ')[0]} products</span>
-    </Link>
-  );
-}
-
-function HomeBanner() {
-  const { data } = useApi<{ id: string; title: string; body: string | null; image_url: string | null; store: { slug: string } | null }[]>('/ads?placement=home_banner');
-  const ad = data?.[0];
-  useAdImpression(ad?.id);
-  if (!ad) return null;
-  return (
-    <Link to={ad.store ? `/s/${ad.store.slug}` : '/stores'} className="banner" onClick={() => post(`/ads/${ad.id}/event`, { type: 'click' }).catch(() => {})}>
-      {ad.image_url && <img src={ad.image_url} alt="" />}
-      <div><span className="sponsor">Sponsored</span><h3 style={{ margin: '4px 0 2px' }}>{ad.title}</h3>{ad.body && <span className="muted">{ad.body}</span>}</div>
     </Link>
   );
 }
@@ -91,6 +77,7 @@ function Personal() {
 export function Home() {
   const content = useApi<{ home_hero?: { title: string; subtitle: string }; home_layout?: Layout }>('/content/home');
   const { theme, loading: themeLoading } = useSiteTheme();
+  const ads = useApi<{ id: string; title: string; body: string | null; image_url: string | null; store: { slug: string } | null; product: { slug: string } | null }[]>('/ads?placement=home_banner');
   const banners = useApi<{ id: string; title: string; subtitle: string; cta_label: string; cta_link: string; image_url: string | null; video_url: string | null; from_color: string; to_color: string }[]>('/home/banners');
   const shape = useApi<Shape>('/home/shape');
   const regions = useApi<Region[]>('/regions');
@@ -115,6 +102,9 @@ export function Home() {
   if (head && deals.data?.length) slides.push({ id: 'deals', from: '#b8260f', to: '#f0701f', eyebrow: 'Weekly deals', title: 'Save on pantry staples this week', text: 'Live promotions from local stores, priced as you’ll pay.', cta: { to: '/deals', label: 'Shop deals' }, art: deals.data });
   if (head && east && eastSearch.data?.results.length) slides.push({ id: 'east', from: '#7a3a0b', to: '#d98b1f', eyebrow: east.name, title: `Discover ${east.name.replace(' Africa', '')} African ingredients`, text: east.countries.slice(0, 4).map((c) => c.name).join(' · '), cta: { to: `/search?region=${east.slug}`, label: `Shop ${east.name}` }, art: eastSearch.data.results });
   if (head && recipes.data?.length && featured.data) slides.push({ id: 'cook', from: '#3b2a6b', to: '#7a4bb8', eyebrow: 'Cook tonight', title: recipes.data[0].title, text: 'Add the ingredients that are in stock to your basket in one tap.', cta: { to: `/recipes`, label: 'See recipes' }, art: [...featured.data.results].reverse() });
+
+  // Paid placements: at most two, always labelled. They join the end of the order so nothing already on screen moves.
+  if (head) for (const a of (ads.data ?? []).slice(0, 2)) slides.push({ id: `ad-${a.id}`, adId: a.id, from: '#1f2a44', to: '#3d5a99', eyebrow: 'Sponsored', title: a.title, text: a.body ?? '', cta: { to: a.product ? `/p/${a.product.slug}` : a.store ? `/s/${a.store.slug}` : '/stores', label: a.product ? 'View product' : 'Visit store' }, art: [], image: a.image_url });
 
   // Show slides in the order they first appeared: a slide whose data arrives late is added at the end and never pushes earlier slides around.
   const seen = useRef<string[]>([]);
@@ -165,7 +155,6 @@ export function Home() {
       <Faves />
       <Personal />
       {shape.data && order.some((x) => x.id === 'new' && x.enabled) && parts.new}
-      <HomeBanner />
       {regions.error && <ErrorBox message={regions.error} retry={regions.reload} />}
       {shape.data ? order.filter((x) => x.enabled && x.id !== 'new').map((x) => parts[x.id]) : <><div className="quads" aria-hidden="true">{[0, 1, 2, 3].map((i) => <div key={i} className="quad quad-skel" />)}</div><SkelShelf /></>}
       <span hidden><IconBook /></span>

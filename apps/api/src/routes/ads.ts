@@ -13,7 +13,7 @@ export const adRoutes: FastifyPluginAsync = async (app) => {
   app.get('/ads', async (req) => {
     const q = z.object({ placement: z.enum(['home_banner', 'region_banner', 'sponsored_store']), region: z.string().optional() }).parse(req.query);
     const { rows } = await pool.query(
-      `SELECT * FROM (${LIVE_ADS}) a LEFT JOIN regions r ON r.id = a.region_id
+      `SELECT a.* FROM (${LIVE_ADS}) a LEFT JOIN regions r ON r.id = a.region_id
         WHERE a.spent_cents < a.budget_cents AND a.placement = $1 AND ($2::text IS NULL OR a.region_id IS NULL OR r.slug = $2) ORDER BY random() LIMIT 3`, [q.placement, q.region ?? null]);
     const out = [];
     for (const a of rows) {
