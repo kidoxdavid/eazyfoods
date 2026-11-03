@@ -71,7 +71,7 @@ main { padding-top: 14px; }
 @media (min-width: 900px) { .shelf-row { margin: 0; padding: 4px 4px 10px; gap: 14px; } .shelf-row > li { flex-basis: 200px; } .shelf-btn { display: grid; } }
 
 /* ----- Hero carousel ----- */
-.hero-car { position: relative; margin: 4px 0 16px; border-radius: 16px; overflow: hidden; }
+.hero-car { position: relative; margin: 12px 0 16px; border-radius: 16px; overflow: hidden; }
 .hero-track { list-style: none; margin: 0; padding: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; } .hero-track::-webkit-scrollbar { display: none; }
 .hero-slide { flex: 0 0 100%; scroll-snap-align: start; min-height: 250px; display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; color: #fff; position: relative; overflow: hidden; } .hero-slide.light { color: #1b2a21; }
 .hero-copy { padding: 22px 8px 34px 20px; position: relative; z-index: 2; } .hero-eyebrow { font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; opacity: .9; } .hero-copy h2 { font-family: var(--display); font-size: clamp(1.25rem, 4.6vw, 2.6rem); line-height: 1.08; margin: 6px 0 8px; color: inherit; letter-spacing: -.03em; } .hero-copy p { font-size: .88rem; opacity: .95; margin: 0 0 14px; max-width: 34ch; } .hero-copy .btn { min-height: 44px; }
@@ -122,7 +122,7 @@ main { padding-top: 14px; }
 .empty-art { max-width: 220px; margin: 0 auto 8px; }
 
 /* Placeholder while the hero slides load: same size and base colour as the first slide, so nothing flashes or jumps. */
-.hero-skel { margin: 4px 0 16px; border-radius: 16px; min-height: 250px; background: var(--tint); animation: skel-pulse 1.2s ease-in-out infinite alternate; } @media (min-width: 900px) { .hero-skel { min-height: 340px; border-radius: 18px; } }
+.hero-skel { margin: 12px 0 16px; border-radius: 16px; min-height: 250px; background: var(--tint); animation: skel-pulse 1.2s ease-in-out infinite alternate; } @media (min-width: 900px) { .hero-skel { min-height: 340px; border-radius: 18px; } }
 
 /* ---------- Studio: festival/season themes, banners, store branding ---------- */
 .announce.festive { background: var(--green); color: #fff; } @media (prefers-color-scheme: dark) { .announce.festive { background: var(--green-bg); color: var(--ink); } }
