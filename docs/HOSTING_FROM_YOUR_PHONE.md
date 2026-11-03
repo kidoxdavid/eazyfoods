@@ -5,7 +5,7 @@ This creates a private **demo** site with invented data and a mock payment provi
 1. Create a free account at **render.com** (sign up with GitHub).
 2. Tap **New +**, then **Blueprint**.
 3. Connect the GitHub repo **kidoxdavid/ADF** and pick branch **main**. Render reads `render.yaml` and proposes a web service and a database. Tap **Apply**.
-4. Wait for the first build (several minutes). When it says **Live**, open the service's URL, e.g. `https://eazyfoods.onrender.com`.
+4. Wait for the first build (several minutes). When it says **Live**, open the service's URL, e.g. `https://eazyfoods.ca`.
 5. If the address Render gives you differs from `eazyfoods.onrender.com`, set the service's **WEB_ORIGIN** environment variable to it (Render > service > Environment). Sign-in works either way because the site and API share one address.
 
 Notes

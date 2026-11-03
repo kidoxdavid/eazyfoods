@@ -22,7 +22,7 @@ services:
       - key: DEMO_ALWAYS_OPEN
         value: "1"
       - key: WEB_ORIGIN
-        value: https://eazyfoods.onrender.com
+        value: https://eazyfoods.ca
       - key: ADMIN_EMAILS
         sync: false              # your own email(s), comma-separated: made admin (full control) at start-up once the account exists
       - key: NODE_VERSION
