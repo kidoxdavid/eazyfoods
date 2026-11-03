@@ -53,6 +53,7 @@ const body = z.object({
   track_expiry: z.boolean().default(false), expiry_date: z.string().optional().nullable().or(z.literal('')),
   status: z.enum(['active', 'hidden', 'out_of_stock', 'draft']).default('active'), is_featured: z.boolean().default(false), is_newly_stocked: z.boolean().default(false),
   image_url: img, images: z.array(z.string()).nullable().optional(),
+  country_slugs: z.array(z.string().max(60)).max(30).optional(),   // where the food is from: this is what files it under West Africa, East Africa and so on
 });
 
 export const vendorCatalogueRoutes: FastifyPluginAsync = async (app) => {
@@ -164,6 +165,7 @@ export const vendorCatalogueRoutes: FastifyPluginAsync = async (app) => {
         `INSERT INTO products(slug,name,name_norm,description,category_id,sku,barcode,pack_unit,sold_by,status,suggested_by_vendor_id)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'unit',$9,$10) RETURNING id`,
         [slug, b.name, norm(b.name), b.description || null, b.category_id || null, b.sku || null, b.barcode || null, b.unit || null, review ? 'pending' : 'published', st.vendor_id])).rows[0];
+      if (b.country_slugs?.length) await c.query(`INSERT INTO product_countries SELECT $1, id, 'culinary' FROM countries WHERE slug = ANY($2::text[]) ON CONFLICT DO NOTHING`, [p.id, b.country_slugs]);
       const urls = [b.image_url, ...(b.images ?? [])].filter((u): u is string => !!u && isOurImageUrl(u));
       for (const [i, u] of urls.entries()) await c.query('INSERT INTO product_images(product_id, url, alt, sort_order, uploaded_by) VALUES ($1,$2,$3,$4,$5)', [p.id, u, b.name, i, req.user!.id]);
       const o = (await c.query(
@@ -190,6 +192,10 @@ export const vendorCatalogueRoutes: FastifyPluginAsync = async (app) => {
       if (cur.owned) {
         await c.query(`UPDATE products SET name=$2, name_norm=$3, description=$4, category_id=$5, sku=$6, barcode=$7, pack_unit=$8 WHERE id=$1`,
           [pid, b.name, norm(b.name), b.description || null, b.category_id || null, b.sku || null, b.barcode || null, b.unit || null]);
+        if (b.country_slugs?.length) {   // the owner chose where it is from: that replaces the old tags
+          await c.query(`DELETE FROM product_countries WHERE product_id = $1 AND kind = 'culinary'`, [pid]);
+          await c.query(`INSERT INTO product_countries SELECT $1, id, 'culinary' FROM countries WHERE slug = ANY($2::text[]) ON CONFLICT DO NOTHING`, [pid, b.country_slugs]);
+        }
         const sent = req.body as Record<string, unknown>;
         if ('image_url' in sent || 'images' in sent) {   // only touch the pictures when the form sent them
         const urls = [b.image_url, ...(b.images ?? [])].filter((u): u is string => !!u && isOurImageUrl(u));

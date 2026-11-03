@@ -84,7 +84,8 @@ export const searchRoutes: FastifyPluginAsync = async (app) => {
           ) off ON off.store_count > 0
          WHERE ($3::text IS NULL OR EXISTS (
                   SELECT 1 FROM product_countries pc JOIN region_countries rc ON rc.country_id = pc.country_id JOIN regions rg ON rg.id = rc.region_id
-                   WHERE pc.product_id = p.id AND pc.kind = 'culinary' AND rg.slug = $3))
+                   WHERE pc.product_id = p.id AND pc.kind = 'culinary' AND rg.slug = $3)
+                OR (NOT EXISTS (SELECT 1 FROM product_countries x WHERE x.product_id = p.id AND x.kind = 'culinary') AND EXISTS (SELECT 1 FROM offers_live o2 JOIN store_regions sr ON sr.store_id = o2.store_id WHERE o2.product_id = p.id AND o2.is_active AND sr.region_id = (SELECT id FROM regions WHERE slug = $3))))
            AND ($4::text IS NULL OR EXISTS (
                   SELECT 1 FROM product_countries pc JOIN countries cn ON cn.id = pc.country_id
                    WHERE pc.product_id = p.id AND pc.kind = 'culinary' AND cn.slug = $4))
@@ -137,8 +138,13 @@ export const searchRoutes: FastifyPluginAsync = async (app) => {
       const diet = (await pool.query(`SELECT e.key AS key, count(*)::int AS n FROM products p, jsonb_each_text(p.dietary) e WHERE p.id = ANY($1::uuid[]) AND e.value = 'true' AND e.key = ANY($2::text[]) GROUP BY e.key ORDER BY n DESC`, [ids, [...DIET_KEYS]])).rows;
       const [cats, regs, stores, price] = await Promise.all([
         pool.query(`SELECT c.slug, c.name, count(*)::int AS n FROM products p JOIN categories c ON c.id = p.category_id WHERE p.id = ANY($1::uuid[]) GROUP BY c.slug, c.name ORDER BY n DESC, c.name`, [ids]),
-        pool.query(`SELECT r.slug, r.name, count(DISTINCT pc.product_id)::int AS n FROM product_countries pc JOIN region_countries rc ON rc.country_id = pc.country_id JOIN regions r ON r.id = rc.region_id AND r.is_active
-                     WHERE pc.kind = 'culinary' AND pc.product_id = ANY($1::uuid[]) GROUP BY r.slug, r.name, r.sort_order ORDER BY r.sort_order`, [ids]),
+        pool.query(`SELECT slug, name, count(DISTINCT pid)::int AS n FROM (
+                       SELECT r.slug, r.name, r.sort_order, pc.product_id AS pid FROM product_countries pc JOIN region_countries rc ON rc.country_id = pc.country_id JOIN regions r ON r.id = rc.region_id AND r.is_active
+                        WHERE pc.kind = 'culinary' AND pc.product_id = ANY($1::uuid[])
+                       UNION
+                       SELECT r.slug, r.name, r.sort_order, o.product_id FROM offers_live o JOIN store_regions sr ON sr.store_id = o.store_id JOIN regions r ON r.id = sr.region_id AND r.is_active
+                        WHERE o.is_active AND o.product_id = ANY($1::uuid[]) AND NOT EXISTS (SELECT 1 FROM product_countries x WHERE x.product_id = o.product_id AND x.kind = 'culinary')
+                     ) t GROUP BY slug, name, sort_order ORDER BY sort_order`, [ids]),
         pool.query(`SELECT s.slug, s.name, count(DISTINCT o.product_id)::int AS n FROM offers_live o JOIN storefronts s ON s.id = o.store_id AND s.orderable WHERE o.is_active AND o.product_id = ANY($1::uuid[]) GROUP BY s.slug, s.name ORDER BY n DESC`, [ids]),
         Promise.resolve({ rows: [{ min: Math.min(...all.map((r) => r.min_price)), max: Math.max(...all.map((r) => r.min_price)) }] }),
       ]);

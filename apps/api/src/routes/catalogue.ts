@@ -34,7 +34,8 @@ export const catalogueRoutes: FastifyPluginAsync = async (app) => {
       `CASE WHEN EXISTS (SELECT 1 FROM collection_products cp WHERE cp.collection_id = $1)
             THEN p.id IN (SELECT product_id FROM collection_products WHERE collection_id = $1)
             ELSE ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM product_countries pc JOIN region_countries rc ON rc.country_id = pc.country_id
-                                               WHERE pc.product_id = p.id AND pc.kind = 'culinary' AND rc.region_id = $2))
+                                               WHERE pc.product_id = p.id AND pc.kind = 'culinary' AND rc.region_id = $2)
+                                               OR (NOT EXISTS (SELECT 1 FROM product_countries x WHERE x.product_id = p.id AND x.kind = 'culinary') AND EXISTS (SELECT 1 FROM offers_live o2 JOIN store_regions sr ON sr.store_id = o2.store_id WHERE o2.product_id = p.id AND o2.is_active AND sr.region_id = $2)))
              AND ($3::uuid IS NULL OR p.category_id = $3 OR p.category_id IN (SELECT id FROM categories WHERE parent_id = $3))
        END`, [col.id, col.region_id, col.category_id], 'p.name', 60);
     return { collection: { slug: col.slug, title: col.title, subtitle: col.subtitle }, products };
@@ -50,8 +51,11 @@ export const catalogueRoutes: FastifyPluginAsync = async (app) => {
                    WHERE o.product_id = p.id AND o.is_active AND o.stock_on_hand - o.stock_reserved > 0)`;
     const [regions, departments, cols, deals, fresh, stores, kitchens, recipes] = await Promise.all([
       pool.query(`SELECT r.slug, r.name, r.description, count(DISTINCT p.id)::int AS n FROM regions r
-                    JOIN region_countries rc ON rc.region_id = r.id JOIN product_countries pc ON pc.country_id = rc.country_id AND pc.kind = 'culinary'
-                    JOIN products p ON p.id = pc.product_id AND ${SELL} WHERE r.is_active GROUP BY r.id ORDER BY r.sort_order, r.name`),
+                    JOIN products p ON ${SELL} AND (
+                         EXISTS (SELECT 1 FROM region_countries rc JOIN product_countries pc ON pc.country_id = rc.country_id AND pc.kind = 'culinary' WHERE rc.region_id = r.id AND pc.product_id = p.id)
+                      OR (NOT EXISTS (SELECT 1 FROM product_countries x WHERE x.product_id = p.id AND x.kind = 'culinary')
+                          AND EXISTS (SELECT 1 FROM offers_live o2 JOIN store_regions sr ON sr.store_id = o2.store_id WHERE o2.product_id = p.id AND o2.is_active AND sr.region_id = r.id)))
+                    WHERE r.is_active GROUP BY r.id ORDER BY r.sort_order, r.name`),
       pool.query(`SELECT c.slug, c.name, count(DISTINCT p.id)::int AS n FROM categories c
                     JOIN products p ON (p.category_id = c.id OR p.category_id IN (SELECT id FROM categories WHERE parent_id = c.id)) AND ${SELL}
                    GROUP BY c.id ORDER BY c.sort_order, c.name`),
@@ -68,7 +72,8 @@ export const catalogueRoutes: FastifyPluginAsync = async (app) => {
       const n = (await pool.query(
         `SELECT count(*)::int AS n FROM products p WHERE ${SELL} AND CASE WHEN EXISTS (SELECT 1 FROM collection_products cp WHERE cp.collection_id = $1)
             THEN p.id IN (SELECT product_id FROM collection_products WHERE collection_id = $1)
-            ELSE ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM product_countries pc JOIN region_countries rc ON rc.country_id = pc.country_id WHERE pc.product_id = p.id AND pc.kind = 'culinary' AND rc.region_id = $2))
+            ELSE ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM product_countries pc JOIN region_countries rc ON rc.country_id = pc.country_id WHERE pc.product_id = p.id AND pc.kind = 'culinary' AND rc.region_id = $2)
+                                               OR (NOT EXISTS (SELECT 1 FROM product_countries x WHERE x.product_id = p.id AND x.kind = 'culinary') AND EXISTS (SELECT 1 FROM offers_live o2 JOIN store_regions sr ON sr.store_id = o2.store_id WHERE o2.product_id = p.id AND o2.is_active AND sr.region_id = $2)))
              AND ($3::uuid IS NULL OR p.category_id = $3 OR p.category_id IN (SELECT id FROM categories WHERE parent_id = $3)) END`, [c.id, c.region_id, c.category_id])).rows[0].n;
       if (n > 0) collections.push({ slug: c.slug, title: c.title, subtitle: c.subtitle });
     }

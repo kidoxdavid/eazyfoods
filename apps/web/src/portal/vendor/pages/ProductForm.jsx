@@ -13,12 +13,15 @@ const ProductForm = () => {
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState([])
   const [stores, setStores] = useState([])
+  const [regionList, setRegionList] = useState([])
+  useEffect(() => { fetch('/api/regions').then((r) => (r.ok ? r.json() : [])).then(setRegionList).catch(() => {}) }, [])
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
     sale_price: '',
     category_id: '',
+    country_slugs: [],
     sku: '',
     barcode: prefillBarcode,
     unit: 'piece',
@@ -328,6 +331,7 @@ const ProductForm = () => {
         track_expiry: formData.track_expiry || false,
         slug: slug,
         category_id: formData.category_id || null,
+        country_slugs: formData.country_slugs || [],
         image_url: formData.image_url || null,
         images: imagesArray.length > 0 ? imagesArray : null,
         store_id: storeIdValue || null, // Use the validated/auto-selected store_id
@@ -471,6 +475,28 @@ const ProductForm = () => {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Where is this food from?</label>
+            <p className="text-xs text-gray-500 mb-2">Tap the countries it comes from. This is how shoppers find it under West Africa, East Africa and so on.</p>
+            <div className="space-y-2">
+              {regionList.map((r) => (
+                <div key={r.slug}>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-1">{r.name}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {r.countries.map((c) => {
+                      const on = (formData.country_slugs || []).includes(c.slug)
+                      return (
+                        <button key={c.slug} type="button" aria-pressed={on}
+                          onClick={() => setFormData((f) => ({ ...f, country_slugs: on ? f.country_slugs.filter((x) => x !== c.slug) : [...(f.country_slugs || []), c.slug] }))}
+                          className={`px-2.5 py-1 text-xs rounded-full border ${on ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'}`}>{c.name}</button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {stores.length > 1 ? (
