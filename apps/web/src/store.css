@@ -257,7 +257,7 @@ main { padding-top: 14px; }
   .announce { padding: 6px 12px; font-size: .82rem; }
   html.hdr-gone .catchips { top: 0; }
   /* home */
-  .hero-car { margin: 2px 0 12px; border-radius: 14px; }
+  .hero-car { margin: 10px 0 12px; border-radius: 14px; }
   .hero-slide { min-height: 190px; grid-template-columns: 1.3fr 1fr; } .hero-art { min-height: 170px; }
   .hero-copy { padding: 14px 4px 28px 14px; } .hero-eyebrow { font-size: .66rem; letter-spacing: .07em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
   .hero-copy h2 { font-size: 1.15rem; margin: 4px 0 6px; } .hero-copy p { font-size: .8rem; margin: 0 0 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; } .hero-copy .btn { min-height: 38px; padding: 0 16px; font-size: .9rem; }
@@ -594,3 +594,4 @@ main { padding-top: 14px; }
 .depts > li { flex: 0 0 92px; list-style: none; } .depts > li > .dept { display: block; flex: none; }
 @media (min-width: 900px) { .depts > li { flex-basis: 120px; } }
 @media (max-width: 599px) { .depts > li { flex-basis: 80px; } .dept .dept-tile { width: 76px; height: 76px; } .dept .dept-ico { width: 70px; height: 70px; } }
+@media (max-width: 599px) { .hero-skel { margin-top: 10px; } }

@@ -139,4 +139,4 @@ form.row + *, .row.top + * { margin-top: 0; }
 @media (prefers-reduced-transparency: reduce) { .tabbar { background: var(--card); -webkit-backdrop-filter: none; backdrop-filter: none; } }
 
 /* Slimmer region bar (West Africa, East Africa…) on phones */
-@media (max-width: 899px) { .hdr-nav a { padding: 0 10px; min-height: 26px; font-size: .82rem; line-height: 1.2; } .hdr-navrow { padding-top: 1px; padding-bottom: 1px; } }
+@media (max-width: 899px) { .hdr-nav .hdr-navrow a { padding: 0 10px; min-height: 26px; font-size: .82rem; line-height: 1.2; } .hdr-navrow { padding-top: 1px; padding-bottom: 1px; } }
