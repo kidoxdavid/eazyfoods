@@ -1,13 +1,12 @@
 import { useRef } from 'react';
 import { SkelShelf } from '../skeletons';
 import { useFeature, useFeatures } from '../features';
-import { IconBuyAgain, IconDeals, IconFlyer, IconNew, IconRecipes } from '../faveIcons';
+import { IconBuyAgain, IconChef, IconDeals, IconFlyer, IconNew, IconRecipes } from '../faveIcons';
 import { Link } from 'react-router-dom';
 import { recentSlugs, type Region, type StoreCard } from '../api';
 import { useAuth } from '../auth';
 import { useApi } from '../hooks';
-import { ProductArt, RegionArt } from '../art';
-import { DEPT_TILE, DeptIcon } from '../deptIcons';
+import { DeptArt, ProductArt, RegionArt } from '../art';
 import { RecentStrip, Shelf, StoreList, type Card } from '../cards';
 import { HeroCarousel, type Slide } from '../carousel';
 import { ErrorBox, Loading, Notice } from '../ui';
@@ -59,11 +58,12 @@ function CollectionShelf({ slug }: { slug: string }) {
 function Faves() {
   const on = useFeatures();
   const t = [
-    { to: '/deals', Icon: IconDeals, l: 'Weekly deals', k: 'gold', show: true },
     { to: '/buy-again', Icon: IconBuyAgain, l: 'Buy again', k: 'green', show: true },
+    { to: '/deals', Icon: IconDeals, l: 'Weekly deals', k: 'gold', show: true },
     { to: '/flyer', Icon: IconFlyer, l: 'Weekly flyer', k: 'coral', show: on('shop.flyer') },
-    { to: '/new', Icon: IconNew, l: 'New arrivals', k: 'blue', show: !on('shop.flyer') },
+    { to: '/new', Icon: IconNew, l: 'New arrivals', k: 'blue', show: true },
     { to: '/recipes', Icon: IconRecipes, l: 'Recipes', k: 'violet', show: true },
+    { to: '/kitchens', Icon: IconChef, l: 'Home chefs', k: 'peach', show: true },
   ].filter((x) => x.show);
   return (
     <section className="faves" aria-label="Your EAZY faves">
@@ -174,5 +174,5 @@ export function Home() {
 }
 
 function CatTile({ slug, name }: { slug: string; name: string }) {
-  return <li><Link to={`/search?category=${slug}`} className="dept"><div className={`dept-tile ${DEPT_TILE[slug] ?? 'dt-green'}`}><DeptIcon slug={slug} /></div>{name}</Link></li>;
+  return <li><Link to={`/search?category=${slug}`} className="dept"><div><DeptArt slug={slug} /></div>{name}</Link></li>;
 }

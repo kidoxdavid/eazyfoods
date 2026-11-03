@@ -12,7 +12,7 @@ describe('home: your EAZY faves', () => {
       const ctx = await browser.newContext({ viewport: { width: w, height: h } }); const page = await ctx.newPage();
       await signIn(page, 'customer@example.test');
       await page.goto(`${base()}/`, { waitUntil: 'networkidle' });
-      const tiles = page.locator('.faves .fave'); expect(await tiles.count()).toBeGreaterThanOrEqual(4);
+      const tiles = page.locator('.faves .fave'); expect(await tiles.count()).toBeGreaterThanOrEqual(5);
       const boxes = await page.evaluate(() => [...document.querySelectorAll('.faves .fave span')].map((e) => { const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }));
       for (const [bw, bh] of boxes) { expect(bh, `tile height at ${w}px`).toBeLessThanOrEqual(54); expect(bw).toBeGreaterThan(40); }
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(w + 1);
