@@ -4,13 +4,26 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/uploads/:file([a-f0-9]{32}\\.(?:mp4|webm))",
+      "destination": "https://eazyfoods.onrender.com/uploads/:file",
+      "permanent": false
+    },
+    {
       "source": "/:path(.*)",
-      "has": [{ "type": "host", "value": "www.eazyfoods.ca" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "www.eazyfoods.ca"
+        }
+      ],
       "destination": "https://eazyfoods.ca/:path",
       "permanent": true
     }
   ],
   "rewrites": [
-    { "source": "/:path(.*)", "destination": "https://eazyfoods.onrender.com/:path" }
+    {
+      "source": "/:path(.*)",
+      "destination": "https://eazyfoods.onrender.com/:path"
+    }
   ]
 }
