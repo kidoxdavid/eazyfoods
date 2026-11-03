@@ -1,0 +1,1 @@
+This folder only forwards eazyfoods.ca to the app. Nothing is served from here.

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": false,
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/:path(.*)",
+      "has": [{ "type": "host", "value": "www.eazyfoods.ca" }],
+      "destination": "https://eazyfoods.ca/:path",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    { "source": "/:path(.*)", "destination": "https://eazyfoods.onrender.com/:path" }
+  ]
+}
