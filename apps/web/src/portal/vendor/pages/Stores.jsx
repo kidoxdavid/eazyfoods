@@ -3,13 +3,13 @@ import api from '../services/api'
 import { Plus, Edit, Trash2, MapPin, Clock, CheckCircle, XCircle, Star } from 'lucide-react'
 
 const STORE_TIMEZONES = [
+  { value: 'America/Edmonton', label: 'Alberta Time (UTC−6 all year, no clock changes)' },
   { value: 'UTC', label: 'UTC (GMT)' },
   { value: 'America/New_York', label: 'Eastern Time (US & Canada)' },
   { value: 'America/Chicago', label: 'Central Time (US & Canada)' },
   { value: 'America/Denver', label: 'Mountain Time (US)' },
   { value: 'America/Phoenix', label: 'Mountain Time - Arizona (no DST)' },
   { value: 'America/Los_Angeles', label: 'Pacific Time (US & Canada)' },
-  { value: 'America/Edmonton', label: 'Mountain Time (Canada)' },
   { value: 'America/Toronto', label: 'Eastern Time (Canada)' },
   { value: 'America/Vancouver', label: 'Pacific Time (Canada)' },
   { value: 'America/Winnipeg', label: 'Central Time (Canada)' },

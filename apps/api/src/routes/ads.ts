@@ -9,6 +9,9 @@ export const LIVE_ADS = `
   SELECT c.*, COALESCE((SELECT count(*) FROM ad_events e WHERE e.campaign_id = c.id AND e.type = 'click'), 0)::int * c.cpc_cents AS spent_cents
     FROM ad_campaigns c WHERE c.status = 'approved' AND now() >= c.starts_at AND now() < c.ends_at`;
 
+/** What people should see: a campaign whose end date has passed is expired, whatever it was before (rejected ones stay rejected). Never stored, so it is always right. */
+export const AD_STATUS = `(CASE WHEN c.ends_at <= now() AND c.status IN ('approved','paused','pending') THEN 'expired' ELSE c.status END)`;
+
 export const adRoutes: FastifyPluginAsync = async (app) => {
   app.get('/ads', async (req) => {
     const q = z.object({ placement: z.enum(['home_banner', 'region_banner', 'sponsored_store']), region: z.string().optional() }).parse(req.query);

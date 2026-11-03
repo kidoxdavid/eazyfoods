@@ -1,3 +1,4 @@
+import { AD_STATUS } from './ads.js';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool, tx } from '../db/pool.js';
@@ -282,13 +283,15 @@ export const adminCatalogRoutes: FastifyPluginAsync = async (app) => {
   // ---------- Advertising review ----------
   const ads = requirePerm('ads.manage');
   app.get('/ads', { preHandler: ads }, async () => (await pool.query(
-    `SELECT c.id, c.title, c.body, c.image_url, c.video_url, c.placement, c.status, c.cpc_cents, c.budget_cents, c.starts_at, c.ends_at, v.name AS vendor_name, p.name AS product_name,
+    `SELECT c.id, c.title, c.body, c.image_url, c.video_url, c.placement, ${AD_STATUS} AS status, c.cpc_cents, c.budget_cents, c.starts_at, c.ends_at, v.name AS vendor_name, p.name AS product_name,
             count(e.*) FILTER (WHERE e.type='impression')::int AS impressions, count(e.*) FILTER (WHERE e.type='click')::int AS clicks, (count(e.*) FILTER (WHERE e.type='click') * c.cpc_cents)::int AS spent_cents
-       FROM ad_campaigns c JOIN vendors v ON v.id = c.vendor_id LEFT JOIN products p ON p.id = c.product_id LEFT JOIN ad_events e ON e.campaign_id = c.id GROUP BY c.id, v.name, p.name ORDER BY (c.status='pending') DESC, c.created_at DESC`)).rows);
+       FROM ad_campaigns c JOIN vendors v ON v.id = c.vendor_id LEFT JOIN products p ON p.id = c.product_id LEFT JOIN ad_events e ON e.campaign_id = c.id GROUP BY c.id, v.name, p.name ORDER BY (${AD_STATUS}='pending') DESC, c.created_at DESC`)).rows);
   app.patch<{ Params: { id: string } }>('/ads/:id', { preHandler: ads }, async (req) => {
     const b = z.object({ status: z.enum(['approved', 'rejected', 'paused']), note: z.string().max(300).optional() }).parse(req.body);
     if (b.status === 'rejected' && !b.note) throw bad('note_required', 'Tell the vendor why the creative was rejected.');
-    const r = await pool.query('UPDATE ad_campaigns SET status=$2, review_note=$3, reviewed_by=$4 WHERE id=$1 RETURNING id', [uuid.parse(req.params.id), b.status, b.note ?? null, req.user!.id]);
+    const id = uuid.parse(req.params.id);
+    if (b.status !== 'rejected' && (await pool.query('SELECT 1 FROM ad_campaigns WHERE id = $1 AND ends_at <= now()', [id])).rowCount) throw bad('ad_expired', 'This ad has already ended. Ask the vendor to create a new one.');
+    const r = await pool.query('UPDATE ad_campaigns SET status=$2, review_note=$3, reviewed_by=$4 WHERE id=$1 RETURNING id', [id, b.status, b.note ?? null, req.user!.id]);
     if (!r.rowCount) throw notFound('Campaign not found');
     await audit(req.user!.id, `ad.${b.status}`, 'ad_campaign', req.params.id, b);
     return { ok: true };

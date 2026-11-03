@@ -25,9 +25,9 @@ export default function Ads() {
             { key: 's', header: 'Status', render: (r) => <StatusBadge status={r.status} /> },
             { key: 'a', header: '', render: (r) => (
               <div className="flex gap-1.5 flex-wrap" onClick={(e) => e.stopPropagation()}>
-                {r.status !== 'approved' && <Button size="sm" onClick={() => act.run(r.id, 'approved', undefined, reload)}>Approve</Button>}
+                {r.status !== 'approved' && r.status !== 'expired' && <Button size="sm" onClick={() => act.run(r.id, 'approved', undefined, reload)}>Approve</Button>}
                 {r.status === 'approved' && <Button size="sm" variant="secondary" onClick={() => act.run(r.id, 'paused', undefined, reload)}>Pause</Button>}
-                {r.status !== 'rejected' && <Button size="sm" variant="danger" onClick={() => { setRejecting(r.id); setNote('') }}>Reject</Button>}
+                {r.status !== 'rejected' && r.status !== 'expired' && <Button size="sm" variant="danger" onClick={() => { setRejecting(r.id); setNote('') }}>Reject</Button>}
               </div>) },
           ]} />
           {rejecting && (

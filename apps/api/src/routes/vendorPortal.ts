@@ -6,6 +6,7 @@ import { pool, tx } from '../db/pool.js';
 import { audit, canManageStore } from '../lib/auth.js';
 import { can, requireLogin } from '../lib/permissions.js';
 import { bad, conflict, forbidden, notFound } from '../lib/errors.js';
+import { AD_STATUS } from './ads.js';
 import { getSetting } from '../lib/settings.js';
 import { isOurImageUrl, isOurVideoUrl } from '../lib/storage.js';
 import { parseCsv, toCsv } from '../lib/csv.js';
@@ -98,7 +99,7 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
       postal_code: z.string().refine(isCanadianPostal).optional(), phone: z.string().max(25).optional(), policies: z.string().max(3000).nullable().optional(),
       offers_delivery: z.boolean().optional(), offers_pickup: z.boolean().optional(), ordering_paused: z.boolean().optional(),
       min_order_cents: z.number().int().min(0).max(100000).nullable().optional(), logo_url: img, cover_url: img, regions: z.array(z.string()).optional(),
-      cuisines: z.array(z.string().trim().min(2).max(40)).max(8).optional(),
+      cuisines: z.array(z.string().trim().min(2).max(40)).max(8).optional(), timezone: z.string().min(3).max(60).optional(),
       video_url: z.string().refine(isOurVideoUrl, 'Upload the video through EAZyfoods first.').nullable().optional(), kitchen_type: z.enum(['home', 'restaurant']).optional(),
     }).parse(req.body);
     await tx(async (c) => {
@@ -107,6 +108,10 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
       if (b.postal_code) m.postal_code = normalisePostal(b.postal_code);
       await c.query(`UPDATE stores SET description=$2, address_line=$3, city=$4, postal_code=$5, phone=$6, policies=$7, offers_delivery=$8, offers_pickup=$9, ordering_paused=$10, min_order_cents=$11, logo_url=$12, cover_url=$13 WHERE id=$1`,
         [id, m.description, m.address_line, m.city, m.postal_code, m.phone, m.policies, m.offers_delivery, m.offers_pickup, m.ordering_paused, m.min_order_cents, m.logo_url, m.cover_url]);
+      if (b.timezone) {   // opening hours, pre-order slots and "open now" are all worked out in this zone, so it has to be a real one
+        if (!(await c.query('SELECT 1 FROM pg_timezone_names WHERE name = $1', [b.timezone])).rowCount) throw bad('bad_timezone', 'That time zone is not recognised.');
+        await c.query('UPDATE stores SET timezone = $2 WHERE id = $1', [id, b.timezone]);
+      }
       if (b.video_url !== undefined) {
         if (b.video_url) await assertVendorCan(cur.vendor_id, 'videos', c);
         await c.query('UPDATE stores SET video_url = $2 WHERE id = $1', [id, b.video_url]);
@@ -146,7 +151,7 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
   });
   app.get<{ Params: { storeId: string } }>('/stores/:storeId/hours', async (req) => (await pool.query('SELECT dow, to_char(opens,\'HH24:MI\') AS opens, to_char(closes,\'HH24:MI\') AS closes FROM store_hours WHERE store_id = $1 ORDER BY dow, opens', [await store(req)])).rows);
   app.get<{ Params: { storeId: string } }>('/stores/:storeId/profile', async (req) => {
-    const s = (await pool.query('SELECT id, slug, name, description, address_line, city, postal_code, phone, policies, offers_delivery, offers_pickup, ordering_paused, min_order_cents, logo_url, cover_url, status, kind, cuisines, kitchen_type, video_url, gallery FROM stores WHERE id = $1', [await store(req)])).rows[0];
+    const s = (await pool.query('SELECT id, slug, name, description, address_line, city, postal_code, phone, policies, offers_delivery, offers_pickup, ordering_paused, min_order_cents, logo_url, cover_url, status, kind, cuisines, kitchen_type, video_url, gallery, timezone FROM stores WHERE id = $1', [await store(req)])).rows[0];
     const regions = (await pool.query('SELECT r.slug FROM store_regions sr JOIN regions r ON r.id = sr.region_id WHERE sr.store_id = $1', [s.id])).rows.map((r) => r.slug);
     return { ...s, regions };
   });
@@ -461,7 +466,7 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
 
   // ---------- Advertising ----------
   app.get('/ads', async (req) => (await pool.query(
-    `SELECT c.id, c.title, c.placement, c.status, c.review_note, c.cpc_cents, c.budget_cents, c.starts_at, c.ends_at,
+    `SELECT c.id, c.title, c.placement, ${AD_STATUS} AS status, c.review_note, c.cpc_cents, c.budget_cents, c.starts_at, c.ends_at,
             count(e.*) FILTER (WHERE e.type='impression')::int AS impressions, count(e.*) FILTER (WHERE e.type='click')::int AS clicks,
             (count(e.*) FILTER (WHERE e.type='click') * c.cpc_cents)::int AS spent_cents
        FROM ad_campaigns c LEFT JOIN ad_events e ON e.campaign_id = c.id WHERE c.vendor_id = $1 GROUP BY c.id ORDER BY c.created_at DESC`, [vendorId(req)])).rows);

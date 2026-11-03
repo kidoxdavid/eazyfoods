@@ -8,8 +8,9 @@ import { getSetting } from '../lib/settings.js';
 import { isOurImageUrl, isOurVideoUrl } from '../lib/storage.js';
 import { assertVendorCan } from '../services/features.js';
 import { vendorIdsOf } from './vendorOrders.js';
+import { AD_STATUS } from './ads.js';
 
-const SEL = `SELECT c.id, c.title, c.body, c.placement, c.status, c.review_note, c.cpc_cents, c.budget_cents, c.starts_at, c.ends_at, c.image_url, c.video_url, c.store_id, c.created_at,
+const SEL = `SELECT c.id, c.title, c.body, c.placement, ${AD_STATUS} AS status, c.review_note, c.cpc_cents, c.budget_cents, c.starts_at, c.ends_at, c.image_url, c.video_url, c.store_id, c.created_at,
        (SELECT slug FROM products WHERE id = c.product_id) AS product_slug,
        count(e.*) FILTER (WHERE e.type='impression')::int AS impressions, count(e.*) FILTER (WHERE e.type='click')::int AS clicks,
        (count(e.*) FILTER (WHERE e.type='click') * c.cpc_cents)::int AS spent_cents
@@ -33,6 +34,7 @@ export const vendorAdRoutes: FastifyPluginAsync = async (app) => {
 
   app.put<{ Params: { id: string } }>('/ads/:id', async (req) => {
     const ad = await owned(req);
+    if (ad.status === 'expired') throw bad('ad_expired', 'This ad has ended. Create a new ad to run it again.');
     if (!['pending', 'rejected'].includes(ad.status)) throw bad('not_editable', 'An approved ad cannot be edited. Pause it or create a new one.');
     await assertVendorCan(vid(req), 'ads');
     const b = z.object({ title: z.string().min(3).max(80), body: z.string().max(200).nullish(), image_url: z.string().refine(isOurImageUrl, 'Upload the image through EAZyfoods first.').nullish(), video_url: z.string().refine(isOurVideoUrl, 'Upload the video through EAZyfoods first.').nullish(), starts_at: z.coerce.date(), ends_at: z.coerce.date() }).parse(req.body);
@@ -45,6 +47,7 @@ export const vendorAdRoutes: FastifyPluginAsync = async (app) => {
 
   const flip = (path: string, from: string, to: string) => app.post<{ Params: { id: string } }>(`/ads/:id/${path}`, async (req) => {
     const ad = await owned(req);
+    if (ad.status === 'expired') throw bad('ad_expired', 'This ad has ended. Create a new ad to run it again.');
     const r = await pool.query('UPDATE ad_campaigns SET status = $3 WHERE id = $1 AND status = $2 RETURNING id', [ad.id, from, to]);
     if (!r.rowCount) throw bad('invalid_state', `Only a ${from} ad can be ${path === 'pause' ? 'paused' : 'resumed'}.`);
     await audit(req.user!.id, `ad.${path}`, 'ad', ad.id, {});

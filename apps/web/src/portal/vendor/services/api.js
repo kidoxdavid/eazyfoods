@@ -64,7 +64,7 @@ function storeShape(s, p, all) {
   return {
     id: s.id, name: s.name, description: p.description || '', store_code: '', street_address: p.address_line || '', city: p.city || '', state: 'Alberta', postal_code: p.postal_code || '', phone: p.phone || '', email: '',
     is_active: !p.ordering_paused && p.status === 'published', is_primary: all[0]?.id === s.id, pickup_available: !!p.offers_pickup, delivery_available: !!p.offers_delivery,
-    delivery_radius_km: 0, delivery_fee: 0, minimum_order_amount: p.min_order_cents ? p.min_order_cents / 100 : 0, timezone: 'America/Edmonton', average_rating: 0, total_reviews: 0, status: p.status,
+    delivery_radius_km: 0, delivery_fee: 0, minimum_order_amount: p.min_order_cents ? p.min_order_cents / 100 : 0, timezone: p.timezone || 'America/Edmonton', average_rating: 0, total_reviews: 0, status: p.status,
   }
 }
 function storeBodyOut(d) {
@@ -74,6 +74,7 @@ function storeBodyOut(d) {
 function storeProfileOut(d) {
   const o = {}
   if (d.description !== undefined) o.description = d.description || null
+  if (d.timezone) o.timezone = d.timezone
   if (d.street_address) o.address_line = d.street_address
   if (d.city) o.city = d.city
   if (d.postal_code) o.postal_code = d.postal_code
@@ -87,7 +88,7 @@ function storeProfileOut(d) {
 
 function adShape(a) {
   return { id: a.id, name: a.title, ad_type: 'banner', title: a.title, description: a.body || '', image_url: a.image_url || '', video_url: a.video_url || '', cta_text: 'Shop Now', cta_link: '', placement: a.placement, priority: 0,
-    start_date: a.starts_at, end_date: a.ends_at, approval_status: a.status === 'pending' || a.status === 'rejected' ? a.status : 'approved', status: a.status === 'paused' ? 'paused' : a.status === 'approved' ? 'active' : 'inactive',
+    start_date: a.starts_at, end_date: a.ends_at, approval_status: ['pending', 'rejected', 'expired'].includes(a.status) ? a.status : 'approved', status: a.status === 'expired' ? 'expired' : a.status === 'paused' ? 'paused' : a.status === 'approved' ? 'active' : 'inactive',
     approved_at: a.status === 'approved' || a.status === 'paused' ? a.starts_at : null, impressions: a.impressions, clicks: a.clicks, spent: (a.spent_cents || 0) / 100, budget: a.budget_cents / 100, review_note: a.review_note }
 }
 
