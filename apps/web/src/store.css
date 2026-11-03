@@ -531,10 +531,10 @@ main { padding-top: 14px; }
 
 /* Home: small shortcut tiles under the banner */
 .faves { margin: 2px 0 12px; } .faves h2 { font-size: 1.05rem; margin: 0 0 6px; }
-.faves-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.faves-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
 .fave { display: grid; justify-items: center; gap: 3px; text-align: center; font-weight: 700; font-size: .72rem; line-height: 1.15; color: var(--ink); text-decoration: none; }
 .fave span { display: grid; place-items: center; width: 100%; height: 46px; border-radius: 14px; font-size: 21px; }
-@media (min-width: 700px) { .faves-grid { grid-template-columns: repeat(6, 1fr); max-width: 760px; } .fave span { height: 52px; font-size: 24px; } }
+@media (min-width: 700px) { .faves-grid { max-width: 640px; } .fave span { height: 52px; font-size: 24px; } }
 
 /* Card chips: they live in the line that used to read "at <store>", so the card is exactly the size it was. */
 .pcard .psold { display: flex; gap: 4px; flex-wrap: nowrap; overflow: hidden; align-items: center; min-height: 1.25em; }   /* as tall as the one line of text it replaces */
@@ -578,3 +578,19 @@ main { padding-top: 14px; }
 .fv-blue { background: linear-gradient(135deg, #dce9ff, #9dbdff); } .fv-violet { background: linear-gradient(135deg, #f0e0fb, #cba5ec); } .fv-peach { background: linear-gradient(135deg, #ffe6c9, #ffb978); }
 @media (prefers-reduced-motion: reduce) { .fave span { transition: none; } }
 @media (min-width: 700px) { .fave span .fave-ico { width: 46px; height: 46px; } }
+
+/* Department tiles — illustrated, same family as the faves */
+.dept .dept-tile { width: 84px; height: 84px; border-radius: 22px; overflow: visible; margin: 0 auto 8px; border: 0; display: grid; place-items: center; box-shadow: inset 0 -3px 0 rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.08); transition: transform .15s; }
+.dept:hover .dept-tile { transform: translateY(-2px); }
+.dept .dept-ico { width: 78px; height: 78px; margin: -6px 0 0; filter: drop-shadow(0 3px 3px rgba(0,0,0,.18)); }
+.dept .dt-sand { background: linear-gradient(145deg,#fdf0d0,#f3d89a); } .dept .dt-coral { background: linear-gradient(145deg,#ffe0d6,#ffb4a0); }
+.dept .dt-green { background: linear-gradient(145deg,#dcf5d8,#a8e0a0); } .dept .dt-ice { background: linear-gradient(145deg,#e0f3ff,#a9d8f5); }
+.dept .dt-violet { background: linear-gradient(145deg,#ece2ff,#c7b0f5); } .dept .dt-orange { background: linear-gradient(145deg,#ffe8cc,#ffc07a); }
+.dept .dt-gold { background: linear-gradient(145deg,#fff3c4,#ffd95e); } .dept .dt-steel { background: linear-gradient(145deg,#e6ecf2,#b9c7d6); }
+.dept .dt-peach { background: linear-gradient(145deg,#ffeadb,#ffc9a3); } .dept .dt-clay { background: linear-gradient(145deg,#f3e3d6,#d9b394); }
+@media (min-width: 900px) { .dept .dept-tile { width: 108px; height: 108px; border-radius: 26px; } .dept .dept-ico { width: 100px; height: 100px; } }
+@media (prefers-reduced-motion: reduce) { .dept .dept-tile { transition: none; } }
+
+.depts > li { flex: 0 0 92px; list-style: none; } .depts > li > .dept { display: block; flex: none; }
+@media (min-width: 900px) { .depts > li { flex-basis: 120px; } }
+@media (max-width: 599px) { .depts > li { flex-basis: 80px; } .dept .dept-tile { width: 76px; height: 76px; } .dept .dept-ico { width: 70px; height: 70px; } }
