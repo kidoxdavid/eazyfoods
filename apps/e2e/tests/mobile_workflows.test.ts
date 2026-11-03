@@ -68,7 +68,7 @@ for (const { w, h } of SIZES) {
       const { page } = await newPage(browser, { width: w, height: h });
       await signIn(page, 'driver@example.test');
       await page.goto(`${base()}/driver`); await page.waitForTimeout(600); await fit(page, 'driver home', w, h);
-      const sw = page.getByRole('button', { name: /available|on|off/i }).first();
+      const sw = page.getByRole('button', { name: /^(on|off)$/i }).first();
       await sw.click(); await page.waitForTimeout(400); await fit(page, 'availability toggled', w, h);
       for (const u of ['/driver/available-deliveries', '/driver/my-deliveries', '/driver/earnings']) { await page.goto(`${base()}${u}`); await page.waitForTimeout(500); await fit(page, u, w, h); }
       expect(bad, `\n${bad.join('\n')}\n`).toEqual([]);

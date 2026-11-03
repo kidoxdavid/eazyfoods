@@ -1065,6 +1065,14 @@
  },
  {
   "app": "marketing",
+  "route": "/ads",
+  "url": "/marketing/ads",
+  "dynamic": false,
+  "signedIn": true,
+  "email": "marketing@example.test"
+ },
+ {
+  "app": "marketing",
   "route": "/studio",
   "url": "/marketing/studio",
   "dynamic": false,

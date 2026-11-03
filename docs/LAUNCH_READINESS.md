@@ -17,7 +17,7 @@ The platform's *logic* is well tested. What is untested is everything that needs
 | Check | Result |
 |---|---|
 | API integration tests against a real Postgres | **250 passed, 1 failing** (see §6: a time-zone test that fails only on this test machine) |
-| Browser end-to-end suite (real Chromium, real API and database) | _full run was still in progress when this was committed; the number is added in the next commit_ |
+| Browser end-to-end suite (real Chromium, real API and database) | **184 tests: 182 passed on the full run, 2 failed**. Both failures were one test whose search matched the new "Turn on notifications" button by mistake (the test was fixed, not the product, and passes). The full suite has not been re-run since that fix |
 | Crawl of every page in all 8 areas (shop visitor, customer, vendor, chef, driver, marketing, finance, admin) on desktop **and** phone | 16 of 16 passed, no console errors |
 | Phone-layout audit (no sideways scroll, tap sizes, contrast) | 192 routes audited, 0 critical, 0 high (last full run before the latest changes) |
 | Type-checks (API and web), production build | Clean |
