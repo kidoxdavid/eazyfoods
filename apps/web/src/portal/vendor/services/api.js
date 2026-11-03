@@ -86,7 +86,7 @@ function storeProfileOut(d) {
 }
 
 function adShape(a) {
-  return { id: a.id, name: a.title, ad_type: 'banner', title: a.title, description: a.body || '', image_url: a.image_url || '', video_url: '', cta_text: 'Shop Now', cta_link: '', placement: a.placement, priority: 0,
+  return { id: a.id, name: a.title, ad_type: 'banner', title: a.title, description: a.body || '', image_url: a.image_url || '', video_url: a.video_url || '', cta_text: 'Shop Now', cta_link: '', placement: a.placement, priority: 0,
     start_date: a.starts_at, end_date: a.ends_at, approval_status: a.status === 'pending' || a.status === 'rejected' ? a.status : 'approved', status: a.status === 'paused' ? 'paused' : a.status === 'approved' ? 'active' : 'inactive',
     approved_at: a.status === 'approved' || a.status === 'paused' ? a.starts_at : null, impressions: a.impressions, clicks: a.clicks, spent: (a.spent_cents || 0) / 100, budget: a.budget_cents / 100, review_note: a.review_note }
 }
@@ -260,10 +260,10 @@ const routes = [
   ['GET', /^\/vendor\/marketing\/config$/, async () => { const c = await raw('GET', V('/ads-config')); return { min_budget: c.min_budget_cents / 100, min_cpc: c.min_cpc_cents / 100 } }],
   ['GET', /^\/vendor\/marketing\/ads$/, async () => (await raw('GET', V('/ads'))).map(adShape)],
   ['GET', /^\/vendor\/marketing\/ads\/([0-9a-f-]{36})$/, async (m) => adShape(await raw('GET', V(`/ads/${m[1]}`)))],
-  ['POST', /^\/vendor\/marketing\/ads$/, async (m, { data: d }) => raw('POST', V('/ads'), { store_id: await currentStoreId(), placement: d.placement, title: d.title || d.name, body: d.description || undefined, image_url: d.image_url || undefined,
+  ['POST', /^\/vendor\/marketing\/ads$/, async (m, { data: d }) => raw('POST', V('/ads'), { store_id: await currentStoreId(), placement: d.placement, title: d.title || d.name, body: d.description || undefined, image_url: d.image_url || undefined, video_url: d.video_url || undefined,
     cpc_cents: Math.round(Number(d.cpc) * 100), budget_cents: Math.round(Number(d.budget) * 100), starts_at: new Date(d.start_date || Date.now()).toISOString(), ends_at: new Date(d.end_date || Date.now() + 7 * 864e5).toISOString(), product_slug: d.product_slug })],
   ['PUT', /^\/vendor\/marketing\/ads\/([0-9a-f-]{36})\/(pause|activate)$/, async (m) => raw('POST', V(`/ads/${m[1]}/${m[2]}`), {})],
-  ['PUT', /^\/vendor\/marketing\/ads\/([0-9a-f-]{36})$/, async (m, { data: d }) => raw('PUT', V(`/ads/${m[1]}`), { title: d.title || d.name, body: d.description || null, image_url: d.image_url || null, starts_at: new Date(d.start_date).toISOString(), ends_at: new Date(d.end_date).toISOString() })],
+  ['PUT', /^\/vendor\/marketing\/ads\/([0-9a-f-]{36})$/, async (m, { data: d }) => raw('PUT', V(`/ads/${m[1]}`), { title: d.title || d.name, body: d.description || null, image_url: d.image_url || null, video_url: d.video_url || null, starts_at: new Date(d.start_date).toISOString(), ends_at: new Date(d.end_date).toISOString() })],
   ['DELETE', /^\/vendor\/marketing\/ads\/([0-9a-f-]{36})$/, async (m) => raw('DELETE', V(`/ads/${m[1]}`))],
 
   // ----- inventory -----
@@ -340,6 +340,8 @@ const routes = [
   ['DELETE', /^\/barcode\/remove$/, async (m, { params }) => raw('DELETE', V(`/stores/${await currentStoreId()}/catalogue/${params.product_id}/barcode`))],
   ['POST', /^\/uploads\/(products|ads|vendor-profile|vendor-documents)$/, async (m, { data }) => {
     if (m[1] === 'vendor-documents') { const f = data.get('file'); const key = `pending:${pendingDocs.size + 1}`; pendingDocs.set(key, f); return { url: key } }
+    const f = data.get('file')
+    if (m[1] === 'ads' && f && String(f.type).startsWith('video/')) return raw('POST', '/uploads/video', data, { isForm: true })
     return raw('POST', '/uploads/image', data, { isForm: true })
   }],
   ['POST', /^\/ai\/generate-description$/, async (m, { data: d }) => {

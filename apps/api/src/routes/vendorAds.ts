@@ -5,11 +5,11 @@ import { audit } from '../lib/auth.js';
 import { requireLogin } from '../lib/permissions.js';
 import { bad, forbidden, notFound } from '../lib/errors.js';
 import { getSetting } from '../lib/settings.js';
-import { isOurImageUrl } from '../lib/storage.js';
+import { isOurImageUrl, isOurVideoUrl } from '../lib/storage.js';
 import { assertVendorCan } from '../services/features.js';
 import { vendorIdsOf } from './vendorOrders.js';
 
-const SEL = `SELECT c.id, c.title, c.body, c.placement, c.status, c.review_note, c.cpc_cents, c.budget_cents, c.starts_at, c.ends_at, c.image_url, c.store_id, c.created_at,
+const SEL = `SELECT c.id, c.title, c.body, c.placement, c.status, c.review_note, c.cpc_cents, c.budget_cents, c.starts_at, c.ends_at, c.image_url, c.video_url, c.store_id, c.created_at,
        (SELECT slug FROM products WHERE id = c.product_id) AS product_slug,
        count(e.*) FILTER (WHERE e.type='impression')::int AS impressions, count(e.*) FILTER (WHERE e.type='click')::int AS clicks,
        (count(e.*) FILTER (WHERE e.type='click') * c.cpc_cents)::int AS spent_cents
@@ -35,9 +35,10 @@ export const vendorAdRoutes: FastifyPluginAsync = async (app) => {
     const ad = await owned(req);
     if (!['pending', 'rejected'].includes(ad.status)) throw bad('not_editable', 'An approved ad cannot be edited. Pause it or create a new one.');
     await assertVendorCan(vid(req), 'ads');
-    const b = z.object({ title: z.string().min(3).max(80), body: z.string().max(200).nullish(), image_url: z.string().refine(isOurImageUrl, 'Upload the image through EAZyfoods first.').nullish(), starts_at: z.coerce.date(), ends_at: z.coerce.date() }).parse(req.body);
+    const b = z.object({ title: z.string().min(3).max(80), body: z.string().max(200).nullish(), image_url: z.string().refine(isOurImageUrl, 'Upload the image through EAZyfoods first.').nullish(), video_url: z.string().refine(isOurVideoUrl, 'Upload the video through EAZyfoods first.').nullish(), starts_at: z.coerce.date(), ends_at: z.coerce.date() }).parse(req.body);
     if (b.ends_at <= b.starts_at) throw bad('invalid_dates', 'The end must be after the start.');
-    await pool.query(`UPDATE ad_campaigns SET title = $2, body = $3, image_url = COALESCE($4, image_url), starts_at = $5, ends_at = $6, status = 'pending', review_note = NULL WHERE id = $1`, [ad.id, b.title, b.body ?? null, b.image_url ?? null, b.starts_at, b.ends_at]);
+    if (b.video_url) await assertVendorCan(vid(req), 'videos');
+    await pool.query(`UPDATE ad_campaigns SET title = $2, body = $3, image_url = COALESCE($4, image_url), video_url = COALESCE($7, video_url), starts_at = $5, ends_at = $6, status = 'pending', review_note = NULL WHERE id = $1`, [ad.id, b.title, b.body ?? null, b.image_url ?? null, b.starts_at, b.ends_at, b.video_url ?? null]);
     await audit(req.user!.id, 'ad.edited', 'ad', ad.id, {});
     return { ok: true, status: 'pending' };
   });

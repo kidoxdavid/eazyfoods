@@ -77,7 +77,7 @@ function Personal() {
 export function Home() {
   const content = useApi<{ home_hero?: { title: string; subtitle: string }; home_layout?: Layout }>('/content/home');
   const { theme, loading: themeLoading } = useSiteTheme();
-  const ads = useApi<{ id: string; title: string; body: string | null; image_url: string | null; store: { slug: string } | null; product: { slug: string } | null }[]>('/ads?placement=home_banner');
+  const ads = useApi<{ id: string; title: string; body: string | null; image_url: string | null; video_url: string | null; store: { slug: string } | null; product: { slug: string } | null }[]>('/ads?placement=home_banner');
   const banners = useApi<{ id: string; title: string; subtitle: string; cta_label: string; cta_link: string; image_url: string | null; video_url: string | null; from_color: string; to_color: string }[]>('/home/banners');
   const shape = useApi<Shape>('/home/shape');
   const regions = useApi<Region[]>('/regions');
@@ -104,7 +104,7 @@ export function Home() {
   if (head && recipes.data?.length && featured.data) slides.push({ id: 'cook', from: '#3b2a6b', to: '#7a4bb8', eyebrow: 'Cook tonight', title: recipes.data[0].title, text: 'Add the ingredients that are in stock to your basket in one tap.', cta: { to: `/recipes`, label: 'See recipes' }, art: [...featured.data.results].reverse() });
 
   // Paid placements: at most two, always labelled. They join the end of the order so nothing already on screen moves.
-  if (head) for (const a of (ads.data ?? []).slice(0, 2)) slides.push({ id: `ad-${a.id}`, adId: a.id, from: '#1f2a44', to: '#3d5a99', eyebrow: 'Sponsored', title: a.title, text: a.body ?? '', cta: { to: a.product ? `/p/${a.product.slug}` : a.store ? `/s/${a.store.slug}` : '/stores', label: a.product ? 'View product' : 'Visit store' }, art: [], image: a.image_url });
+  if (head) for (const a of (ads.data ?? []).slice(0, 2)) slides.push({ id: `ad-${a.id}`, adId: a.id, from: '#1f2a44', to: '#3d5a99', eyebrow: 'Sponsored', title: a.title, text: a.body ?? '', cta: { to: a.product ? `/p/${a.product.slug}` : a.store ? `/s/${a.store.slug}` : '/stores', label: a.product ? 'View product' : 'Visit store' }, art: [], image: a.image_url, video: a.video_url });
 
   // Show slides in the order they first appeared: a slide whose data arrives late is added at the end and never pushes earlier slides around.
   const seen = useRef<string[]>([]);

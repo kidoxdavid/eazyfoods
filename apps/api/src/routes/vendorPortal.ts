@@ -470,10 +470,11 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
     const vid = vendorId(req); ownerOnly(req); await assertVendorCan(vid, 'ads');
     const b = z.object({
       store_id: uuid, product_slug: z.string().optional(), placement: z.enum(['home_banner', 'region_banner', 'search_sponsored', 'sponsored_store']), region_slug: z.string().optional(),
-      title: z.string().min(3).max(80), body: z.string().max(200).optional(), image_url: img, cpc_cents: z.number().int().positive(), budget_cents: z.number().int().positive(),
+      title: z.string().min(3).max(80), body: z.string().max(200).optional(), image_url: img, video_url: z.string().refine(isOurVideoUrl, 'Upload the video through EAZyfoods first.').nullish(), cpc_cents: z.number().int().positive(), budget_cents: z.number().int().positive(),
       starts_at: z.coerce.date(), ends_at: z.coerce.date(),
     }).parse(req.body);
     if (!(await canManageStore(req.user!, b.store_id))) throw forbidden();
+    if (b.video_url) await assertVendorCan(vid, 'videos');
     if (b.ends_at <= b.starts_at) throw bad('invalid_dates', 'The end must be after the start.');
     const [minCpc, minBudget] = await Promise.all([getSetting<number>('ads.min_cpc_cents'), getSetting<number>('ads.min_budget_cents')]);
     if (b.cpc_cents < minCpc) throw bad('cpc_too_low', `Minimum cost per click is $${(minCpc / 100).toFixed(2)}.`);
@@ -486,8 +487,8 @@ export const vendorPortalRoutes: FastifyPluginAsync = async (app) => {
       productId = p.id;
     }
     const regionId = b.region_slug ? (await pool.query('SELECT id FROM regions WHERE slug = $1', [b.region_slug])).rows[0]?.id ?? null : null;
-    const r = await pool.query(`INSERT INTO ad_campaigns(vendor_id, store_id, product_id, placement, region_id, title, body, image_url, cpc_cents, budget_cents, starts_at, ends_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id, status`,
-      [vid, b.store_id, productId, b.placement, regionId, b.title, b.body ?? null, b.image_url ?? null, b.cpc_cents, b.budget_cents, b.starts_at, b.ends_at]);
+    const r = await pool.query(`INSERT INTO ad_campaigns(vendor_id, store_id, product_id, placement, region_id, title, body, image_url, cpc_cents, budget_cents, starts_at, ends_at, video_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id, status`,
+      [vid, b.store_id, productId, b.placement, regionId, b.title, b.body ?? null, b.image_url ?? null, b.cpc_cents, b.budget_cents, b.starts_at, b.ends_at, b.video_url ?? null]);
     return reply.code(201).send(r.rows[0]);   // starts as 'pending': an admin must approve the creative
   });
 };

@@ -146,15 +146,15 @@ const AdDesigner = () => {
     if (!file) return
 
     // Validate file type
-    const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']
+    const allowedTypes = ['video/mp4', 'video/webm']
     if (!allowedTypes.includes(file.type)) {
-      alert('Please select a valid video file (MP4, WebM, OGG, or QuickTime)')
+      alert('Please choose an MP4 or WebM video.')
       return
     }
 
-    // Validate file size (50MB max)
-    if (file.size > 50 * 1024 * 1024) {
-      alert('Video file size must be less than 50MB')
+    // Validate file size (25MB max)
+    if (file.size > 25 * 1024 * 1024) {
+      alert('The video must be 25 MB or smaller. Use a shorter clip or a lower resolution.')
       return
     }
 
@@ -177,7 +177,7 @@ const AdDesigner = () => {
       alert('Video uploaded successfully!')
     } catch (error) {
       console.error('Failed to upload video:', error)
-      alert('Failed to upload video. Please try again.')
+      alert(error.response?.data?.detail || error.message || 'Failed to upload video. Please try again.')
     } finally {
       setUploadingVideo(false)
     }
@@ -394,11 +394,11 @@ const AdDesigner = () => {
                         <span className="text-xs sm:text-sm text-gray-600">
                           {uploadingVideo ? 'Uploading...' : 'Upload Video'}
                         </span>
-                        <span className="text-[10px] sm:text-xs text-gray-500 mt-1">MP4, WebM, OGG, QuickTime (max 50MB)</span>
+                        <span className="text-[10px] sm:text-xs text-gray-500 mt-1">MP4 or WebM (max 25MB)</span>
                       </div>
                       <input
                         type="file"
-                        accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                        accept="video/mp4,video/webm"
                         onChange={handleVideoUpload}
                         disabled={uploadingVideo}
                         className="hidden"

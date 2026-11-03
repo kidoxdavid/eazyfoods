@@ -217,7 +217,7 @@ const routes = [
   ['GET', /^\/products\/?$/, async () => { const st = await kitchen(); return (await raw('GET', V(`/stores/${st.id}/dishes`))).dishes.map((d) => ({ id: d.product_id, name: d.name, image_url: d.image_url, price: d.price_cents / 100, status: 'active' })) }],
 
   // ----- uploads: one public image store for everything -----
-  ['POST', /^\/uploads\/(image|chefs|chef-gallery|ads)$/, async (m, { data }) => raw('POST', '/uploads/image', data, { isForm: true })],
+  ['POST', /^\/uploads\/(image|chefs|chef-gallery|ads)$/, async (m, { data }) => { const f = data.get('file'); return raw('POST', f && String(f.type).startsWith('video/') ? '/uploads/video' : '/uploads/image', data, { isForm: true }) }],
   ['GET', /^\/config\/signup-documentation$/, async () => ({ require_chef_docs: false })],
 ]
 

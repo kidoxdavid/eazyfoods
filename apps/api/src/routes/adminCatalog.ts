@@ -282,7 +282,7 @@ export const adminCatalogRoutes: FastifyPluginAsync = async (app) => {
   // ---------- Advertising review ----------
   const ads = requirePerm('ads.manage');
   app.get('/ads', { preHandler: ads }, async () => (await pool.query(
-    `SELECT c.id, c.title, c.body, c.image_url, c.placement, c.status, c.cpc_cents, c.budget_cents, c.starts_at, c.ends_at, v.name AS vendor_name, p.name AS product_name,
+    `SELECT c.id, c.title, c.body, c.image_url, c.video_url, c.placement, c.status, c.cpc_cents, c.budget_cents, c.starts_at, c.ends_at, v.name AS vendor_name, p.name AS product_name,
             count(e.*) FILTER (WHERE e.type='impression')::int AS impressions, count(e.*) FILTER (WHERE e.type='click')::int AS clicks, (count(e.*) FILTER (WHERE e.type='click') * c.cpc_cents)::int AS spent_cents
        FROM ad_campaigns c JOIN vendors v ON v.id = c.vendor_id LEFT JOIN products p ON p.id = c.product_id LEFT JOIN ad_events e ON e.campaign_id = c.id GROUP BY c.id, v.name, p.name ORDER BY (c.status='pending') DESC, c.created_at DESC`)).rows);
   app.patch<{ Params: { id: string } }>('/ads/:id', { preHandler: ads }, async (req) => {

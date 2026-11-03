@@ -20,7 +20,7 @@ export const adRoutes: FastifyPluginAsync = async (app) => {
       const store = a.store_id ? (await pool.query('SELECT slug, name FROM storefronts WHERE id = $1 AND orderable', [a.store_id])).rows[0] : null;
       const product = a.product_id ? (await pool.query(`SELECT slug, name FROM products WHERE id = $1 AND status = 'published'`, [a.product_id])).rows[0] : null;
       if ((a.store_id && !store) || (a.product_id && !product)) continue;   // never advertise something unorderable
-      out.push({ id: a.id, title: a.title, body: a.body, image_url: a.image_url, sponsored: true, store, product });
+      out.push({ id: a.id, title: a.title, body: a.body, image_url: a.image_url, video_url: a.video_url ?? null, sponsored: true, store, product });
     }
     return out;
   });
