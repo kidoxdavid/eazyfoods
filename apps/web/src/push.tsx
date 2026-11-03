@@ -51,7 +51,18 @@ export function PushToggle({ variant = 'shop' }: { variant?: 'shop' | 'portal' }
   const portal = variant === 'portal';
   const btn = portal ? 'w-full text-left px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100 rounded-lg' : 'btn secondary sm';
   const run = async (f: () => Promise<PushState>) => { setBusy(true); setNote(''); try { setSt(await f()); } catch (e: any) { setNote(e?.message || 'Could not change notifications.'); } finally { setBusy(false); } };
-  const test = async () => { setBusy(true); setNote(''); try { const r = await api<{ sent: number }>('/push/test', { method: 'POST', json: { area: currentArea() }, headers: hdr() }); setNote(r.sent ? 'Test sent. Check your notifications.' : 'No device is registered here yet.'); } catch (e: any) { setNote(e?.message || 'Could not send a test.'); } finally { setBusy(false); } };
+  const test = async () => {
+    setBusy(true); setNote('');
+    try {
+      // Make sure the server really has this device first (it may have been lost), then send.
+      const reg = await navigator.serviceWorker.getRegistration(); const sub = await reg?.pushManager.getSubscription();
+      if (sub) await api('/push/subscribe', { method: 'POST', json: { subscription: sub.toJSON(), area: currentArea() }, headers: hdr() });
+      const r = await api<{ sent: number; devices: number; errors: { status: number | null; message: string }[] }>('/push/test', { method: 'POST', json: { area: currentArea() }, headers: hdr() });
+      if (r.sent) setNote('Sent. It should appear within a few seconds. If it does not, check Settings, Notifications, for this app (and that Focus or Low Power Mode is not hiding it).');
+      else if (!r.devices) setNote('This device is not registered yet. Turn notifications off and on again.');
+      else setNote(`Your phone’s notification service refused it${r.errors[0]?.status ? ` (code ${r.errors[0].status})` : ''}${r.errors[0]?.message ? `: ${r.errors[0].message}` : ''}. Turn notifications off and on again; if it keeps happening, tell support.`);
+    } catch (e: any) { setNote(e?.message || 'Could not send a test.'); } finally { setBusy(false); }
+  };
   const hint = portal ? 'px-3 sm:px-4 pb-1 text-[11px] text-gray-500' : 'small muted';
   return (
     <div className={portal ? '' : 'push-toggle'} data-testid="push-toggle">

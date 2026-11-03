@@ -29,7 +29,8 @@ export const pushRoutes: FastifyPluginAsync = async (app) => {
   // A test notification to your own devices in this app, so you can see it work before relying on it.
   app.post('/push/test', { ...rl(10, '1 minute'), preHandler: requireLogin }, async (req) => {
     const b = z.object({ area: z.enum(AREAS).default('shop') }).parse(req.body ?? {});
-    const n = await pushToUsers([req.user!.id], { title: 'EAZyfoods notifications are on', body: 'You will get alerts here.', url: b.area === 'shop' ? '/' : `/${b.area}`, tag: 'test' }, { areas: [b.area] });
-    return { sent: n };
+    const out = await pushToUsers([req.user!.id], { title: 'EAZyfoods notifications are on', body: 'You will get alerts here.', url: b.area === 'shop' ? '/' : `/${b.area}`, tag: 'test' }, { areas: [b.area], detail: true }) as { ok: boolean; status?: number; message?: string }[];
+    // sent = devices the push company accepted; the rest say why not (so "nothing came" is never a mystery)
+    return { sent: out.filter((o) => o.ok).length, devices: out.length, errors: out.filter((o) => !o.ok).map((o) => ({ status: o.status ?? null, message: o.message ?? '' })) };
   });
 };

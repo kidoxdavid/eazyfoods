@@ -24,28 +24,43 @@ export const sentLog: { userId: string; area: string; msg: PushMsg }[] = [];
 
 type Sub = { id: number; user_id: string; endpoint: string; p256dh: string; auth: string; area: string };
 
-async function deliver(sub: Sub, msg: PushMsg) {
-  if (config.NODE_ENV === 'test') { sentLog.push({ userId: sub.user_id, area: sub.area, msg }); return; }
+export type Delivery = { ok: boolean; status?: number; message?: string };
+
+/** Who we say we are to the phone makers' push servers. Apple rejects a made-up address, so use the site's own https address when there is one. */
+function vapidSubject() {
+  if (process.env.VAPID_SUBJECT) return process.env.VAPID_SUBJECT;
+  if (/^https:\/\//.test(config.WEB_ORIGIN)) return config.WEB_ORIGIN;
+  const m = config.EMAIL_FROM.match(/<(.+)>/)?.[1];
+  return `mailto:${m && !/\.invalid$/.test(m) ? m : 'support@eazyfoods.ca'}`;
+}
+
+async function deliver(sub: Sub, msg: PushMsg): Promise<Delivery> {
+  if (config.NODE_ENV === 'test') { sentLog.push({ userId: sub.user_id, area: sub.area, msg }); return { ok: true, status: 201 }; }
   try {
     const k = await keys();
-    await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(msg),
-      { vapidDetails: { subject: `mailto:${config.EMAIL_FROM.match(/<(.+)>/)?.[1] ?? 'support@example.invalid'}`, publicKey: k.publicKey, privateKey: k.privateKey }, TTL: 60 * 60 * 24, urgency: 'high', timeout: 8000 });
+    const r = await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(msg),
+      { vapidDetails: { subject: vapidSubject(), publicKey: k.publicKey, privateKey: k.privateKey }, TTL: 60 * 60 * 24, urgency: 'high', timeout: 8000 });
     await pool.query('UPDATE push_subscriptions SET last_sent_at = now(), failures = 0 WHERE id = $1', [sub.id]);
+    return { ok: true, status: r?.statusCode };
   } catch (e: any) {
-    if (e?.statusCode === 404 || e?.statusCode === 410) await pool.query('DELETE FROM push_subscriptions WHERE id = $1', [sub.id]);   // the person turned it off or removed the app
+    const status = e?.statusCode as number | undefined;
+    const host = (() => { try { return new URL(sub.endpoint).host; } catch { return '?'; } })();
+    console.error(`[push] ${host} answered ${status ?? 'no response'}: ${String(e?.body || e?.message || e).slice(0, 200)}`);
+    if (status === 404 || status === 410) await pool.query('DELETE FROM push_subscriptions WHERE id = $1', [sub.id]);   // the person turned it off or removed the app
     else await pool.query('UPDATE push_subscriptions SET failures = failures + 1 WHERE id = $1', [sub.id]).catch(() => {});
+    return { ok: false, status, message: String(e?.body || e?.message || e).slice(0, 160) };
   }
 }
 
 /** Send to every device these people enabled (optionally only in some apps). Never throws: a failed alert must not break the action that caused it. */
-export async function pushToUsers(userIds: string[], msg: PushMsg, opts: { areas?: string[]; urlByArea?: Record<string, string> } = {}) {
+export async function pushToUsers(userIds: string[], msg: PushMsg, opts: { areas?: string[]; urlByArea?: Record<string, string>; detail?: boolean } = {}): Promise<any> {
   try {
     if (!userIds.length) return 0;
     const subs = (await pool.query(`SELECT id, user_id, endpoint, p256dh, auth, area FROM push_subscriptions WHERE user_id = ANY($1::uuid[]) AND ($2::text[] IS NULL OR area = ANY($2::text[])) AND failures < 8`,
       [userIds, opts.areas ?? null])).rows as Sub[];
-    await Promise.all(subs.map((s) => deliver(s, { ...msg, url: opts.urlByArea?.[s.area] ?? msg.url })));
-    return subs.length;
-  } catch { return 0; }
+    const out = await Promise.all(subs.map((s) => deliver(s, { ...msg, url: opts.urlByArea?.[s.area] ?? msg.url })));
+    return opts.detail ? out : out.filter((o) => o.ok).length;
+  } catch { return opts.detail ? [] : 0; }
 }
 
 export async function usersWithPerm(perm: string): Promise<string[]> {
