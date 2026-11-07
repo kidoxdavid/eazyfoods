@@ -19,6 +19,12 @@ services:
         value: development        # demo only: allows the mock payment provider. Never use for a real launch.
       - key: PAYMENT_PROVIDER
         value: mock               # change to helcim (with the three HELCIM_ values below) to take real card payments through Helcim. See docs/PAYMENTS.md.
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
       - key: HELCIM_API_TOKEN
         sync: false
       - key: HELCIM_WEBHOOK_VERIFIER

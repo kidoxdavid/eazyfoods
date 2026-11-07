@@ -34,6 +34,15 @@ Recorded as payable to the vendor at payment, but **paid out only after the orde
 ## Refund workflow
 Customers cannot refund themselves: they report a problem. Support/admin **request** a refund (line items, optional delivery fee, vendor- or marketplace-funded); **finance approves**; the provider is called outside any database transaction using an idempotency key; amounts are recomputed from live state at approval; over-refunding is blocked by an atomic quantity claim. Store rejections, customer cancellations before acceptance, declined substitutions, unavailable items and auto-timeouts refund automatically.
 
+## Stripe setup (PAYMENT_PROVIDER=stripe), test mode first
+1. Create a Stripe account for a Canadian business. Stay in **test mode** (the toggle in the Stripe dashboard) until the checklist below passes.
+2. Developers, **API keys**: copy the **publishable key** (`pk_test_...`) and the **secret key** (`sk_test_...`). The secret key is a password: it goes only into the server's settings.
+3. Developers, **Webhooks**, add an endpoint: URL `https://<your domain>/api/webhooks/payments`, events `payment_intent.succeeded`, `payment_intent.payment_failed` and `charge.dispute.created`. Copy its **signing secret** (`whsec_...`).
+4. Connect (vendor payouts): in Stripe, turn on **Connect** and choose Express accounts. Without it, vendor payouts stay manual bank transfers.
+5. Server settings: `PAYMENT_PROVIDER=stripe`, `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`. Restart. Admin, System should say "Stripe configured".
+6. Stripe test cards: `4242 4242 4242 4242` succeeds, `4000 0025 0000 3155` asks for 3-D Secure, `4000 0000 0000 9995` is declined (any future expiry, any CVC).
+The card form is Stripe's Payment Element. The site's content security policy lets `js.stripe.com`, `hooks.stripe.com` and `api.stripe.com` through only when Stripe is the provider (`apps/api/src/lib/csp.ts`; before this was added, the card form would have been blocked).
+
 ## Stripe go-live checklist (do before any live payment)
 1. Confirm Stripe Connect is available for your business and the exact fund-flow/terms in Canada (separate charges and transfers vs destination charges; who is merchant of record; who is liable for disputes).
 2. Create **test-mode** keys and a webhook endpoint (`POST /api/webhooks/payments`) subscribed to `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.dispute.created`. Set `PAYMENT_PROVIDER=stripe`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY`.

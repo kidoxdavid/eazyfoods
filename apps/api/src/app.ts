@@ -7,6 +7,7 @@ import { liveRoutes } from './routes/live.js';
 import rateLimit from '@fastify/rate-limit';
 import { ZodError } from 'zod';
 import { config } from './config.js';
+import { paymentCsp } from './lib/csp.js';
 import { pool } from './db/pool.js';
 import { loadUser } from './lib/auth.js';
 import { hashToken } from './lib/password.js';
@@ -60,9 +61,9 @@ export async function buildApp() {
   });
 
   // Maps (driver navigation, live delivery position) are embedded as frames from these hosts only.
-  // The HelcimPay.js card window (script and iframe) comes from Helcim's secure host. Only allowed when Helcim is the payment provider.
-  const HELCIM_HOSTS = config.PAYMENT_PROVIDER === 'helcim' ? ['https://secure.helcim.app'] : [];
-  await app.register(helmet, { contentSecurityPolicy: { directives: { ...helmet.contentSecurityPolicy.getDefaultDirectives(), 'script-src': ["'self'", "'wasm-unsafe-eval'", ...HELCIM_HOSTS], 'media-src': ["'self'", ...(process.env.MEDIA_ORIGIN ? [process.env.MEDIA_ORIGIN] : ['https://eazyfoods.onrender.com'])], 'frame-src': ["'self'", 'https://maps.google.com', 'https://www.google.com', 'https://www.openstreetmap.org', ...HELCIM_HOSTS], 'connect-src': ["'self'", ...HELCIM_HOSTS] } } });
+  // The card form of the chosen payment provider (Stripe's Payment Element or Helcim's window) is loaded from the provider's own hosts. Nothing is allowed for the mock provider.
+  const PAY = paymentCsp(config.PAYMENT_PROVIDER);
+  await app.register(helmet, { contentSecurityPolicy: { directives: { ...helmet.contentSecurityPolicy.getDefaultDirectives(), 'script-src': ["'self'", "'wasm-unsafe-eval'", ...PAY.script], 'media-src': ["'self'", ...(process.env.MEDIA_ORIGIN ? [process.env.MEDIA_ORIGIN] : ['https://eazyfoods.onrender.com'])], 'frame-src': ["'self'", 'https://maps.google.com', 'https://www.google.com', 'https://www.openstreetmap.org', ...PAY.frame], 'connect-src': ["'self'", ...PAY.connect], 'img-src': ["'self'", 'data:', ...PAY.img] } } });
   await app.register(compress, { threshold: 1024 });   // gzip/brotli for HTML, JS, CSS and JSON (images and video are already compressed and are skipped)
   await app.register(cors, { origin: config.WEB_ORIGIN, credentials: true });
   await app.register(cookie);
