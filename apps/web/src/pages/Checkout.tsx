@@ -254,19 +254,24 @@ function StripePay({ order, publishableKey, onSubmitted, returnPath }: { order: 
   const ctx = useRef<{ stripe: any; elements: any } | null>(null);
   const [err, setErr] = useState<string>();
   const [busy, setBusy] = useState(false);
+  // A real Stripe payment's client secret looks like pi_..._secret_...; anything else belongs to an order started under another payment setup.
+  const usable = !!order.client_secret && /^pi_[A-Za-z0-9]+_secret_/.test(order.client_secret);
   useEffect(() => {
-    if (!publishableKey || !order.client_secret) return;
+    if (!publishableKey || !usable) return;
     let off = false;
     import('@stripe/stripe-js').then(async ({ loadStripe }) => {
       const stripe = await loadStripe(publishableKey);
       if (!stripe || off) return;
       const elements = stripe.elements({ clientSecret: order.client_secret! });
-      elements.create('payment').mount(mount.current!);
+      const pe = elements.create('payment');
+      pe.on('loaderror', (e: any) => { if (!off) setErr(e?.error?.message ?? 'The card form could not be loaded.'); });
+      pe.mount(mount.current!);
       ctx.current = { stripe, elements };
     }).catch((e) => setErr(e.message));
     return () => { off = true; };
-  }, [publishableKey, order.client_secret]);
+  }, [publishableKey, order.client_secret, usable]);
   if (!publishableKey) return <Notice tone="error">Card payments are not configured yet (missing publishable key).</Notice>;
+  if (!usable) return <Notice tone="error">This order was started before card payments were switched to Stripe, so it can no longer be paid. Please go back to your basket and check out again.</Notice>;
   return (
     <div>
       <div ref={mount} />
