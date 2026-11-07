@@ -165,7 +165,7 @@ export const adminSystemRoutes: FastifyPluginAsync = async (app) => {
       ],
       last_payment_event_at: lastEvent.at, errors_24h: errors24, recent_errors: errors,
       integrations: [
-        integ('Payments', provider.name === 'stripe', provider.name === 'mock' ? 'DEVELOPMENT MOCK. No real payments can be taken.' : 'Stripe configured. Verify with the test-mode checklist in docs/PAYMENTS.md.'),
+        integ('Payments', provider.name !== 'mock', provider.name === 'mock' ? 'DEVELOPMENT MOCK. No real payments can be taken.' : provider.name === 'helcim' ? 'Helcim configured. Verify with the Helcim checklist in docs/PAYMENTS.md. Vendor payouts are manual bank transfers.' : 'Stripe configured. Verify with the test-mode checklist in docs/PAYMENTS.md.'),
         integ('Email', config.EMAIL_TRANSPORT === 'resend' && !!config.RESEND_API_KEY, config.EMAIL_TRANSPORT === 'log' ? 'Emails are only logged, not sent.' : 'Resend configured.'),
         integ('Error monitoring', !!config.SENTRY_DSN, config.SENTRY_DSN ? 'Sentry enabled.' : 'Not configured (set SENTRY_DSN).'),
         integ('Image storage', false, 'Local disk. Move to S3-compatible storage before running more than one server.'),

@@ -32,6 +32,7 @@ Treat each of these as **unproven until you have done the check beside it**.
 | Area | Why unproven | The check |
 |---|---|---|
 | **Stripe payments** | Only the mock provider has run. The Stripe code was written from the documentation. | §5 below. This is the single biggest risk. |
+| **Helcim payments** (`PAYMENT_PROVIDER=helcim`) | Built from Helcim's developer documentation and tested only against a fake Helcim server. Never run against a Helcim account. Helcim has no marketplace payouts, so vendor payouts are manual bank transfers. | The Helcim setup and test checklist in `docs/PAYMENTS.md`, in a Helcim developer test account first. |
 | **Stripe Connect payouts to vendors** | Same. | `docs/PAYMENTS.md` payout checklist. |
 | **Email** (Resend) | Log-only unless `RESEND_API_KEY` is set; the Resend call has not been run. | Send a real order email, password reset and vendor alert to yourself; check SPF/DKIM so they do not land in spam. |
 | **Text messages** (Twilio) | Written, unverified. | Optional. Leave off until needed. |

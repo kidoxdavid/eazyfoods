@@ -8,10 +8,17 @@ const schema = z.object({
   WEB_ORIGIN: z.string().default('http://localhost:5173'),
   SESSION_DAYS: z.coerce.number().default(30),
   // Payments: 'mock' is a clearly-labelled development provider that exercises the real webhook path. Not allowed in production.
-  PAYMENT_PROVIDER: z.enum(['mock', 'stripe']).default('mock'),
+  PAYMENT_PROVIDER: z.enum(['mock', 'stripe', 'helcim']).default('mock'),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_PUBLISHABLE_KEY: z.string().optional(),
+  // Helcim (Canadian processor). HELCIM_API_TOKEN: an API Access Configuration token with Transaction Processing = Admin (needed for refunds). Server side only.
+  // HELCIM_WEBHOOK_VERIFIER: the verifier token shown on Helcim's Integrations > Webhooks page (base64). HELCIM_REFUND_IP: a public IP address of your server or office (Helcim asks for one on every refund).
+  HELCIM_API_TOKEN: z.string().optional(),
+  HELCIM_WEBHOOK_VERIFIER: z.string().optional(),
+  HELCIM_API_BASE: z.string().default('https://api.helcim.com/v2'),
+  HELCIM_PARTNER_TOKEN: z.string().optional(),
+  HELCIM_REFUND_IP: z.string().optional(),
   MOCK_WEBHOOK_SECRET: z.string().default('dev-mock-webhook-secret'),
   // Email: 'log' writes to the console/outbox only. 'resend' needs RESEND_API_KEY and EMAIL_FROM.
   EMAIL_TRANSPORT: z.enum(['log', 'resend']).default('log'),
@@ -41,4 +48,6 @@ if (isProd) {
   if (config.PAYMENT_PROVIDER === 'mock') throw new Error('PAYMENT_PROVIDER=mock is not allowed in production');
   if (config.PAYMENT_PROVIDER === 'stripe' && (!config.STRIPE_SECRET_KEY || !config.STRIPE_WEBHOOK_SECRET))
     throw new Error('Stripe requires STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET');
+  if (config.PAYMENT_PROVIDER === 'helcim' && (!config.HELCIM_API_TOKEN || !config.HELCIM_WEBHOOK_VERIFIER))
+    throw new Error('Helcim requires HELCIM_API_TOKEN and HELCIM_WEBHOOK_VERIFIER');
 }

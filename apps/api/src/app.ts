@@ -60,7 +60,9 @@ export async function buildApp() {
   });
 
   // Maps (driver navigation, live delivery position) are embedded as frames from these hosts only.
-  await app.register(helmet, { contentSecurityPolicy: { directives: { ...helmet.contentSecurityPolicy.getDefaultDirectives(), 'script-src': ["'self'", "'wasm-unsafe-eval'"], 'media-src': ["'self'", ...(process.env.MEDIA_ORIGIN ? [process.env.MEDIA_ORIGIN] : ['https://eazyfoods.onrender.com'])], 'frame-src': ["'self'", 'https://maps.google.com', 'https://www.google.com', 'https://www.openstreetmap.org'] } } });
+  // The HelcimPay.js card window (script and iframe) comes from Helcim's secure host. Only allowed when Helcim is the payment provider.
+  const HELCIM_HOSTS = config.PAYMENT_PROVIDER === 'helcim' ? ['https://secure.helcim.app'] : [];
+  await app.register(helmet, { contentSecurityPolicy: { directives: { ...helmet.contentSecurityPolicy.getDefaultDirectives(), 'script-src': ["'self'", "'wasm-unsafe-eval'", ...HELCIM_HOSTS], 'media-src': ["'self'", ...(process.env.MEDIA_ORIGIN ? [process.env.MEDIA_ORIGIN] : ['https://eazyfoods.onrender.com'])], 'frame-src': ["'self'", 'https://maps.google.com', 'https://www.google.com', 'https://www.openstreetmap.org', ...HELCIM_HOSTS], 'connect-src': ["'self'", ...HELCIM_HOSTS] } } });
   await app.register(compress, { threshold: 1024 });   // gzip/brotli for HTML, JS, CSS and JSON (images and video are already compressed and are skipped)
   await app.register(cors, { origin: config.WEB_ORIGIN, credentials: true });
   await app.register(cookie);
@@ -97,7 +99,8 @@ export async function buildApp() {
       const message = err.issues.map((i) => (i.path.length ? `${i.path.join('.')}: ` : '') + i.message).join('; ');
       return reply.code(400).send({ error: 'validation', message, issues: err.issues });
     }
-    if (err.statusCode && err.statusCode < 500) return reply.code(err.statusCode).send({ error: err.code ?? 'error', message: err.message, ...(err.details ? { details: err.details } : {}) });
+    // 502 provider_unavailable is expected and safe to show: the payment provider could not be reached, and a webhook sender will retry.
+    if (err.statusCode && (err.statusCode < 500 || err.code === 'provider_unavailable')) return reply.code(err.statusCode).send({ error: err.code ?? 'error', message: err.message, ...(err.details ? { details: err.details } : {}) });
     if (config.NODE_ENV === 'test') console.error(err);
     req.log.error(err);
     pool.query('INSERT INTO error_events(message, stack, method, url, request_id, user_id) VALUES ($1,$2,$3,$4,$5,$6)',

@@ -18,7 +18,13 @@ services:
       - key: NODE_ENV
         value: development        # demo only: allows the mock payment provider. Never use for a real launch.
       - key: PAYMENT_PROVIDER
-        value: mock
+        value: mock               # change to helcim (with the three HELCIM_ values below) to take real card payments through Helcim. See docs/PAYMENTS.md.
+      - key: HELCIM_API_TOKEN
+        sync: false
+      - key: HELCIM_WEBHOOK_VERIFIER
+        sync: false
+      - key: HELCIM_REFUND_IP
+        sync: false
       - key: DEMO_ALWAYS_OPEN
         value: "1"
       - key: WEB_ORIGIN

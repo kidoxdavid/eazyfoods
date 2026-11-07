@@ -9,7 +9,7 @@ import { Button, ErrorBox, Field, Input, Loading, Notice, Textarea } from '../ui
 import { PaymentStep } from './Checkout';
 
 type Gift = { id: string; amount_cents: number; status: 'pending_payment' | 'paid' | 'failed'; recipient_email: string | null; recipient_name: string | null; code: string | null; payment: { provider: string; client_secret: string | null } | null };
-type Cfg = { payment_provider: 'mock' | 'stripe'; stripe_publishable_key: string | null; test_mode: boolean };
+type Cfg = { payment_provider: 'mock' | 'stripe' | 'helcim'; stripe_publishable_key: string | null; test_mode: boolean };
 const PRESETS = [2500, 5000, 10000];
 
 /** Buy a gift card for someone (or yourself). Gift cards are not refundable and the code is shown only after payment is confirmed. */

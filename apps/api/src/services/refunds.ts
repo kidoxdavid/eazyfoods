@@ -117,15 +117,15 @@ export async function processRefund(refundId: string, decidedBy: string | null) 
     a.credit = Math.max(0, a.amount - cardLeft);
     await c.query(`UPDATE refunds SET status='approved', decided_by=$2, decided_at=now(), merchandise_cents=$3, discount_cents=$4, tax_cents=$5, delivery_cents=$6, commission_cents=$7, amount_cents=$8, credit_cents=$9 WHERE id=$1`,
       [refundId, decidedBy, a.merchandise, a.discount, a.tax, a.delivery, a.commission, a.amount, a.credit]);
-    const pay = (await c.query('SELECT provider_payment_id FROM payments WHERE id = $1', [r.payment_id])).rows[0];
-    return { refund: { ...r, ...{ amount_cents: a.amount, credit_cents: a.credit } }, providerPaymentId: pay.provider_payment_id as string, amounts: a, lines };
+    const pay = (await c.query('SELECT provider_payment_id, provider_transaction_id, amount_cents FROM payments WHERE id = $1', [r.payment_id])).rows[0];
+    return { refund: { ...r, ...{ amount_cents: a.amount, credit_cents: a.credit } }, providerPaymentId: pay.provider_payment_id as string, providerTransactionId: pay.provider_transaction_id as string | null, originalAmountCents: pay.amount_cents as number, amounts: a, lines };
   });
 
   let providerRefundId: string | null = null;
   let failure: string | null = null;
   try {
     const cardCents = claimed.refund.amount_cents - claimed.refund.credit_cents;
-    if (cardCents > 0) providerRefundId = (await getProvider().refund({ providerPaymentId: claimed.providerPaymentId, amountCents: cardCents, idempotencyKey: claimed.refund.idempotency_key })).providerRefundId;
+    if (cardCents > 0) providerRefundId = (await getProvider().refund({ providerPaymentId: claimed.providerPaymentId, amountCents: cardCents, idempotencyKey: claimed.refund.idempotency_key, providerTransactionId: claimed.providerTransactionId, originalAmountCents: claimed.originalAmountCents })).providerRefundId;
   } catch (e: any) { failure = String(e.message ?? e); }
 
   return tx(async (c, after) => {

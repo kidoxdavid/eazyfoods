@@ -46,7 +46,7 @@ export function OrderPage() {
   const { id } = useParams();
   const { data: o, loading, error, reload } = useApi<Order>(`/orders/${id}`);
   const pay = useApi<{ payable: boolean; client_secret: string | null }>(o?.status === 'pending_payment' ? `/orders/${id}/payment` : null);
-  const cfg = useApi<{ payment_provider: 'mock' | 'stripe'; stripe_publishable_key: string | null; test_mode: boolean }>('/config');
+  const cfg = useApi<{ payment_provider: 'mock' | 'stripe' | 'helcim'; stripe_publishable_key: string | null; test_mode: boolean }>('/config');
   const { refresh } = useCart();
   const nav = useNavigate();
   const toast = useToast();

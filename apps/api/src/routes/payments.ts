@@ -2,7 +2,8 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { pool } from '../db/pool.js';
 import { config, isProd } from '../config.js';
-import { handleWebhook } from '../services/payments.js';
+import { handleWebhook, confirmHelcimPayment } from '../services/payments.js';
+import { rl } from '../lib/ratelimit.js';
 import { MockProvider } from '../payments/mock.js';
 import { requireLogin } from '../lib/permissions.js';
 import { getProvider } from '../payments/provider.js';
@@ -25,6 +26,12 @@ export const paymentRoutes: FastifyPluginAsync = async (app) => {
     test_mode: config.PAYMENT_PROVIDER === 'mock',
     currency: 'CAD',
   }));
+
+  // Helcim: the browser hands over what the HelcimPay.js window reported. We verify it with Helcim's hash and read the transaction back from Helcim before anything is marked paid.
+  app.post('/payments/helcim/confirm', { ...rl(30, '1 minute'), preHandler: requireLogin }, async (req) => {
+    const b = z.object({ checkoutToken: z.string().min(8).max(200), data: z.record(z.any()), hash: z.string().min(32).max(128) }).parse(req.body);
+    return confirmHelcimPayment(req.user!.id, b);
+  });
 
   if (!isProd && config.PAYMENT_PROVIDER === 'mock') {
     // DEV ONLY. Builds a correctly signed provider event and sends it through the real webhook handler.

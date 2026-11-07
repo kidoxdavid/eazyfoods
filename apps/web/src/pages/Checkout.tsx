@@ -14,7 +14,7 @@ type Address = { id: string; label: string | null; recipient_name: string; phone
 type Line = { name: string; quantity: number; unit_price_cents: number; line_total_cents: number };
 type Sub = { store_slug: string; store_name: string; lines: Line[]; subtotal_cents: number; discount_cents: number; delivery_cents: number; delivery_tax_cents: number; tax_cents: number; total_cents: number; eta_minutes: number | null; preorders_enabled?: boolean; scheduled_for?: string | null; scheduled_until?: string | null };
 type Quote = { ok: boolean; issues: { type: string; message: string; store_slug?: string }[]; warnings: { message: string }[]; suborders: Sub[]; subtotal_cents: number; discount_cents: number; delivery_cents: number; tax_cents: number; tip_cents: number; total_cents: number; credit_available_cents: number; credit_applied_cents: number; pay_cents: number; coupon: { code: string; discount_cents: number } | null; coupon_error?: string; separate_deliveries: boolean };
-type Cfg = { payment_provider: 'mock' | 'stripe'; stripe_publishable_key: string | null; test_mode: boolean };
+type Cfg = { payment_provider: 'mock' | 'stripe' | 'helcim'; stripe_publishable_key: string | null; test_mode: boolean };
 
 export function AddressForm({ onSaved, onCancel, name }: { onSaved: (a: Address) => void; onCancel?: () => void; name?: string }) {
   const t = useT();
@@ -240,6 +240,8 @@ export function PaymentStep({ order, cfg, onPaid, kind = 'order' }: { order: { i
           {err && <Notice tone="error">{err}</Notice>}
           <div className="stack"><Button size="lg" busy={busy} onClick={() => simulate('succeeded')}>Simulate successful payment</Button><Button variant="secondary" busy={busy} onClick={() => simulate('failed')}>Simulate declined card</Button></div>
         </div>
+      ) : cfg.payment_provider === 'helcim' ? (
+        <HelcimPay order={order} onSubmitted={onPaid} />
       ) : <StripePay order={order} publishableKey={cfg.stripe_publishable_key} onSubmitted={onPaid} returnPath={kind === 'gift' ? `/gift-cards/${order.id}` : `/orders/${order.id}`} />}
       {kind === 'order' && <p className="row" style={{ marginTop: 14 }}><Link className="btn secondary sm" to={`/orders/${order.id}`}>View this order</Link></p>}
     </div>
@@ -279,3 +281,64 @@ function StripePay({ order, publishableKey, onSubmitted, returnPath }: { order: 
   );
 }
 
+
+/**
+ * Helcim: HelcimPay.js opens Helcim's own secure card window on top of this page, so card numbers never touch our site or server.
+ * What the window reports is sent to our server, which checks Helcim's hash and reads the transaction back from Helcim before the order counts as paid.
+ * UNVERIFIED against a live Helcim account (no credentials were available); see docs/PAYMENTS.md.
+ */
+const HELCIM_SCRIPT = 'https://secure.helcim.app/helcim-pay/services/start.js';
+function helcimResult(m: any): { data: any; hash: string } | null {
+  if (typeof m === 'string') { try { m = JSON.parse(m); } catch { return null; } }
+  if (m?.data?.data && m?.data?.hash) return { data: m.data.data, hash: m.data.hash };
+  if (m?.data && m?.hash) return { data: m.data, hash: m.hash };
+  return null;
+}
+function HelcimPay({ order, onSubmitted }: { order: { id: string; client_secret: string | null }; onSubmitted: () => void }) {
+  const token = order.client_secret;
+  const [ready, setReady] = useState(false);
+  const [err, setErr] = useState<string>();
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!token) return;
+    let off = false;
+    const w = window as any;
+    const load = new Promise<void>((res, rej) => {
+      if (w.appendHelcimPayIframe) return res();
+      let s = document.querySelector(`script[src="${HELCIM_SCRIPT}"]`) as HTMLScriptElement | null;
+      if (!s) { s = document.createElement('script'); s.src = HELCIM_SCRIPT; document.head.appendChild(s); }
+      s.addEventListener('load', () => res()); s.addEventListener('error', () => rej(new Error('The card window could not be loaded. Check your connection and try again.')));
+    });
+    load.then(() => { if (!off) setReady(true); }).catch((e) => { if (!off) setErr(e.message); });
+    const onMessage = async (ev: MessageEvent) => {
+      const d = ev.data;
+      if (!d || d.eventName !== `helcim-pay-js-${token}`) return;
+      if (d.eventStatus === 'ABORTED') {
+        w.removeHelcimPayIframe?.(); setBusy(false);
+        setErr(String(d.eventMessage ?? '').replace(/^HelcimPay\.js transaction failed\s*-?\s*/i, '') || 'Your card was declined. Nothing was charged. Try another card.');
+      } else if (d.eventStatus === 'HIDE') {
+        setBusy(false);
+      } else if (d.eventStatus === 'SUCCESS') {
+        const r = helcimResult(d.eventMessage);
+        w.removeHelcimPayIframe?.();
+        if (!r) { setErr('We could not read the payment result. If you were charged, your order will update shortly.'); onSubmitted(); return; }
+        setBusy(true);
+        try { await post('/payments/helcim/confirm', { checkoutToken: token, data: r.data, hash: r.hash }); onSubmitted(); }
+        catch (e: any) {
+          setBusy(false); setErr(e.message);
+          if (e.status === 502) onSubmitted();   // Helcim could not be reached just now; the webhook will finish the order, and the order page waits for it
+        }
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => { off = true; window.removeEventListener('message', onMessage); };
+  }, [token]);
+  if (!token) return <Notice tone="error">This payment is no longer open. Go back and try again.</Notice>;
+  return (
+    <div>
+      <p className="muted small">You will enter your card in a secure window from Helcim. Your card details never reach EAZyfoods.</p>
+      {err && <Notice tone="error">{err}</Notice>}
+      <Button size="lg" style={{ width: '100%', marginTop: 12 }} busy={busy || (!ready && !err)} disabled={!ready} onClick={() => { setErr(undefined); setBusy(true); (window as any).appendHelcimPayIframe(token); }}>Pay with card</Button>
+    </div>
+  );
+}

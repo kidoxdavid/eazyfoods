@@ -18,8 +18,8 @@ export async function startGiftPurchase(user: { id: string; email: string }, inp
     try {
       const provider = getProvider();
       const pay = await provider.createPayment({ amountCents: input.amountCents, currency: 'CAD', orderNumber: `GC-${newCode(6)}`, email: user.email, idempotencyKey: `gift:${id}` });
-      await pool.query(`INSERT INTO payments(gift_purchase_id, provider, provider_payment_id, amount_cents, client_secret, idempotency_key) VALUES ($1,$2,$3,$4,$5,$6)`,
-        [id, provider.name, pay.providerPaymentId, input.amountCents, pay.clientSecret, `gift:${id}`]);
+      await pool.query(`INSERT INTO payments(gift_purchase_id, provider, provider_payment_id, amount_cents, client_secret, idempotency_key, provider_secret) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [id, provider.name, pay.providerPaymentId, input.amountCents, pay.clientSecret, `gift:${id}`, pay.providerSecret ?? null]);
     } catch (e) {
       await pool.query(`UPDATE gift_purchases SET status = 'failed' WHERE id = $1`, [id]);
       console.error('gift card payment error', e);

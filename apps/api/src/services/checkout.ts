@@ -83,8 +83,8 @@ export async function placeOrder(user: { id: string; email: string; full_name: s
   try {
     const provider = getProvider();
     const pay = await provider.createPayment({ amountCents: paymentAmount, currency: 'CAD', orderNumber: number, email: user.email, idempotencyKey: `pay:${orderId}` });
-    await pool.query(`INSERT INTO payments(order_id, provider, provider_payment_id, amount_cents, client_secret, idempotency_key) VALUES ($1,$2,$3,$4,$5,$6)`,
-      [orderId, provider.name, pay.providerPaymentId, paymentAmount, pay.clientSecret, `pay:${orderId}`]);
+    await pool.query(`INSERT INTO payments(order_id, provider, provider_payment_id, amount_cents, client_secret, idempotency_key, provider_secret) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [orderId, provider.name, pay.providerPaymentId, paymentAmount, pay.clientSecret, `pay:${orderId}`, pay.providerSecret ?? null]);
   } catch (e) {
     await tx(async (c) => {
       const held = (await c.query(`SELECT r.id, r.offer_id, r.quantity FROM inventory_reservations r JOIN order_lines l ON l.id=r.order_line_id JOIN suborders s ON s.id=l.suborder_id WHERE s.order_id=$1 AND r.status='held'`, [orderId])).rows;
